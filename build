@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# TODO: -O2
+emcc \
+  -O0 \
+  -o public/js/janet.js \
+  -I janet \
+  janet/janet.c \
+  driver.c \
+  -lembind \
+  -std=c11 \
+  --embed-file shade.janet \
+  --embed-file shapes.janet \
+  -s EXPORTED_FUNCTIONS=['_run_janet'] \
+  -s USE_WEBGL2=1 \
+  -s ALLOW_MEMORY_GROWTH=1 \
+  -s AGGRESSIVE_VARIABLE_ELIMINATION=1 \
+  -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap']

@@ -1,0 +1,34 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+	color: black;
+	width: 100%;
+	height: 100%;
+}
+#code-editor {
+  width: 100%;
+  height: 300px;
+}
+#code-editor, #output {
+	font-family: Menlo, monospace;
+	font-size: 11pt;
+}
+
+canvas {
+  background-color: #444;
+}
+
+button {
+  padding: 10px;
+}
+
+#output {
+	padding: 8px;
+  background-color: #ffa;
+}
+#output .err {
+	color: #900;
+}
