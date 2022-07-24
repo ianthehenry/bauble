@@ -76,7 +76,7 @@ float cast_light(vec3 destination, vec3 light, float radius) {
   float sharpness = 8.0;
 
   float last_distance = 1e20;
-  float progress = 0.5;
+  float progress = MINIMUM_HIT_DISTANCE;
   for (int i = 0; i < MAX_STEPS; i++) {
     vec3 p = destination + progress * direction;
     float distance = distance_field(p).distance;
@@ -114,12 +114,12 @@ vec3 march(vec3 ray_origin, vec3 ray_direction) {
     if (nearest.distance < MINIMUM_HIT_DISTANCE) {
       vec3 hit = p + nearest.distance * ray_direction;
       vec3 normal = calculate_normal(hit);
-      return 0.5 * (normal + 1.0);
+      
       vec3 light1 = vec3(100.0, -100.0, 200.0);
       vec3 light2 = vec3(-50.0, 30.0, 100.0);
 
-      float brightness1 = cast_light(hit, light1, 500.0);
-      float brightness2 = cast_light(hit, light2, 100.0);
+      float brightness1 = cast_light(hit + MINIMUM_HIT_DISTANCE * normal, light1, 500.0);
+      float brightness2 = cast_light(hit + MINIMUM_HIT_DISTANCE * normal, light2, 100.0);
 
       float diffuse1 = brightness1 * max(0.0, dot(normal, normalize(light1 - hit)));
       float diffuse2 = brightness2 * max(0.0, dot(normal, normalize(light2 - hit)));
@@ -152,9 +152,9 @@ vec3 march(vec3 ray_origin, vec3 ray_direction) {
 out vec4 frag_color;
 
 void main() {
-  vec2 uv = (gl_FragCoord.xy - vec2(256.0, 128.0));
+  vec2 uv = (gl_FragCoord.xy - vec2(512.0, 384.0));
 
-  const float zoom = 1.0;
+  const float zoom = 2.0;
   vec3 ray_origin = vec3(uv.x, -128.0, uv.y) / zoom;
   vec3 ray_direction = normalize(vec3(0.0, 1.0, 0.0));
 
@@ -179,3 +179,4 @@ void main() {
           ([err fiber] 
             (debug/stacktrace fiber err)))
         (eprint "cannot compile" value))))))
+

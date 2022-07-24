@@ -71,8 +71,8 @@ void init_gl() {
 }
 
 void draw_triangles() {
-  const GLfloat width = 512.0;
-  const GLfloat height = 256.0;
+  const GLfloat width = 1024.0;
+  const GLfloat height = 768.0;
 
   const GLfloat left = -0.5 * width;
   const GLfloat right = 0.5 * width;

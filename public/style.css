@@ -17,10 +17,6 @@ body {
 	font-size: 11pt;
 }
 
-canvas {
-  background-color: #444;
-}
-
 button {
   padding: 10px;
 }
@@ -31,4 +27,11 @@ button {
 }
 #output .err {
 	color: #900;
+}
+
+canvas {
+  width: 512px;
+  height: 384px;
+  margin: 0 auto;
+  display: block;
 }
