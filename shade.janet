@@ -33,7 +33,8 @@
 precision highp float;
 
 const int MAX_STEPS = 64;
-const float MINIMUM_HIT_DISTANCE = 0.1;
+const float MINIMUM_HIT_DISTANCE = 0.5;
+const float NORMAL_OFFSET = 0.005;
 const float MAXIMUM_TRACE_DISTANCE = 1000.0;
 
 struct Surface {
@@ -48,7 +49,7 @@ Surface distance_field(vec3 p) {
 }
 
 vec3 calculate_normal(vec3 p) {
-  const vec3 step = vec3(MINIMUM_HIT_DISTANCE * 0.05, 0.0, 0.0);
+  const vec3 step = vec3(NORMAL_OFFSET, 0.0, 0.0);
 
   return normalize(vec3(
     distance_field(p + step.xyy).distance - distance_field(p - step.xyy).distance,
@@ -140,11 +141,11 @@ vec3 march(vec3 ray_origin, vec3 ray_direction) {
     }
 
     if (distance > MAXIMUM_TRACE_DISTANCE) {
-      break;
+      return vec3(0.1);
     }
     distance += nearest.distance;
   }
-  return vec3(0.1);
+  return vec3(1.0, 0.1, 0.1);
 }
 
 
@@ -181,4 +182,6 @@ void main() {
           ([err fiber] 
             (debug/stacktrace fiber err)))
         (eprint "cannot compile " value))))))
+
+
 

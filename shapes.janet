@@ -11,6 +11,16 @@
 (defn- vec2 [[x y]]
   (string/format `vec2(%s, %s)` (float x) (float y)))
 
+(defn- axes [args]
+  (def result (buffer/new (length args)))
+  (each axis args
+    (case axis
+      :x (buffer/push-string result "x")
+      :y (buffer/push-string result "y")
+      :z (buffer/push-string result "z")
+      (error "unknown axis")))
+  result)
+
 (defn- mat3 [m]
   (string/format "mat3(%s, %s, %s, %s, %s, %s, %s, %s, %s)"
     (float (m 0)) (float (m 1)) (float (m 2))
@@ -39,6 +49,11 @@
   {:offset offset :expr expr} (:compile expr comp-state (string/format "(%s - %s)" coord (vec3 offset)))
   [offset expr] @{:offset offset :expr expr})
 
+(defcompiler offset
+  {:amount amount :expr expr}
+  (string/format "(%s - %s)" (:compile expr comp-state coord) (float amount))
+  [amount expr] @{:amount amount :expr expr})
+
 (defcompiler box
   {:size size :center center}
   (:function comp-state :box "s3d_box"
@@ -52,6 +67,30 @@
   (default center zero-vec3)
   @{:size size :center center})
 
+# cone is weird because it needs an axis to project itself along.
+# and the specification of height and angle is weird. i really want
+# radius/height and to solve for the angle. but that's easy enough.
+(defcompiler cone
+  {:angle angle :height height}
+  (:function comp-state :cone "s3d_cone"
+    [coord (vec2 [(math/sin angle) (math/cos angle)]) (float height)]
+    ["vec3 p" "vec2 c" "float h"] `
+    // c is the sin/cos of the angle, h is height
+    // Alternatively pass q instead of (c,h),
+    // which is the point at the base in 2D
+    vec2 q = h*vec2(c.x/c.y,-1.0);
+      
+    vec2 w = vec2( length(p.xz), p.y );
+    vec2 a = w - q*clamp( dot(w,q)/dot(q,q), 0.0, 1.0 );
+    vec2 b = w - q*vec2( clamp( w.x/q.x, 0.0, 1.0 ), 1.0 );
+    float k = sign( q.y );
+    float d = min(dot( a, a ),dot(b, b));
+    float s = max( k*(w.x*q.y-w.y*q.x),k*(w.y-q.y)  );
+    return sqrt(d)*sign(s);
+    `)
+  [angle height]
+  @{:angle angle :height height})
+
 (defcompiler sphere
   {:radius radius :center center}
   (:function comp-state :sphere "s3d_sphere"
@@ -63,6 +102,17 @@
   (default radius 1)
   (default center zero-vec3)
   @{:radius radius :center center})
+
+(defn- get-signed-axis [arg]
+  (case arg
+    :-x [-1 :x] :x [1 :x] :+x [1 :x]
+    :-y [-1 :y] :y [1 :y] :+y [1 :y]
+    :-z [-1 :z] :z [1 :z] :+z [1 :z]
+    (error "unknown signed axis")))
+
+(defcompiler half-space
+  {:axis axis :sign sign} (string (if (neg? sign) "" "-") coord "." (axes [axis]))
+  [arg] (let [[sign axis] (get-signed-axis arg)] @{:axis axis :sign sign}))
 
 (defcompiler line
   {:radius radius :start start :end end}
@@ -272,6 +322,34 @@
       :return "a")}
   [size & exprs] @{:size size :exprs exprs})
 
+# TODO: this has the somewhat fatal problem that the named arguments have to come at
+# the *end* of the argument list. I need to make my own function thingy that's like
+# aware of types and stuff, and lets me supply named arguments in arbitrary order.
+(defcompiler tile
+  self
+  (let [{:offset offset :expr expr :limit limit} self
+        offset (vec3 offset)]
+    (if (nil? limit)
+      (:compile expr comp-state
+        (string/format "(mod(%s+0.5*%s,%s)-0.5*%s)" coord offset offset offset))
+      (:function comp-state self "tile" [coord offset (vec3 limit)]
+        ["vec3 p" "vec3 offset" "vec3 limit"]
+        (string
+          "vec3 q = p - offset * clamp(round(p / offset), -limit, limit);"
+          "return " (:compile expr comp-state "q") ";"))))
+  [offset expr &named limit] @{:offset offset :expr expr :limit limit})
+
+(defcompiler morph
+  self
+  (let [{:weight weight :expr1 expr1 :expr2 expr2} self]
+    (:sdf-3d comp-state self "morph" coord (fn [coord]
+      (string/format
+        "float a = %s; float b = %s; return mix(a, b, %s);"
+        (:compile expr1 comp-state coord)
+        (:compile expr2 comp-state coord)
+        (float weight)))))
+  [weight expr1 expr2] @{:weight weight :expr1 expr1 :expr2 expr2})
+
 (def- TAU (* 2 math/pi))
 
 (defn tau [x] (* TAU x))
@@ -285,3 +363,4 @@
         transformed (map (fn [f] (if (tuple? f) [;f $expr] [f $expr])) fs)]
     ~(let [,$expr ,expr]
       (,;combine ,$expr ,;transformed))))
+
