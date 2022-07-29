@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+rm -rf public/js/janet.{js,wasm}
+
 # TODO: -O2
 emcc \
   -O0 \

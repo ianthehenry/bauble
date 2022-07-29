@@ -3,33 +3,55 @@
   padding: 0;
 }
 
+html {
+  height: 100%;
+}
+
 body {
 	color: black;
 	width: 100%;
 	height: 100%;
+  font-family: system-ui;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 40px 1fr 100px;
+  grid-template-areas: 
+    "header header"
+    "code   preview"
+    "output output";
 }
+
+header {
+  padding: 0 1em;
+  grid-area: header;
+  background-color: #f8f;
+  line-height: 40px;
+}
+
 #code-editor {
-  width: 100%;
-  height: 300px;
+  /*width: 100%;*/
+  /*height: 300px;*/
+  grid-area: code;
 }
+
+#output {
+  grid-area: output;
+  padding: 8px;
+  background-color: #ffa;
+  overflow: auto;
+}
+
+#output .err {
+	color: #900;
+}
+
 #code-editor, #output {
 	font-family: Menlo, monospace;
 	font-size: 11pt;
 }
 
-button {
-  padding: 10px;
-}
-
-#output {
-	padding: 8px;
-  background-color: #ffa;
-}
-#output .err {
-	color: #900;
-}
-
 canvas {
+  grid-area: preview;
   width: 512px;
   height: 384px;
   margin: 0 auto;

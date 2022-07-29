@@ -1,22 +1,26 @@
 (def comp-state-proto @{
-  :function (fn [self expr name-base coord f]
+  :function (fn [self key name-base args parameters body]
+    (defn invocation [name] (string/format "%s(%s)" name (string/join args ", ")))
     # if we've already compiled this node, return it
-    (if-let [cached ((self :cache) expr)]
-      (string/format "%s(%s)" (cached :name) coord)
+    (if-let [cached ((self :cache) key)]
+      (invocation (cached :name))
       (do
         (def name-index (get (self :names) name-base 0))
         (set ((self :names) name-base) (inc name-index))
         (def name (string/format "%s_%d" name-base name-index))
-        (def body (f "p"))
-        (def entry {:name name :body body})
+        (def entry {:name name :parameters parameters :body body})
 
         (array/push (self :functions) entry)
-        (set ((self :cache) expr) entry)
-        (string/format "%s(%s)" name coord))))
+        (set ((self :cache) key) entry)
+        (invocation name))))
+  :sdf-3d (fn [self key name-base coord get-body]
+    (:function self key name-base [coord] ["vec3 p"] (get-body "p")))
+  :sdf-2d (fn [self key name-base coord get-body]
+    (:function self key name-base [coord] ["vec2 p"] (get-body "p")))
   })
 
-(defn compile-function [{:body body :name name}]
-  (string/format "float %s(vec3 p) {\n%s\n}" name body))
+(defn compile-function [{:name name :parameters parameters :body body}]
+  (string/format "float %s(%s) {\n%s\n}" name (string/join parameters ", ") body))
 
 (defn make-fragment-shader [expr]
   (def comp-state @{:names @{} :cache @{} :functions @[]})
@@ -32,15 +36,6 @@ const int MAX_STEPS = 64;
 const float MINIMUM_HIT_DISTANCE = 0.1;
 const float MAXIMUM_TRACE_DISTANCE = 1000.0;
 
-float s3d_sphere(vec3 p, vec3 center, float radius) {
-  return length(p - center) - radius;
-}
-
-float s3d_box(vec3 p, vec3 center, vec3 size) {
-  vec3 q = abs(p - center) - size;
-  return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
-}
-
 struct Surface {
   float distance;
   vec3 color;
@@ -53,7 +48,7 @@ Surface distance_field(vec3 p) {
 }
 
 vec3 calculate_normal(vec3 p) {
-  const vec3 step = vec3(MINIMUM_HIT_DISTANCE * 0.1, 0.0, 0.0);
+  const vec3 step = vec3(MINIMUM_HIT_DISTANCE * 0.05, 0.0, 0.0);
 
   return normalize(vec3(
     distance_field(p + step.xyy).distance - distance_field(p - step.xyy).distance,
@@ -114,17 +109,20 @@ vec3 march(vec3 ray_origin, vec3 ray_direction) {
     if (nearest.distance < MINIMUM_HIT_DISTANCE) {
       vec3 hit = p + nearest.distance * ray_direction;
       vec3 normal = calculate_normal(hit);
+
+      return 0.5 * (normal + vec3(1.0));
       
-      vec3 light1 = vec3(100.0, -100.0, 200.0);
-      vec3 light2 = vec3(-50.0, 30.0, 100.0);
+      vec3 light1 = vec3(200.0, 0.0, 200.0);
+      vec3 light2 = vec3(0.0, -200.0, 100.0);
 
       float brightness1 = cast_light(hit + MINIMUM_HIT_DISTANCE * normal, light1, 500.0);
-      float brightness2 = cast_light(hit + MINIMUM_HIT_DISTANCE * normal, light2, 100.0);
+      float brightness2 = cast_light(hit + MINIMUM_HIT_DISTANCE * normal, light2, 500.0);
 
       float diffuse1 = brightness1 * max(0.0, dot(normal, normalize(light1 - hit)));
-      float diffuse2 = brightness2 * max(0.0, dot(normal, normalize(light2 - hit)));
+      
+      float diffuse2 = 0.25 * brightness2 * max(0.0, dot(normal, normalize(light2 - hit)));
 
-      float ambient = 0.4;
+      float ambient = 0.2;
 
       float col = 0.0;
       //mat3 mat = align_matrix(normal);
@@ -146,8 +144,9 @@ vec3 march(vec3 ray_origin, vec3 ray_direction) {
     }
     distance += nearest.distance;
   }
-  return vec3(0.25);
+  return vec3(0.1);
 }
+
 
 out vec4 frag_color;
 
@@ -155,13 +154,16 @@ void main() {
   vec2 uv = (gl_FragCoord.xy - vec2(512.0, 384.0));
 
   const float zoom = 2.0;
-  vec3 ray_origin = vec3(uv.x, -128.0, uv.y) / zoom;
+  vec3 ray_origin = vec3(uv.x, -256.0, uv.y) / zoom;
   vec3 ray_direction = normalize(vec3(0.0, 1.0, 0.0));
 
-  frag_color = vec4(march(ray_origin, ray_direction), 1.0);
+  vec3 color = march(ray_origin, ray_direction);
+
   //if (int(gl_FragCoord.x + gl_FragCoord.y) % 2 == 0) {
-  // frag_color = floor(frag_color * 16.0f) / 16.0f;
+  // color = floor(color * 16.0f) / 16.0f;
   //}
+
+  frag_color = vec4(pow(color, vec3(1.0 / 2.0)), 1.0);
 }
 `)))
 
@@ -178,5 +180,5 @@ void main() {
           (make-fragment-shader value)
           ([err fiber] 
             (debug/stacktrace fiber err)))
-        (eprint "cannot compile" value))))))
+        (eprint "cannot compile " value))))))
 

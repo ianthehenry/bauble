@@ -1,5 +1,10 @@
 (function() {
 
+function clear() {
+  const output = document.getElementById('output');
+  output.innerHTML = "";
+}
+
 function print(text, isErr=false) {
   const output = document.getElementById('output');
   const span = document.createElement('span');
@@ -25,12 +30,14 @@ function onReady(f) {
   }
 }
 
+const preamble = '(use ./shapes)\n'
+
 function executeJanet(code) {
   if (evaluateJanet === null) {
     console.error('not ready yet');
     return;
   }
-  const result = evaluateJanet(code);
+  const result = evaluateJanet(preamble + code);
   if (result !== 0) {
     print('ERREXIT: ' + result, true);
   }
@@ -56,13 +63,10 @@ document.addEventListener("DOMContentLoaded", function (e) {
 
   function runCode() {
     setTimeout(function() {
+      clear();
       executeJanet(editor.getValue());
     }, 0);
   }
-
-  document.getElementById('run-button').addEventListener('click', function (e) {
-    runCode();
-  });
 
   editor.session.setMode("ace/mode/clojure");
   editor.setOptions({

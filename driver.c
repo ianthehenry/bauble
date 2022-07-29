@@ -125,6 +125,8 @@ JANET_FN(set_fragment_shader, "(set-fragment-shader)", "") {
   janet_fixarity(argc, 1);
   const uint8_t *shader_source = janet_getstring(argv, 0);
 
+  printf("%s\n", shader_source);
+
   if (current_fragment_shader == 0) {
     init_gl();
   } else {

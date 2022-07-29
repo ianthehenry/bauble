@@ -7,21 +7,17 @@
   <script type="text/javascript" src="/ace/mode-clojure.js"></script>
 </head>
 <body>
+  <header>SDF Playground</header>
   <canvas id="render-target" width="1024" height="768"></canvas>
-  <div id="banner">
-    <button id="run-button">Run</button>
-  </div>
-  <div id="code-editor">(use ./shapes)
-
-(def a
+  <div id="code-editor">(def monolith
   (->> (box [20 20 50])
     (rotate-y (tau 0.125))
     (rotate-z (tau 0.125))
     (translate [20 0 50])))
 
-(def b (->> (sphere 50) (translate [20 0 0])))
+(def orb (->> (sphere 50) (translate [20 0 0])))
 
-(union a b)
+(union monolith orb)
 </div>
   <pre id="output"></pre>
   <script type="text/javascript" src="/js/playground.js"></script>
