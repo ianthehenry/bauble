@@ -1,7 +1,10 @@
 import {basicSetup} from "codemirror"
 import {EditorView, keymap, ViewUpdate} from "@codemirror/view"
 import {indentWithTab} from "@codemirror/commands"
+import {syntaxTree} from "@codemirror/language"
+import {SyntaxNode} from "@lezer/common"
 import {janet} from "codemirror-lang-janet"
+import {EditorState, StateCommand, EditorSelection, SelectionRange, findClusterBreak} from "@codemirror/state"
 
 function clear() {
   const output = document.getElementById('output')!;
@@ -46,7 +49,7 @@ function executeJanet(code: string) {
   }
 }
 
-export interface MyEmscripten extends EmscriptenModule {
+interface MyEmscripten extends EmscriptenModule {
   cwrap: typeof cwrap;
 }
 
@@ -64,6 +67,49 @@ const Module: Partial<MyEmscripten> = {
   }],
 };
 
+function isNumberNode(node: SyntaxNode) {
+  return node.type.name === 'Number';
+}
+
+const incrementNumber: StateCommand = ({state, dispatch}) => {
+  const range = state.selection.ranges[state.selection.mainIndex];
+  const tree = syntaxTree(state);
+
+  let node = tree.resolveInner(range.head, -1);
+  if (!isNumberNode(node)) {
+    node = tree.resolveInner(range.head, 1);
+  }
+  if (!isNumberNode(node)) {
+    return false;
+  }
+
+  // TODO: we shouldn't be doing any floating point math; we should
+  // parse this as a decimal number and increment it as a decimal number
+  const numberText = state.sliceDoc(node.from, node.to);
+  const number = Number(numberText);
+  if (isNaN(number)) {
+    console.error('unable to parse number: ', numberText);
+    return false;
+  }
+
+  const newNumber = number + 1;
+  const newNumberText = newNumber.toString();
+
+  const lengthDifference = newNumberText.length - numberText.length;
+
+  dispatch(state.update({
+    changes: {
+      from: node.from,
+      to: node.to,
+      insert: newNumberText,
+    },
+    selection: EditorSelection.single(node.from, node.to + lengthDifference),
+    scrollIntoView: true,
+    userEvent: "increment"
+  }));
+  return true;
+}
+
 document.addEventListener("DOMContentLoaded", function (e) {
   function runCode() {
     setTimeout(function() {
@@ -71,12 +117,14 @@ document.addEventListener("DOMContentLoaded", function (e) {
       executeJanet(editor.state.doc.toString());
     }, 0);
   }
-  // console.log(janet());
   const editor = new EditorView({
     extensions: [
       basicSetup,
       janet(),
-      keymap.of([indentWithTab]),
+      keymap.of([
+        indentWithTab,
+        { key: "Alt-h", run: incrementNumber },
+      ]),
       EditorView.updateListener.of(function(viewUpdate: ViewUpdate) {
         if (viewUpdate.docChanged) {
           runCode();
