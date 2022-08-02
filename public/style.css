@@ -52,7 +52,7 @@ header {
 canvas {
   grid-area: preview;
   width: 512px;
-  height: 384px;
+  height: 512px;
   margin: 0 auto;
   display: block;
 }

@@ -152,7 +152,8 @@ vec3 march(vec3 ray_origin, vec3 ray_direction) {
 out vec4 frag_color;
 
 void main() {
-  vec2 uv = (gl_FragCoord.xy - vec2(512.0, 384.0));
+  vec2 resolution = vec2(1024.0, 1024.0);
+  vec2 uv = gl_FragCoord.xy - 0.5 * resolution;
 
   const float zoom = 2.0;
   vec3 ray_origin = vec3(uv.x, -256.0, uv.y) / zoom;
@@ -182,6 +183,3 @@ void main() {
           ([err fiber] 
             (debug/stacktrace fiber err)))
         (eprint "cannot compile " value))))))
-
-
-
