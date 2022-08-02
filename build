@@ -2,11 +2,26 @@
 
 set -euo pipefail
 
+rm -rf public/js/main.js
+
+rollup_args="--no-treeshake --no-indent"
+emcc_args="-O0"
+if [[ $# -gt 0 && "$1" == "prod" ]]; then
+  rollup_args="-p rollup-plugin-terser"
+  emcc_args="-O3"
+fi
+
+node_modules/.bin/rollup main.ts \
+  -f iife \
+  -o public/js/main.js \
+  -p @rollup/plugin-node-resolve \
+  -p @rollup/plugin-typescript \
+  $rollup_args
+
 rm -rf public/js/janet.{js,wasm}
 
-# TODO: -O2
 emcc \
-  -O0 \
+  $emcc_args \
   -o public/js/janet.js \
   -I janet \
   janet/janet.c \

@@ -1,26 +1,17 @@
 <!doctype html>
 <html>
 <head>
+  <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+  <meta content="utf-8" http-equiv="encoding">
   <title>SDF Playground</title>
   <link rel="stylesheet" href="style.css">
-  <script type="text/javascript" src="/ace/ace.js"></script>
-  <script type="text/javascript" src="/ace/mode-clojure.js"></script>
+  <script type="text/javascript" src="/js/main.js"></script>
+  <script type="text/javascript" src="/js/janet.js"></script>
 </head>
 <body>
   <header>SDF Playground</header>
   <canvas id="render-target" width="1024" height="768"></canvas>
-  <div id="code-editor">(def monolith
-  (->> (box [20 20 50])
-    (rotate-y (tau 0.125))
-    (rotate-z (tau 0.125))
-    (translate [20 0 50])))
-
-(def orb (->> (sphere 50) (translate [20 0 0])))
-
-(union monolith orb)
-</div>
+  <div id="editor-container"></div>
   <pre id="output"></pre>
-  <script type="text/javascript" src="/js/playground.js"></script>
-  <script type="text/javascript" src="/js/janet.js"></script>
 </body>
 </html>

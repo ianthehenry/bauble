@@ -1,2 +1,3 @@
+public/js/* linguist-generated=true
 janet/* linguist-vendored=true
-public/ace/* linguist-vendored=true
+yarn.lock linguist-generated=true
