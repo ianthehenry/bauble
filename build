@@ -2,36 +2,56 @@
 
 set -euo pipefail
 
-rm -rf public/js/main.js
+prod_build=false
+build_js=true
+build_wasm=true
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --prod) prod_build=true ;;
+    --js) build_wasm=false ;;
+    --wasm) build_js=false ;;
+    *)
+      echo "unknown flag $1" >&2
+      exit 1 ;;
+  esac
+  shift
+done
 
 rollup_args="--no-treeshake --no-indent"
 emcc_args="-O0"
-if [[ $# -gt 0 && "$1" == "prod" ]]; then
+if [[ "$prod_build" == "true" ]]; then
   rollup_args="-p rollup-plugin-terser"
   emcc_args="-O3"
 fi
 
-node_modules/.bin/rollup main.ts \
-  -f iife \
-  -o public/js/main.js \
-  -p @rollup/plugin-node-resolve \
-  -p @rollup/plugin-typescript \
-  $rollup_args
+if [[ "$build_js" == "true" ]]; then
+  rm -rf public/js/main.js
 
-rm -rf public/js/janet.{js,wasm}
+  node_modules/.bin/rollup main.ts \
+    -f iife \
+    -o public/js/main.js \
+    -p @rollup/plugin-node-resolve \
+    -p @rollup/plugin-typescript \
+    $rollup_args
+fi
 
-emcc \
-  $emcc_args \
-  -o public/js/janet.js \
-  -I janet \
-  janet/janet.c \
-  driver.c \
-  -lembind \
-  -std=c11 \
-  --embed-file shade.janet \
-  --embed-file shapes.janet \
-  -s EXPORTED_FUNCTIONS=['_run_janet'] \
-  -s USE_WEBGL2=1 \
-  -s ALLOW_MEMORY_GROWTH=1 \
-  -s AGGRESSIVE_VARIABLE_ELIMINATION=1 \
-  -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap']
+if [[ "$build_wasm" == "true" ]]; then
+  rm -rf public/js/janet.{js,wasm}
+
+  emcc \
+    $emcc_args \
+    -o public/js/janet.js \
+    -I janet \
+    janet/janet.c \
+    driver.c \
+    -lembind \
+    -std=c11 \
+    --embed-file shade.janet \
+    --embed-file shapes.janet \
+    -s EXPORTED_FUNCTIONS=['_run_janet'] \
+    -s USE_WEBGL2=1 \
+    -s ALLOW_MEMORY_GROWTH=1 \
+    -s AGGRESSIVE_VARIABLE_ELIMINATION=1 \
+    -s EXPORTED_RUNTIME_METHODS=['ccall','cwrap']
+fi
