@@ -148,14 +148,15 @@ vec3 march(vec3 ray_origin, vec3 ray_direction) {
   return vec3(1.0, 0.1, 0.1);
 }
 
-
 out vec4 frag_color;
 
 void main() {
-  vec2 resolution = vec2(1024.0, 1024.0);
+  const float zoom = 2.0;
+  const float gamma = 2.2;
+  const vec2 resolution = vec2(1024.0, 1024.0);
+
   vec2 uv = gl_FragCoord.xy - 0.5 * resolution;
 
-  const float zoom = 2.0;
   vec3 ray_origin = vec3(uv.x, -256.0, uv.y) / zoom;
   vec3 ray_direction = normalize(vec3(0.0, 1.0, 0.0));
 
@@ -165,7 +166,7 @@ void main() {
   // color = floor(color * 16.0f) / 16.0f;
   //}
 
-  frag_color = vec4(pow(color, vec3(1.0 / 2.0)), 1.0);
+  frag_color = vec4(pow(color, vec3(1.0 / gamma)), 1.0);
 }
 `)))
 
