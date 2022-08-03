@@ -33,6 +33,10 @@ header {
   display: flex;
 }
 
+#editor-container > * {
+  flex: 1;
+}
+
 #output {
   grid-area: output;
   padding: 8px;

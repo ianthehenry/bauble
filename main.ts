@@ -1,10 +1,14 @@
-import {basicSetup} from "codemirror"
-import {EditorView, keymap, ViewUpdate} from "@codemirror/view"
-import {indentWithTab} from "@codemirror/commands"
-import {syntaxTree} from "@codemirror/language"
-import {SyntaxNode} from "@lezer/common"
-import {janet} from "codemirror-lang-janet"
-import {EditorState, StateCommand, EditorSelection, SelectionRange, findClusterBreak} from "@codemirror/state"
+import {basicSetup} from 'codemirror'
+import {EditorView, keymap, ViewUpdate} from '@codemirror/view'
+import {indentWithTab, cursorDocEnd} from '@codemirror/commands'
+import {syntaxTree} from '@codemirror/language'
+import {SyntaxNode} from '@lezer/common'
+import {janet} from 'codemirror-lang-janet'
+import {
+  EditorState, StateCommand, EditorSelection,
+  SelectionRange, findClusterBreak, Transaction
+} from '@codemirror/state'
+import Big from 'big.js';
 
 function clear() {
   const output = document.getElementById('output')!;
@@ -71,7 +75,9 @@ function isNumberNode(node: SyntaxNode) {
   return node.type.name === 'Number';
 }
 
-const incrementNumber: StateCommand = ({state, dispatch}) => {
+type StateCommandInput = {state: EditorState, dispatch: (transaction: Transaction) => void}
+
+function alterNumber({state, dispatch}: StateCommandInput, amount: Big) {
   const range = state.selection.ranges[state.selection.mainIndex];
   const tree = syntaxTree(state);
 
@@ -86,13 +92,15 @@ const incrementNumber: StateCommand = ({state, dispatch}) => {
   // TODO: we shouldn't be doing any floating point math; we should
   // parse this as a decimal number and increment it as a decimal number
   const numberText = state.sliceDoc(node.from, node.to);
-  const number = Number(numberText);
-  if (isNaN(number)) {
+  let number;
+  try {
+    number = Big(numberText);
+  } catch (e) {
     console.error('unable to parse number: ', numberText);
     return false;
   }
 
-  const newNumber = number + 1;
+  const newNumber = number.add(amount);
   const newNumberText = newNumber.toString();
 
   const lengthDifference = newNumberText.length - numberText.length;
@@ -117,13 +125,17 @@ document.addEventListener("DOMContentLoaded", function (e) {
       executeJanet(editor.state.doc.toString());
     }, 0);
   }
+
+  const incrementNumber = (editor: StateCommandInput) => alterNumber(editor, Big('1'));
+  const decrementNumber = (editor: StateCommandInput) => alterNumber(editor, Big('-1'));
+
   const editor = new EditorView({
     extensions: [
       basicSetup,
       janet(),
       keymap.of([
         indentWithTab,
-        { key: "Alt-h", run: incrementNumber },
+        { key: "Alt-h", run: incrementNumber, shift: decrementNumber },
       ]),
       EditorView.updateListener.of(function(viewUpdate: ViewUpdate) {
         if (viewUpdate.docChanged) {
@@ -144,9 +156,32 @@ document.addEventListener("DOMContentLoaded", function (e) {
 `
   });
 
+  // honestly this is so annoying on firefox that
+  // i'm not even gonna bother
+  const usePointerLock = false;
+
+  if (usePointerLock) {
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Control') {
+        document.body.requestPointerLock();
+      }
+    });
+    document.addEventListener('keyup', (e) => {
+      if (e.key === 'Control') {
+        document.exitPointerLock();
+      }
+    });
+  }
+
+  document.body.addEventListener('pointermove', (e) => {
+    if (e.ctrlKey) {
+      alterNumber(editor, Big(e.movementX).times('1'));
+    }
+  });
+
   onReady(runCode);
   editor.focus();
-  // editor.navigateFileEnd();
+  cursorDocEnd(editor);
 });
 
 (<any> window).Module = Module;
