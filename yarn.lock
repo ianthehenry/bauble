@@ -43,7 +43,7 @@
     "@codemirror/view" "^6.0.0"
     "@lezer/common" "^1.0.0"
 
-"@codemirror/language@^6.0.0":
+"@codemirror/language@^6.0.0", "@codemirror/language@^6.2.1":
   version "6.2.1"
   resolved "https://registry.yarnpkg.com/@codemirror/language/-/language-6.2.1.tgz#cb10cd785a76e50ecd2fe2dc59ff66af8a41b87a"
   integrity sha512-MC3svxuvIj0MRpFlGHxLS6vPyIdbTr2KKPEW46kCoCXw2ktb4NTkpkPBI/lSP/FoNXLCBJ0mrnUi1OoZxtpW1Q==
@@ -146,6 +146,13 @@
   dependencies:
     "@lezer/common" "^1.0.0"
 
+"@lezer/lr@^1.2.0":
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/@lezer/lr/-/lr-1.2.1.tgz#481756627185629179a25d0eb2d690c39cd20541"
+  integrity sha512-RpHRs+Q+5tPsXtobSfSeRFRAnTRD0e4bApDvo74O+JiaWq9812x5S8WgftNX67owdaTQXCB5E8XZGALo4Wt77A==
+  dependencies:
+    "@lezer/common" "^1.0.0"
+
 "@rollup/plugin-node-resolve@^13.3.0":
   version "13.3.0"
   resolved "https://registry.yarnpkg.com/@rollup/plugin-node-resolve/-/plugin-node-resolve-13.3.0.tgz#da1c5c5ce8316cef96a2f823d111c1e4e498801c"
@@ -237,6 +244,15 @@ chalk@^2.0.0:
     ansi-styles "^3.2.1"
     escape-string-regexp "^1.0.5"
     supports-color "^5.3.0"
+
+codemirror-lang-janet@^0.1.0:
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/codemirror-lang-janet/-/codemirror-lang-janet-0.1.0.tgz#bb6628bcaea0e0dc83d906ce0a3e47062c7ab9bc"
+  integrity sha512-z4Ho44sDg/N4dPYFiJ6Vfs0V0PFyTvX7TKt/ALo/Uz8N5BhBLTuLuTGIy8ncTlOR0NsbnlrDelsU62i61rwkEg==
+  dependencies:
+    "@codemirror/language" "^6.2.1"
+    "@lezer/highlight" "^1.0.0"
+    "@lezer/lr" "^1.2.0"
 
 codemirror@^6.0.1:
   version "6.0.1"

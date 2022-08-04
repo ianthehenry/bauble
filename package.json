@@ -4,7 +4,7 @@
   "dependencies": {
     "big.js": "^6.2.1",
     "codemirror": "^6.0.1",
-    "codemirror-lang-janet": "*"
+    "codemirror-lang-janet": "^0.1.0"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^13.3.0",
