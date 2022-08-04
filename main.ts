@@ -146,8 +146,7 @@ document.addEventListener("DOMContentLoaded", function (e) {
     parent: document.getElementById('editor-container')!,
     doc: `(def monolith
   (->> (box [20 20 50])
-    (rotate-y (tau 0.125))
-    (rotate-z (tau 0.125))
+    (rotate :y (tau 0.125) :z (tau 0.125))
     (translate [20 0 50])))
 
 (def orb (->> (sphere 50) (translate [20 0 0])))

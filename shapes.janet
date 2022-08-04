@@ -153,15 +153,6 @@
     (:compile expr comp-state (string/format "(%s * %s)" coord (mat3 matrix))))}
   [matrix expr] @{:matrix matrix :expr expr})
 
-(defn rotate-x [angle expr]
-  (transform (rotate-x-matrix angle) expr))
-
-(defn rotate-y [angle expr]
-  (transform (rotate-y-matrix angle) expr))
-
-(defn rotate-z [angle expr]
-  (transform (rotate-z-matrix angle) expr))
-
 # our matrices are just flat tuples. we could do this in C but whatever.
 (defn- matrix-multiply-3 [a b]
   (def [a11 a12 a13 a21 a22 a23 a31 a32 a33] a)
