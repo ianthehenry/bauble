@@ -1,13 +1,12 @@
-import {basicSetup} from 'codemirror'
-import {EditorView, keymap, ViewUpdate} from '@codemirror/view'
-import {indentWithTab, cursorDocEnd} from '@codemirror/commands'
-import {syntaxTree} from '@codemirror/language'
-import {SyntaxNode} from '@lezer/common'
-import {janet} from 'codemirror-lang-janet'
+import {basicSetup} from 'codemirror';
+import {EditorView, keymap, ViewUpdate} from '@codemirror/view';
+import {indentWithTab, cursorDocEnd} from '@codemirror/commands';
+import {syntaxTree} from '@codemirror/language';
+import {SyntaxNode} from '@lezer/common';
+import {janet} from 'codemirror-lang-janet';
 import {
-  EditorState, StateCommand, EditorSelection,
-  SelectionRange, findClusterBreak, Transaction
-} from '@codemirror/state'
+  EditorState, EditorSelection, Transaction,
+} from '@codemirror/state';
 import Big from 'big.js';
 
 function clear() {
@@ -25,8 +24,8 @@ function print(text: string, isErr=false) {
   output.scrollTop = output.scrollHeight;
 }
 
-let evaluateJanet: ((code:string) => number) | null = null;
-let ready = function() {};
+let evaluateJanet: ((_: string) => number) | null = null;
+let ready: (() => void) | null = function() { ready = null; };
 
 function onReady(f: (() => void)) {
   if (ready == null) {
@@ -36,7 +35,7 @@ function onReady(f: (() => void)) {
     ready = function() {
       old();
       f();
-    };  
+    };
   }
 }
 
@@ -70,12 +69,16 @@ function executeJanet(code: string) {
   }
   const result = evaluateJanet(preamble + code);
   if (result !== 0) {
-    print('ERREXIT: ' + result, true);
+    print('ERREXIT: ' + result.toString(), true);
   }
 }
 
 interface MyEmscripten extends EmscriptenModule {
   cwrap: typeof cwrap;
+}
+
+declare global {
+  interface Window { Module: Partial<MyEmscripten>; }
 }
 
 const Module: Partial<MyEmscripten> = {
@@ -96,7 +99,7 @@ function isNumberNode(node: SyntaxNode) {
   return node.type.name === 'Number';
 }
 
-type StateCommandInput = {state: EditorState, dispatch: (transaction: Transaction) => void}
+interface StateCommandInput {state: EditorState, dispatch: (_: Transaction) => void}
 
 function alterNumber({state, dispatch}: StateCommandInput, amount: Big) {
   const range = state.selection.ranges[state.selection.mainIndex];
@@ -137,12 +140,12 @@ function alterNumber({state, dispatch}: StateCommandInput, amount: Big) {
     },
     selection: EditorSelection.single(node.from, node.to + lengthDifference),
     scrollIntoView: true,
-    userEvent: "increment"
+    userEvent: 'increment',
   }));
   return true;
 }
 
-document.addEventListener("DOMContentLoaded", function (e) {
+document.addEventListener("DOMContentLoaded", (_) => {
   function runCode() {
     setTimeout(function() {
       clear();
@@ -170,7 +173,7 @@ document.addEventListener("DOMContentLoaded", function (e) {
       }),
     ],
     parent: document.getElementById('editor-container')!,
-    doc: script
+    doc: script,
   });
 
   // honestly this is so annoying on firefox that
@@ -196,7 +199,7 @@ document.addEventListener("DOMContentLoaded", function (e) {
     }
   });
 
-  window.addEventListener('beforeunload', (e) => {
+  window.addEventListener('beforeunload', (_e) => {
     localStorage.setItem('script', editor.state.doc.toString());
   });
 
@@ -205,4 +208,4 @@ document.addEventListener("DOMContentLoaded", function (e) {
   cursorDocEnd(editor);
 });
 
-(<any> window).Module = Module;
+window.Module = Module;
