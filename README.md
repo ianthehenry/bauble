@@ -10,7 +10,7 @@ Requires [`emscripten`](https://emscripten.org/). Janet is vendored, so it does 
 
 Also requires [`yarn`](https://yarnpkg.com/), to install JavaScript dependencies.
 
-This is horrible, but because [`codemirror-lang-janet`](https://github.com/ianthehenry/codemirror-lang-janet) is not actually installed anywhere yet, you'll have to edit `package.json` to remove it as a dependency before you run `yarn`. Run `yarn` to install everything else, then manually install `codemirror-lang-janet` by cloning the repo and running [`yalc publish`](https://github.com/wclr/yalc) from the `codemirror-lang-janet` repository. Then run `yalc link codemirror-lang-janet` from this repository, and you'll be in business.
+`bauble` is being developed alongside [`codemirror-lang-janet`](https://github.com/ianthehenry/codemirror-lang-janet). If you want to make changes to the grammar, clone that repo and run [`yalc publish`](https://github.com/wclr/yalc) from the root of it. Then run `yalc link codemirror-lang-janet` in this repository, and you'll be able to see your changes locally.
 
 # Building
 
@@ -18,9 +18,6 @@ Run `./build` to compile Janet to wasm; run `./build --prod` for an optimized, m
 
 # Running
 
-Serve files from the `public/` directory however is most convenient for you. For example:
-
 ```
-$ cd public
-$ python3 -m http.server
+$ node_modules/.bin/alive-server public
 ```
