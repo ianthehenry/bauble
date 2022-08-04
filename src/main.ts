@@ -144,14 +144,24 @@ document.addEventListener("DOMContentLoaded", function (e) {
       }),
     ],
     parent: document.getElementById('editor-container')!,
-    doc: `(def monolith
-  (->> (box [20 20 50])
-    (rotate :y (tau 0.125) :z (tau 0.125))
-    (translate [20 0 50])))
+    doc: `(def top (cylinder :z 12 10))
 
-(def orb (->> (sphere 50) (translate [20 0 0])))
+(def body 
+  (->> (sphere 100)
+    (morph 0.9 (sphere 90 [0 0 -20]))
+    (smooth-union 92 (sphere -17 [0 0 -130]))
+    (smooth-union 10 (translate [0 0 100] top))))
 
-(union monolith orb)
+(def hat
+  (smooth-union 10
+    (smooth-subtract 2
+      (onion 1 top)
+      (half-space :-z))
+    (cylinder :z 1 30)))
+
+(union
+  body
+  (translate [0 0 107] hat))
 `
   });
 
