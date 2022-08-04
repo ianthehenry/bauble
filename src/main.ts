@@ -120,9 +120,12 @@ function alterNumber({state, dispatch}: StateCommandInput, amount: Big) {
     console.error('unable to parse number: ', numberText);
     return false;
   }
+  const decimalPointIndex = numberText.indexOf('.');
+  const digitsAfterDecimalPoint = decimalPointIndex < 0 ? 0 : numberText.length - decimalPointIndex - 1;
+  const increment = Big('10').pow(-digitsAfterDecimalPoint);
 
-  const newNumber = number.add(amount);
-  const newNumberText = newNumber.toString();
+  const newNumber = number.add(amount.times(increment));
+  const newNumberText = newNumber.toFixed(digitsAfterDecimalPoint);
 
   const lengthDifference = newNumberText.length - numberText.length;
 
