@@ -200,7 +200,12 @@ document.addEventListener("DOMContentLoaded", (_) => {
   });
 
   window.addEventListener('beforeunload', (_e) => {
-    localStorage.setItem('script', editor.state.doc.toString());
+    const script = editor.state.doc.toString();
+    if (script.trim().length > 0) {
+      localStorage.setItem('script', script);
+    } else {
+      localStorage.removeItem('script');
+    }
   });
 
   onReady(runCode);
