@@ -11,15 +11,32 @@
 (defn- vec2 [[x y]]
   (string/format `vec2(%s, %s)` (float x) (float y)))
 
-(defn- axes [args]
+(defn- other-axes [axis]
+  (case axis
+    :x [:y :z]
+    :y [:x :z]
+    :z [:x :y]
+    (error "unknown axis")))
+
+(defn- string-of-axis [axis]
+  (case axis
+    :x "x"
+    :y "y"
+    :z "z"
+    (error "unknown axis")))
+
+(defn- string-of-axes [args]
   (def result (buffer/new (length args)))
   (each axis args
-    (case axis
-      :x (buffer/push-string result "x")
-      :y (buffer/push-string result "y")
-      :z (buffer/push-string result "z")
-      (error "unknown axis")))
+    (buffer/push-string result (string-of-axis axis)))
   result)
+
+(defn- split-signed-axis [arg]
+  (case arg
+    :-x [-1 :x] :x [1 :x] :+x [1 :x]
+    :-y [-1 :y] :y [1 :y] :+y [1 :y]
+    :-z [-1 :z] :z [1 :z] :+z [1 :z]
+    (error "unknown signed axis")))
 
 (defn- mat3 [m]
   (string/format "mat3(%s, %s, %s, %s, %s, %s, %s, %s, %s)"
@@ -54,6 +71,18 @@
   (string/format "(%s - %s)" (:compile expr comp-state coord) (float amount))
   [amount expr] @{:amount amount :expr expr})
 
+(defcompiler onion
+  {:thickness thickness :expr expr}
+  (string/format "(abs(%s) - %s)" (:compile expr comp-state coord) (float thickness))
+  [thickness expr] @{:thickness thickness :expr expr})
+
+(defcompiler scale
+  {:amount amount :expr expr}
+  (string/format "(%s * %s)"
+    (:compile expr comp-state (string/format "(%s / %s)" coord (float amount)))
+    (float amount))
+  [amount expr] @{:amount amount :expr expr})
+
 (defcompiler box
   {:size size :center center}
   (:function comp-state :box "s3d_box"
@@ -67,29 +96,42 @@
   (default center zero-vec3)
   @{:size size :center center})
 
-# cone is weird because it needs an axis to project itself along.
-# and the specification of height and angle is weird. i really want
-# radius/height and to solve for the angle. but that's easy enough.
+(defcompiler cylinder
+  {:radius radius :height height :axis axis}
+  (:function comp-state [:cylinder axis] "s3d_cylinder"
+    [coord (float radius) (float height)]
+    ["vec3 p" "float radius" "float height"]
+    (string/format `
+    vec2 d = abs(vec2(length(p.%s), p.%s)) - vec2(radius, height);
+    return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
+    ` (string-of-axes (other-axes axis)) (string-of-axis axis)))
+  [axis radius height]
+  @{:axis axis :radius radius :height height})
+
 (defcompiler cone
-  {:angle angle :height height}
-  (:function comp-state :cone "s3d_cone"
-    [coord (vec2 [(math/sin angle) (math/cos angle)]) (float height)]
-    ["vec3 p" "vec2 c" "float h"] `
-    // c is the sin/cos of the angle, h is height
-    // Alternatively pass q instead of (c,h),
-    // which is the point at the base in 2D
-    vec2 q = h*vec2(c.x/c.y,-1.0);
-      
-    vec2 w = vec2( length(p.xz), p.y );
-    vec2 a = w - q*clamp( dot(w,q)/dot(q,q), 0.0, 1.0 );
-    vec2 b = w - q*vec2( clamp( w.x/q.x, 0.0, 1.0 ), 1.0 );
-    float k = sign( q.y );
-    float d = min(dot( a, a ),dot(b, b));
-    float s = max( k*(w.x*q.y-w.y*q.x),k*(w.y-q.y)  );
-    return sqrt(d)*sign(s);
-    `)
-  [angle height]
-  @{:angle angle :height height})
+  {:axis axis :radius radius :height height :upside-down upside-down}
+  (:function comp-state [:cone axis] "s3d_cone"
+    [coord (float radius) (float height)]
+    ["vec3 p" "float radius" "float height"] 
+    (string/format `
+    vec2 q = vec2(radius, height);
+    vec2 w = vec2(length(p.%s), %sp.%s);
+    vec2 a = w - q * clamp(dot(w, q) / dot(q, q), 0.0, 1.0);
+    vec2 b = w - q * vec2(clamp(w.x / q.x, 0.0, 1.0), 1.0);
+    float k = sign(q.y);
+    float d = min(dot(a, a), dot(b, b));
+    float s = max(k * (w.x * q.y - w.y * q.x), k * (w.y - q.y));
+    return sqrt(d) * sign(s);
+    `
+    (string-of-axes (other-axes axis))
+    (if upside-down "" "height - ")
+    (string-of-axis axis)))
+  [signed-axis radius height]
+  (let [[sign axis] (split-signed-axis signed-axis)]
+    @{:axis axis
+      :radius radius
+      :height (* sign (math/abs height))
+      :upside-down (neg? height)}))
 
 (defcompiler sphere
   {:radius radius :center center}
@@ -103,16 +145,11 @@
   (default center zero-vec3)
   @{:radius radius :center center})
 
-(defn- get-signed-axis [arg]
-  (case arg
-    :-x [-1 :x] :x [1 :x] :+x [1 :x]
-    :-y [-1 :y] :y [1 :y] :+y [1 :y]
-    :-z [-1 :z] :z [1 :z] :+z [1 :z]
-    (error "unknown signed axis")))
-
 (defcompiler half-space
-  {:axis axis :sign sign} (string (if (neg? sign) "" "-") coord "." (axes [axis]))
-  [arg] (let [[sign axis] (get-signed-axis arg)] @{:axis axis :sign sign}))
+  {:axis axis :sign sign} (string (if (neg? sign) "" "-") coord "." (string-of-axes [axis]))
+  [signed-axis]
+  (let [[sign axis] (split-signed-axis signed-axis)]
+    @{:axis axis :sign sign}))
 
 (defcompiler line
   {:radius radius :start start :end end}
