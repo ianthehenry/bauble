@@ -32,7 +32,7 @@
 #version 300 es
 precision highp float;
 
-const int MAX_STEPS = 64;
+const int MAX_STEPS = 256;
 const float MINIMUM_HIT_DISTANCE = 0.5;
 const float NORMAL_OFFSET = 0.005;
 const float MAXIMUM_TRACE_DISTANCE = 1000.0;
@@ -184,5 +184,4 @@ void main() {
           ([err fiber] 
             (debug/stacktrace fiber err)))
         (eprint "cannot compile " value))))))
-
 
