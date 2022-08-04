@@ -40,6 +40,27 @@ function onReady(f: (() => void)) {
   }
 }
 
+const initialScript = `
+(def top (cylinder :z 12 10))
+
+(def body 
+  (->> (sphere 100)
+    (morph 0.9 (sphere 90 [0 0 -20]))
+    (smooth-union 92 (sphere -17 [0 0 -130]))
+    (smooth-union 10 (translate [0 0 100] top))))
+
+(def hat
+  (smooth-union 10
+    (smooth-subtract 2
+      (onion 1 top)
+      (half-space :-z))
+    (cylinder :z 1 30)))
+
+(union
+  body
+  (translate [0 0 107] hat))
+`.trimLeft();
+
 const preamble = '(use ./shapes)\n';
 
 function executeJanet(code: string) {
@@ -129,6 +150,8 @@ document.addEventListener("DOMContentLoaded", function (e) {
   const incrementNumber = (editor: StateCommandInput) => alterNumber(editor, Big('1'));
   const decrementNumber = (editor: StateCommandInput) => alterNumber(editor, Big('-1'));
 
+  const script = localStorage.getItem('script') ?? initialScript;
+
   const editor = new EditorView({
     extensions: [
       basicSetup,
@@ -144,25 +167,7 @@ document.addEventListener("DOMContentLoaded", function (e) {
       }),
     ],
     parent: document.getElementById('editor-container')!,
-    doc: `(def top (cylinder :z 12 10))
-
-(def body 
-  (->> (sphere 100)
-    (morph 0.9 (sphere 90 [0 0 -20]))
-    (smooth-union 92 (sphere -17 [0 0 -130]))
-    (smooth-union 10 (translate [0 0 100] top))))
-
-(def hat
-  (smooth-union 10
-    (smooth-subtract 2
-      (onion 1 top)
-      (half-space :-z))
-    (cylinder :z 1 30)))
-
-(union
-  body
-  (translate [0 0 107] hat))
-`
+    doc: script
   });
 
   // honestly this is so annoying on firefox that
@@ -186,6 +191,10 @@ document.addEventListener("DOMContentLoaded", function (e) {
     if (e.ctrlKey) {
       alterNumber(editor, Big(e.movementX).times('1'));
     }
+  });
+
+  window.addEventListener('beforeunload', (e) => {
+    localStorage.setItem('script', editor.state.doc.toString());
   });
 
   onReady(runCode);
