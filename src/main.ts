@@ -217,8 +217,8 @@ document.addEventListener("DOMContentLoaded", (_) => {
     if (canvas.hasPointerCapture(e.pointerId)) {
       camera.x = mod(camera.x - cameraRotateSpeed * e.movementY, 1.0);
       camera.y = mod(camera.y - cameraRotateSpeed * e.movementX, 1.0);
+      draw();
     }
-    draw();
   });
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
