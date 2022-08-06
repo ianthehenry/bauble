@@ -39,7 +39,7 @@ precision highp float;
 const int MAX_STEPS = 256;
 const float MINIMUM_HIT_DISTANCE = 0.5;
 const float NORMAL_OFFSET = 0.005;
-const float MAXIMUM_TRACE_DISTANCE = 1000.0;
+const float MAXIMUM_TRACE_DISTANCE = 4096.0;
 
 struct Surface {
   float distance;
@@ -103,6 +103,8 @@ float cast_light(vec3 destination, vec3 light, float radius) {
   return in_light * light_brightness;
 }
 
+vec3 fog_color = vec3(0.15);
+
 vec3 march(vec3 ray_origin, vec3 ray_direction) {
   float distance = 0.0;
 
@@ -112,11 +114,17 @@ vec3 march(vec3 ray_origin, vec3 ray_direction) {
     Surface nearest = distance_field(p);
 
     if (nearest.distance < MINIMUM_HIT_DISTANCE) {
+      // a useful debug view
+      // return vec3(float(i) / float(MAX_STEPS));
+
       vec3 hit = p + nearest.distance * ray_direction;
       vec3 normal = calculate_normal(hit);
 
-      return 0.5 * (normal + vec3(1.0));
-      
+      float depth = length(hit - ray_origin);
+      vec3 normal_color = 0.5 * (normal + vec3(1.0));
+
+      return mix(normal_color, fog_color, depth / MAXIMUM_TRACE_DISTANCE);
+
       vec3 light1 = vec3(200.0, 0.0, 200.0);
       vec3 light2 = vec3(0.0, -200.0, 100.0);
 
@@ -145,7 +153,7 @@ vec3 march(vec3 ray_origin, vec3 ray_direction) {
     }
 
     if (distance > MAXIMUM_TRACE_DISTANCE) {
-      return vec3(0.1);
+      return fog_color;
     }
     distance += nearest.distance;
   }
