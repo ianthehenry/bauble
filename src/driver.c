@@ -125,7 +125,9 @@ JANET_FN(set_fragment_shader, "(set-fragment-shader)", "") {
   janet_fixarity(argc, 1);
   const uint8_t *shader_source = janet_getstring(argv, 0);
 
-  printf("%s\n", shader_source);
+  if (1) {
+    printf("%s\n", shader_source);
+  }
 
   if (current_fragment_shader == 0) {
     init_gl();
@@ -179,6 +181,8 @@ void initialize() {
 
 EMSCRIPTEN_KEEPALIVE
 int run_janet(char *source, float camera_x, float camera_y, float camera_zoom) {
+  long long start_time = emscripten_get_now();
+
   if (draw_fiber == NULL) {
     initialize();
   }
@@ -191,6 +195,8 @@ int run_janet(char *source, float camera_x, float camera_y, float camera_zoom) {
 
   Janet result;
   JanetSignal status = janet_dostring(env, source, "playground", &result);
+
+  long long done_evaluating = emscripten_get_now();
 
   JanetKV *camera_struct = janet_struct_begin(2 * 3);
   janet_struct_put(camera_struct, janet_ckeywordv("x"), janet_wrap_number(camera_x));
@@ -217,5 +223,10 @@ int run_janet(char *source, float camera_x, float camera_y, float camera_zoom) {
   } else {
     fprintf(stderr, "Error while evaluating value\n");
   }
+
+  long long done_rendering = emscripten_get_now();
+
+  printf("eval: %lldms render: %lldms\n", (done_evaluating - start_time), (done_rendering - done_evaluating));
+
   return status;
 }
