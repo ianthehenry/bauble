@@ -9,6 +9,10 @@ import {
 } from '@codemirror/state';
 import Big from 'big.js';
 
+const TAU = 2 * Math.PI;
+const cameraRotateSpeed = 0.001;
+const cameraZoomSpeed = 0.01;
+
 function clear() {
   const output = document.getElementById('output')!;
   output.innerHTML = "";
@@ -24,7 +28,8 @@ function print(text: string, isErr=false) {
   output.scrollTop = output.scrollHeight;
 }
 
-let evaluateJanet: ((_: string) => number) | null = null;
+interface Camera { x: number, y: number, zoom: number; }
+let evaluateJanet: ((_code: string, _cameraX: number, _cameraY: number, _cameraZoom: number) => number) | null = null;
 let ready: (() => void) | null = function() { ready = null; };
 
 function onReady(f: (() => void)) {
@@ -62,12 +67,13 @@ const initialScript = `
 
 const preamble = '(use ./shapes)\n';
 
-function executeJanet(code: string) {
+function executeJanet(code: string, camera) {
   if (evaluateJanet === null) {
     console.error('not ready yet');
     return;
   }
-  const result = evaluateJanet(preamble + code);
+
+  const result = evaluateJanet(preamble + code, TAU * camera.x, TAU * camera.y, camera.zoom);
   if (result !== 0) {
     print('ERREXIT: ' + result.toString(), true);
   }
@@ -90,7 +96,7 @@ const Module: Partial<MyEmscripten> = {
     print(x, true);
   },
   postRun: [function() {
-    evaluateJanet = Module.cwrap!("run_janet", 'number', ['string']);
+    evaluateJanet = Module.cwrap!("run_janet", 'number', ['string', 'number', 'number', 'number']);
     ready();
   }],
 };
@@ -145,11 +151,20 @@ function alterNumber({state, dispatch}: StateCommandInput, amount: Big) {
   return true;
 }
 
+function mod(a, b) {
+  return ((a % b) + b) % b;
+}
+
 document.addEventListener("DOMContentLoaded", (_) => {
-  function runCode() {
+  const camera = {
+    x: 0,
+    y: 0,
+    zoom: 2.0
+  };
+  function draw() {
     setTimeout(function() {
       clear();
-      executeJanet(editor.state.doc.toString());
+      executeJanet(editor.state.doc.toString(), camera);
     }, 0);
   }
 
@@ -168,7 +183,7 @@ document.addEventListener("DOMContentLoaded", (_) => {
       ]),
       EditorView.updateListener.of(function(viewUpdate: ViewUpdate) {
         if (viewUpdate.docChanged) {
-          runCode();
+          draw();
         }
       }),
     ],
@@ -193,6 +208,24 @@ document.addEventListener("DOMContentLoaded", (_) => {
     });
   }
 
+  const canvas = document.getElementById('render-target')!;
+  canvas.addEventListener('pointerdown', (e) => {
+    canvas.setPointerCapture(e.pointerId);
+  });
+  
+  canvas.addEventListener('pointermove', (e) => {
+    if (canvas.hasPointerCapture(e.pointerId)) {
+      camera.x = mod(camera.x - cameraRotateSpeed * e.movementY, 1.0);
+      camera.y = mod(camera.y - cameraRotateSpeed * e.movementX, 1.0);
+    }
+    draw();
+  });
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    camera.zoom += cameraZoomSpeed * e.deltaY;
+    draw();
+  });
+
   document.body.addEventListener('pointermove', (e) => {
     if (e.ctrlKey) {
       alterNumber(editor, Big(e.movementX).times('1'));
@@ -208,7 +241,7 @@ document.addEventListener("DOMContentLoaded", (_) => {
     }
   });
 
-  onReady(runCode);
+  onReady(draw);
   editor.focus();
   cursorDocEnd(editor);
 });

@@ -22,7 +22,11 @@
 (defn compile-function [{:name name :parameters parameters :body body}]
   (string/format "float %s(%s) {\n%s\n}" name (string/join parameters ", ") body))
 
-(defn make-fragment-shader [expr]
+# TODO: this is duplicated
+(defn- float [n]
+  (if (int? n) (string n ".0") (string n)))
+
+(defn make-fragment-shader [expr camera]
   (def comp-state @{:names @{} :cache @{} :functions @[]})
   (table/setproto comp-state comp-state-proto)
   (def top-level-expr (:compile expr comp-state "p"))
@@ -148,19 +152,57 @@ vec3 march(vec3 ray_origin, vec3 ray_direction) {
   return vec3(1.0, 0.1, 0.1);
 }
 
+mat4 view_matrix(vec3 eye, vec3 target, vec3 up) {
+  vec3 f = normalize(target - eye);
+  vec3 s = normalize(cross(f, up));
+  vec3 u = cross(s, f);
+  return mat4(
+      vec4(s, 0.0),
+      vec4(f, 0.0),
+      vec4(u, 0.0),
+      vec4(0.0, 0.0, 0.0, 1.0)
+  );
+}
+
 out vec4 frag_color;
+
+const float PI = 3.14159265359;
+const float DEG_TO_RAD = PI / 180.0;
+
+vec3 ray_dir(float fov, vec2 size, vec2 pos) {
+  vec2 xy = pos - size * 0.5;
+
+  float cot_half_fov = tan((90.0 - fov * 0.5) * DEG_TO_RAD);
+  float z = size.y * 0.5 * cot_half_fov;
+  
+  return normalize(vec3(xy, -z));
+}
+
+mat3 rotate_xy(vec2 angle) {
+  vec2 c = cos(angle);
+  vec2 s = sin(angle);
+  
+  return mat3(
+    c.y      ,  0.0, -s.y,
+    s.y * s.x,  c.x,  c.y * s.x,
+    s.y * c.x, -s.x,  c.y * c.x
+  );
+}
 
 void main() {
   const float zoom = 2.0;
   const float gamma = 2.2;
   const vec2 resolution = vec2(1024.0, 1024.0);
 
-  vec2 uv = gl_FragCoord.xy - 0.5 * resolution;
+  vec2 rotation = vec2(`(float (camera :x))`, `(float (camera :y))`);
+  mat3 camera_matrix = rotate_xy(rotation);
 
-  vec3 ray_origin = vec3(uv.x, -256.0, uv.y) / zoom;
-  vec3 ray_direction = normalize(vec3(0.0, 1.0, 0.0));
+  vec3 dir = ray_dir(45.0, resolution, gl_FragCoord.xy);  
+  vec3 eye = vec3(0.0, 0.0, `(float (* 256 (camera :zoom)))`);
+  dir = camera_matrix * dir;
+  eye = camera_matrix * eye;
 
-  vec3 color = march(ray_origin, ray_direction);
+  vec3 color = march(eye, dir);
 
   //if (int(gl_FragCoord.x + gl_FragCoord.y) % 2 == 0) {
   // color = floor(color * 16.0f) / 16.0f;
@@ -177,11 +219,11 @@ void main() {
 
 (fiber/new (fn []
   (while true
-    (let [value (yield)]
-      (if (is-good-value? value)
+    (let [[expr camera] (yield)]
+      (pp camera)
+      (if (is-good-value? expr)
         (try
-          (make-fragment-shader value)
+          (make-fragment-shader expr camera)
           ([err fiber] 
             (debug/stacktrace fiber err)))
-        (eprint "cannot compile " value))))))
-
+        (eprint "cannot compile " expr))))))

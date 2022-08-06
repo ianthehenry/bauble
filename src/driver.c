@@ -178,7 +178,7 @@ void initialize() {
 }
 
 EMSCRIPTEN_KEEPALIVE
-int run_janet(char *source) {
+int run_janet(char *source, float camera_x, float camera_y, float camera_zoom) {
   if (draw_fiber == NULL) {
     initialize();
   }
@@ -192,9 +192,20 @@ int run_janet(char *source) {
   Janet result;
   JanetSignal status = janet_dostring(env, source, "playground", &result);
 
+  JanetKV *camera_struct = janet_struct_begin(2 * 3);
+  janet_struct_put(camera_struct, janet_ckeywordv("x"), janet_wrap_number(camera_x));
+  janet_struct_put(camera_struct, janet_ckeywordv("y"), janet_wrap_number(camera_y));
+  janet_struct_put(camera_struct, janet_ckeywordv("zoom"), janet_wrap_number(camera_zoom));
+  Janet camera = janet_wrap_struct(janet_struct_end(camera_struct));
+
+  Janet *arg_tuple = janet_tuple_begin(2);
+  arg_tuple[0] = result;
+  arg_tuple[1] = camera;
+  Janet args = janet_wrap_tuple(janet_tuple_end(arg_tuple));
+
   if (status == JANET_SIGNAL_OK) {
     Janet query;
-    JanetSignal status = janet_continue(draw_fiber, result, &query);
+    JanetSignal status = janet_continue(draw_fiber, args, &query);
     if (status == JANET_SIGNAL_YIELD) {
       if (janet_checktype(query, JANET_NIL) == 0) {
         fprintf(stderr, "yielded a value?? that's bizarre.\n");
