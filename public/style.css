@@ -12,7 +12,7 @@ body {
   height: 100%;
   font-family: system-ui;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: fit-content(calc(100% - 512px)) 1fr;
   grid-template-rows: 40px 1fr 100px;
   grid-template-areas: 
     "header header"
@@ -30,10 +30,12 @@ header {
 #editor-container {
   grid-area: code;
   display: flex;
+  overflow: hidden; /* for some reason this is required for fit-content to do anything in the parent */
 }
 
 #editor-container > * {
   flex: 1;
+  max-width: 100%; /* required for horizontal scrolling */
 }
 
 #output {
