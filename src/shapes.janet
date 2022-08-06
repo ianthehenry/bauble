@@ -384,6 +384,13 @@
 
 (defn tau/ [x] (/ TAU x))
 
+(defn axis-vec [axis scale]
+  (case axis
+    :x [scale 0 0]
+    :y [0 scale 0]
+    :z [0 0 scale]
+    (error "unknown axis")))
+
 # TODO: this is a terrible name for this
 (defmacro reflex [combine expr & fs]
   (let [$expr (gensym)
