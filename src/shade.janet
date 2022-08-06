@@ -228,10 +228,11 @@ void main() {
 (fiber/new (fn []
   (while true
     (let [[expr camera] (yield)]
-      (pp camera)
       (if (is-good-value? expr)
         (try
           (make-fragment-shader expr camera)
           ([err fiber] 
             (debug/stacktrace fiber err)))
         (eprint "cannot compile " expr))))))
+
+
