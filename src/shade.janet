@@ -143,15 +143,9 @@ vec3 march(vec3 ray_origin, vec3 ray_direction) {
 
       return mix(normal_color, fog_color, depth / MAXIMUM_TRACE_DISTANCE);
 
-      vec3 light1 = vec3(200.0, 0.0, 200.0);
-      vec3 light2 = vec3(0.0, -200.0, 100.0);
-
-      float brightness1 = cast_light(hit + MINIMUM_HIT_DISTANCE * normal, light1, 500.0);
-      float brightness2 = cast_light(hit + MINIMUM_HIT_DISTANCE * normal, light2, 500.0);
-
-      float diffuse1 = brightness1 * max(0.0, dot(normal, normalize(light1 - hit)));
-      
-      float diffuse2 = 0.25 * brightness2 * max(0.0, dot(normal, normalize(light2 - hit)));
+      vec3 light = vec3(256.0, 256.0, 0.0);
+      float brightness = cast_light(hit + 2.0 * MINIMUM_HIT_DISTANCE * normal, light, 1024.0);
+      float diffuse = brightness * max(0.0, dot(normal, normalize(light - hit)));
 
       float ambient = 0.2;
 
@@ -167,7 +161,7 @@ vec3 march(vec3 ray_origin, vec3 ray_direction) {
 
       // return 0.5 * (normal + 1.0);
 
-      return nearest.color * clamp((diffuse1 + diffuse2 + ambient * col), 0.0, 1.0);
+      return normal_color * (diffuse + ambient * col);
     }
 
     if (distance > MAXIMUM_TRACE_DISTANCE) {
@@ -252,5 +246,3 @@ void main() {
           ([err fiber] 
             (debug/stacktrace fiber err)))
         (eprint "cannot compile " expr))))))
-
-
