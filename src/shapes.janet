@@ -314,12 +314,14 @@
 
 (defcompiler flip
   {:expr expr :axes axes :signs signs}
-  (:compile expr comp-state (string/format "(%s.%s * %s)" coord axes (vec3 signs)))
+  (if (nil? signs)
+    (:compile expr comp-state (string coord "." axes))
+    (:compile expr comp-state (string/format "(%s.%s * %s)" coord axes (vec3 signs))))
   [signed-axis expr]
   (let [[sign axis] (split-signed-axis signed-axis)]
     @{:axes (transpose-other-axes axis)
       :expr expr
-      :signs (if (neg? sign) (negate-other-axes axis) unit-vec3)}))
+      :signs (if (neg? sign) (negate-other-axes axis) nil)}))
 
 (defcompiler reflect
   self
