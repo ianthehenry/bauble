@@ -91,10 +91,10 @@
     vec3 q = abs(p - center) - size;
     return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
     `)
-  [&opt size center]
-  (default size unit-vec3)
+  [size &opt center]
   (default center zero-vec3)
-  @{:size size :center center})
+  @{:size (if (number? size) [size size size] size)
+    :center center})
 
 (defcompiler cylinder
   {:radius radius :height height :axis axis}
