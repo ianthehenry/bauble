@@ -41,6 +41,24 @@ const float MINIMUM_HIT_DISTANCE = 0.5;
 const float NORMAL_OFFSET = 0.005;
 const float MAXIMUM_TRACE_DISTANCE = 4096.0;
 
+float min3(vec3 p) {
+  return min(p.x, min(p.y, p.z));
+}
+
+float max3(vec3 p) {
+  return max(p.x, max(p.y, p.z));
+}
+
+vec3 sort3(vec3 p) {
+  float smallest = min3(p);
+  float largest = max3(p);
+  float middlest =
+    p.x > smallest && p.x < largest ? p.x :
+    p.y > smallest && p.y < largest ? p.y :
+    p.z;
+  return vec3(smallest, middlest, largest);
+}
+
 struct Surface {
   float distance;
   vec3 color;

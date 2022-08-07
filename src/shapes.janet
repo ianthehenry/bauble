@@ -323,6 +323,16 @@
       :expr expr
       :signs (if (neg? sign) (negate-other-axes axis) nil)}))
 
+# this is a "full" symmetry that mirrors across every axis and rotation.
+# you could have more flexible symmetry that only rotates across a single axis,
+# does not do the abs(), etc. also... i'm not really sure how this works. this
+# operation seems slightly insane.
+(defcompiler symmetry
+  {:expr expr}
+  (:compile expr comp-state (string/format "sort3(abs(%s))" coord))
+  [expr]
+  @{:expr expr})
+
 (defcompiler reflect
   self
   (:sdf-3d comp-state self "sym" coord (fn [coord]
