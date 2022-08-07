@@ -46,8 +46,9 @@ body.main-page {
 header {
   --header-height: 40px;
   --header-padding: 0.5em;
+  --text-color: #000;
   grid-area: header;
-  background-color: #f8f;
+  background-color: #f9c0ff;
   line-height: var(--header-height);
   display: flex;
 }
@@ -66,6 +67,10 @@ header a:active {
   color: var(--text-color);
 }
 
+header img {
+  fill: #4b0053;
+}
+
 header :first-child {
   padding-left: var(--header-padding);
 }
@@ -74,7 +79,7 @@ header :last-child {
 }
 header .image-link {
   display: flex;
-  background-color: #ff8;
+  /*background-color: #ff8;*/
   width: var(--header-height);
   height: var(--header-height);
   justify-content: center;
@@ -100,7 +105,7 @@ header .image-link img {
 #output {
   grid-area: output;
   padding: 8px;
-  background-color: #ffa;
+  background-color: #ffc;
   overflow: auto;
 }
 
