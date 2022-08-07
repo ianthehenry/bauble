@@ -12,6 +12,7 @@ import Big from 'big.js';
 const TAU = 2 * Math.PI;
 const cameraRotateSpeed = 0.001;
 const cameraZoomSpeed = 0.01;
+const LOCAL_STORAGE_KEY = "script";
 
 function clear() {
   const output = document.getElementById('output')!;
@@ -151,6 +152,16 @@ function alterNumber({state, dispatch}: StateCommandInput, amount: Big) {
   return true;
 }
 
+function save({state, dispatch}: StateCommandInput) {
+  const script = state.doc.toString();
+  if (script.trim().length > 0) {
+    localStorage.setItem(LOCAL_STORAGE_KEY, script);
+  } else {
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
+  }
+  return true;
+}
+
 function mod(a, b) {
   return ((a % b) + b) % b;
 }
@@ -171,7 +182,7 @@ document.addEventListener("DOMContentLoaded", (_) => {
   const incrementNumber = (editor: StateCommandInput) => alterNumber(editor, Big('1'));
   const decrementNumber = (editor: StateCommandInput) => alterNumber(editor, Big('-1'));
 
-  const script = localStorage.getItem('script') ?? initialScript;
+  const script = localStorage.getItem(LOCAL_STORAGE_KEY) ?? initialScript;
 
   const editor = new EditorView({
     extensions: [
@@ -180,6 +191,7 @@ document.addEventListener("DOMContentLoaded", (_) => {
       keymap.of([
         indentWithTab,
         { key: "Alt-h", run: incrementNumber, shift: decrementNumber },
+        { key: "Mod-s", run: save },
       ]),
       EditorView.updateListener.of(function(viewUpdate: ViewUpdate) {
         if (viewUpdate.docChanged) {
@@ -233,12 +245,7 @@ document.addEventListener("DOMContentLoaded", (_) => {
   });
 
   window.addEventListener('beforeunload', (_e) => {
-    const script = editor.state.doc.toString();
-    if (script.trim().length > 0) {
-      localStorage.setItem('script', script);
-    } else {
-      localStorage.removeItem('script');
-    }
+    save(editor);
   });
 
   onReady(draw);
