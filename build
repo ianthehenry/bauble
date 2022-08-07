@@ -45,7 +45,6 @@ if [[ "$build_wasm" == "true" ]]; then
     -I janet \
     janet/janet.c \
     src/driver.c \
-    -lembind \
     -std=c11 \
     --embed-file src/shade.janet@shade.janet \
     --embed-file src/shapes.janet@shapes.janet \
