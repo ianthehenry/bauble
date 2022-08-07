@@ -289,9 +289,11 @@
 
 (defcompiler mirror
   self
-  (:sdf-3d comp-state self "mirror" coord (fn [coord]
-    (def {:expr expr :axes axes} self)
-    (string/format "%s.%s = abs(%s.%s); return %s;" coord axes coord axes (:compile expr comp-state coord))))
+  (let [{:expr expr :axes axes} self]
+    (if (= 3 (length axes))
+      (:compile expr comp-state (string/format "abs(%s)" coord))
+      (:sdf-3d comp-state self "mirror" coord (fn [coord]
+        (string/format "%s.%s = abs(%s.%s); return %s;" coord axes coord axes (:compile expr comp-state coord))))))
   [& args]
   (def [axes expr] (get-axes-and-expr args))
   @{:axes axes :expr expr})
