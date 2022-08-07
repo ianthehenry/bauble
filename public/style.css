@@ -3,16 +3,39 @@
   padding: 0;
 }
 
-html {
-  height: 100%;
+h1,h2,h3,h4,h5,h6 {
+  font-weight: normal;
 }
 
 body {
   width: 100%;
   height: 100%;
   font-family: system-ui;
+  line-height: 1.5;
+}
+
+html {
+  height: 100%;
+}
+
+main {
+  padding: 0.5em;
+  display: block;
+  margin: 0 auto;
+  max-width: 768px;
+}
+
+ul {
+  list-style-position: inside;
+}
+
+*+h1, *+p, *+ul {
+  margin-top: 1em;
+}
+
+body.main-page {
   display: grid;
-  grid-template-columns: fit-content(calc(100% - 512px)) 1fr;
+  grid-template-columns: 1fr 512px;
   grid-template-rows: 40px 1fr 100px;
   grid-template-areas: 
     "header header"
@@ -21,10 +44,46 @@ body {
 }
 
 header {
-  padding: 0 1em;
+  --header-height: 40px;
+  --header-padding: 0.5em;
   grid-area: header;
   background-color: #f8f;
-  line-height: 40px;
+  line-height: var(--header-height);
+  display: flex;
+}
+
+header .title, header .spacer {
+  flex: 1;
+}
+
+header a {
+  text-decoration: none;
+}
+
+header a,
+header a:visited,
+header a:active {
+  color: var(--text-color);
+}
+
+header :first-child {
+  padding-left: var(--header-padding);
+}
+header :last-child {
+  padding-right: var(--header-padding);
+}
+header .image-link {
+  display: flex;
+  background-color: #ff8;
+  width: var(--header-height);
+  height: var(--header-height);
+  justify-content: center;
+  align-items: center;
+}
+
+header .image-link img {
+  width: calc(0.75 * var(--header-height));
+  aspect-ratio: 1;
 }
 
 #editor-container {
