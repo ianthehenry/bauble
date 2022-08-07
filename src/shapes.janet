@@ -296,6 +296,29 @@
   (def [axes expr] (get-axes-and-expr args))
   @{:axes axes :expr expr})
 
+(defn- transpose-other-axes [axis]
+  (case axis
+    :x "xzy"
+    :y "zyx"
+    :z "yxz"
+    (error "unknown axis")))
+
+(defn- negate-other-axes [axis]
+  (case axis
+    :x [1 -1 -1]
+    :y [-1 1 -1]
+    :z [-1 -1 1]
+    (error "unknown axis")))
+
+(defcompiler flip
+  {:expr expr :axes axes :signs signs}
+  (:compile expr comp-state (string/format "(%s.%s * %s)" coord axes (vec3 signs)))
+  [signed-axis expr]
+  (let [[sign axis] (split-signed-axis signed-axis)]
+    @{:axes (transpose-other-axes axis)
+      :expr expr
+      :signs (if (neg? sign) (negate-other-axes axis) unit-vec3)}))
+
 (defcompiler reflect
   self
   (:sdf-3d comp-state self "sym" coord (fn [coord]
