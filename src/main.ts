@@ -90,8 +90,8 @@ const initialScript = `
 
 # When editing values with your mouse, Bauble will increment the smallest digit
 # of the number, so you can increase the precision by adding zeroes to the end.
-# In other words, editing a value like 3.5 will increment by 0.1, but editing
-# 3.005 will increment by 0.001.
+# In other words, editing a value like 3.0 will increment by 0.1, but editing
+# 3.000 will increment by 0.001.
 
 # And... that's it for now! At the moment Bauble will only color surfaces based
 # on their normals, but there will eventually be a way to apply colors and
