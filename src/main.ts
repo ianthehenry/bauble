@@ -48,8 +48,8 @@ function onReady(f: (() => void)) {
 const initialScript = `
 # Hello, and welcome to an extremely early and unfinished demo!
 
-# Bauble is a playground for creating and rendering models using *signed
-# distance functions*. Like this one:
+# Bauble is a playground for creating and rendering 3D shapes using signed
+# distance functions. Like this one:
 
 (intersect
   (box 50)
