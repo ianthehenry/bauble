@@ -46,28 +46,38 @@ function onReady(f: (() => void)) {
 }
 
 const initialScript = `
-# Hello, and welcome to an extremely early and unfinished demo!
+# Hello, and welcome to an extremely
+# early and unfinished demo!
 
-# Bauble is a playground for creating and rendering 3D shapes using signed
+# Bauble is a playground for creating
+# and rendering 3D shapes using signed
 # distance functions. Like this one:
 
 (intersect
   (box 50)
   (sphere 70))
 
-# Drag the viewport around with your mouse, and scroll to move the camera in and
-# out.
+# Drag the viewport around with your
+# mouse, and scroll to move the camera
+# in and out.
 
-# This text field is a Janet program that is re-evaluated every time you make a
-# change. This program "returns" whatever the final expression is -- in this
-# case, that little rounded-ish box up there. Uncomment the next line to return
-# something else:
+# This text field is a Janet program
+# that is re-evaluated every time you
+# make a change. This program "returns"
+# whatever the final expression is --
+# in this case, that little rounded-ish
+# box up there. Uncomment the next line
+# to return something else:
 
 # (morph 2.50 (sphere 50) (box 50))
 
-# Janet is a fully-featured language, so you can define variables, functions,
-# macros, loops -- anything your heart desires. Here's a nonsense example -- to
-# uncomment it, select the whole paragraph and press "cmd-/" or "ctrl-/":
+# Janet is a fully-featured language, so
+# you can define variables, functions,
+# macros, loops -- anything your heart
+# desires. Here's a nonsense example --
+# to uncomment it, select the whole
+# paragraph and press "cmd-/"
+# or "ctrl-/":
 
 # (var top 0)
 # (defn hollow-box [size]
@@ -79,28 +89,41 @@ const initialScript = `
 # (translate [0 -45 0]
 #   (smooth-union 20 ;(map stack-box [40 30 20])))
 
-# You can also edit values with your mouse. Uncomment the next block of code,
-# and put your cursor on the value 0.00. Then hold down the control key, and
-# move your mouse left to right.
+# You can also edit values with your
+# mouse. Uncomment the next block of
+# code, and put your cursor on the
+# value 0.00. Then hold down the
+# control key, and move your mouse left
+# to right.
 
 # (def r 0.00)
 # (-> (cone :x 40 100)
 #   (rotate :y (tau r) :z (tau r))
 #   (symmetry))
 
-# When editing values with your mouse, Bauble will increment the smallest digit
-# of the number, so you can increase the precision by adding zeroes to the end.
-# In other words, editing a value like 3.0 will increment by 0.1, but editing
-# 3.000 will increment by 0.001.
+# When editing values with your mouse,
+# Bauble will increment the smallest
+# digit of the number, so you can
+# increase the precision by adding
+# zeroes to the end. In other words,
+# editing a value like 3.0 will
+# increment by 0.1, but editing 3.000
+# will increment by 0.001.
 
-# And... that's it for now! At the moment Bauble will only color surfaces based
-# on their normals, but there will eventually be a way to apply colors and
-# surfaces to the shapes you create, as well as to control the lights. But...
-# that's not here yet. Sorry.
+# And... that's it for now! At the
+# moment Bauble will only color
+# surfaces based on their normals, but
+# there will eventually be a way to
+# apply colors and surfaces to the
+# shapes you create, as well as to
+# control the lights. But... that's not
+# here yet. Sorry.
 
-# There is no documentation or help or anything for Bauble functions right now,
-# but here's a quick overview of the basics. Uncomment these one at a time to
-# see what they do:
+# There is no documentation or help or
+# anything for Bauble functions right
+# now, but here's a quick overview of
+# the basics. Uncomment these one at a
+# time to see what they do:
 
 # (union (box 50) (sphere 70))
 # (smooth-union 10 (box 50) (cone :z 40 100))
@@ -115,14 +138,21 @@ const initialScript = `
 # (tile [100 100 100] (sphere 50) :limit [1 3 1])
 # (scale 2.0 (offset 5 (box 40)))
 
-# What else? You can print values for debugging with (print "string") or
-# (pp expression). Error messages are extremely bad right now, so don't make
-# any mistakes. If you write an infinite loop it *will* just hang the browser
-# tab and you will have no way to get out of it except to refresh the page.
+# What else? You can print values for
+# debugging with (print "string") or
+# (pp expression). Error messages are
+# extremely bad right now, so don't
+# make any mistakes. If you write an
+# infinite loop it *will* just hang the
+# browser tab and you will have no way
+# to get out of it except to refresh
+# the page.
 
-# Umm that's all okay good luck! Your changes will automatically save, but if
-# you want to restore this initial tutorial, just empty out this text field and
-# then refresh the page.
+# Umm that's all okay good luck! Your
+# changes will automatically save, but
+# if you want to restore this initial
+# tutorial, just empty out this text
+# field around refresh the page.
 `.trimLeft();
 
 const preamble = '(use ./shapes)\n';
