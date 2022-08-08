@@ -60,6 +60,9 @@ header .title, header .spacer {
 header a {
   text-decoration: none;
 }
+header a.text-link {
+  padding: 0 var(--header-padding);
+}
 
 header a,
 header a:visited,
