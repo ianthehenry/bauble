@@ -34,6 +34,7 @@ ul {
 }
 
 body.main-page {
+  overflow: none;
   display: flex;
   flex-direction: column;
 }
@@ -138,6 +139,7 @@ canvas {
   max-height: calc(min(100%, 512px));
   flex: 0;
   aspect-ratio: 1;
+  touch-action: none;
 }
 
 @media all and (max-width: 512px) {
