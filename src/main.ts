@@ -108,8 +108,9 @@ const initialScript = `
 # (morph 0.5 (box 50) (sphere 50))
 # (subtract (box 50) (cylinder :z 30 100))
 # (smooth-subtract 30 (rotate :y (tau 0.125) :z (tau 0.125) (box 50)) (translate [50 0 0] (sphere 50)))
+# (cone :x 50 200)
 # (reflect :x (cone :x 50 200))
-# (mirror :x :z (rotate :y (tau 0.125) (cone :x 50 200)))
+# (-> (cone :x 50 200) (rotate :y (tau 0.125)) (mirror :x :z))
 # (smooth-union 5 (line [-50 0 0] [50 0 0] 10) (mirror :x (sphere 30 [50 0 0])))
 # (tile [100 100 100] (sphere 50) :limit [1 3 1])
 # (scale 2.0 (offset 5 (box 40)))
@@ -120,8 +121,8 @@ const initialScript = `
 # tab and you will have no way to get out of it except to refresh the page.
 
 # Umm that's all okay good luck! Your changes will automatically save, but if
-# you want to restore this initial tutorial, just empty out this text field around
-# refresh the page.
+# you want to restore this initial tutorial, just empty out this text field and
+# then refresh the page.
 `.trimLeft();
 
 const preamble = '(use ./shapes)\n';
