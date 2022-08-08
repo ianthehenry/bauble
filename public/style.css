@@ -34,24 +34,31 @@ ul {
 }
 
 body.main-page {
-  display: grid;
-  grid-template-columns: 1fr 512px;
-  grid-template-rows: 40px 1fr 100px;
-  grid-template-areas: 
-    "header header"
-    "code   preview"
-    "output output";
+  display: flex;
+  flex-direction: column;
 }
+
+#header { flex: 0; }
+#code-and-preview { flex: 10; overflow: hidden; }
+#output { flex: 1; }
 
 header {
   --header-height: 40px;
   --header-padding: 0.5em;
   --text-color: #000;
-  grid-area: header;
   background-color: #f9c0ff;
+  height: var(--header-height);
   line-height: var(--header-height);
   display: flex;
 }
+
+#code-and-preview {
+  display: flex;
+  flex-direction: row-reverse;
+}
+
+#editor-container { flex: 4; overflow: hidden; }
+#canvas-container { flex: 3; max-width: 512px; overflow: hidden; }
 
 header .title, header .spacer {
   flex: 1;
@@ -95,9 +102,7 @@ header .image-link img {
 }
 
 #editor-container {
-  grid-area: code;
   display: flex;
-  overflow: hidden; /* for some reason this is required for fit-content to do anything in the parent */
 }
 
 #editor-container > * {
@@ -106,7 +111,6 @@ header .image-link img {
 }
 
 #output {
-  grid-area: output;
   padding: 8px;
   background-color: #ffc;
   overflow: auto;
@@ -121,10 +125,25 @@ header .image-link img {
   font-size: 11pt;
 }
 
-canvas {
+#canvas-container {
   grid-area: preview;
-  width: 512px;
-  height: 512px;
-  margin: 0 auto;
-  display: block;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 512px;
+}
+
+canvas {
+  max-width: calc(min(100%, 512px));
+  max-height: calc(min(100%, 512px));
+  flex: 0;
+  aspect-ratio: 1;
+}
+
+@media all and (max-width: 512px) {
+  #code-and-preview {
+    flex-direction: column;
+  }
+  #canvas-container { flex: 1; }
+  #editor-container { flex: 2; }
 }

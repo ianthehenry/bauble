@@ -1,6 +1,7 @@
 <!doctype html>
 <html>
 <head>
+  <meta name="viewport" content="initial-scale=1.0,maximum-scale=1.0">
   <title>Bauble</title>
   <link rel="stylesheet" href="/style.css">
   <script type="text/javascript" src="/js/main.js"></script>
@@ -8,8 +9,12 @@
 </head>
 <body class="main-page">
   <header><a class="title" href="/">Bauble</a><span class="spacer"></span><a class="text-link" href="/about">About</a><a class="image-link" href="https://github.com/ianthehenry/bauble"><img src="/github-logo.svg" /></a></header>
-  <canvas id="render-target" width="1024" height="1024"></canvas>
-  <div id="editor-container"></div>
+  <div id="code-and-preview">
+    <div id="canvas-container">
+      <canvas id="render-target" width="1024" height="1024"></canvas>
+    </div>
+    <div id="editor-container"></div>
+  </div>
   <pre id="output"></pre>
 </body>
 </html>
