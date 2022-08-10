@@ -41,7 +41,7 @@ body.main-page {
 
 #header { flex: 0; }
 #code-and-preview { flex: 10; overflow: hidden; }
-#output { flex: 1; }
+#output { height: 3.5em; }
 
 header {
   --header-height: 40px;
@@ -109,6 +109,12 @@ header .image-link img {
 #editor-container > * {
   flex: 1;
   max-width: 100%; /* required for horizontal scrolling */
+}
+
+#output-resize-handle {
+  height: 4px;
+  background-color: #eee;
+  cursor: ns-resize;
 }
 
 #output {

@@ -241,6 +241,10 @@ function alterNumber({state, dispatch}: StateCommandInput, amount: Big) {
   return true;
 }
 
+function clamp(value, min, max) {
+  return Math.max(Math.min(value, max), min);
+}
+
 function save({state, dispatch}: StateCommandInput) {
   const script = state.doc.toString();
   if (script.trim().length > 0) {
@@ -327,6 +331,22 @@ document.addEventListener("DOMContentLoaded", (_) => {
     // this seems to make this much more smooth?
     // requestAnimationFrame(draw);
     draw();
+  });
+
+  const outputContainer = document.getElementById('output')!;
+  const outputResizeHandle = document.getElementById('output-resize-handle')!;
+  outputResizeHandle.addEventListener('pointerdown', (e) => {
+    outputResizeHandle.setPointerCapture(e.pointerId);
+  });
+  outputResizeHandle.addEventListener('pointermove', (e) => {
+    if (outputResizeHandle.hasPointerCapture(e.pointerId)) {
+      const outputStyle = getComputedStyle(outputContainer);
+      const verticalPadding = parseFloat(outputStyle.paddingTop) + parseFloat(outputStyle.paddingBottom);
+      const oldHeight = outputContainer.offsetHeight - verticalPadding;
+      const oldScrollTop = outputContainer.scrollTop;
+      outputContainer.style.height = `${oldHeight - e.movementY}px`;
+      outputContainer.scrollTop = clamp(oldScrollTop + e.movementY, 0, outputContainer.scrollHeight - outputContainer.offsetHeight);
+    }
   });
 
   document.body.addEventListener('pointermove', (e) => {
