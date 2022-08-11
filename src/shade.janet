@@ -42,7 +42,7 @@ precision highp float;
 const int MAX_STEPS = 256;
 const float MINIMUM_HIT_DISTANCE = 0.5;
 const float NORMAL_OFFSET = 0.005;
-const float MAXIMUM_TRACE_DISTANCE = 4096.0;
+const float MAXIMUM_TRACE_DISTANCE = 8192.0;
 
 float min3(vec3 p) {
   return min(p.x, min(p.y, p.z));
@@ -118,7 +118,7 @@ float cast_light(vec3 p, vec3 light, float radius) {
   }
 
   float in_light = 1.0;
-  float sharpness = 8.0;
+  float sharpness = 16.0;
 
   float last_distance = 1e20;
   float progress = MINIMUM_HIT_DISTANCE;
