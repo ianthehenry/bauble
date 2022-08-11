@@ -315,11 +315,13 @@ document.addEventListener("DOMContentLoaded", (_) => {
 
   const canvas = document.getElementById('render-target')!;
   canvas.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
     canvas.setPointerCapture(e.pointerId);
   });
   
   canvas.addEventListener('pointermove', (e) => {
     if (canvas.hasPointerCapture(e.pointerId)) {
+      e.preventDefault();
       camera.x = mod(camera.x - cameraRotateSpeed * e.movementY, 1.0);
       camera.y = mod(camera.y - cameraRotateSpeed * e.movementX, 1.0);
       draw();
