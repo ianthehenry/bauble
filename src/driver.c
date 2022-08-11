@@ -116,7 +116,10 @@ char *slurp(char *filename) {
 
   text = (char *)calloc(length, sizeof(char));
 
-  fread(text, sizeof(char), length, file);
+  long bytes_read = 0;
+  while (bytes_read < length) {
+    bytes_read += fread(text, sizeof(char), length, file);
+  }
   fclose(file);
   return text;
 }
