@@ -1,5 +1,5 @@
 (def comp-state-proto @{
-  :function (fn [self key name-base args parameters body]
+  :function (fn [self return-type key name-base args parameters body]
     (defn invocation [name] (string/format "%s(%s)" name (string/join args ", ")))
     # if we've already compiled this node, return it
     (if-let [cached ((self :cache) key)]
@@ -8,19 +8,19 @@
         (def name-index (get (self :names) name-base 0))
         (set ((self :names) name-base) (inc name-index))
         (def name (string/format "%s_%d" name-base name-index))
-        (def entry {:name name :parameters parameters :body body})
+        (def entry {:name name :parameters parameters :body body :return-type return-type})
 
         (array/push (self :functions) entry)
         (set ((self :cache) key) entry)
         (invocation name))))
   :sdf-3d (fn [self key name-base coord get-body]
-    (:function self key name-base [coord] ["vec3 p"] (get-body "p")))
+    (:function self "float" key name-base [coord] ["vec3 p"] (get-body "p")))
   :sdf-2d (fn [self key name-base coord get-body]
-    (:function self key name-base [coord] ["vec2 p"] (get-body "p")))
+    (:function self "float" key name-base [coord] ["vec2 p"] (get-body "p")))
   })
 
-(defn compile-function [{:name name :parameters parameters :body body}]
-  (string/format "float %s(%s) {\n%s\n}" name (string/join parameters ", ") body))
+(defn compile-function [{:name name :parameters parameters :body body :return-type return-type}]
+  (string/format "%s %s(%s) {\n%s\n}" return-type name (string/join parameters ", ") body))
 
 # TODO: this is duplicated
 (defn- float [n]
@@ -29,7 +29,10 @@
 (defn make-fragment-shader [expr camera]
   (def comp-state @{:names @{} :cache @{} :functions @[]})
   (table/setproto comp-state comp-state-proto)
-  (def top-level-expr (:compile expr comp-state "p"))
+  (def top-level-shape (:compile expr comp-state "p"))
+  (def top-level-color (if (expr :surface)
+    (:surface expr comp-state "p")
+    "0.5 * (1.0 + calculate_normal(p))"))
   (def function-defs (string/join (map compile-function (comp-state :functions)) "\n"))
   (set-fragment-shader
     (string `
@@ -59,33 +62,35 @@ vec3 sort3(vec3 p) {
   return vec3(smallest, middlest, largest);
 }
 
-struct Surface {
-  float distance;
-  vec3 color;
-};
+vec3 calculate_normal(vec3 p);
+float cast_light(vec3 destination, vec3 light, float radius);
+
 `
 function-defs
 `
-Surface distance_field(vec3 p) {
-  return Surface(`top-level-expr`, vec3(1.0));
+float nearest_distance(vec3 p) {
+  return `top-level-shape`;
+}
+
+vec3 nearest_color(vec3 p, vec3 camera) {
+  return `top-level-color`;
 }
 
 vec3 calculate_normal(vec3 p) {
   const vec3 step = vec3(NORMAL_OFFSET, 0.0, 0.0);
 
   return normalize(vec3(
-    distance_field(p + step.xyy).distance - distance_field(p - step.xyy).distance,
-    distance_field(p + step.yxy).distance - distance_field(p - step.yxy).distance,
-    distance_field(p + step.yyx).distance - distance_field(p - step.yyx).distance
+    nearest_distance(p + step.xyy) - nearest_distance(p - step.xyy),
+    nearest_distance(p + step.yxy) - nearest_distance(p - step.yxy),
+    nearest_distance(p + step.yyx) - nearest_distance(p - step.yyx)
   ));
 }
 
-float cast_light(vec3 destination, vec3 light, float radius) {
-  vec3 direction = normalize(light - destination);
+float cast_light(vec3 p, vec3 light, float radius) {
+  vec3 direction = normalize(light - p);
+  float light_distance = distance(light, p);
 
-  float stop_at = distance(light, destination);
-
-  float light_brightness = 1.0 - (stop_at / radius);
+  float light_brightness = 1.0 - (light_distance / radius);
   if (light_brightness <= 0.0) {
     return 0.0;
   }
@@ -96,17 +101,16 @@ float cast_light(vec3 destination, vec3 light, float radius) {
   float last_distance = 1e20;
   float progress = MINIMUM_HIT_DISTANCE;
   for (int i = 0; i < MAX_STEPS; i++) {
-    vec3 p = destination + progress * direction;
-    float distance = distance_field(p).distance;
+    vec3 p = p + progress * direction;
+    float distance = nearest_distance(p);
+
+    if (progress + distance > light_distance) {
+      return in_light * light_brightness;
+    }
 
     if (distance < MINIMUM_HIT_DISTANCE) {
-     if (progress + distance + MINIMUM_HIT_DISTANCE > stop_at - MINIMUM_HIT_DISTANCE) {
-       // we hit the light
-       return in_light * light_brightness;
-     } else {
-       // we hit something else
+       // we hit something
        return 0.0;
-     }
     }
 
     float intersect_offset = distance * distance / (2.0 * last_distance);
@@ -117,8 +121,8 @@ float cast_light(vec3 destination, vec3 light, float radius) {
     progress += distance;
     last_distance = distance;
   }
-
-  return in_light * light_brightness;
+  // we never reached the light
+  return 0.0;
 }
 
 vec3 fog_color = vec3(0.15);
@@ -129,45 +133,22 @@ vec3 march(vec3 ray_origin, vec3 ray_direction) {
   for (int i = 0; i < MAX_STEPS; i++) {
     vec3 p = ray_origin + distance * ray_direction;
 
-    Surface nearest = distance_field(p);
+    float nearest = nearest_distance(p);
 
-    if (nearest.distance < MINIMUM_HIT_DISTANCE) {
+    if (nearest < MINIMUM_HIT_DISTANCE) {
       // a useful debug view
       // return vec3(float(i) / float(MAX_STEPS));
 
-      vec3 hit = p + nearest.distance * ray_direction;
-      vec3 normal = calculate_normal(hit);
-
-      float depth = length(hit - ray_origin);
-      vec3 normal_color = 0.5 * (normal + vec3(1.0));
-
-      return mix(normal_color, fog_color, depth / MAXIMUM_TRACE_DISTANCE);
-
-      vec3 light = vec3(256.0, 256.0, 0.0);
-      float brightness = cast_light(hit + 2.0 * MINIMUM_HIT_DISTANCE * normal, light, 1024.0);
-      float diffuse = brightness * max(0.0, dot(normal, normalize(light - hit)));
-
-      float ambient = 0.2;
-
-      float col = 0.0;
-      //mat3 mat = align_matrix(normal);
-      //for (int i = 0; i < 12; ++i) {
-      //  vec3 m = mat * ambient_occlusion_dir[i];
-      //  // col += ambient_occlusion(p, m) * (0.5 + 0.5 * dot(m, vec3(0.0, 0.0, 1.0)));
-      //  col += ambient_occlusion(p, m);
-      //}
-      //col = clamp(pow(col / 5.0, 0.5), 0.0, 1.0);
-      col = 1.0;
-
-      // return 0.5 * (normal + 1.0);
-
-      return normal_color * (diffuse + ambient * col);
+      vec3 hit = p + nearest * ray_direction;
+      vec3 color = nearest_color(hit, ray_origin);
+      float depth = length(p - ray_origin);
+      return mix(color, fog_color, depth / MAXIMUM_TRACE_DISTANCE);
     }
 
     if (distance > MAXIMUM_TRACE_DISTANCE) {
       return fog_color;
     }
-    distance += nearest.distance;
+    distance += nearest;
   }
   return vec3(1.0, 0.1, 0.1);
 }

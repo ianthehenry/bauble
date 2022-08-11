@@ -85,7 +85,7 @@
 
 (defcompiler box
   {:size size :center center}
-  (:function comp-state :box "s3d_box"
+  (:function comp-state "float" :box "s3d_box"
     [coord (vec3 center) (vec3 size)]
     ["vec3 p" "vec3 center" "vec3 size"] `
     vec3 q = abs(p - center) - size;
@@ -98,7 +98,7 @@
 
 (defcompiler cylinder
   {:radius radius :height height :axis axis}
-  (:function comp-state [:cylinder axis] "s3d_cylinder"
+  (:function comp-state "float" [:cylinder axis] "s3d_cylinder"
     [coord (float radius) (float height)]
     ["vec3 p" "float radius" "float height"]
     (string/format `
@@ -110,7 +110,7 @@
 
 (defcompiler cone
   {:axis axis :radius radius :height height :upside-down upside-down}
-  (:function comp-state [:cone axis] "s3d_cone"
+  (:function comp-state "float" [:cone axis] "s3d_cone"
     [coord (float radius) (float height)]
     ["vec3 p" "float radius" "float height"] 
     (string/format `
@@ -135,7 +135,7 @@
 
 (defcompiler sphere
   {:radius radius :center center}
-  (:function comp-state :sphere "s3d_sphere"
+  (:function comp-state "float" :sphere "s3d_sphere"
     [coord (vec3 center) (float radius)]
     ["vec3 p" "vec3 center" "float radius"] `
     return length(p - center) - radius;
@@ -153,7 +153,7 @@
 
 (defcompiler line
   {:radius radius :start start :end end}
-  (:function comp-state :line "s3d_line"
+  (:function comp-state "float" :line "s3d_line"
     [coord (vec3 start) (vec3 end) (float radius)]
     ["vec3 p" "vec3 a" "vec3 b" "float r"] `
     vec3 pa = p - a, ba = b - a;
@@ -397,7 +397,7 @@
     (if (nil? limit)
       (:compile expr comp-state
         (string/format "(mod(%s+0.5*%s,%s)-0.5*%s)" coord offset offset offset))
-      (:function comp-state self "tile" [coord offset (vec3 limit)]
+      (:function comp-state "float" self "tile" [coord offset (vec3 limit)]
         ["vec3 p" "vec3 offset" "vec3 limit"]
         (string
           "vec3 q = p - offset * clamp(round(p / offset), -limit, limit);"
@@ -414,6 +414,43 @@
         (:compile expr2 comp-state coord)
         (float weight)))))
   [weight expr1 expr2] @{:weight weight :expr1 expr1 :expr2 expr2})
+
+(defconstructor flat-color
+  @{:compile (fn [{:shape shape} comp-state coord]
+      (:compile shape comp-state coord))
+    :surface (fn [{:color color} comp-state coord]
+      (vec3 color))}
+  [color shape] @{:color color :shape shape})
+
+(defconstructor blinn-phong
+  @{:compile (fn [{:shape shape} comp-state coord]
+      (:compile shape comp-state coord))
+    :surface (fn [{:color color :shine shininess} comp-state coord]
+      (:function comp-state "vec3" :blinn-phong "blinn_phong"
+        [coord "camera" (vec3 color) (float shininess)]
+        ["vec3 p" "vec3 camera" "vec3 color" "float shininess"]
+        `
+        vec3 normal = calculate_normal(p);
+        vec3 light = vec3(256.0, 256.0, 0.0);
+        vec3 light_color = vec3(1.0);
+
+        vec3 light_dir = normalize(light - p);
+        vec3 view_dir = normalize(camera - p);
+        vec3 halfway_dir = normalize(light_dir + view_dir);
+
+        float specular_strength = pow(max(dot(normal, halfway_dir), 0.0), pow(shininess, 2.0));
+        float diffuse = max(0.0, dot(normal, normalize(light - p)));
+        float ambient = 0.2;
+
+        if (diffuse + specular_strength > 0.0) {
+          float light_brightness = cast_light(p + 2.0 * MINIMUM_HIT_DISTANCE * normal, light, 1024.0);
+          vec3 specular_color = 0.1 * light_color * light_brightness * specular_strength;
+          return color * (diffuse + ambient) + specular_color;
+        } else {
+          return color * ambient;
+        }
+        `))}
+  [color shine shape] @{:color color :shape shape :shine shine})
 
 (def- TAU (* 2 math/pi))
 
