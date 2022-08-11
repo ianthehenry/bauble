@@ -40,7 +40,7 @@
 precision highp float;
 
 const int MAX_STEPS = 256;
-const float MINIMUM_HIT_DISTANCE = 0.5;
+const float MINIMUM_HIT_DISTANCE = 0.1;
 const float NORMAL_OFFSET = 0.005;
 const float MAXIMUM_TRACE_DISTANCE = 8192.0;
 
