@@ -101,16 +101,15 @@ float cast_light(vec3 p, vec3 light, float radius) {
   float last_distance = 1e20;
   float progress = MINIMUM_HIT_DISTANCE;
   for (int i = 0; i < MAX_STEPS; i++) {
-    vec3 p = p + progress * direction;
-    float distance = nearest_distance(p);
-
-    if (progress + distance > light_distance) {
+    if (progress > light_distance) {
       return in_light * light_brightness;
     }
 
+    float distance = nearest_distance(p + progress * direction);
+
     if (distance < MINIMUM_HIT_DISTANCE) {
-       // we hit something
-       return 0.0;
+      // we hit something
+      return 0.0;
     }
 
     float intersect_offset = distance * distance / (2.0 * last_distance);

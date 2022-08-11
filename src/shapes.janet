@@ -425,10 +425,10 @@
 (defconstructor blinn-phong
   @{:compile (fn [{:shape shape} comp-state coord]
       (:compile shape comp-state coord))
-    :surface (fn [{:color color :shine shininess} comp-state coord]
+    :surface (fn [{:color color :shininess shininess :glossiness glossiness} comp-state coord]
       (:function comp-state "vec3" :blinn-phong "blinn_phong"
-        [coord "camera" (vec3 color) (float shininess)]
-        ["vec3 p" "vec3 camera" "vec3 color" "float shininess"]
+        [coord "camera" (vec3 color) (float shininess) (float glossiness)]
+        ["vec3 p" "vec3 camera" "vec3 color" "float shininess" "float glossiness"]
         `
         vec3 normal = calculate_normal(p);
         vec3 light = vec3(256.0, 256.0, 0.0);
@@ -438,19 +438,23 @@
         vec3 view_dir = normalize(camera - p);
         vec3 halfway_dir = normalize(light_dir + view_dir);
 
-        float specular_strength = pow(max(dot(normal, halfway_dir), 0.0), pow(shininess, 2.0));
+        float specular_strength = shininess * pow(max(dot(normal, halfway_dir), 0.0), pow(glossiness, 2.0));
         float diffuse = max(0.0, dot(normal, normalize(light - p)));
         float ambient = 0.2;
 
         if (diffuse + specular_strength > 0.0) {
           float light_brightness = cast_light(p + 2.0 * MINIMUM_HIT_DISTANCE * normal, light, 1024.0);
-          vec3 specular_color = 0.1 * light_color * light_brightness * specular_strength;
-          return color * (diffuse + ambient) + specular_color;
+          vec3 specular_color = light_color * light_brightness * specular_strength;
+          return color * (light_brightness * diffuse + ambient) + specular_color;
         } else {
           return color * ambient;
         }
         `))}
-  [color shine shape] @{:color color :shape shape :shine shine})
+  [color shininess glossiness shape]
+  @{:color color
+    :shape shape
+    :shininess shininess
+    :glossiness glossiness})
 
 (def- TAU (* 2 math/pi))
 
