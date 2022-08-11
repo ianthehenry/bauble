@@ -91,7 +91,8 @@ vec3 nearest_color(vec3 p, vec3 camera) {
     cast_light(p + 2.0 * MINIMUM_HIT_DISTANCE * normal, lights[1].position, lights[1].radius),
     cast_light(p + 2.0 * MINIMUM_HIT_DISTANCE * normal, lights[2].position, lights[2].radius)
   );
-  // for some reason the obvious thing just... doesn't work.
+  // TODO: for some reason the obvious thing just... doesn't work.
+  // float light_intensities[3];
   // for (int i = 0; i < lights.length(); i++) {
   //   light_intensities[i] = cast_light(p + 2.0 * MINIMUM_HIT_DISTANCE * normal, lights[i].position, lights[i].radius);
   // }
