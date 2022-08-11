@@ -62,6 +62,18 @@ vec3 sort3(vec3 p) {
   return vec3(smallest, middlest, largest);
 }
 
+struct Light {
+  vec3 position;
+  vec3 color;
+  float radius;
+};
+
+const Light lights[3] = Light[3](
+  Light(vec3(256.0, 256.0, 0.0), vec3(0.7, 0.7, 0.5), 4096.0),
+  Light(vec3(-256.0, 256.0, 0.0), vec3(0.5), 4096.0),
+  Light(vec3(0.0, 0.0, 256.0), vec3(1.0, 0.5, 1.0), 4096.0)
+);
+
 vec3 calculate_normal(vec3 p);
 float cast_light(vec3 destination, vec3 light, float radius);
 
@@ -73,6 +85,16 @@ float nearest_distance(vec3 p) {
 }
 
 vec3 nearest_color(vec3 p, vec3 camera) {
+  vec3 normal = calculate_normal(p);
+  float light_intensities[3] = float[3] (
+    cast_light(p + 2.0 * MINIMUM_HIT_DISTANCE * normal, lights[0].position, lights[0].radius),
+    cast_light(p + 2.0 * MINIMUM_HIT_DISTANCE * normal, lights[1].position, lights[1].radius),
+    cast_light(p + 2.0 * MINIMUM_HIT_DISTANCE * normal, lights[2].position, lights[2].radius)
+  );
+  // for some reason the obvious thing just... doesn't work.
+  // for (int i = 0; i < lights.length(); i++) {
+  //   light_intensities[i] = cast_light(p + 2.0 * MINIMUM_HIT_DISTANCE * normal, lights[i].position, lights[i].radius);
+  // }
   return `top-level-color`;
 }
 
