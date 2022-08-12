@@ -128,10 +128,10 @@ const initialScript = `
 # shape and apply it to another. For
 # example:
 
-(with-surface (offset 1 (box 50))
-  (intersect
-    (blinn-phong [1 0 0] 1 4 (box 50))
-    (blinn-phong [0 0 1] 1 4 (sphere 70))))
+# (with-surface (offset 1 (box 50))
+#   (intersect
+#     (blinn-phong [1 0 0] 1 4 (box 50))
+#     (blinn-phong [0 0 1] 1 4 (sphere 70))))
 
 # This is a useful technique for "painting"
 # complex colors onto shapes.
