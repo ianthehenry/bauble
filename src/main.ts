@@ -281,6 +281,10 @@ function mod(a, b) {
   return ((a % b) + b) % b;
 }
 
+interface GestureEvent extends TouchEvent {
+  scale: number
+}
+
 document.addEventListener("DOMContentLoaded", (_) => {
   const camera = {
     x: -0.125,
@@ -349,6 +353,15 @@ document.addEventListener("DOMContentLoaded", (_) => {
       draw();
     }
   });
+
+  // TODO: I haven't actually tested if this is anything
+  canvas.addEventListener('gesturchange', (e: GestureEvent) => {
+    if (e.scale !== 1) {
+      e.preventDefault();
+      camera.zoom += e.scale;
+    }
+  });
+
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
     camera.zoom += cameraZoomSpeed * e.deltaY;
