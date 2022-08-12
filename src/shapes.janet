@@ -636,13 +636,15 @@
   (default default-value ~(quote ,unset))
   ~(def ,name @{:type ,type :value ,default-value :name ',name}))
 
+(defn- set? [value]
+  (not= value unset))
+
 (defmacro- set-param [param value]
   (let [$param (gensym)]
     ~(let [,$param ,param]
-      (set (,$param :value) (typecheck (,$param :type) ,value)))))
-
-(defn- set? [value]
-  (not= value unset))
+      (if (set? (,$param :value))
+        (errorf "%s specified multiple times" (,$param :name))
+        (set (,$param :value) (typecheck (,$param :type) ,value))))))
 
 (defn- get-param [param default-value]
   (let [value (param :value)]
