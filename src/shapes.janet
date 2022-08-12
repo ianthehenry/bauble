@@ -63,16 +63,26 @@
     ,args
     ,;body))
 
-(defmacro- def-operator [name self compile-body args & body]
+# an input-operator can only change the input coordinates
+(defmacro- def-input-operator [name alter-fn args & body]
   ~(def-constructor ,name
-    @{:compile (fn [,self comp-state coord] ,compile-body)
-      :surface (fn [self comp-state coord] (:surface (self :expr) comp-state coord))}
+    (let [alter ,alter-fn]
+      @{:compile (fn [self comp-state coord] (:compile (self :expr) comp-state (alter self coord)))
+        :surface (fn [self comp-state coord] (:surface (self :expr) comp-state (alter self coord)))})
     ,args
     ,;body))
 
 # TODO: copy-pasted; could use a macro or something
-(defmacro- def-operator- [name self compile-body args & body]
+(defmacro- def-input-operator- [name alter-fn args & body]
   ~(def-constructor- ,name
+    (let [alter ,alter-fn]
+      @{:compile (fn [self comp-state coord] (:compile (self :expr) comp-state (alter self coord)))
+        :surface (fn [self comp-state coord] (:surface (self :expr) comp-state (alter self coord)))})
+    ,args
+    ,;body))
+
+(defmacro- def-operator [name self compile-body args & body]
+  ~(def-constructor ,name
     @{:compile (fn [,self comp-state coord] ,compile-body)
       :surface (fn [self comp-state coord] (:surface (self :expr) comp-state coord))}
     ,args
@@ -85,8 +95,9 @@
     ,args
     ,;body))
 
-(def-operator translate
-  {:offset offset :expr expr} (:compile expr comp-state (string/format "(%s - %s)" coord (vec3 offset)))
+(def-input-operator translate
+  (fn [{:offset offset} coord]
+    (string/format "(%s - %s)" coord (vec3 offset)))
   [offset expr] @{:offset offset :expr expr})
 
 (def-operator offset
@@ -208,9 +219,8 @@
      s c 0
      0 0 1]))
 
-(def-operator- transform
-  {:matrix matrix :expr expr}
-  (:compile expr comp-state (string/format "(%s * %s)" coord (mat3 matrix)))
+(def-input-operator- transform
+  (fn [{:matrix matrix} coord] (string/format "(%s * %s)" coord (mat3 matrix)))
   [matrix expr] @{:matrix matrix :expr expr})
 
 # our matrices are just flat tuples. we could do this in C but whatever.
@@ -281,18 +291,16 @@
       {:compile (fn [_] (:compile expr comp-state "p"))
        :surface (fn [_] (:surface expr comp-state "p"))})
     (def exprs (self :exprs))
-    (if (= 1 (length exprs))
-      (:compile (first exprs) comp-state coord)
-      (:function comp-state type [self base-name] base-name
-        [coord ;extra-args]
-        ["vec3 p" ;extra-params]
-        (string/join [
-          (preamble self)
-          (fn-first (proxy (first exprs)))
-          ;(->> exprs (drop 1) (map |(fn-rest (proxy $))))
-          (postamble self)
-          (string/format "return %s;" return)
-        ] "\n")))))
+    (:function comp-state type [self base-name] base-name
+      [coord ;extra-args]
+      ["vec3 p" ;extra-params]
+      (string/join [
+        (preamble self)
+        (fn-first (proxy (first exprs)))
+        ;(->> exprs (drop 1) (map |(fn-rest (proxy $))))
+        (postamble self)
+        (string/format "return %s;" return)
+        ] "\n"))))
 
 (defn- get-axes-and-expr [args]
   (var x false)
@@ -360,12 +368,11 @@
 # you could have more flexible symmetry that only rotates across a single axis,
 # does not do the abs(), etc. also... i'm not really sure how this works. this
 # operation seems slightly insane.
-(def-operator symmetry
-  {:expr expr}
-  (:compile expr comp-state (string/format "sort3(abs(%s))" coord))
-  [expr]
-  @{:expr expr})
+(def-input-operator symmetry
+  (fn [{:expr expr} coord] (string/format "sort3(abs(%s))" coord))
+  [expr] @{:expr expr})
 
+# TODO: this should be an input operator
 (def-operator reflect
   self
   (:sdf-3d comp-state self "sym" coord (fn [coord]
@@ -501,6 +508,9 @@
 # TODO: this has the somewhat fatal problem that the named arguments have to come at
 # the *end* of the argument list. I need to make my own function thingy that's like
 # aware of types and stuff, and lets me supply named arguments in arbitrary order.
+# TODO: this needs to apply the same treatment to the surfaces. could be easier if we
+# made a helper function to do the tiling coordinate transform -- it would just be an
+# input-operator in that case. yeah i should do that.
 (def-operator tile
   self
   (let [{:offset offset :expr expr :limit limit} self
@@ -561,6 +571,11 @@
     :shape shape
     :shininess shininess
     :glossiness glossiness})
+
+(def-constructor with-surface
+  @{:compile (fn [{:shape shape} comp-state coord] (:compile shape comp-state coord))
+    :surface (fn [{:color color} comp-state coord] (:surface color comp-state coord))}
+  [shape color] @{:shape shape :color color})
 
 (def- TAU (* 2 math/pi))
 

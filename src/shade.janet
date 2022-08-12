@@ -30,9 +30,7 @@
   (def comp-state @{:names @{} :cache @{} :functions @[]})
   (table/setproto comp-state comp-state-proto)
   (def top-level-shape (:compile expr comp-state "p"))
-  (def top-level-color (if (expr :surface)
-    (:surface expr comp-state "p")
-    "0.5 * (1.0 + calculate_normal(p))"))
+  (def top-level-color (:surface expr comp-state "p"))
   (def function-defs (string/join (map compile-function (comp-state :functions)) "\n"))
   (set-fragment-shader
     (string `
