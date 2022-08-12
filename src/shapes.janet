@@ -125,7 +125,7 @@
     (float amount))
   [amount expr] @{:amount amount :expr expr})
 
-(def-primitive- primitive-box
+(def-primitive- new-box
   {:size size}
   (:function comp-state "float" :box "s3d_box"
     [coord (vec3 size)]
@@ -641,11 +641,14 @@
     ~(let [,$param ,param]
       (set (,$param :value) (typecheck (,$param :type) ,value)))))
 
-(defn- get-param [param]
+(defn- set? [value]
+  (not= value unset))
+
+(defn- get-param [param default-value]
   (let [value (param :value)]
-    (if (= value unset)
-      (errorf "%p: missing required argument" (param :name))
-      value)))
+    (if (set? value) value
+      (if (set? default-value) default-value
+        (errorf "%p: missing required argument" (param :name))))))
 
 (defn- handle-args [args spec]
   (var i 0)
@@ -674,11 +677,13 @@
 
 (defmacro- def-flexible-fn [name bindings spec & body]
   (def param-defs
-    (flip map bindings (fn [[name type &opt default-value]]
-      ~(def-param ,name ,type ,;(to-list default-value)))))
+    (flip map bindings (fn [[name type]]
+      ~(def-param ,name ,type))))
   (def get-bindings-defs
-    (flip mapcat bindings (fn [[name type &opt default-value]]
-      ~(,name (get-param ,name)))))
+    (flip mapcat bindings (fn [binding]
+      (def [name type] binding)
+      (def default-value (get binding 2 ~(quote ,unset)))
+      ~(,name (get-param ,name ,default-value)))))
   (def $args (gensym))
   ~(defn ,name [& ,$args]
     ,;param-defs
@@ -691,5 +696,5 @@
    type/float |(set-param size [$ $ $])
    :r |(set-param radius $)}
   (if (= radius 0)
-    (primitive-box size)
-    (offset radius (primitive-box (map |(- $ radius) size)))))
+    (new-box size)
+    (offset radius (new-box (map |(- $ radius) size)))))
