@@ -110,14 +110,36 @@ const initialScript = `
 # increment by 0.1, but editing 3.000
 # will increment by 0.001.
 
-# And... that's it for now! At the
-# moment Bauble will only color
-# surfaces based on their normals, but
-# there will eventually be a way to
-# apply colors and surfaces to the
-# shapes you create, as well as to
-# control the lights. But... that's not
-# here yet. Sorry.
+# You can also apply surfaces to shapes.
+
+# (union
+#   (blinn-phong [1 0.62 0.54] 1 8 (sphere 50))
+#   (blinn-phong [0.9 0.9 0.9] 0 1 (translate [0 -50 0] (half-space :-y))))
+
+# This is not very intuitive, but the
+# invocation is:
+#
+# (blinn-phong color shininess glossiness shape)
+#
+# To apply a surface. This... this will
+# be better in the future.
+
+# You can also take the color from one
+# shape and apply it to another. For
+# example:
+
+(with-surface (offset 1 (box 50))
+  (intersect
+    (blinn-phong [1 0 0] 1 4 (box 50))
+    (blinn-phong [0 0 1] 1 4 (sphere 70))))
+
+# This is a useful technique for "painting"
+# complex colors onto shapes.
+
+# And... that's it for now! You cannot
+# currently control lighting, shadow
+# parameters, raymarching parameters,
+# or anything else.
 
 # There is no documentation or help or
 # anything for Bauble functions right
@@ -152,7 +174,7 @@ const initialScript = `
 # changes will automatically save, but
 # if you want to restore this initial
 # tutorial, just empty out this text
-# field around refresh the page.
+# field and refresh the page.
 `.trimLeft();
 
 const preamble = '(use ./shapes)\n';
