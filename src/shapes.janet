@@ -63,6 +63,14 @@
     ,args
     ,;body))
 
+# TODO: copy-pasted
+(defmacro- def-primitive- [name self compile-body args & body]
+  ~(def-constructor- ,name
+    @{:compile (fn [,self comp-state coord] ,compile-body)
+      :surface (fn [self comp-state coord] "0.5 * (1.0 + normal)")}
+    ,args
+    ,;body))
+
 # an input-operator can only change the input coordinates
 (defmacro- def-input-operator [name alter-fn args & body]
   ~(def-constructor ,name
@@ -117,18 +125,15 @@
     (float amount))
   [amount expr] @{:amount amount :expr expr})
 
-(def-primitive box
-  {:size size :center center}
+(def-primitive- primitive-box
+  {:size size}
   (:function comp-state "float" :box "s3d_box"
-    [coord (vec3 center) (vec3 size)]
-    ["vec3 p" "vec3 center" "vec3 size"] `
-    vec3 q = abs(p - center) - size;
+    [coord (vec3 size)]
+    ["vec3 p" "vec3 size"] `
+    vec3 q = abs(p) - size;
     return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
     `)
-  [size &opt center]
-  (default center zero-vec3)
-  @{:size (if (number? size) [size size size] size)
-    :center center})
+  [size] @{:size size})
 
 (def-primitive cylinder
   {:radius radius :height height :axis axis}
@@ -597,3 +602,94 @@
         transformed (map (fn [f] (if (tuple? f) [;f $expr] [f $expr])) fs)]
     ~(let [,$expr ,expr]
       (,;combine ,$expr ,;transformed))))
+
+# this fancy function definition stuff could be in its own helper module
+
+(def- type/vec2 @"vec2")
+(def- type/vec3 @"vec3")
+(def- type/vec4 @"vec4")
+(def- type/float @"float")
+(def- type/symbol @"symbol")
+(def- type/3d @"3d-sdf")
+(def- type/unknown @"unknown")
+(def- unset (gensym))
+
+(defn- typeof [value]
+  (case (type value)
+    :number type/float
+    :keyword type/symbol
+    :tuple (case (length value)
+      2 type/vec2
+      3 type/vec3
+      4 type/vec4
+      type/unknown)
+    type/unknown))
+
+(defn- typecheck [expected-type value]
+  (let [actual-type (typeof value)]
+    (if (= expected-type actual-type)
+      value
+      (errorf "type mismatch: %s != %s" expected-type actual-type))))
+
+# TODO: could extend this to arbitrary predicates
+(defmacro- def-param [name type &opt default-value]
+  (default default-value ~(quote ,unset))
+  ~(def ,name @{:type ,type :value ,default-value :name ',name}))
+
+(defmacro- set-param [param value]
+  (let [$param (gensym)]
+    ~(let [,$param ,param]
+      (set (,$param :value) (typecheck (,$param :type) ,value)))))
+
+(defn- get-param [param]
+  (let [value (param :value)]
+    (if (= value unset)
+      (errorf "%p: missing required argument" (param :name))
+      value)))
+
+(defn- handle-args [args spec]
+  (var i 0)
+  (var last-index (- (length args) 1))
+  (while (<= i last-index)
+    (def arg (args i))
+    (def type (typeof arg))
+    (var handled-as-name false)
+    (when (= type type/symbol)
+      (when-let [dispatch (spec arg)]
+        (when (= i last-index)
+          (errorf "named argument %p without value" arg))
+        (set handled-as-name true)
+        (dispatch (args (++ i)))))
+    (unless handled-as-name
+      (if-let [dispatch (spec type)]
+        (dispatch arg)
+        (errorf "unexpected argument %p" arg)))
+    (++ i)))
+
+(defn- to-list [x]
+  (if (nil? x) [] [x]))
+
+(defmacro- flip [f arg1 arg2]
+  ~(,f ,arg2 ,arg1))
+
+(defmacro- def-flexible-fn [name bindings spec & body]
+  (def param-defs
+    (flip map bindings (fn [[name type &opt default-value]]
+      ~(def-param ,name ,type ,;(to-list default-value)))))
+  (def get-bindings-defs
+    (flip mapcat bindings (fn [[name type &opt default-value]]
+      ~(,name (get-param ,name)))))
+  (def $args (gensym))
+  ~(defn ,name [& ,$args]
+    ,;param-defs
+    (,handle-args ,$args ,spec)
+    (let ,get-bindings-defs ,;body)))
+
+(def-flexible-fn box
+  [[size type/vec3] [radius type/float 0]]
+  {type/vec3 |(set-param size $)
+   type/float |(set-param size [$ $ $])
+   :r |(set-param radius $)}
+  (if (= radius 0)
+    (primitive-box size)
+    (offset radius (primitive-box (map |(- $ radius) size)))))
