@@ -177,7 +177,8 @@ const initialScript = `
 # field and refresh the page.
 `.trimLeft();
 
-const preamble = '(use ./shapes)\n';
+const preamble = '(use ./shapes) (pipe\n';
+const postamble = ')';
 
 function executeJanet(code: string, camera) {
   if (evaluateJanet === null) {
@@ -185,7 +186,7 @@ function executeJanet(code: string, camera) {
     return;
   }
 
-  const result = evaluateJanet(preamble + code, TAU * camera.x, TAU * camera.y, camera.zoom);
+  const result = evaluateJanet(preamble + code + postamble, TAU * camera.x, TAU * camera.y, camera.zoom);
   if (result !== 0) {
     print('ERREXIT: ' + result.toString(), true);
   }
