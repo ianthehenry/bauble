@@ -46,8 +46,8 @@ if [[ "$build_wasm" == "true" ]]; then
     janet/janet.c \
     src/driver.c \
     -std=c11 \
-    --embed-file src/shade.janet@shade.janet \
-    --embed-file src/shapes.janet@shapes.janet \
+    --preload-file src/shade.janet@shade.janet \
+    --preload-file src/shapes.janet@shapes.janet \
     -s EXPORTED_FUNCTIONS=['_run_janet'] \
     -s USE_WEBGL2=1 \
     -s ALLOW_MEMORY_GROWTH=1 \

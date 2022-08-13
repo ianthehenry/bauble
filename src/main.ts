@@ -217,6 +217,13 @@ const Module: Partial<MyEmscripten> = {
     evaluateJanet = Module.cwrap!("run_janet", 'number', ['string', 'number', 'number', 'number']);
     ready();
   }],
+  locateFile: function(path, prefix) {
+    if (prefix === '') {
+      return '/js/' + path;
+    } else {
+      return prefix + path;
+    }
+  }
 };
 
 function isNumberNode(node: SyntaxNode) {
