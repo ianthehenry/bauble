@@ -2,12 +2,11 @@
 
 Bauble is a toy for composing signed distance functions in a high-level language ([Janet](https://janet-lang.org/)), compiling them to [GLSL](https://www.khronos.org/opengl/wiki/OpenGL_Shading_Language), and rendering them via WebGL.
 
-You can see a live demo running at <https://bauble.studio>, and I sometimes tweet videos of it:
+Bauble is very much not ready for anyone to use yet, but there is a live demo running at <https://bauble.studio>. I sometimes tweet videos of it:
 
-- [modeling a face](https://twitter.com/ianthehenry/status/1551422839307190272)
-- [morphing shapes](https://twitter.com/ianthehenry/status/1554729639183937536)
-- [cutaway effect](https://twitter.com/ianthehenry/status/1554730689374720000)
-- [infinite tiling](https://twitter.com/ianthehenry/status/1555788963905880064)
+- [surfaces](https://twitter.com/ianthehenry/status/1557881955156275200)
+- [shapes](https://twitter.com/ianthehenry/status/1554729639183937536)
+- [first ever demo](https://twitter.com/ianthehenry/status/1551422839307190272)
 
 # Dependencies
 
