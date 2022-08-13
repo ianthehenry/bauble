@@ -1,12 +1,16 @@
 (def- unit-vec3 [1 1 1])
 (def- zero-vec3 [0 0 0])
-(def- identity-matrix-3 [1 0 0 0 1 0 0 0 1])
 
 (defn- sign [x]
   (cond
     (< x 0) -1
     (> x 0) 1
     0))
+
+(defn- vec3+= [target other]
+  (+= (target 0) (other 0))
+  (+= (target 1) (other 1))
+  (+= (target 2) (other 2)))
 
 (defn- float [n]
   (if (int? n) (string n ".0") (string n)))
@@ -140,7 +144,7 @@
   {:axis axis :radius radius :height height :upside-down upside-down}
   (:function comp-state "float" [:cone axis] "s3d_cone"
     [coord (float radius) (float height)]
-    ["vec3 p" "float radius" "float height"] 
+    ["vec3 p" "float radius" "float height"]
     (string/format `
     vec2 q = vec2(radius, height);
     vec2 w = vec2(length(p.%s), %sp.%s);
@@ -168,22 +172,19 @@
 
 (def-primitive- new-half-space
   {:axis axis :sign sign} (string (if (neg? sign) "" "-") coord "." (string-of-axes [axis]))
-  [signed-axis]
-  (let [[sign axis] (split-signed-axis signed-axis)]
-    @{:axis axis :sign sign}))
+  [axis sign] @{:axis axis :sign sign})
 
 (def-primitive- new-line
-  {:radius radius :start start :end end}
+  {:start start :end end}
   (:function comp-state "float" :line "s3d_line"
-    [coord (vec3 start) (vec3 end) (float radius)]
-    ["vec3 p" "vec3 a" "vec3 b" "float r"] `
+    [coord (vec3 start) (vec3 end)]
+    ["vec3 p" "vec3 a" "vec3 b"] `
     vec3 pa = p - a, ba = b - a;
     float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
-    return length(pa - ba * h) - r;
+    return length(pa - ba * h);
     `)
-  [start end &opt radius]
-  (default radius 0)
-  @{:start start :end end :radius radius})
+  [start end]
+  @{:start start :end end})
 
 (defn- rotate-x-matrix [angle]
   (let [c (math/cos angle)
@@ -206,66 +207,26 @@
      s c 0
      0 0 1]))
 
-(def-input-operator- transform
+(def-input-operator- new-transform
   (fn [{:matrix matrix} coord] (string/format "(%s * %s)" coord (mat3 matrix)))
   [matrix expr] @{:matrix matrix :expr expr})
 
-# our matrices are just flat tuples. we could do this in C but whatever.
-(defn- matrix-multiply-3 [a b]
+(defn mat3/make-identity []
+  @[1 0 0 0 1 0 0 0 1])
+
+# this could be C but whatever
+(defn- mat3/multiply! [a b]
   (def [a11 a12 a13 a21 a22 a23 a31 a32 a33] a)
   (def [b11 b12 b13 b21 b22 b23 b31 b32 b33] b)
-  [
-  (+ (* a11 b11) (* a12 b21) (* a13 b31))
-  (+ (* a11 b12) (* a12 b22) (* a13 b32))
-  (+ (* a11 b13) (* a12 b23) (* a13 b33))
-  (+ (* a21 b11) (* a22 b21) (* a23 b31))
-  (+ (* a21 b12) (* a22 b22) (* a23 b32))
-  (+ (* a21 b13) (* a22 b23) (* a23 b33))
-  (+ (* a31 b11) (* a32 b21) (* a33 b31))
-  (+ (* a31 b12) (* a32 b22) (* a33 b32))
-  (+ (* a31 b13) (* a32 b23) (* a33 b33))
-  ])
-
-(defn rotate [& args]
-  (var axis nil)
-  (var matrix nil)
-  (var expr nil)
-
-  (defn assert-number [x]
-    (if (number? x)
-      x
-      (error "rotation must be a number")))
-
-  (defn incorporate (new-matrix)
-    (if (nil? matrix)
-      (set matrix new-matrix)
-      (set matrix (matrix-multiply-3 matrix new-matrix)))
-    (set axis nil))
-
-  (defn axis? [arg]
-    (case arg
-      :x true
-      :y true
-      :z true
-      false))
-
-  (each arg args
-    (case axis
-      :x (incorporate (rotate-x-matrix (assert-number arg)))
-      :y (incorporate (rotate-y-matrix (assert-number arg)))
-      :z (incorporate (rotate-z-matrix (assert-number arg)))
-      (if (axis? arg)
-        (set axis arg)
-        (do
-          (unless (nil? expr)
-            (error "multiple expressions"))
-          (set expr arg)))))
-
-  (unless (nil? axis) (error "no angle for rotation axis"))
-  (when (nil? matrix) (set matrix identity-matrix-3))
-  (when (nil? expr) (error "nothing to rotate"))
-
-  (transform matrix expr))
+  (set (a 0) (+ (* a11 b11) (* a12 b21) (* a13 b31)))
+  (set (a 1) (+ (* a11 b12) (* a12 b22) (* a13 b32)))
+  (set (a 2) (+ (* a11 b13) (* a12 b23) (* a13 b33)))
+  (set (a 3) (+ (* a21 b11) (* a22 b21) (* a23 b31)))
+  (set (a 4) (+ (* a21 b12) (* a22 b22) (* a23 b32)))
+  (set (a 5) (+ (* a21 b13) (* a22 b23) (* a23 b33)))
+  (set (a 6) (+ (* a31 b11) (* a32 b21) (* a33 b31)))
+  (set (a 7) (+ (* a31 b12) (* a32 b22) (* a33 b32)))
+  (set (a 8) (+ (* a31 b13) (* a32 b23) (* a33 b33))))
 
 (defn- fold-exprs [base-name &named preamble fn-first fn-rest postamble type extra-args extra-params return]
   (default preamble (fn [_] ""))
@@ -363,7 +324,7 @@
 # TODO: this should be an input operator
 (def-operator- new-reflect
   self
-  (:sdf-3d comp-state self "sym" coord (fn [coord]
+  (:sdf-3d comp-state self "reflect" coord (fn [coord]
     (def {:expr expr :axes axes} self)
     (string/format "%s.%s = -%s.%s; return %s;" coord axes coord axes (:compile expr comp-state coord))))
   [& args]
@@ -565,14 +526,21 @@
     :surface (fn [{:color color} comp-state coord] (:surface color comp-state coord))}
   [shape color] @{:shape shape :color color})
 
-(def- TAU (* 2 math/pi))
-
 # ----- general helpers ------
 
-# TODO: we could maybe make this a macro so it can be used as a function or value?
-(defn tau [x] (* TAU x))
+(def pi math/pi)
+(def tau (* 2 pi))
+(def tau/360 (/ pi 180))
+(def pi/2 (/ pi 2))
+(def pi/3 (/ pi 3))
+(def pi/4 (/ pi 4))
+(def pi/5 (/ pi 5))
+(def pi/6 (/ pi 6))
+(def pi/7 (/ pi 7))
+(def pi/8 (/ pi 8))
 
-(defn tau/ [x] (/ TAU x))
+(defn tau* [x] (* tau x))
+(defn tau/ [x] (/ tau x))
 
 (defn axis-vec [axis scale]
   (case axis
@@ -604,15 +572,29 @@
 (def- type/vec3 @"vec3")
 (def- type/vec4 @"vec4")
 (def- type/float @"float")
-(def- type/symbol @"symbol")
+(def- type/keyword @"keyword")
 (def- type/3d @"3d-sdf")
+(def- type/axis @"axis")
+(def- type/signed-axis @"signed-axis")
 (def- type/unknown @"unknown")
 (def- unset (gensym))
+
+(def- keyword-types {
+  :x type/axis
+  :y type/axis
+  :z type/axis
+  :+x type/signed-axis
+  :+y type/signed-axis
+  :+z type/signed-axis
+  :-x type/signed-axis
+  :-y type/signed-axis
+  :-z type/signed-axis
+  })
 
 (defn- typeof [value]
   (case (type value)
     :number type/float
-    :keyword type/symbol
+    :keyword (get keyword-types value type/unknown)
     :table type/3d # TODO: obviously this is wrong once I add 2D SDFs
     :tuple (case (length value)
       2 type/vec2
@@ -622,12 +604,12 @@
     type/unknown))
 
 (defn- typecheck [expected-type value]
-  (let [actual-type (typeof value)]
-    (if (= expected-type actual-type)
-      value
-      (errorf "%s: type mismatch: %s != %s" (dyn :fn-name) expected-type actual-type))))
+  (if (nil? expected-type) value
+    (let [actual-type (typeof value)]
+      (if (= expected-type actual-type)
+        value
+        (errorf "%s: expected %s, got %s" (dyn :fn-name) expected-type actual-type)))))
 
-# TODO: could extend this to arbitrary predicates
 (defmacro- def-param [name type]
   ~(def ,name @{:type ,type :value ',unset :name ',name}))
 
@@ -638,6 +620,16 @@
   (if (set? (param :value))
     (errorf "%s: %s specified multiple times" (dyn :fn-name) (param :name))
     (set (param :value) (typecheck (param :type) value))))
+
+# the error message here only makes sense if this is
+# used for handling positional arguments
+(defn- set-first [params value]
+  (prompt :break
+    (each param params
+      (when (not (set? (param :value)))
+        (set-param param value)
+        (return :break)))
+    (errorf "%s: unexpected argument %p" (dyn :fn-name) value)))
 
 (defn- get-param [param default-value]
   (let [value (param :value)]
@@ -650,14 +642,16 @@
   (var last-index (- (length args) 1))
   (while (<= i last-index)
     (def arg (args i))
-    (def type (typeof arg))
     (var handled-as-name false)
-    (when (= type type/symbol)
+    (when (= (type arg) :keyword)
       (when-let [dispatch (spec arg)]
-        (when (= i last-index)
-          (errorf "%s: named argument %s without value" (dyn :fn-name) arg))
         (set handled-as-name true)
-        (dispatch (args (++ i)))))
+        (if (= (function/max-arity dispatch) 0)
+          (dispatch)
+          (if (= i last-index)
+            (errorf "%s: named argument %s without value" (dyn :fn-name) arg)
+            (dispatch (args (++ i)))))))
+    (def type (typeof arg))
     (unless handled-as-name
       (if-let [dispatch (spec type)]
         (dispatch arg)
@@ -672,7 +666,7 @@
     (flip map bindings (fn [binding]
       (def [name arg] binding)
       (case (tuple/type binding)
-        :parens ~(def ,name ,arg)
+        :parens ~(var ,name ,arg)
         :brackets ~(def-param ,name ,arg)))))
   (def get-bindings-defs
     (flip mapcat bindings (fn [binding]
@@ -687,19 +681,65 @@
       (,handle-args ,$args ,spec)
       (let ,get-bindings-defs ,;body))))
 
+# --- primitive shapes ---
+
 (def-flexible-fn box
-  [[size type/vec3] [radius type/float 0]]
+  [[size type/vec3] [round type/float 0]]
   {type/vec3 |(set-param size $)
    type/float |(set-param size [$ $ $])
-   :r |(set-param radius $)}
-  (if (= radius 0)
+   :r |(set-param round $)}
+  (if (= round 0)
     (new-box size)
-    (new-offset radius (new-box (map |(- $ radius) size)))))
+    (new-offset round (new-box (map |(- $ round) size)))))
 
 (def-flexible-fn sphere
   [[radius type/float]]
   {type/float |(set-param radius $)}
   (new-sphere radius))
+
+# TODO: is it weird that the height is double the thing you pass it? it seems weird.
+# this is true of box as well, though.
+(def-flexible-fn cylinder
+  [[axis] [radius] [height] [round type/float 0]]
+  {type/float |(set-first [radius height] $)
+   type/axis |(set-param axis $)
+   :r |(set-param round $)}
+  (if (= round 0)
+    (new-cylinder axis radius height)
+    (new-offset round
+      (new-cylinder axis (- radius round) (- height round)))))
+
+(def-flexible-fn half-space [[axis] [offset type/float 0]]
+  {type/signed-axis |(set-param axis $)
+   type/axis |(set-param axis $)
+   type/float |(set-param offset $)}
+  (let [[sign axis] (split-signed-axis axis)]
+    (if (= offset 0)
+      (new-half-space axis sign)
+      (new-translate (axis-vec axis offset) (new-half-space axis sign)))))
+
+(def-flexible-fn cone
+  [[axis]
+   [radius type/float]
+   [height type/float]
+   [round type/float 0]]
+  {type/signed-axis |(set-param axis $)
+   type/axis |(set-param axis $)
+   type/float |(set-first [radius height] $)
+   :r |(set-param round $)}
+  (if (= 0 round)
+    (new-cone axis radius (* 2 height))
+    (new-offset round (new-cone axis (- radius round) (* 2 (- height round))))))
+
+(def-flexible-fn line
+  [[start type/vec3] [end type/vec3] [thickness type/float 0]]
+  {type/vec3 |(set-first [start end] $)
+   type/float |(set-param thickness $)}
+  (if (= 0 thickness)
+    (new-line start end)
+    (new-offset thickness (new-line start end))))
+
+# --- shape combinators ---
 
 # TODO: I don't love the name "offset"
 (def-flexible-fn offset [[distance type/float] [shape type/3d]]
@@ -738,12 +778,7 @@
     0 (new-subtract shapes)
     1 (new-smooth-subtract radius shapes)))
 
-(defn- vec3+= [target other]
-  (+= (target 0) (other 0))
-  (+= (target 1) (other 1))
-  (+= (target 2) (other 2)))
-
-(def-flexible-fn move 
+(def-flexible-fn move
   [(offset @[0 0 0]) [shape type/3d]]
   {type/3d |(set-param shape $)
    type/vec3 |(vec3+= offset $)
@@ -751,6 +786,18 @@
    :y |(+= (offset 1) (typecheck type/float $))
    :z |(+= (offset 2) (typecheck type/float $))}
   (new-translate offset shape))
+
+(def-flexible-fn rotate [(matrix (mat3/make-identity)) (scale 1) [shape]]
+  {type/3d |(set-param shape $)
+   :tau |(set scale tau)
+   :pi |(set scale pi)
+   :deg |(set scale tau/360)
+   :x |(mat3/multiply! matrix (rotate-x-matrix (* scale $)))
+   :y |(mat3/multiply! matrix (rotate-y-matrix (* scale $)))
+   :z |(mat3/multiply! matrix (rotate-z-matrix (* scale $)))}
+  (new-transform matrix shape))
+
+# --- surfacing ---
 
 (def-flexible-fn color
   [[color type/vec3]
@@ -762,3 +809,35 @@
    :shine |(set-param shine $)
    :gloss |(set-param gloss $)}
   (new-blinn-phong color shape shine gloss))
+
+# TODO: is this useful?
+
+(defn red [& args]
+  (color [0.9 0.1 0.1] ;args))
+
+(defn green [& args]
+  (color [0.1 0.9 0.1] ;args))
+
+(defn blue [& args]
+  (color [0.1 0.2 0.9] ;args))
+
+(defn cyan [& args]
+  (color [0.1 0.9 0.9] ;args))
+
+(defn magenta [& args]
+  (color [0.9 0.1 0.9] ;args))
+
+(defn yellow [& args]
+  (color [0.9 0.9 0.1] ;args))
+
+(defn orange [& args]
+  (color [1.0 0.3 0.1] ;args))
+
+(defn white [& args]
+  (color [0.9 0.9 0.9] ;args))
+
+(defn gray [& args]
+  (color [0.4 0.4 0.4] ;args))
+
+(defn black [& args]
+  (color [0.0 0.0 0.0] ;args))
