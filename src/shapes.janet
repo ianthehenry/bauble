@@ -475,18 +475,22 @@
   [offset expr &named limit] @{:offset offset :expr expr :limit limit})
 
 (def-constructor- new-morph
-  @{:compile (fn [{:weight weight :expr1 expr1 :expr2 expr2} comp-state coord]
-    (string/format
-      "mix(%s, %s, %s)"
-      (:compile expr1 comp-state coord)
-      (:compile expr2 comp-state coord)
-      (float weight)))
-    :surface (fn [{:weight weight :expr1 expr1 :expr2 expr2} comp-state coord]
-      (string/format
-        "mix(%s, %s, %s)"
-        (:surface expr1 comp-state coord)
-        (:surface expr2 comp-state coord)
-        (float weight)))}
+  @{:compile (fn [self comp-state coord]
+    (def {:weight weight :expr1 expr1 :expr2 expr2} self)
+    (:function comp-state "float" [self :distance] "morph"
+      [coord (float weight)]
+      ["vec3 p" "float weight"]
+      (string/format "return mix(%s, %s, weight);"
+        (:compile expr1 comp-state "p")
+        (:compile expr2 comp-state "p"))))
+    :surface (fn [self comp-state coord]
+      (def {:weight weight :expr1 expr1 :expr2 expr2} self)
+      (:function comp-state "vec3" [self :surface] "morph_surface"
+        [coord "camera" "normal" "light_intensities" (float weight)]
+        ["vec3 p" "vec3 camera" "vec3 normal" "float light_intensities[3]" "float weight"]
+        (string/format "return mix(%s, %s, weight);"
+          (:surface expr1 comp-state "p")
+          (:surface expr2 comp-state "p"))))}
   [weight expr1 expr2] @{:weight weight :expr1 expr1 :expr2 expr2})
 
 (def-surfacer- new-flat-color
@@ -740,7 +744,7 @@
     (new-line start end)
     (new-offset thickness (new-line start end))))
 
-# --- shape combinators ---
+# --- basic shape combinators ---
 
 # TODO: I don't love the name "offset"
 (def-flexible-fn offset [[distance type/float] [shape type/3d]]
@@ -754,6 +758,13 @@
   {type/3d |(set-param shape $)
    type/float |(set-param thickness $)}
   (new-onion thickness shape))
+
+(def-flexible-fn morph [[from-shape] [to-shape] [weight type/float 0.5]]
+  {type/3d |(set-first [from-shape to-shape] $)
+   type/float |(set-param weight $)}
+  (new-morph weight from-shape to-shape))
+
+# --- fancy shape combinators ---
 
 (def-flexible-fn union [(shapes @[]) [radius type/float 0]]
   {type/3d |(array/push shapes $)
