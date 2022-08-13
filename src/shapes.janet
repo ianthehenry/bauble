@@ -12,6 +12,12 @@
   (+= (target 1) (other 1))
   (+= (target 2) (other 2)))
 
+(defn- idiv [a b]
+  (math/floor (/ a b)))
+
+(defn- map3 [vec3 f]
+  [(f (vec3 0)) (f (vec3 1)) (f (vec3 2))])
+
 (defn- float [n]
   (if (int? n) (string n ".0") (string n)))
 
@@ -54,12 +60,6 @@
     (float (m 3)) (float (m 4)) (float (m 5))
     (float (m 6)) (float (m 7)) (float (m 8))))
 
-(defmacro- def-constructor [name proto args & body]
-  (let [$proto (gensym)]
-    ~(def ,name
-      (let [,$proto ,proto]
-        (fn ,args (table/setproto (do ,;body) ,$proto))))))
-
 (defmacro- def-constructor- [name proto args & body]
   (let [$proto (gensym)]
     ~(def- ,name
@@ -77,8 +77,8 @@
 (defmacro- def-input-operator- [name alter-fn args & body]
   ~(def-constructor- ,name
     (let [alter ,alter-fn]
-      @{:compile (fn [self comp-state coord] (:compile (self :expr) comp-state (alter self coord)))
-        :surface (fn [self comp-state coord] (:surface (self :expr) comp-state (alter self coord)))})
+      @{:compile (fn [self comp-state coord] (:compile (self :expr) comp-state (alter self comp-state coord)))
+        :surface (fn [self comp-state coord] (:surface (self :expr) comp-state (alter self comp-state coord)))})
     ,args
     ,;body))
 
@@ -97,7 +97,7 @@
     ,;body))
 
 (def-input-operator- new-translate
-  (fn [{:offset offset} coord]
+  (fn [{:offset offset} comp-state coord]
     (string/format "(%s - %s)" coord (vec3 offset)))
   [offset expr] @{:offset offset :expr expr})
 
@@ -208,7 +208,7 @@
      0 0 1]))
 
 (def-input-operator- new-transform
-  (fn [{:matrix matrix} coord] (string/format "(%s * %s)" coord (mat3 matrix)))
+  (fn [{:matrix matrix} comp-state coord] (string/format "(%s * %s)" coord (mat3 matrix)))
   [matrix expr] @{:matrix matrix :expr expr})
 
 (defn mat3/make-identity []
@@ -318,7 +318,7 @@
 # operation seems slightly insane.
 # TODO: also doesn't respect surfaces
 (def-input-operator- new-symmetry
-  (fn [{:expr expr} coord] (string/format "sort3(abs(%s))" coord))
+  (fn [{:expr expr} comp-state coord] (string/format "sort3(abs(%s))" coord))
   [expr] @{:expr expr})
 
 # TODO: this should be an input operator
@@ -454,25 +454,20 @@
       :return "color")}
   [size exprs] @{:size size :exprs exprs})
 
-# TODO: this has the somewhat fatal problem that the named arguments have to come at
-# the *end* of the argument list. I need to make my own function thingy that's like
-# aware of types and stuff, and lets me supply named arguments in arbitrary order.
-# TODO: this needs to apply the same treatment to the surfaces. could be easier if we
-# made a helper function to do the tiling coordinate transform -- it would just be an
-# input-operator in that case. yeah i should do that.
-(def-operator- new-tile
-  self
-  (let [{:offset offset :expr expr :limit limit} self
-        offset (vec3 offset)]
+(def-input-operator- new-tile
+  (fn [{:offset offset :expr expr :limit limit} comp-state coord]
     (if (nil? limit)
-      (:compile expr comp-state
-        (string/format "(mod(%s+0.5*%s,%s)-0.5*%s)" coord offset offset offset))
-      (:function comp-state "float" self "tile" [coord offset (vec3 limit)]
-        ["vec3 p" "vec3 offset" "vec3 limit"]
-        (string
-          "vec3 q = p - offset * clamp(round(p / offset), -limit, limit);"
-          "return " (:compile expr comp-state "q") ";"))))
-  [offset expr &named limit] @{:offset offset :expr expr :limit limit})
+      (:function comp-state "vec3" :tile "tile"
+        [coord (vec3 offset)]
+        ["vec3 p" "vec3 offset"]
+        "return mod(p + 0.5 * offset, offset) - 0.5 * offset;")
+      (let [min-limit (map3 limit |(idiv (- $ 1) 2))
+            max-limit (map3 limit |(idiv $ 2))]
+        (:function comp-state "vec3" :tile-limit "tile"
+          [coord (vec3 offset) (vec3 min-limit) (vec3 max-limit)]
+          ["vec3 p" "vec3 offset" "vec3 min_limit" "vec3 max_limit"]
+          "return p - offset * clamp(round(p / offset), -min_limit, max_limit);"))))
+  [expr offset limit] @{:offset offset :expr expr :limit limit})
 
 (def-constructor- new-morph
   @{:compile (fn [self comp-state coord]
@@ -666,6 +661,11 @@
 (defmacro- flip [f arg1 arg2]
   ~(,f ,arg2 ,arg1))
 
+(defn get-strict [list index default-value]
+  (if (< index (length list))
+    (list index)
+    default-value))
+
 (defmacro- def-flexible-fn [fn-name bindings spec & body]
   (def param-defs
     (flip map bindings (fn [binding]
@@ -677,7 +677,7 @@
     (flip mapcat bindings (fn [binding]
       (if (= (tuple/type binding) :parens) []
         (let [[name type] binding
-              default-value (get binding 2 ~(quote ,unset))]
+              default-value (get-strict binding 2 ~(quote ,unset))]
           ~(,name (get-param ,name ,default-value)))))))
   (def $args (gensym))
   ~(defn ,fn-name [& ,$args]
@@ -763,6 +763,22 @@
   {type/3d |(set-first [from-shape to-shape] $)
    type/float |(set-param weight $)}
   (new-morph weight from-shape to-shape))
+
+(defn- limit-offset [limit offset]
+  (map3 [0 1 2] (fn [i]
+    (if (pos? (limit i))
+      (if (even? (limit i)) (* -0.5 (offset i)) 0)
+      (error "limit must be positive")))))
+
+(def-flexible-fn tile [[offset type/vec3] [limit type/vec3 nil] [shape]]
+  {type/3d |(set-param shape $)
+   type/vec3 |(set-param offset $)
+   type/float |(set-param offset [$ $ $])
+   :limit |(set-param limit $)}
+  (if (nil? limit)
+    (new-tile shape offset limit)
+    (new-translate (limit-offset limit offset)
+      (new-tile shape offset limit))))
 
 # --- fancy shape combinators ---
 
