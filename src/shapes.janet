@@ -540,6 +540,23 @@
     :gloss gloss
     :ambient ambient})
 
+(def-surfacer- new-fresnel
+  self
+  (let [{:shape shape :color color :strength strength :exponent exponent} self]
+    (:function comp-state "vec3" self "fresnel"
+      [coord "world_p" "camera" "normal" "light_intensities" (vec3 color) (float strength) (float exponent)]
+      ["vec3 p" "vec3 world_p" "vec3 camera" "vec3 normal" "float light_intensities[3]" "vec3 color" "float strength" "float exponent"]
+      (string `
+      vec3 view_dir = normalize(camera - world_p);
+      float fresnel = pow(1.0 - dot(normal, view_dir), exponent);
+      return `(:surface shape comp-state coord)` + color * strength * fresnel;
+      `)))
+  [shape color strength exponent]
+  @{:shape shape
+    :color color
+    :strength strength
+    :exponent exponent})
+
 (def-constructor- new-resurface
   @{:compile (fn [{:shape shape} comp-state coord] (:compile shape comp-state coord))
     :surface (fn [{:color color} comp-state coord] (:surface color comp-state coord))}
@@ -931,6 +948,17 @@
    :gloss |(set-param gloss $)
    :ambient |(set-param ambient $)}
   (new-blinn-phong color shape shine gloss ambient))
+
+(def-flexible-fn fresnel
+  [[color type/vec3 [1 1 1]]
+   [shape]
+   [strength type/float 0.25]
+   [exponent type/float 5]]
+  {type/vec3 |(set-param color $)
+   type/float |(set-param strength $)
+   type/3d |(set-param shape $)
+   :exponent |(set-param exponent $)}
+  (new-fresnel shape color strength exponent))
 
 # TODO: is this useful?
 
