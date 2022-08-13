@@ -949,6 +949,12 @@
    :ambient |(set-param ambient $)}
   (new-blinn-phong color shape shine gloss ambient))
 
+(def-flexible-fn flat-color
+  [[color] [shape]]
+  {type/vec3 |(set-param color $)
+   type/3d |(set-param shape $)}
+  (new-flat-color color shape))
+
 (def-flexible-fn fresnel
   [[color type/vec3 [1 1 1]]
    [shape]
