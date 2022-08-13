@@ -646,17 +646,17 @@
   (var last-index (- (length args) 1))
   (while (<= i last-index)
     (def arg (args i))
-    (var handled-as-name false)
+    (var handled-as-keyword false)
     (when (= (type arg) :keyword)
       (when-let [dispatch (spec arg)]
-        (set handled-as-name true)
+        (set handled-as-keyword true)
         (if (= (function/max-arity dispatch) 0)
           (dispatch)
           (if (= i last-index)
             (errorf "%s: named argument %s without value" (dyn :fn-name) arg)
             (dispatch (args (++ i)))))))
     (def type (typeof arg))
-    (unless handled-as-name
+    (unless handled-as-keyword
       (if-let [dispatch (spec type)]
         (dispatch arg)
         (errorf "%s: unexpected argument %p" (dyn :fn-name) arg)))
