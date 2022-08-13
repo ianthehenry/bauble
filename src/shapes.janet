@@ -779,7 +779,7 @@
     0 (new-subtract shapes)
     1 (new-smooth-subtract radius shapes)))
 
-(def-flexible-fn move
+(def-flexible-fn translate
   [(offset @[0 0 0]) [shape type/3d]]
   {type/3d |(set-param shape $)
    type/vec3 |(vec3+= offset $)
@@ -787,6 +787,8 @@
    :y |(+= (offset 1) (typecheck type/float $))
    :z |(+= (offset 2) (typecheck type/float $))}
   (new-translate offset shape))
+
+(def move translate)
 
 (def-flexible-fn rotate [(matrix (mat3/make-identity)) (scale 1) [shape]]
   {type/3d |(set-param shape $)
