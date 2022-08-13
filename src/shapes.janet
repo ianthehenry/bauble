@@ -595,6 +595,9 @@
 (defn- invocation? [form]
   (and (= (type form) :tuple) (= (tuple/type form) :parens)))
 
+(defn- maybe-invoke [x]
+  (if (function? x) (x) x))
+
 # split that performs no allocation if
 # it never encounters anything to split
 (defn- split-map [xs prefix f]
@@ -605,7 +608,9 @@
     (when-let [split-point (f (xs i))]
       (def up-to-now (slice xs start i))
       (if (nil? result)
-        (set result @[prefix up-to-now])
+        (if (= (length up-to-now) 1)
+          (set result @[prefix [maybe-invoke (up-to-now 0)]])
+          (set result @[prefix up-to-now]))
         (array/push result [saved ;up-to-now]))
       (set start (+ i 1))
       (set saved split-point)))
