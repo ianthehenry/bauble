@@ -539,6 +539,7 @@
 (def pi/7 (/ pi 7))
 (def pi/8 (/ pi 8))
 
+(defn deg [x] (* tau/360 x))
 (defn tau* [x] (* tau x))
 (defn tau/ [x] (/ tau x))
 
@@ -792,10 +793,19 @@
    :tau |(set scale tau)
    :pi |(set scale pi)
    :deg |(set scale tau/360)
-   :x |(mat3/multiply! matrix (rotate-x-matrix (* scale $)))
-   :y |(mat3/multiply! matrix (rotate-y-matrix (* scale $)))
-   :z |(mat3/multiply! matrix (rotate-z-matrix (* scale $)))}
+   :x |(mat3/multiply! matrix (rotate-x-matrix (* scale (typecheck type/float $))))
+   :y |(mat3/multiply! matrix (rotate-y-matrix (* scale (typecheck type/float $))))
+   :z |(mat3/multiply! matrix (rotate-z-matrix (* scale (typecheck type/float $))))}
   (new-transform matrix shape))
+
+(defn rotate-tau [& args]
+  (rotate :tau ;args))
+
+(defn rotate-deg [& args]
+  (rotate :deg ;args))
+
+(defn rotate-pi [& args]
+  (rotate :pi ;args))
 
 # --- surfacing ---
 
