@@ -927,9 +927,9 @@
   {type/3d |(set-param shape $)
    type/float |(vec3/*= scale [$ $ $])
    type/vec3 |(vec3/*= scale $)
-   :x |(vec3/*= scale [$ 1 1])
-   :y |(vec3/*= scale [1 $ 1])
-   :z |(vec3/*= scale [1 1 $])}
+   :x |(vec3/*= scale [(typecheck type/float $) 1 1])
+   :y |(vec3/*= scale [1 (typecheck type/float $) 1])
+   :z |(vec3/*= scale [1 1 (typecheck type/float $)])}
   (if (vec3/same? scale)
     (new-scale shape (scale 0))
     (new-stretch shape scale)))
