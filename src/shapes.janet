@@ -7,10 +7,18 @@
     (> x 0) 1
     0))
 
-(defn- vec3+= [target other]
+(defn- vec3/+= [target other]
   (+= (target 0) (other 0))
   (+= (target 1) (other 1))
   (+= (target 2) (other 2)))
+
+(defn- vec3/*= [target other]
+  (*= (target 0) (other 0))
+  (*= (target 1) (other 1))
+  (*= (target 2) (other 2)))
+
+(defn- vec3/same? [[a b c]]
+  (and (= a b) (= b c)))
 
 (defn- idiv [a b]
   (math/floor (/ a b)))
@@ -114,12 +122,21 @@
   (string/format "(abs(%s) - %s)" (:compile expr comp-state coord) (float thickness))
   [thickness expr] @{:thickness thickness :expr expr})
 
+# TODO: "amount" is interpolated multiple times here
 (def-operator- new-scale
   {:amount amount :expr expr}
   (string/format "(%s * %s)"
     (:compile expr comp-state (string/format "(%s / %s)" coord (float amount)))
     (float amount))
-  [amount expr] @{:amount amount :expr expr})
+  [expr amount] @{:amount amount :expr expr})
+
+# TODO: "amount" is interpolated multiple times here
+(def-operator- new-stretch
+  {:amount amount :expr expr}
+  (string/format "(%s * abs(min3(%s)))"
+    (:compile expr comp-state (string/format "(%s / %s)" coord (vec3 amount)))
+    (vec3 amount))
+  [expr amount] @{:amount amount :expr expr})
 
 (def-primitive- new-box
   {:size size}
@@ -857,7 +874,7 @@
 (def-flexible-fn translate
   [(offset @[0 0 0]) [shape type/3d]]
   {type/3d |(set-param shape $)
-   type/vec3 |(vec3+= offset $)
+   type/vec3 |(vec3/+= offset $)
    :x |(+= (offset 0) (typecheck type/float $))
    :y |(+= (offset 1) (typecheck type/float $))
    :z |(+= (offset 2) (typecheck type/float $))}
@@ -883,6 +900,17 @@
 
 (defn rotate-pi [& args]
   (rotate :pi ;args))
+
+(def-flexible-fn scale [(scale @[1 1 1]) [shape]]
+  {type/3d |(set-param shape $)
+   type/float |(vec3/*= scale [$ $ $])
+   type/vec3 |(vec3/*= scale $)
+   :x |(vec3/*= scale [$ 1 1])
+   :y |(vec3/*= scale [1 $ 1])
+   :z |(vec3/*= scale [1 1 $])}
+  (if (vec3/same? scale)
+    (new-scale shape (scale 0))
+    (new-stretch shape scale)))
 
 # --- surfacing ---
 
