@@ -883,4 +883,4 @@
   (color [0.4 0.4 0.4] ;args))
 
 (defn black [& args]
-  (color [0.0 0.0 0.0] ;args))
+  (color [0.05 0.05 0.05] ;args))
