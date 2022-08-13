@@ -18,6 +18,9 @@
 (defn- map3 [vec3 f]
   [(f (vec3 0)) (f (vec3 1)) (f (vec3 2))])
 
+(defn- to-vec3 [x]
+  (if (number? x) [x x x] x))
+
 (defn- float [n]
   (if (int? n) (string n ".0") (string n)))
 
@@ -768,20 +771,20 @@
    type/float |(set-param weight $)}
   (new-morph weight from-shape to-shape))
 
-(defn- limit-offset [limit offset]
-  (map3 [0 1 2] (fn [i]
-    (if (pos? (limit i))
-      (if (even? (limit i)) (* -0.5 (offset i)) 0)
-      (error "limit must be positive")))))
+(defn- check-limit [vec3]
+  (each num vec3
+    (unless (and (int? num) (pos? num))
+      (error "tile: limit values must be positive integers")))
+  vec3)
 
 (def-flexible-fn tile [[offset type/vec3] [limit type/vec3 nil] [shape]]
   {type/3d |(set-param shape $)
    type/vec3 |(set-param offset $)
    type/float |(set-param offset [$ $ $])
-   :limit |(set-param limit $)}
+   :limit |(set-param limit (check-limit (to-vec3 $)))}
   (if (nil? limit)
     (new-tile shape offset limit)
-    (new-translate (limit-offset limit offset)
+    (new-translate (map3 [0 1 2] |(if (even? (limit $)) (* -0.5 (offset $)) 0))
       (new-tile shape offset limit))))
 
 # --- fancy shape combinators ---
