@@ -537,6 +537,10 @@
 (def pi/6 (/ pi 6))
 (def pi/7 (/ pi 7))
 (def pi/8 (/ pi 8))
+(def pi/9 (/ pi 9))
+(def pi/10 (/ pi 10))
+(def pi/11 (/ pi 11))
+(def pi/12 (/ pi 12))
 
 (defn deg [x] (* tau/360 x))
 (defn tau* [x] (* tau x))
