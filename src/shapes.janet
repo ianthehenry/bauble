@@ -513,18 +513,17 @@
   [color shape] @{:color color :shape shape})
 
 (def-surfacer- new-blinn-phong
-  {:color color :shine shine :gloss gloss}
+  {:color color :shine shine :gloss gloss :ambient ambient}
   (:function comp-state "vec3" :blinn-phong "blinn_phong"
-    [coord "world_p" "camera" "normal" "light_intensities" (vec3 color) (float shine) (float (* gloss gloss))]
-    ["vec3 p" "vec3 world_p" "vec3 camera" "vec3 normal" "float light_intensities[3]" "vec3 color" "float shine" "float gloss"]
+    [coord "world_p" "camera" "normal" "light_intensities" (vec3 color) (float shine) (float (* gloss gloss)) (float ambient)]
+    ["vec3 p" "vec3 world_p" "vec3 camera" "vec3 normal" "float light_intensities[3]" "vec3 color" "float shine" "float gloss" "float ambient"]
     `
-    float ambient = 0.2;
+    vec3 view_dir = normalize(camera - world_p);
     vec3 result = color * ambient;
 
     for (int i = 0; i < lights.length(); i++) {
       vec3 light_color = lights[i].color * light_intensities[i];
       vec3 light_dir = normalize(lights[i].position - world_p);
-      vec3 view_dir = normalize(camera - world_p);
       vec3 halfway_dir = normalize(light_dir + view_dir);
 
       float specular_strength = shine * pow(max(dot(normal, halfway_dir), 0.0), gloss);
@@ -534,11 +533,12 @@
     }
     return result;
     `)
-  [color shape shine gloss]
+  [color shape shine gloss ambient]
   @{:color color
     :shape shape
     :shine shine
-    :gloss gloss})
+    :gloss gloss
+    :ambient ambient})
 
 (def-constructor- new-resurface
   @{:compile (fn [{:shape shape} comp-state coord] (:compile shape comp-state coord))
@@ -923,12 +923,14 @@
   [[color type/vec3]
    [shape type/3d]
    [shine type/float 0.25]
-   [gloss type/float 3]]
+   [gloss type/float 3]
+   [ambient type/float 0.2]]
   {type/vec3 |(set-param color $)
    type/3d |(set-param shape $)
    :shine |(set-param shine $)
-   :gloss |(set-param gloss $)}
-  (new-blinn-phong color shape shine gloss))
+   :gloss |(set-param gloss $)
+   :ambient |(set-param ambient $)}
+  (new-blinn-phong color shape shine gloss ambient))
 
 # TODO: is this useful?
 
