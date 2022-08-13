@@ -67,9 +67,9 @@ struct Light {
 };
 
 const Light lights[3] = Light[3](
-  Light(vec3(256.0, 256.0, 0.0), vec3(0.7, 0.7, 0.5), 4096.0),
-  Light(vec3(-256.0, 256.0, 0.0), vec3(0.5), 4096.0),
-  Light(vec3(0.0, 0.0, 256.0), vec3(1.0, 0.5, 1.0), 4096.0)
+  Light(vec3(512.0, 512.0, 0.0), vec3(1.0), 2048.0),
+  Light(vec3(0.0, 0.0, -512.0), vec3(1.0), 2048.0),
+  Light(vec3(0.0, 0.0, 256.0), vec3(0.0), 2048.0)
 );
 
 vec3 calculate_normal(vec3 p);
