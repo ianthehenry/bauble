@@ -20,6 +20,11 @@ function clear() {
 }
 
 function print(text: string, isErr=false) {
+  if (isErr) {
+    console.error(text);
+  } else {
+    console.log(text);
+  }
   const output = document.getElementById('output')!;
   const span = document.createElement('span');
   span.classList.toggle('err', isErr);
