@@ -360,8 +360,8 @@
   # we could instead calculate the nearest surface and return that.
   :surface (fold-exprs "union_surface"
     :type "vec3"
-    :extra-args ["camera" "normal" "light_intensities"]
-    :extra-params ["vec3 camera" "vec3 normal" "float light_intensities[3]"]
+    :extra-args ["world_p" "camera" "normal" "light_intensities"]
+    :extra-params ["vec3 world_p" "vec3 camera" "vec3 normal" "float light_intensities[3]"]
     :fn-first |(string/format "float d = %s; float d2; vec3 color = %s;" (:compile $) (:surface $))
     :fn-rest |(string/format "d2 = %s; if (d2 < d) { d = d2; color = %s; }" (:compile $) (:surface $))
     :return "color")}
@@ -376,8 +376,8 @@
   # we could instead calculate the nearest surface and return that.
   :surface (fold-exprs "intersect_surface"
     :type "vec3"
-    :extra-args ["camera" "normal" "light_intensities"]
-    :extra-params ["vec3 camera" "vec3 normal" "float light_intensities[3]"]
+    :extra-args ["world_p" "camera" "normal" "light_intensities"]
+    :extra-params ["vec3 world_p" "vec3 camera" "vec3 normal" "float light_intensities[3]"]
     :fn-first |(string/format "float d = %s; float d2; vec3 color = %s;" (:compile $) (:surface $))
     :fn-rest |(string/format "d2 = %s; if (d2 > d) { d = d2; color = %s; }" (:compile $) (:surface $))
     :return "color")}
@@ -392,8 +392,8 @@
   # we could instead calculate the nearest surface and return that.
   :surface (fold-exprs "subtract_surface"
     :type "vec3"
-    :extra-args ["camera" "normal" "light_intensities"]
-    :extra-params ["vec3 camera" "vec3 normal" "float light_intensities[3]"]
+    :extra-args ["world_p" "camera" "normal" "light_intensities"]
+    :extra-params ["vec3 world_p" "vec3 camera" "vec3 normal" "float light_intensities[3]"]
     :fn-first |(string/format "float d = %s; float d2; vec3 color = %s;" (:compile $) (:surface $))
     :fn-rest |(string/format "d2 = -%s; if (d2 >= d) { d = d2; color = %s; }" (:compile $) (:surface $))
     :return "color")}
@@ -411,8 +411,8 @@
       :return "a")
     :surface (fold-exprs "smooth_union_surface"
       :type "vec3"
-      :extra-args ["camera" "normal" "light_intensities"]
-      :extra-params ["vec3 camera" "vec3 normal" "float light_intensities[3]"]
+      :extra-args ["world_p" "camera" "normal" "light_intensities"]
+      :extra-params ["vec3 world_p" "vec3 camera" "vec3 normal" "float light_intensities[3]"]
       :preamble |(string/format "float b, h, k = %s;" (float ($ :size)))
       :fn-first |(string/format "float a = %s; vec3 color = %s;" (:compile $) (:surface $))
       :fn-rest |(string/format `
@@ -436,8 +436,8 @@
       :return "a")
     :surface (fold-exprs "smooth_intersect_surface"
       :type "vec3"
-      :extra-args ["camera" "normal" "light_intensities"]
-      :extra-params ["vec3 camera" "vec3 normal" "float light_intensities[3]"]
+      :extra-args ["world_p" "camera" "normal" "light_intensities"]
+      :extra-params ["vec3 world_p" "vec3 camera" "vec3 normal" "float light_intensities[3]"]
       :preamble |(string/format "float b, h, k = %s;" (float ($ :size)))
       :fn-first |(string/format "float a = %s; vec3 color = %s;" (:compile $) (:surface $))
       :fn-rest |(string/format `
@@ -461,8 +461,8 @@
       :return "a")
     :surface (fold-exprs "smooth_subtract_surface"
       :type "vec3"
-      :extra-args ["camera" "normal" "light_intensities"]
-      :extra-params ["vec3 camera" "vec3 normal" "float light_intensities[3]"]
+      :extra-args ["world_p" "camera" "normal" "light_intensities"]
+      :extra-params ["vec3 world_p" "vec3 camera" "vec3 normal" "float light_intensities[3]"]
       :preamble |(string/format "float b, h, k = %s;" (float ($ :size)))
       :fn-first |(string/format "float a = %s; vec3 color = %s;" (:compile $) (:surface $))
       :fn-rest |(string/format `
@@ -501,8 +501,8 @@
     :surface (fn [self comp-state coord]
       (def {:weight weight :expr1 expr1 :expr2 expr2} self)
       (:function comp-state "vec3" [self :surface] "morph_surface"
-        [coord "camera" "normal" "light_intensities" (float weight)]
-        ["vec3 p" "vec3 camera" "vec3 normal" "float light_intensities[3]" "float weight"]
+        [coord "world_p" "camera" "normal" "light_intensities" (float weight)]
+        ["vec3 p" "vec3 world_p" "vec3 camera" "vec3 normal" "float light_intensities[3]" "float weight"]
         (string/format "return mix(%s, %s, weight);"
           (:surface expr1 comp-state "p")
           (:surface expr2 comp-state "p"))))}
@@ -515,16 +515,16 @@
 (def-surfacer- new-blinn-phong
   {:color color :shine shine :gloss gloss}
   (:function comp-state "vec3" :blinn-phong "blinn_phong"
-    [coord "camera" "normal" "light_intensities" (vec3 color) (float shine) (float (* gloss gloss))]
-    ["vec3 p" "vec3 camera" "vec3 normal" "float light_intensities[3]" "vec3 color" "float shine" "float gloss"]
+    [coord "world_p" "camera" "normal" "light_intensities" (vec3 color) (float shine) (float (* gloss gloss))]
+    ["vec3 p" "vec3 world_p" "vec3 camera" "vec3 normal" "float light_intensities[3]" "vec3 color" "float shine" "float gloss"]
     `
     float ambient = 0.2;
     vec3 result = color * ambient;
 
     for (int i = 0; i < lights.length(); i++) {
       vec3 light_color = lights[i].color * light_intensities[i];
-      vec3 light_dir = normalize(lights[i].position - p);
-      vec3 view_dir = normalize(camera - p);
+      vec3 light_dir = normalize(lights[i].position - world_p);
+      vec3 view_dir = normalize(camera - world_p);
       vec3 halfway_dir = normalize(light_dir + view_dir);
 
       float specular_strength = shine * pow(max(dot(normal, halfway_dir), 0.0), gloss);
