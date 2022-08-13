@@ -152,12 +152,34 @@ JANET_FN(set_fragment_shader, "(set-fragment-shader)", "") {
   return janet_wrap_nil();
 }
 
+
+JANET_FN(janet_function_arity, "(function/arity)", "") {
+  janet_fixarity(argc, 1);
+  const JanetFunction *function = janet_getfunction(argv, 0);
+  return janet_wrap_number(function->def->arity);
+}
+
+JANET_FN(janet_function_min_arity, "(function/min-arity)", "") {
+  janet_fixarity(argc, 1);
+  const JanetFunction *function = janet_getfunction(argv, 0);
+  return janet_wrap_number(function->def->min_arity);
+}
+
+JANET_FN(janet_function_max_arity, "(function/max-arity)", "") {
+  janet_fixarity(argc, 1);
+  const JanetFunction *function = janet_getfunction(argv, 0);
+  return janet_wrap_number(function->def->max_arity);
+}
+
 void initialize() {
   janet_init();
   JanetTable *env = janet_core_env(NULL);
 
   const JanetRegExt regs[] = {
     JANET_REG("set-fragment-shader", set_fragment_shader),
+    JANET_REG("function/arity", janet_function_arity),
+    JANET_REG("function/min-arity", janet_function_min_arity),
+    JANET_REG("function/max-arity", janet_function_max_arity),
     JANET_REG_END
   };
 
