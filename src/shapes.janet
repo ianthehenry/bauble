@@ -540,6 +540,36 @@
     :gloss gloss
     :ambient ambient})
 
+(def-surfacer- new-cel
+  {:color color :shine shine :gloss gloss :ambient ambient :steps steps :feather feather}
+  (:function comp-state "vec3" :cel "cel"
+    [coord "world_p" "camera" "normal" "light_intensities" (vec3 color) (float shine) (float (* gloss gloss)) (float ambient) (float steps) (float feather)]
+    ["vec3 p" "vec3 world_p" "vec3 camera" "vec3 normal" "float light_intensities[3]" "vec3 color" "float shine" "float gloss" "float ambient" "float steps" "float feather"]
+    `
+    vec3 view_dir = normalize(camera - world_p);
+    vec3 light = vec3(0.0);
+
+    for (int i = 0; i < lights.length(); i++) {
+      vec3 light_color = lights[i].color * light_intensities[i];
+      vec3 light_dir = normalize(lights[i].position - world_p);
+      vec3 halfway_dir = normalize(light_dir + view_dir);
+
+      float specular_strength = shine * pow(max(dot(normal, halfway_dir), 0.0), gloss);
+      float diffuse = max(0.0, dot(normal, light_dir));
+      light += light_color * (diffuse + specular_strength);
+    }
+    vec3 rounded_light = round(light * steps) / steps;
+    return color * (ambient + (1.0 - ambient) * mix(rounded_light, light, feather));
+    `)
+  [shape color shine gloss ambient steps feather]
+  @{:shape shape
+    :color color
+    :shine shine
+    :gloss gloss
+    :ambient ambient
+    :steps steps
+    :feather feather})
+
 (def-surfacer- new-fresnel
   self
   (let [{:shape shape :color color :strength strength :exponent exponent} self]
@@ -965,6 +995,24 @@
    type/3d |(set-param shape $)
    :exponent |(set-param exponent $)}
   (new-fresnel shape color strength exponent))
+
+(def-flexible-fn cel
+  [[color type/vec3]
+   [shape type/3d]
+   [shine type/float 1]
+   [gloss type/float 4]
+   [ambient type/float 0.5]
+   [steps type/float 1]
+   [feather type/float 0]]
+  {type/vec3 |(set-param color $)
+   type/3d |(set-param shape $)
+   type/float |(set-param feather $)
+   :feather |(set-param feather $)
+   :steps |(set-param steps $)
+   :shine |(set-param shine $)
+   :gloss |(set-param gloss $)
+   :ambient |(set-param ambient $)}
+  (new-cel shape color shine gloss ambient steps feather))
 
 # TODO: is this useful?
 
