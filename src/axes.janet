@@ -1,3 +1,17 @@
+(defn axis-vec [axis &opt scale]
+  (default scale 1)
+  (case axis
+    :x [scale 0 0]
+    :y [0 scale 0]
+    :z [0 0 scale]
+    :+x [scale 0 0]
+    :+y [0 scale 0]
+    :+z [0 0 scale]
+    :-x [(- scale) 0 0]
+    :-y [0 (- scale) 0]
+    :-z [0 0 (- scale)]
+    (errorf "unknown axis %p" axis)))
+
 (defn other-axes [axis]
   (case axis
     :x [:y :z]

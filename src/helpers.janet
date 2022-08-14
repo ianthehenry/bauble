@@ -1,3 +1,6 @@
+(import ./axes)
+(def axis-vec axes/axis-vec)
+
 (defn id [x] x)
 
 (defn clamp [x lo hi]
@@ -28,19 +31,6 @@
 (defn tau/ [x] (/ tau x))
 (defn pi* [x] (* pi x))
 (defn pi/ [x] (/ pi x))
-
-(defn axis-vec [axis scale]
-  (case axis
-    :x [scale 0 0]
-    :y [0 scale 0]
-    :z [0 0 scale]
-    :+x [scale 0 0]
-    :+y [0 scale 0]
-    :+z [0 0 scale]
-    :-x [(- scale) 0 0]
-    :-y [0 (- scale) 0]
-    :-z [0 0 (- scale)]
-    (error "unknown axis")))
 
 (defn rgb [r g b]
   [(/ r 255) (/ g 255) (/ b 255)])
