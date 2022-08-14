@@ -1,3 +1,5 @@
+(defn id [x] x)
+
 (defn clamp [x lo hi]
   (cond
     (< x lo) lo
