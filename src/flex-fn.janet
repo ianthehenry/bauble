@@ -93,7 +93,7 @@
 (defmacro- swap [f arg1 arg2]
   ~(,f ,arg2 ,arg1))
 
-(defn get-strict [list index default-value]
+(defn- get-strict [list index default-value]
   (if (< index (length list))
     (list index)
     default-value))
