@@ -1,7 +1,7 @@
 (def- unit-vec3 [1 1 1])
 (def- zero-vec3 [0 0 0])
 
-(defn- sign [x]
+(defn- math/sign [x]
   (cond
     (< x 0) -1
     (> x 0) 1
@@ -71,56 +71,52 @@
     (float (m 3)) (float (m 4)) (float (m 5))
     (float (m 6)) (float (m 7)) (float (m 8))))
 
-(defmacro- def-constructor- [name proto args & body]
-  (let [$proto (gensym)]
+(defmacro- def-constructor- [name proto args]
+  (let [$proto (gensym) kvps (mapcat |[(keyword $) $] args)]
     ~(def- ,name
       (let [,$proto ,proto]
-        (fn ,args (table/setproto (do ,;body) ,$proto))))))
+        (fn ,args (struct/with-proto ,$proto ,;kvps))))))
 
-(defmacro- def-primitive- [name self compile-body args & body]
+(defmacro- def-primitive- [name self compile-body args]
   ~(def-constructor- ,name
-    @{:compile (fn [,self comp-state coord] ,compile-body)
-      :surface (fn [self comp-state coord] "0.5 * (1.0 + normal)")}
-    ,args
-    ,;body))
+    {:compile (fn [,self comp-state coord] ,compile-body)
+     :surface (fn [self comp-state coord] "0.5 * (1.0 + normal)")}
+    ,args))
 
 # an input-operator can only change the input coordinates
-(defmacro- def-input-operator- [name alter-fn args & body]
+(defmacro- def-input-operator- [name alter-fn args]
   ~(def-constructor- ,name
     (let [alter ,alter-fn]
-      @{:compile (fn [self comp-state coord] (:compile (self :shape) comp-state (alter self comp-state coord)))
-        :surface (fn [self comp-state coord] (:surface (self :shape) comp-state (alter self comp-state coord)))})
-    ,args
-    ,;body))
+      {:compile (fn [self comp-state coord] (:compile (self :shape) comp-state (alter self comp-state coord)))
+       :surface (fn [self comp-state coord] (:surface (self :shape) comp-state (alter self comp-state coord)))})
+    ,args))
 
-(defmacro- def-operator- [name self compile-body args & body]
+(defmacro- def-operator- [name self compile-body args]
   ~(def-constructor- ,name
-    @{:compile (fn [,self comp-state coord] ,compile-body)
-      :surface (fn [self comp-state coord] (:surface (self :shape) comp-state coord))}
-    ,args
-    ,;body))
+    {:compile (fn [,self comp-state coord] ,compile-body)
+     :surface (fn [self comp-state coord] (:surface (self :shape) comp-state coord))}
+    ,args))
 
-(defmacro- def-surfacer- [name self surface-body args & body]
+(defmacro- def-surfacer- [name self surface-body args]
   ~(def-constructor- ,name
-    @{:compile (fn [self comp-state coord] (:compile (self :shape) comp-state coord))
-      :surface (fn [,self comp-state coord] ,surface-body)}
-    ,args
-    ,;body))
+    {:compile (fn [self comp-state coord] (:compile (self :shape) comp-state coord))
+     :surface (fn [,self comp-state coord] ,surface-body)}
+    ,args))
 
 (def-input-operator- new-translate
   (fn [{:offset offset} comp-state coord]
     (string/format "(%s - %s)" coord (vec3 offset)))
-  [offset shape] @{:offset offset :shape shape})
+  [offset shape])
 
 (def-operator- new-offset
   {:amount amount :shape shape}
   (string/format "(%s - %s)" (:compile shape comp-state coord) (float amount))
-  [amount shape] @{:amount amount :shape shape})
+  [amount shape])
 
 (def-operator- new-onion
   {:thickness thickness :shape shape}
   (string/format "(abs(%s) - %s)" (:compile shape comp-state coord) (float thickness))
-  [thickness shape] @{:thickness thickness :shape shape})
+  [thickness shape])
 
 # TODO: "amount" is interpolated multiple times here
 (def-operator- new-scale
@@ -128,7 +124,7 @@
   (string/format "(%s * %s)"
     (:compile shape comp-state (string/format "(%s / %s)" coord (float amount)))
     (float amount))
-  [shape amount] @{:amount amount :shape shape})
+  [shape amount])
 
 # TODO: "amount" is interpolated multiple times here
 (def-operator- new-stretch
@@ -136,9 +132,9 @@
   (string/format "(%s * abs(min3(%s)))"
     (:compile shape comp-state (string/format "(%s / %s)" coord (vec3 amount)))
     (vec3 amount))
-  [shape amount] @{:amount amount :shape shape})
+  [shape amount])
 
-(def-primitive- new-r3 self "0.0" [] @{})
+(def-primitive- new-r3 self "0.0" [])
 (def- r3 (new-r3))
 
 (def-primitive- new-box
@@ -149,7 +145,17 @@
     vec3 q = abs(p) - size;
     return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
     `)
-  [size] @{:size size})
+  [size])
+
+(pp (macex '(def-primitive- new-box
+  {:size size}
+  (:function comp-state "float" :box "s3d_box"
+    [coord (vec3 size)]
+    ["vec3 p" "vec3 size"] `
+    vec3 q = abs(p) - size;
+    return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
+    `)
+  [size])))
 
 (def-primitive- new-cylinder
   {:radius radius :height height :axis axis}
@@ -160,8 +166,7 @@
     vec2 d = abs(vec2(length(p.%s), p.%s)) - vec2(radius, height);
     return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
     ` (string-of-axes (other-axes axis)) (string-of-axis axis)))
-  [axis radius height]
-  @{:axis axis :radius radius :height height})
+  [axis radius height])
 
 (def-primitive- new-cone
   {:axis axis :radius radius :height height :upside-down upside-down}
@@ -178,21 +183,16 @@
     float s = max(k * (w.x * q.y - w.y * q.x), k * (w.y - q.y));
     return sqrt(d) * sign(s);
     `))
-  [signed-axis radius height]
-  (let [[sign axis] (split-signed-axis signed-axis)]
-    @{:axis axis
-      :radius radius
-      :height (* sign (math/abs height))
-      :upside-down (neg? height)}))
+  [axis radius height upside-down])
 
 (def-primitive- new-sphere
   {:radius radius}
   (string "(length("coord") - "(float radius)")")
-  [radius] @{:radius radius})
+  [radius])
 
 (def-primitive- new-half-space
   {:axis axis :sign sign} (string (if (neg? sign) "" "-") coord "." (string-of-axes [axis]))
-  [axis sign] @{:axis axis :sign sign})
+  [axis sign])
 
 (def-primitive- new-line
   {:start start :end end}
@@ -203,8 +203,7 @@
     float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
     return length(pa - ba * h);
     `)
-  [start end]
-  @{:start start :end end})
+  [start end])
 
 (defn- rotate-x-matrix [angle]
   (let [c (math/cos angle)
@@ -229,7 +228,7 @@
 
 (def-input-operator- new-transform
   (fn [{:matrix matrix} comp-state coord] (string/format "(%s * %s)" coord (mat3 matrix)))
-  [matrix shape] @{:matrix matrix :shape shape})
+  [matrix shape])
 
 (defn mat3/make-identity []
   @[1 0 0 0 1 0 0 0 1])
@@ -248,7 +247,7 @@
   (set (a 7) (+ (* a31 b12) (* a32 b22) (* a33 b32)))
   (set (a 8) (+ (* a31 b13) (* a32 b23) (* a33 b33))))
 
-(defn- fold-exprs [base-name &named preamble fn-first fn-rest postamble type extra-args extra-params return]
+(defn- fold-shapes [base-name &named preamble fn-first fn-rest postamble type extra-args extra-params return]
   (default preamble (fn [_] ""))
   (default postamble (fn [_] ""))
   (default type "float")
@@ -258,14 +257,14 @@
     (defn proxy [shape]
       {:compile (fn [_] (:compile shape comp-state "p"))
        :surface (fn [_] (:surface shape comp-state "p"))})
-    (def exprs (self :exprs))
+    (def shapes (self :shapes))
     (:function comp-state type [self base-name] base-name
       [coord ;extra-args]
       ["vec3 p" ;extra-params]
       (string/join [
         (preamble self)
-        (fn-first (proxy (first exprs)))
-        ;(->> exprs (drop 1) (map |(fn-rest (proxy $))))
+        (fn-first (proxy (first shapes)))
+        ;(->> shapes (drop 1) (map |(fn-rest (proxy $))))
         (postamble self)
         (string/format "return %s;" return)
         ] "\n"))))
@@ -303,9 +302,7 @@
       (:compile shape comp-state (string/format "abs(%s)" coord))
       (- comp-state self "mirror" coord (fn [coord]
         (string/format "%s.%s = abs(%s.%s); return %s;" coord axes coord axes (:compile shape comp-state coord))))))
-  [& args]
-  (def [axes shape] (get-axes-and-shape args))
-  @{:axes axes :shape shape})
+  [axes shape])
 
 (defn- transpose-other-axes [axis]
   (case axis
@@ -326,11 +323,12 @@
   (if (nil? signs)
     (:compile shape comp-state (string coord "." axes))
     (:compile shape comp-state (string/format "(%s.%s * %s)" coord axes (vec3 signs))))
-  [signed-axis shape]
-  (let [[sign axis] (split-signed-axis signed-axis)]
-    @{:axes (transpose-other-axes axis)
-      :shape shape
-      :signs (if (neg? sign) (negate-other-axes axis) nil)}))
+  [axes shape signs])
+# TODO:
+#(let [[sign axis] (split-signed-axis signed-axis)]
+#  {:axes (transpose-other-axes axis)
+#    :shape shape
+#    :signs (if (neg? sign) (negate-other-axes axis) nil)})
 
 # this is a "full" symmetry that mirrors across every axis and rotation.
 # you could have more flexible symmetry that only rotates across a single axis,
@@ -339,7 +337,7 @@
 # TODO: also doesn't respect surfaces
 (def-input-operator- new-symmetry
   (fn [{:shape shape} comp-state coord] (string/format "sort3(abs(%s))" coord))
-  [shape] @{:shape shape})
+  [shape])
 
 # TODO: this should be an input operator
 (def-operator- new-reflect
@@ -347,60 +345,59 @@
   (:sdf-3d comp-state self "reflect" coord (fn [coord]
     (def {:shape shape :axes axes} self)
     (string/format "%s.%s = -%s.%s; return %s;" coord axes coord axes (:compile shape comp-state coord))))
-  [& args]
-  (def [axes shape] (get-axes-and-shape args))
-  @{:axes axes :shape shape})
+  [axes shape])
+# TODO: (def [axes shape] (get-axes-and-shape args))
 
 (def-constructor- new-union
-  @{:compile (fold-exprs "union"
+  {:compile (fold-shapes "union"
       :fn-first |(string/format "float d = %s;" (:compile $))
       :fn-rest |(string/format "d = min(d, %s);" (:compile $))
       :return "d")
   # TODO: this evaluates more surfaces than it actually has to.
   # we could instead calculate the nearest surface and return that.
-  :surface (fold-exprs "union_surface"
+  :surface (fold-shapes "union_surface"
     :type "vec3"
     :extra-args ["world_p" "camera" "normal" "light_intensities"]
     :extra-params ["vec3 world_p" "vec3 camera" "vec3 normal" "float light_intensities[3]"]
     :fn-first |(string/format "float d = %s; float d2; vec3 color = %s;" (:compile $) (:surface $))
     :fn-rest |(string/format "d2 = %s; if (d2 < d) { d = d2; color = %s; }" (:compile $) (:surface $))
     :return "color")}
-  [exprs] @{:exprs exprs})
+  [shapes])
 
 (def-constructor- new-intersect
-  @{:compile (fold-exprs "intersect"
+  {:compile (fold-shapes "intersect"
       :fn-first |(string/format "float d = %s;" (:compile $))
       :fn-rest |(string/format "d = max(d, %s);" (:compile $))
       :return "d")
   # TODO: this evaluates more surfaces than it actually has to.
   # we could instead calculate the nearest surface and return that.
-  :surface (fold-exprs "intersect_surface"
+  :surface (fold-shapes "intersect_surface"
     :type "vec3"
     :extra-args ["world_p" "camera" "normal" "light_intensities"]
     :extra-params ["vec3 world_p" "vec3 camera" "vec3 normal" "float light_intensities[3]"]
     :fn-first |(string/format "float d = %s; float d2; vec3 color = %s;" (:compile $) (:surface $))
     :fn-rest |(string/format "d2 = %s; if (d2 > d) { d = d2; color = %s; }" (:compile $) (:surface $))
     :return "color")}
-  [exprs] @{:exprs exprs})
+  [shapes])
 
 (def-constructor- new-subtract
-  @{:compile (fold-exprs "subtract"
+  {:compile (fold-shapes "subtract"
       :fn-first |(string/format "float d = %s;" (:compile $))
       :fn-rest |(string/format "d = max(d, -%s);" (:compile $))
       :return "d")
   # TODO: this evaluates more surfaces than it actually has to.
   # we could instead calculate the nearest surface and return that.
-  :surface (fold-exprs "subtract_surface"
+  :surface (fold-shapes "subtract_surface"
     :type "vec3"
     :extra-args ["world_p" "camera" "normal" "light_intensities"]
     :extra-params ["vec3 world_p" "vec3 camera" "vec3 normal" "float light_intensities[3]"]
     :fn-first |(string/format "float d = %s; float d2; vec3 color = %s;" (:compile $) (:surface $))
     :fn-rest |(string/format "d2 = -%s; if (d2 >= d) { d = d2; color = %s; }" (:compile $) (:surface $))
     :return "color")}
-  [exprs] @{:exprs exprs})
+  [shapes])
 
 (def-constructor- new-smooth-union
-  @{:compile (fold-exprs "smooth_union"
+  {:compile (fold-shapes "smooth_union"
       :preamble |(string/format "float b, h = 0.0, k = %s;" (float ($ :size)))
       :fn-first |(string/format "float a = %s;" (:compile $))
       :fn-rest |(string/format `
@@ -409,7 +406,7 @@
         a = mix(b, a, h) - k * h * (1.0 - h);
         ` (:compile $))
       :return "a")
-    :surface (fold-exprs "smooth_union_surface"
+    :surface (fold-shapes "smooth_union_surface"
       :type "vec3"
       :extra-args ["world_p" "camera" "normal" "light_intensities"]
       :extra-params ["vec3 world_p" "vec3 camera" "vec3 normal" "float light_intensities[3]"]
@@ -422,10 +419,10 @@
         color = mix(%s, color, h);
         ` (:compile $) (:surface $))
       :return "color")}
-  [size exprs] @{:size size :exprs exprs})
+  [size shapes])
 
 (def-constructor- new-smooth-intersect
-  @{:compile (fold-exprs "smooth_intersect"
+  {:compile (fold-shapes "smooth_intersect"
       :preamble |(string/format "float b, h, k = %s;" (float ($ :size)))
       :fn-first |(string/format "float a = %s;" (:compile $))
       :fn-rest |(string/format `
@@ -434,7 +431,7 @@
         a = mix(b, a, h) + k * h * (1.0 - h);
         ` (:compile $))
       :return "a")
-    :surface (fold-exprs "smooth_intersect_surface"
+    :surface (fold-shapes "smooth_intersect_surface"
       :type "vec3"
       :extra-args ["world_p" "camera" "normal" "light_intensities"]
       :extra-params ["vec3 world_p" "vec3 camera" "vec3 normal" "float light_intensities[3]"]
@@ -447,10 +444,10 @@
         color = mix(%s, color, h);
         ` (:compile $) (:surface $))
       :return "color")}
-  [size exprs] @{:size size :exprs exprs})
+  [size shapes])
 
 (def-constructor- new-smooth-subtract
-  @{:compile (fold-exprs "smooth_subtract"
+  {:compile (fold-shapes "smooth_subtract"
       :preamble |(string/format "float b, h, k = %s;" (float ($ :size)))
       :fn-first |(string/format "float a = %s;" (:compile $))
       :fn-rest |(string/format `
@@ -459,7 +456,7 @@
         a = mix(a, -b, h) + k * h * (1.0 - h);
         ` (:compile $))
       :return "a")
-    :surface (fold-exprs "smooth_subtract_surface"
+    :surface (fold-shapes "smooth_subtract_surface"
       :type "vec3"
       :extra-args ["world_p" "camera" "normal" "light_intensities"]
       :extra-params ["vec3 world_p" "vec3 camera" "vec3 normal" "float light_intensities[3]"]
@@ -472,7 +469,7 @@
         color = mix(color, %s, h);
         ` (:compile $) (:surface $))
       :return "color")}
-  [size exprs] @{:size size :exprs exprs})
+  [size shapes])
 
 (def-input-operator- new-tile
   (fn [{:offset offset :shape shape :limit limit} comp-state coord]
@@ -487,30 +484,30 @@
           [coord (vec3 offset) (vec3 min-limit) (vec3 max-limit)]
           ["vec3 p" "vec3 offset" "vec3 min_limit" "vec3 max_limit"]
           "return p - offset * clamp(round(p / offset), -min_limit, max_limit);"))))
-  [shape offset limit] @{:offset offset :shape shape :limit limit})
+  [shape offset limit])
 
 (def-constructor- new-morph
-  @{:compile (fn [self comp-state coord]
-    (def {:weight weight :expr1 expr1 :expr2 expr2} self)
+  {:compile (fn [self comp-state coord]
+    (def {:weight weight :shape1 shape1 :shape2 shape2} self)
     (:function comp-state "float" [self :distance] "morph"
       [coord (float weight)]
       ["vec3 p" "float weight"]
       (string/format "return mix(%s, %s, weight);"
-        (:compile expr1 comp-state "p")
-        (:compile expr2 comp-state "p"))))
+        (:compile shape1 comp-state "p")
+        (:compile shape2 comp-state "p"))))
     :surface (fn [self comp-state coord]
-      (def {:weight weight :expr1 expr1 :expr2 expr2} self)
+      (def {:weight weight :shape1 shape1 :shape2 shape2} self)
       (:function comp-state "vec3" [self :surface] "morph_surface"
         [coord "world_p" "camera" "normal" "light_intensities" (float weight)]
         ["vec3 p" "vec3 world_p" "vec3 camera" "vec3 normal" "float light_intensities[3]" "float weight"]
         (string/format "return mix(%s, %s, weight);"
-          (:surface expr1 comp-state "p")
-          (:surface expr2 comp-state "p"))))}
-  [weight expr1 expr2] @{:weight weight :expr1 expr1 :expr2 expr2})
+          (:surface shape1 comp-state "p")
+          (:surface shape2 comp-state "p"))))}
+  [weight shape1 shape2])
 
 (def-surfacer- new-flat-color
   {:color color} (vec3 color)
-  [shape color] @{:shape shape :color color})
+  [shape color])
 
 (def-surfacer- new-blinn-phong
   {:color color :shine shine :gloss gloss :ambient ambient}
@@ -533,12 +530,7 @@
     }
     return result;
     `)
-  [shape color shine gloss ambient]
-  @{:shape shape
-    :color color
-    :shine shine
-    :gloss gloss
-    :ambient ambient})
+  [shape color shine gloss ambient])
 
 (def-surfacer- new-cel
   {:color color :shine shine :gloss gloss :ambient ambient :steps steps :feather feather}
@@ -561,14 +553,7 @@
     vec3 rounded_light = round(light * steps) / steps;
     return color * (ambient + (1.0 - ambient) * mix(rounded_light, light, feather));
     `)
-  [shape color shine gloss ambient steps feather]
-  @{:shape shape
-    :color color
-    :shine shine
-    :gloss gloss
-    :ambient ambient
-    :steps steps
-    :feather feather})
+  [shape color shine gloss ambient steps feather])
 
 (def-surfacer- new-fresnel
   self
@@ -581,16 +566,12 @@
       float fresnel = pow(1.0 - dot(normal, view_dir), exponent);
       return `(:surface shape comp-state coord)` + color * strength * fresnel;
       `)))
-  [shape color strength exponent]
-  @{:shape shape
-    :color color
-    :strength strength
-    :exponent exponent})
+  [shape color strength exponent])
 
 (def-constructor- new-resurface
-  @{:compile (fn [{:shape shape} comp-state coord] (:compile shape comp-state coord))
+  {:compile (fn [{:shape shape} comp-state coord] (:compile shape comp-state coord))
     :surface (fn [{:color color} comp-state coord] (:surface color comp-state coord))}
-  [shape color] @{:shape shape :color color})
+  [shape color])
 
 # ----- general helpers ------
 
@@ -718,7 +699,7 @@
   (case (type value)
     :number type/float
     :keyword (get keyword-types value type/unknown)
-    :table type/3d # TODO: obviously this is wrong once I add 2D SDFs
+    :struct type/3d # TODO: obviously this is wrong once I add 2D SDFs
     :tuple (case (length value)
       2 type/vec2
       3 type/vec3
@@ -855,11 +836,20 @@
    type/axis |(set-param axis $)
    type/float |(set-first [radius height] $)
    :r |(set-param round $)}
-  (if (= 0 round)
-    (new-cone axis radius (* 2 height))
-    (new-offset round
-      (new-translate (axis-vec axis round)
-        (new-cone axis (- radius round) (* 2 (- height (* (sign height) round))))))))
+  (let [[sign axis] (split-signed-axis axis)
+        upside-down (neg? height)
+        height (* 2 sign (math/abs height))
+        ]
+    (def tip-offset (* round (/ height radius)))
+    (if (= 0 round)
+      (new-cone axis radius height upside-down)
+      (new-offset round
+        (new-translate (axis-vec axis (+ (* (if upside-down -1 1) sign round) (if upside-down tip-offset 0)))
+          (new-cone
+            axis
+            (- radius round)
+            (- height tip-offset)
+            upside-down))))))
 
 (def-flexible-fn line
   [[start type/vec3] [end type/vec3] [thickness type/float 0]]
@@ -910,7 +900,7 @@
 (def-flexible-fn union [(shapes @[]) [radius type/float 0]]
   {type/3d |(array/push shapes $)
    :r |(set-param radius $)}
-  (case (sign radius)
+  (case (math/sign radius)
     -1 (error "union: radius cannot be negative")
     0 (new-union shapes)
     1 (new-smooth-union radius shapes)))
@@ -918,7 +908,7 @@
 (def-flexible-fn intersect [(shapes @[]) [radius type/float 0]]
   {type/3d |(array/push shapes $)
    :r |(set-param radius $)}
-  (case (sign radius)
+  (case (math/sign radius)
     -1 (error "intersect: radius cannot be negative")
     0 (new-intersect shapes)
     1 (new-smooth-intersect radius shapes)))
@@ -926,7 +916,7 @@
 (def-flexible-fn subtract [(shapes @[]) [radius type/float 0]]
   {type/3d |(array/push shapes $)
    :r |(set-param radius $)}
-  (case (sign radius)
+  (case (math/sign radius)
     -1 (error "subtract: radius cannot be negative")
     0 (new-subtract shapes)
     1 (new-smooth-subtract radius shapes)))

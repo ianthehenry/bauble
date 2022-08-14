@@ -248,7 +248,7 @@ void main() {
 
 # surely I can do better
 (defn is-good-value? [value]
-  (and (table? value)
+  (and (struct? value)
        (not (nil? (value :compile)))))
 
 (fiber/new (fn []
