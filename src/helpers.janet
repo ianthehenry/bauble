@@ -82,6 +82,8 @@
   (def m (- l (* 0.5 c)))
   [(+ r m) (+ g m) (+ b m)])
 
+(defn hsl-deg [h s l] (hsl (/ h 360) s l))
+
 (defn hex-rgb [hex]
   (let [r (-> hex (band 0xff0000) (brshift 16))
         g (-> hex (band 0x00ff00) (brshift 8))
