@@ -165,19 +165,16 @@
   (:function comp-state "float" [:cone axis] "s3d_cone"
     [coord (float radius) (float height)]
     ["vec3 p" "float radius" "float height"]
-    (string/format `
+    (string `
     vec2 q = vec2(radius, height);
-    vec2 w = vec2(length(p.%s), %sp.%s);
+    vec2 w = vec2(length(p.`(string-of-axes (other-axes axis))`), `(if upside-down "" "height - ")`p.`(string-of-axis axis)`);
     vec2 a = w - q * clamp(dot(w, q) / dot(q, q), 0.0, 1.0);
     vec2 b = w - q * vec2(clamp(w.x / q.x, 0.0, 1.0), 1.0);
     float k = sign(q.y);
     float d = min(dot(a, a), dot(b, b));
     float s = max(k * (w.x * q.y - w.y * q.x), k * (w.y - q.y));
     return sqrt(d) * sign(s);
-    `
-    (string-of-axes (other-axes axis))
-    (if upside-down "" "height - ")
-    (string-of-axis axis)))
+    `))
   [signed-axis radius height]
   (let [[sign axis] (split-signed-axis signed-axis)]
     @{:axis axis
@@ -618,6 +615,12 @@
     :x [scale 0 0]
     :y [0 scale 0]
     :z [0 0 scale]
+    :+x [scale 0 0]
+    :+y [0 scale 0]
+    :+z [0 0 scale]
+    :-x [(- scale) 0 0]
+    :-y [0 (- scale) 0]
+    :-z [0 0 (- scale)]
     (error "unknown axis")))
 
 (defn rgb [r g b]
@@ -851,7 +854,9 @@
    :r |(set-param round $)}
   (if (= 0 round)
     (new-cone axis radius (* 2 height))
-    (new-offset round (new-cone axis (- radius round) (* 2 (- height round))))))
+    (new-offset round
+      (new-translate (axis-vec axis round)
+        (new-cone axis (- radius round) (* 2 (- height (* (sign height) round))))))))
 
 (def-flexible-fn line
   [[start type/vec3] [end type/vec3] [thickness type/float 0]]
