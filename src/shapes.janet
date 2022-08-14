@@ -333,8 +333,8 @@
 
 # TODO: all of the union/intersect/subtract operators evaluate
 # every surface in their collection, even when it will not
-# contribute at all to the result. we could be a lot smarter
-# and only evaluate the "nearest" surfaces, or surfaces with
+# contribute at all to the result. we could optimize this by
+# only evaluating the "nearest" surface, or surfaces with
 # a blend coefficient greater than 0.
 (def-constructor- new-union [shapes]
   {:compile (fold-shapes "union"
@@ -367,8 +367,6 @@
       :fn-first |(string/format "float d = %s;" (:compile $))
       :fn-rest |(string/format "d = max(d, -%s);" (:compile $))
       :return "d")
-  # TODO: this evaluates more surfaces than it actually has to.
-  # we could instead calculate the nearest surface and return that.
   :surface (fold-shapes "subtract_surface"
     :type "vec3"
     :extra-args ["world_p" "camera" "normal" "light_intensities"]
@@ -943,6 +941,8 @@
       (when z (buffer/push-string axes "z"))
       (new-mirror-axes shape axes))))
 
+# TODO: duplicated code between mirror and reflect.
+# could make a macro to define them both.
 (def-flexible-fn reflect [[x type/bool false] [y type/bool false] [z type/bool false] [shape]]
   {type/3d |(set-param shape $)
    :x |(set-param x true)
