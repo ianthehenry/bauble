@@ -533,9 +533,9 @@
     }
     return result;
     `)
-  [color shape shine gloss ambient]
-  @{:color color
-    :shape shape
+  [shape color shine gloss ambient]
+  @{:shape shape
+    :color color
     :shine shine
     :gloss gloss
     :ambient ambient})
@@ -970,14 +970,14 @@
   [[color type/vec3]
    [shape type/3d]
    [shine type/float 0.25]
-   [gloss type/float 3]
+   [gloss type/float 4]
    [ambient type/float 0.2]]
   {type/vec3 |(set-param color $)
    type/3d |(set-param shape $)
    :shine |(set-param shine $)
    :gloss |(set-param gloss $)
    :ambient |(set-param ambient $)}
-  (new-blinn-phong color shape shine gloss ambient))
+  (new-blinn-phong shape color shine gloss ambient))
 
 (def-flexible-fn flat-color
   [[color] [shape]]
