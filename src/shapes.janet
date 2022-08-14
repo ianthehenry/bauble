@@ -322,19 +322,25 @@
       (string coord "." axes)
       (string `(`coord`.`axes` * `(vec3 signs)`)`))))
 
-# TODO: this should be an input operator
-(def-operator- new-reflect [axes shape]
-  (:sdf-3d comp-state self "reflect" coord (fn [coord]
-    (string/format "%s.%s = -%s.%s; return %s;" coord axes coord axes (:compile shape comp-state coord)))))
-# TODO: (def [axes shape] (get-axes-and-shape args))
+(def-input-operator- new-reflect-axes [shape axes]
+  (fn [{:axes axes} comp-state coord]
+    (if (= (length axes) 3)
+      (string `-` coord)
+      (:function comp-state "vec3" [:neg axes] (string "neg_" axes)
+        [coord]
+        ["vec3 p"]
+        (string `p.`axes` = -p.`axes`; return p;`)))))
 
+# TODO: all of the union/intersect/subtract operators evaluate
+# every surface in their collection, even when it will not
+# contribute at all to the result. we could be a lot smarter
+# and only evaluate the "nearest" surfaces, or surfaces with
+# a blend coefficient greater than 0.
 (def-constructor- new-union [shapes]
   {:compile (fold-shapes "union"
       :fn-first |(string/format "float d = %s;" (:compile $))
       :fn-rest |(string/format "d = min(d, %s);" (:compile $))
       :return "d")
-  # TODO: this evaluates more surfaces than it actually has to.
-  # we could instead calculate the nearest surface and return that.
   :surface (fold-shapes "union_surface"
     :type "vec3"
     :extra-args ["world_p" "camera" "normal" "light_intensities"]
@@ -348,8 +354,6 @@
       :fn-first |(string/format "float d = %s;" (:compile $))
       :fn-rest |(string/format "d = max(d, %s);" (:compile $))
       :return "d")
-  # TODO: this evaluates more surfaces than it actually has to.
-  # we could instead calculate the nearest surface and return that.
   :surface (fold-shapes "intersect_surface"
     :type "vec3"
     :extra-args ["world_p" "camera" "normal" "light_intensities"]
@@ -938,6 +942,19 @@
       (when y (buffer/push-string axes "y"))
       (when z (buffer/push-string axes "z"))
       (new-mirror-axes shape axes))))
+
+(def-flexible-fn reflect [[x type/bool false] [y type/bool false] [z type/bool false] [shape]]
+  {type/3d |(set-param shape $)
+   :x |(set-param x true)
+   :y |(set-param y true)
+   :z |(set-param z true)}
+  (if (not (or x y z)) shape
+    (do
+      (def axes (buffer/new 3))
+      (when x (buffer/push-string axes "x"))
+      (when y (buffer/push-string axes "y"))
+      (when z (buffer/push-string axes "z"))
+      (new-reflect-axes shape axes))))
 
 # TODO: should probably support the negative versions as well?
 (def-flexible-fn mirror-plane [[axes] [shape]]
