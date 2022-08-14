@@ -92,9 +92,36 @@
         b (-> hex (band 0x0000ff))]
     (rgb r g b)))
 
-(defmacro reflex [combine shape & fs]
+(defn- fork-helper [initial args]
+  (var expecting-join false)
+  (var join nil)
+  (var shape nil)
+  (def fs (if initial @[id] @[]))
+  (each arg args
+    (if expecting-join
+      (do
+        (set expecting-join false)
+        (set join arg))
+      (if (= arg :join)
+        (do
+          (unless (nil? join)
+            (error "join specified multiple times"))
+          (set expecting-join true))
+        (if (nil? shape)
+          (set shape arg)
+          (array/push fs arg)))))
+
+  (default join '(union))
+  (default shape (error "must specify an initial shape"))
+
   (let [$shape (gensym)
-        combine (if (tuple? combine) combine [combine])
-        transformed (map (fn [f] (if (tuple? f) [;f $shape] [f $shape])) fs)]
+        join (if (tuple? join) join [join])
+        transformed (map (fn [f] ~(-> ,$shape ,f)) fs)]
     ~(let [,$shape ,shape]
-      (,;combine ,$shape ,;transformed))))
+      (,;join ,;transformed))))
+
+(defmacro fork [& args]
+  (fork-helper false args))
+
+(defmacro spoon [& args]
+  (fork-helper true args))
