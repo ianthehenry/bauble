@@ -138,6 +138,9 @@
     (vec3 amount))
   [shape amount] @{:amount amount :shape shape})
 
+(def-primitive- new-r3 self "0.0" [] @{})
+(def- r3 (new-r3))
+
 (def-primitive- new-box
   {:size size}
   (:function comp-state "float" :box "s3d_box"
@@ -973,7 +976,7 @@
 
 (def-flexible-fn color
   [[color type/vec3]
-   [shape type/3d]
+   [shape type/3d r3]
    [shine type/float 0.25]
    [gloss type/float 4]
    [ambient type/float 0.2]]
@@ -985,7 +988,7 @@
   (new-blinn-phong shape color shine gloss ambient))
 
 (def-flexible-fn flat-color
-  [[color] [shape]]
+  [[color] [shape type/3d r3]]
   {type/vec3 |(set-param color $)
    type/3d |(set-param shape $)}
   (new-flat-color shape color))
@@ -1003,7 +1006,7 @@
 
 (def-flexible-fn cel
   [[color type/vec3]
-   [shape type/3d]
+   [shape type/3d r3]
    [shine type/float 1]
    [gloss type/float 4]
    [ambient type/float 0.5]
@@ -1019,7 +1022,15 @@
    :ambient |(set-param ambient $)}
   (new-cel shape color shine gloss ambient steps feather))
 
-# TODO: is this useful?
+# TODO: I don't love the name "resurface"
+(def-flexible-fn resurface
+  [[shape type/3d] [color type/3d]]
+  {type/3d |(set-first [shape color] $)
+   :shape |(set-param shape $)
+   :color |(set-param shape $)}
+  (new-resurface shape color))
+
+# TODO: are these useful?
 
 (defn red [& args]
   (color [0.9 0.1 0.1] ;args))
