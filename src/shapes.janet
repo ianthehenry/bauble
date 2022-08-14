@@ -261,14 +261,46 @@
 
   [axes shape])
 
-# TODO: instead of generating a function, we could generate abs_xyz functions.
-# maybe slightly nicer.
+(def-input-operator- new-mirror-axes [shape axes]
+  (fn [{:axes axes} comp-state coord]
+    (if (= (length axes) 3)
+      (string `abs(`coord`)`)
+      (:function comp-state "vec3" [:abs axes] (string "abs_" axes)
+        [coord]
+        ["vec3 p"]
+        (string `p.`axes` = abs(p.`axes`); return p;`)))))
 
-(def-operator- new-mirror [axes shape]
-  (if (= 3 (length axes))
-    (:compile shape comp-state (string/format "abs(%s)" coord))
-    (- comp-state self "mirror" coord (fn [coord]
-      (string/format "%s.%s = abs(%s.%s); return %s;" coord axes coord axes (:compile shape comp-state coord))))))
+(def-input-operator- new-mirror-plane [shape axes]
+  (fn [{:axes axes} comp-state coord]
+    (def [axis1 axis2] axes)
+    (defn select [axis]
+      (cond
+        (= axis1 axis) "hi"
+        (= axis2 axis) "lo"
+        (string `p.` axis)))
+    (:function comp-state "vec3" [:sort axes] (string "sort_" axis1 axis2)
+      [coord]
+      ["vec3 p"]
+      (string `
+        float lo = min(p.`axis1`, p.`axis2`);
+        float hi = max(p.`axis1`, p.`axis2`);
+        return vec3(`(select :x)`, `(select :y)`, `(select :z)`);
+        `))))
+
+(def-input-operator- new-mirror-space [shape]
+  (fn [self comp-state coord]
+    (:function comp-state "vec3" :sort-xyz "sort_xyz"
+      [coord]
+      ["vec3 p"]
+      `
+      float smallest = min3(p);
+      float largest = max3(p);
+      float middlest =
+        p.x > smallest && p.x < largest ? p.x :
+        p.y > smallest && p.y < largest ? p.y :
+        p.z;
+      return vec3(smallest, middlest, largest);
+      `)))
 
 (defn- transpose-other-axes [axis]
   (case axis
@@ -284,23 +316,11 @@
     :z [-1 -1 1]
     (error "unknown axis")))
 
-(def-operator- new-flip [axes shape signs]
-  (if (nil? signs)
-    (:compile shape comp-state (string coord "." axes))
-    (:compile shape comp-state (string/format "(%s.%s * %s)" coord axes (vec3 signs)))))
-# TODO:
-#(let [[sign axis] (split-signed-axis signed-axis)]
-#  {:axes (transpose-other-axes axis)
-#    :shape shape
-#    :signs (if (neg? sign) (negate-other-axes axis) nil)})
-
-# this is a "full" symmetry that mirrors across every axis and rotation.
-# you could have more flexible symmetry that only rotates across a single axis,
-# does not do the abs(), etc. also... i'm not really sure how this works. this
-# operation seems slightly insane.
-# TODO: also doesn't respect surfaces
-(def-input-operator- new-symmetry [shape]
-  (fn [{:shape shape} comp-state coord] (string/format "sort3(abs(%s))" coord)))
+(def-input-operator- new-flip [shape axes signs]
+  (fn [{:axes axes :signs signs} comp-state coord]
+    (if (nil? signs)
+      (string coord "." axes)
+      (string `(`coord`.`axes` * `(vec3 signs)`)`))))
 
 # TODO: this should be an input operator
 (def-operator- new-reflect [axes shape]
@@ -614,6 +634,7 @@
 
 # this fancy function definition stuff could be in its own helper module
 
+(def- type/bool @"bool")
 (def- type/vec2 @"vec2")
 (def- type/vec3 @"vec3")
 (def- type/vec4 @"vec4")
@@ -640,6 +661,7 @@
 (defn- typeof [value]
   (case (type value)
     :number type/float
+    :boolean type/bool
     :keyword (get keyword-types value type/unknown)
     :struct type/3d # TODO: obviously this is wrong once I add 2D SDFs
     :tuple (case (length value)
@@ -704,7 +726,7 @@
         (errorf "%s: unexpected argument %p" (dyn :fn-name) arg)))
     (++ i)))
 
-(defmacro- flip [f arg1 arg2]
+(defmacro- swap [f arg1 arg2]
   ~(,f ,arg2 ,arg1))
 
 (defn get-strict [list index default-value]
@@ -714,13 +736,13 @@
 
 (defmacro- def-flexible-fn [fn-name bindings spec & body]
   (def param-defs
-    (flip map bindings (fn [binding]
+    (swap map bindings (fn [binding]
       (def [name arg] binding)
       (case (tuple/type binding)
         :parens ~(var ,name ,arg)
         :brackets ~(def-param ,name ,arg)))))
   (def get-bindings-defs
-    (flip mapcat bindings (fn [binding]
+    (swap mapcat bindings (fn [binding]
       (if (= (tuple/type binding) :parens) []
         (let [[name type] binding
               default-value (get-strict binding 2 ~(quote ,unset))]
@@ -903,6 +925,48 @@
   (if (vec3/same? scale)
     (new-scale shape (scale 0))
     (new-stretch shape scale)))
+
+(def-flexible-fn mirror [[x type/bool false] [y type/bool false] [z type/bool false] [shape]]
+  {type/3d |(set-param shape $)
+   :x |(set-param x true)
+   :y |(set-param y true)
+   :z |(set-param z true)}
+  (if (not (or x y z)) shape
+    (do
+      (def axes (buffer/new 3))
+      (when x (buffer/push-string axes "x"))
+      (when y (buffer/push-string axes "y"))
+      (when z (buffer/push-string axes "z"))
+      (new-mirror-axes shape axes))))
+
+# TODO: should probably support the negative versions as well?
+(def-flexible-fn mirror-plane [[axes] [shape]]
+  {type/3d |(set-param shape $)
+   :xz |(set-param axes [:x :z]) :zx |(set-param axes [:z :x])
+   :yz |(set-param axes [:y :z]) :zy |(set-param axes [:z :y])
+   :xy |(set-param axes [:x :y]) :yx |(set-param axes [:y :x])}
+  (new-mirror-plane shape axes))
+
+(def-flexible-fn mirror-space [[shape]]
+  {type/3d |(set-param shape $)}
+  (new-mirror-space shape))
+
+(def-flexible-fn symmetry [[shape]]
+  {type/3d |(set-param shape $)}
+  (new-mirror-axes (new-mirror-space shape) "xyz"))
+
+# TODO: it's weird that mirror-plane takes :xz and this
+# takes :y to mean basically the same thing. on the one
+# hand mirror-plane is directional -- :xz and :zx are
+# different -- but that's dumb and i don't even know
+# why that is.
+(def-flexible-fn flip [[axis] [shape]]
+  {type/3d |(set-param shape $)
+   type/axis |(set-param axis $)
+   type/signed-axis |(set-param axis $)}
+  (def [sign axis] (split-signed-axis axis))
+  (def axes (transpose-other-axes axis))
+  (new-flip shape axes (if (neg? sign) (negate-other-axes axis))))
 
 # --- surfacing ---
 
