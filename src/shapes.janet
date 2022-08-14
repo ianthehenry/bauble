@@ -481,10 +481,10 @@
     return result;
     `))
 
-(def-surfacer- new-cel [shape color shine gloss ambient steps feather]
+(def-surfacer- new-cel [shape color shine gloss ambient steps]
   (:function comp-state "vec3" :cel "cel"
-    [coord "world_p" "camera" "normal" "light_intensities" (vec3 color) (float shine) (float (* gloss gloss)) (float ambient) (float steps) (float feather)]
-    ["vec3 p" "vec3 world_p" "vec3 camera" "vec3 normal" "float light_intensities[3]" "vec3 color" "float shine" "float gloss" "float ambient" "float steps" "float feather"]
+    [coord "world_p" "camera" "normal" "light_intensities" (vec3 color) (float shine) (float (* gloss gloss)) (float ambient) (float steps)]
+    ["vec3 p" "vec3 world_p" "vec3 camera" "vec3 normal" "float light_intensities[3]" "vec3 color" "float shine" "float gloss" "float ambient" "float steps"]
     `
     vec3 view_dir = normalize(camera - world_p);
     vec3 light = vec3(0.0);
@@ -498,8 +498,7 @@
       float diffuse = max(0.0, dot(normal, light_dir));
       light += light_color * (diffuse + specular_strength);
     }
-    vec3 rounded_light = round(light * steps) / steps;
-    return color * (ambient + (1.0 - ambient) * mix(rounded_light, light, feather));
+    return color * (ambient + (1.0 - ambient) * round(light * steps) / steps);
     `))
 
 (def-surfacer- new-fresnel [shape color strength exponent]
@@ -943,17 +942,15 @@
    [shine type/float 1]
    [gloss type/float 4]
    [ambient type/float 0.5]
-   [steps type/float 1]
-   [feather type/float 0]]
+   [steps type/float 1]]
   {type/vec3 |(set-param color $)
    type/3d |(set-param shape $)
-   type/float |(set-param feather $)
-   :feather |(set-param feather $)
+   type/float |(set-param steps $)
    :steps |(set-param steps $)
    :shine |(set-param shine $)
    :gloss |(set-param gloss $)
    :ambient |(set-param ambient $)}
-  (new-cel shape color shine gloss ambient steps feather))
+  (new-cel shape color shine gloss ambient steps))
 
 # TODO: I don't love the name "resurface"
 (def-flexible-fn resurface
