@@ -235,7 +235,7 @@
 
 # --- surfacing ---
 
-(def-flexible-fn color
+(def-flexible-fn blinn-phong
   [[color type/vec3]
    [shape type/3d raw/r3]
    [shine type/float 0.25]
@@ -247,6 +247,8 @@
    :gloss |(set-param gloss $)
    :ambient |(set-param ambient $)}
   (raw/blinn-phong shape color shine gloss ambient))
+
+(def color blinn-phong)
 
 (def-flexible-fn flat-color
   [[color] [shape type/3d raw/r3]]
