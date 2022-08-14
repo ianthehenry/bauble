@@ -86,24 +86,28 @@ const initialScript = `
 
 # (var top 0)
 # (defn hollow-box [size]
-#   (smooth-subtract 5 (box size) (sphere (* 1.20 size))))
+#   (subtract :r 5
+#     (box size :r 2)
+#     (sphere (* 1.20 size))))
 # (defn stack-box [size]
-#   (let [result (translate [0 (+ top size) 0] (hollow-box size))]
+#   (let [result (move :y (+ top size)
+#                  (hollow-box size))]
 #     (+= top (* 2 size))
 #     result))
-# (translate [0 -45 0]
-#   (smooth-union 20 ;(map stack-box [40 30 20])))
+# (move :y -45
+#   (union :r 10
+#     ;(map stack-box [40 30 20])))
 
 # You can also edit values with your
 # mouse. Uncomment the next block of
-# code, and put your cursor on the
+# code, then put your cursor on the
 # value 0.00. Then hold down the
 # control key, and move your mouse left
 # to right.
 
 # (def r 0.00)
-# (-> (cone :x 40 100)
-#   (rotate :y (tau r) :z (tau r))
+# (-> (cone :x 60 80 :r 1)
+#   (rotate-tau :y r :z r)
 #   (symmetry))
 
 # When editing values with your mouse,
@@ -115,58 +119,159 @@ const initialScript = `
 # increment by 0.1, but editing 3.000
 # will increment by 0.001.
 
-# You can also apply surfaces to shapes.
+#### Surfacing ####
+
+# So far everything has been weird
+# shades of pastel, which is a mapping
+# of the XYZ normal vector into RGB
+# space. That's the default surface for
+# new shapes, but you can apply other
+# surfaces:
 
 # (union
-#   (blinn-phong [1 0.62 0.54] 1 8 (sphere 50))
-#   (blinn-phong [0.9 0.9 0.9] 0 1 (translate [0 -50 0] (half-space :-y))))
+#   (color (box 50 :r 10)
+#     (hsv 0.00 1 1)
+#     :gloss 4
+#     :shine 0.5
+#     :ambient 0.2)
+#   (color (half-space :-y -50)
+#     [0.9 0.9 0.9]))
 
-# This is not very intuitive, but the
-# invocation is:
-#
-# (blinn-phong color shininess glossiness shape)
-#
-# To apply a surface. This... this will
-# be better in the future.
+# (color) is an alias for (blinn-phong),
+# a simple material shader. Try tweaking
+# the parameters to see how they work,
+# and remember that you can use your
+# mouse! Also note that specular
+# highlights depend on viewing angle,
+# so rotate the viewport a little.
 
-# You can also take the color from one
-# shape and apply it to another. For
-# example:
+# (Note: the specular exponent is
+# actually the square of the "gloss"
+# value, if that means anything to you.)
 
-# (with-surface (offset 1 (box 50))
-#   (intersect
-#     (blinn-phong [1 0 0] 1 4 (box 50))
-#     (blinn-phong [0 0 1] 1 4 (sphere 70))))
+# When you combine shapes together, you
+# also combine their surfaces. For
+# example, here are a couple shapes:
 
-# This is a useful technique for "painting"
-# complex colors onto shapes.
+# (def green-box (color [0 1 0] (box 50 :r 5)))
+# (def red-sphere (color [1 0 0] (sphere 60)))
 
-# And... that's it for now! You cannot
-# currently control lighting, shadow
-# parameters, raymarching parameters,
-# or anything else.
+# Now uncomment each of these one at a
+# time to see how the colors interact:
 
-# There is no documentation or help or
-# anything for Bauble functions right
-# now, but here's a quick overview of
-# the basics. Uncomment these one at a
-# time to see what they do:
+# (union green-box red-sphere)
+# (intersect green-box red-sphere)
+# (subtract green-box red-sphere)
 
-# (union (box 50) (sphere 70))
-# (smooth-union 10 (box 50) (cone :z 40 100))
-# (intersect (onion 1 (sphere 20)) (half-space :-z))
-# (morph 0.5 (box 50) (sphere 50))
-# (subtract (box 50) (cylinder :z 30 100))
-# (smooth-subtract 30 (rotate :y (tau 0.125) :z (tau 0.125) (box 50)) (translate [50 0 0] (sphere 50)))
-# (cone :x 50 200)
-# (reflect :x (cone :x 50 200))
-# (-> (cone :x 50 200) (rotate :y (tau 0.125)) (mirror :x :z))
-# (smooth-union 5 (line [-50 0 0] [50 0 0] 10) (mirror :x (sphere 30 [50 0 0])))
-# (tile [100 100 100] (sphere 50) :limit [1 3 1])
-# (scale 2.0 (offset 5 (box 40)))
+# And now let's try it with smooth
+# transitions:
 
-# What else? You can print values for
-# debugging with (print "string") or
+# (union :r 5 green-box red-sphere)
+# (intersect :r 5 green-box red-sphere)
+# (subtract :r 5 green-box red-sphere)
+
+# Now here's where it gets interesting:
+# you can sample the color from one
+# shape and use it to shade another
+# shape. It's easy to understand
+# with an example:
+
+# (resurface
+#  green-box
+#  (union green-box red-sphere))
+
+# The way this works is that the
+# raymarcher uses the signed distance
+# field from the first shape to
+# determine the geometry, but when it
+# hits the surface it uses the second
+# shape to determine the color.
+
+# This is a useful technique for
+# "painting" complex colors onto shapes.
+
+# Last thing: Bauble also has functions
+# to modify the underlying color field
+# in some way. Actually, just one at the
+# moment:
+
+# (fresnel red-sphere [1 1 0] 0.5 :exponent 5)
+
+# That adds a little bit of (simulated)
+# fresnel reflectivity to a surface.
+# Move the camera around a bit to see
+# what it does. Note that Bauble doesn't
+# actually support reflection yet, so it
+# just tints the edges, but it still
+# looks pretty nice.
+
+# All of the arguments are optional,
+# so you can quickly apply it to a shape
+# and add a little depth. Note that it
+# works even with the default
+# normal-coloring:
+
+# (sphere 50)
+# (fresnel (sphere 50))
+
+#### Lisp heresy ####
+
+# So far our examples have only used
+# "vanilla" Janet, which, of course,
+# has a lot of parentheses. But Bauble
+# provides a helpful macro that you can
+# use to invoke functions. Let's take
+# a look. Starting without any helpers:
+
+# (color [1 0 0] (rotate :y pi/4 (box 50)))
+
+# First of all, the Bauble DSL is very
+# flexible about named and positional
+# argument order. So that's actually the
+# same as:
+
+# (color (rotate (box 50) :y pi/4) [1 0 0])
+
+# Janet provides a useful threading
+# macro that we can use to write this
+# as a subject and then a series of
+# transformations, so that the
+# expression is not as nested:
+
+# (-> (box 50) (rotate :y pi/4) (color [1 0 0]))
+
+# Which is very useful. Bauble lets you
+# go a little bit further:
+
+# (box 50 | rotate :y pi/4 | color [1 0 0])
+
+# At first this might not look like Lisp
+# at all, but it's a pretty simple macro
+# that has the same effect as the (->)
+# threading macro -- but it's a lot
+# easier to type it out.
+
+#### Light and shadow ####
+
+# Currently there's no way to customize
+# anything about the lighting. But it's
+# coming soon!
+
+#### Procedural texturing ####
+
+# Haha aw I haven't gotten to that yet
+# either. But a future version of Bauble
+# will support it!
+
+#### Getting Help ####
+
+# Uhhh okay look you have just read
+# literally all of the documentation.
+
+# Sorry about that.
+
+# You can print values for debugging
+# with (print "string") or
 # (pp expression). Error messages are
 # extremely bad right now, so don't
 # make any mistakes. If you write an
@@ -175,11 +280,42 @@ const initialScript = `
 # to get out of it except to refresh
 # the page.
 
-# Umm that's all okay good luck! Your
-# changes will automatically save, but
-# if you want to restore this initial
-# tutorial, just empty out this text
-# field and refresh the page.
+# Your changes will automatically save,
+# but if you want to restore this
+# initial tutorial, just empty out this
+# text field and refresh the page.
+
+# For more info... maybe check out the
+# source?
+
+# https://github.com/ianthehenry/bauble/blob/master/src/dsl.janet
+# https://github.com/ianthehenry/bauble/blob/master/src/helpers.janet
+
+# Or try studying these examples:
+
+# (union (box 50) (sphere 70))
+# (union :r 10 (box 50) (cone :z 40 50))
+# (sphere 100 | onion 5 | intersect (half-space :-z))
+# (sphere 100 | onion 5 | intersect :r 5 (half-space :-z 60))
+# (morph 0.5 (box 50) (sphere 50))
+# (box 50 | subtract (cylinder :z 30 100))
+# (subtract :r 30 (box 50 | rotate :y tau/8 :z tau/8) (sphere 50 | move :x 50))
+# (cone :x 50 70)
+# (cone :x 50 70 | reflect :x)
+# (cone :x 50 70 | rotate :y pi/4 | mirror :x :z)
+# (union :r 50 (line [-50 0 0] [50 0 0] 10) (sphere 50 | move :x 100 | mirror :x))
+# (sphere 50 | tile [100 100 100] :limit [3 10 2])
+# (cone :-z 50 100 :r 10)
+# (cone :-z 50 100 | offset 10)
+# (box 40 | scale 1.5)
+# (box 40 | scale :x 0.5)
+# (box 40 | scale [1 2 0.5])
+
+# Comments? Questions? Requests?
+# https://github.com/ianthehenry/bauble/discussions
+
+# Found a bug? Let me know!
+# https://github.com/ianthehenry/bauble/issues
 `.trimLeft();
 
 const preamble = '(use ./helpers) (use ./shapes) (use ./pipe) (pipe\n';
@@ -357,7 +493,7 @@ document.addEventListener("DOMContentLoaded", (_) => {
     e.preventDefault();
     canvas.setPointerCapture(e.pointerId);
   });
-  
+
   canvas.addEventListener('pointermove', (e) => {
     if (canvas.hasPointerCapture(e.pointerId)) {
       e.preventDefault();
