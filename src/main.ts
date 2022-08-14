@@ -182,7 +182,7 @@ const initialScript = `
 # field and refresh the page.
 `.trimLeft();
 
-const preamble = '(use ./shapes) (pipe\n';
+const preamble = '(use ./helpers) (use ./shapes) (use ./pipe) (pipe\n';
 const postamble = '\n)'; // newline is necessary in case the script ends in a comment
 
 function executeJanet(code: string, camera) {
