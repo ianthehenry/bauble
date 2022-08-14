@@ -10,11 +10,11 @@ import {
 import Big from 'big.js';
 
 const TAU = 2 * Math.PI;
-const cameraRotateSpeed = 0.001;
+const cameraRotateSpeed = 1 / 512;
 const cameraZoomSpeed = 0.01;
 const LOCAL_STORAGE_KEY = "script";
 
-function clear() {
+function clearOutput() {
   const output = document.getElementById('output')!;
   output.innerHTML = "";
 }
@@ -440,11 +440,18 @@ document.addEventListener("DOMContentLoaded", (_) => {
     y: 0.125,
     zoom: 2.0
   };
+
+  let drawScheduled = false;
   function draw() {
-    setTimeout(function() {
-      clear();
+    if (drawScheduled) {
+      return;
+    }
+    drawScheduled = true;
+    requestAnimationFrame(function() {
+      drawScheduled = false;
+      clearOutput();
       executeJanet(editor.state.doc.toString(), camera);
-    }, 0);
+    });
   }
 
   const incrementNumber = (editor: StateCommandInput) => alterNumber(editor, Big('1'));
@@ -474,7 +481,6 @@ document.addEventListener("DOMContentLoaded", (_) => {
   // honestly this is so annoying on firefox that
   // i'm not even gonna bother
   const usePointerLock = false;
-
   if (usePointerLock) {
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Control') {
@@ -488,41 +494,86 @@ document.addEventListener("DOMContentLoaded", (_) => {
     });
   }
 
-  const canvas = document.getElementById('render-target')!;
+  const canvas = <HTMLCanvasElement>document.getElementById('render-target')!;
+  let canvasPointerAt = [0, 0];
+  let rotatePointerId = null;
   canvas.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    canvas.setPointerCapture(e.pointerId);
+    if (rotatePointerId === null) {
+      e.preventDefault();
+      canvasPointerAt = [e.offsetX, e.offsetY];
+      canvas.setPointerCapture(e.pointerId);
+      rotatePointerId = e.pointerId;
+    }
   });
 
+  canvas.addEventListener('pointerup', (e) => {
+    e.preventDefault();
+    if (e.pointerId === rotatePointerId) {
+      rotatePointerId = null;
+    }
+  });
+
+  let isGesturing = false;
+  let gestureEndedAt = 0;
   canvas.addEventListener('pointermove', (e) => {
-    if (canvas.hasPointerCapture(e.pointerId)) {
+    if (e.pointerId === rotatePointerId) {
       e.preventDefault();
-      camera.x = mod(camera.x - cameraRotateSpeed * e.movementY, 1.0);
-      camera.y = mod(camera.y - cameraRotateSpeed * e.movementX, 1.0);
+      const pointerWasAt = canvasPointerAt;
+      canvasPointerAt = [e.offsetX, e.offsetY]
+
+      if (isGesturing) {
+        return;
+      }
+      // if you were just trying to zoom,
+      // we don't want to do a little tiny
+      // pan as you lift your second finger.
+      // so we wait 100ms before we allow
+      // panning to continue
+      if (performance.now() - gestureEndedAt < 100) {
+        return;
+      }
+
+      const movementX = canvasPointerAt[0] - pointerWasAt[0];
+      const movementY = canvasPointerAt[1] - pointerWasAt[1];
+      // TODO: pixelScale shouldn't be hardcoded
+      const pixelScale = 0.5;
+      const scaleAdjustmentX = pixelScale * canvas.width / canvas.clientWidth;
+      const scaleAdjustmentY = pixelScale * canvas.height / canvas.clientHeight;
+      // TODO: invert the meaning of camera.x/y so that this actually makes sense
+      camera.x = mod(camera.x - scaleAdjustmentY * cameraRotateSpeed * movementY, 1.0);
+      camera.y = mod(camera.y - scaleAdjustmentX * cameraRotateSpeed * movementX, 1.0);
       draw();
     }
   });
 
   // TODO: I haven't actually tested if this is anything
-  canvas.addEventListener('gesturchange', (e: GestureEvent) => {
-    if (e.scale !== 1) {
-      e.preventDefault();
-      camera.zoom += e.scale;
-    }
+  let initialZoom = 1;
+  canvas.addEventListener('gesturestart', (e: GestureEvent) => {
+    initialZoom = camera.zoom;
+    isGesturing = true;
+  });
+  canvas.addEventListener('gestureend', (e: GestureEvent) => {
+    initialZoom = camera.zoom;
+    isGesturing = false;
+    gestureEndedAt = performance.now();
+  });
+  canvas.addEventListener('gesturechange', (e: GestureEvent) => {
+    camera.zoom = initialZoom / e.scale;
+    draw();
   });
 
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
     camera.zoom += cameraZoomSpeed * e.deltaY;
-    // this seems to make this much more smooth?
-    // requestAnimationFrame(draw);
     draw();
   });
 
   const outputContainer = document.getElementById('output')!;
   const outputResizeHandle = document.getElementById('output-resize-handle')!;
+  let handlePointerAt = [0, 0];
   outputResizeHandle.addEventListener('pointerdown', (e) => {
     outputResizeHandle.setPointerCapture(e.pointerId);
+    handlePointerAt = [e.screenX, e.screenY];
   });
   outputResizeHandle.addEventListener('pointermove', (e) => {
     if (outputResizeHandle.hasPointerCapture(e.pointerId)) {
@@ -530,8 +581,11 @@ document.addEventListener("DOMContentLoaded", (_) => {
       const verticalPadding = parseFloat(outputStyle.paddingTop) + parseFloat(outputStyle.paddingBottom);
       const oldHeight = outputContainer.offsetHeight - verticalPadding;
       const oldScrollTop = outputContainer.scrollTop;
-      outputContainer.style.height = `${oldHeight - e.movementY}px`;
-      outputContainer.scrollTop = clamp(oldScrollTop + e.movementY, 0, outputContainer.scrollHeight - outputContainer.offsetHeight);
+      const handlePointerWasAt = handlePointerAt;
+      handlePointerAt = [e.screenX, e.screenY];
+      const delta = handlePointerAt[1] - handlePointerWasAt[1]
+      outputContainer.style.height = `${oldHeight - delta}px`;
+      outputContainer.scrollTop = clamp(oldScrollTop + delta, 0, outputContainer.scrollHeight - outputContainer.offsetHeight);
     }
   });
 
@@ -541,8 +595,20 @@ document.addEventListener("DOMContentLoaded", (_) => {
     }
   });
 
-  window.addEventListener('beforeunload', (_e) => {
+  document.addEventListener('pagehide', (e) => {
     save(editor);
+  });
+  let savedBefore = false;
+  // iOS Safari doesn't support beforeunload,
+  // but it does support unload.
+  window.addEventListener('beforeunload', (_e) => {
+    savedBefore = true;
+    save(editor);
+  });
+  window.addEventListener('unload', (_e) => {
+    if (!savedBefore) {
+      save(editor);
+    }
   });
 
   onReady(draw);
