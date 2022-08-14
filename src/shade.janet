@@ -146,9 +146,7 @@ float cast_light(vec3 p, vec3 light, float radius) {
   return 0.0;
 }
 
-vec3 fog_color = vec3(0.15);
-
-vec3 march(vec3 ray_origin, vec3 ray_direction) {
+vec3 march(vec3 ray_origin, vec3 ray_direction, out int result) {
   float distance = 0.0;
 
   for (int i = 0; i < MAX_STEPS; i++) {
@@ -158,20 +156,20 @@ vec3 march(vec3 ray_origin, vec3 ray_direction) {
 
     if (nearest < MINIMUM_HIT_DISTANCE) {
       // a useful debug view
-      // return vec3(float(i) / float(MAX_STEPS));
+      //return vec3(float(i) / float(MAX_STEPS));
 
-      vec3 hit = p + nearest * ray_direction;
-      vec3 color = nearest_color(hit, ray_origin);
-      float depth = length(p - ray_origin);
-      return mix(color, fog_color, depth / MAXIMUM_TRACE_DISTANCE);
+      result = 0;
+      return p + nearest * ray_direction;
     }
 
     if (distance > MAXIMUM_TRACE_DISTANCE) {
-      return fog_color;
+      result = 1;
+      return vec3(0.0);
     }
     distance += nearest;
   }
-  return vec3(1.0, 0.1, 0.1);
+  result = 2;
+  return vec3(0.0);
 }
 
 mat4 view_matrix(vec3 eye, vec3 target, vec3 up) {
@@ -212,7 +210,6 @@ mat3 rotate_xy(vec2 angle) {
 }
 
 void main() {
-  const float zoom = 2.0;
   const float gamma = 2.2;
   const vec2 resolution = vec2(1024.0, 1024.0);
 
@@ -224,11 +221,26 @@ void main() {
   dir = camera_matrix * dir;
   eye = camera_matrix * eye;
 
-  vec3 color = march(eye, dir);
+  const vec3 fog_color = vec3(0.15);
+  const vec3 abort_color = vec3(1.0, 0.0, 0.0);
 
-  //if (int(gl_FragCoord.x + gl_FragCoord.y) % 2 == 0) {
-  // color = floor(color * 16.0f) / 16.0f;
-  //}
+  int result;
+  vec3 hit = march(eye, dir, result);
+  vec3 color;
+
+  switch (result) {
+    case 0:
+      color = nearest_color(hit, eye);
+      float depth = length(hit - eye);
+      color = mix(color, fog_color, depth / MAXIMUM_TRACE_DISTANCE);
+      break;
+    case 1:
+      color = fog_color;
+      break;
+    case 2:
+      color = abort_color;
+      break;
+  }
 
   frag_color = vec4(pow(color, vec3(1.0 / gamma)), 1.0);
 }
