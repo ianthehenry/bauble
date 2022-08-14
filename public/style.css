@@ -115,6 +115,7 @@ header .image-link img {
   height: 4px;
   background-color: #eee;
   cursor: ns-resize;
+  touch-action: none;
 }
 
 #output {
@@ -153,5 +154,7 @@ canvas {
     flex-direction: column;
   }
   #canvas-container { flex: 1; }
-  #editor-container { flex: 2; }
+  #editor-container { flex: 1; }
+  #output { height: 1.5em; }
+  #output-resize-handle { height: 12px }
 }
