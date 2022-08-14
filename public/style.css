@@ -47,7 +47,7 @@ header {
   --header-height: 40px;
   --header-padding: 0.5em;
   --text-color: #000;
-  background-color: #f9c0ff;
+  background-color: #ffc6f9;
   height: var(--header-height);
   line-height: var(--header-height);
   display: flex;
