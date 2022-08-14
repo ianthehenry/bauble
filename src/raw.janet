@@ -183,7 +183,6 @@
 
 (def-input-operator reflect-axes [shape axes]
   (fn [{:axes axes} comp-state coord]
-    (def axes (string-of-axes axes))
     (if (= (length axes) 3)
       (string `-` coord)
       (:function comp-state "vec3" [:neg axes] (string "neg_" axes)
