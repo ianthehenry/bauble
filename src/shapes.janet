@@ -88,15 +88,15 @@
 (defmacro- def-input-operator- [name alter-fn args & body]
   ~(def-constructor- ,name
     (let [alter ,alter-fn]
-      @{:compile (fn [self comp-state coord] (:compile (self :expr) comp-state (alter self comp-state coord)))
-        :surface (fn [self comp-state coord] (:surface (self :expr) comp-state (alter self comp-state coord)))})
+      @{:compile (fn [self comp-state coord] (:compile (self :shape) comp-state (alter self comp-state coord)))
+        :surface (fn [self comp-state coord] (:surface (self :shape) comp-state (alter self comp-state coord)))})
     ,args
     ,;body))
 
 (defmacro- def-operator- [name self compile-body args & body]
   ~(def-constructor- ,name
     @{:compile (fn [,self comp-state coord] ,compile-body)
-      :surface (fn [self comp-state coord] (:surface (self :expr) comp-state coord))}
+      :surface (fn [self comp-state coord] (:surface (self :shape) comp-state coord))}
     ,args
     ,;body))
 
@@ -110,33 +110,33 @@
 (def-input-operator- new-translate
   (fn [{:offset offset} comp-state coord]
     (string/format "(%s - %s)" coord (vec3 offset)))
-  [offset expr] @{:offset offset :expr expr})
+  [offset shape] @{:offset offset :shape shape})
 
 (def-operator- new-offset
-  {:amount amount :expr expr}
-  (string/format "(%s - %s)" (:compile expr comp-state coord) (float amount))
-  [amount expr] @{:amount amount :expr expr})
+  {:amount amount :shape shape}
+  (string/format "(%s - %s)" (:compile shape comp-state coord) (float amount))
+  [amount shape] @{:amount amount :shape shape})
 
 (def-operator- new-onion
-  {:thickness thickness :expr expr}
-  (string/format "(abs(%s) - %s)" (:compile expr comp-state coord) (float thickness))
-  [thickness expr] @{:thickness thickness :expr expr})
+  {:thickness thickness :shape shape}
+  (string/format "(abs(%s) - %s)" (:compile shape comp-state coord) (float thickness))
+  [thickness shape] @{:thickness thickness :shape shape})
 
 # TODO: "amount" is interpolated multiple times here
 (def-operator- new-scale
-  {:amount amount :expr expr}
+  {:amount amount :shape shape}
   (string/format "(%s * %s)"
-    (:compile expr comp-state (string/format "(%s / %s)" coord (float amount)))
+    (:compile shape comp-state (string/format "(%s / %s)" coord (float amount)))
     (float amount))
-  [expr amount] @{:amount amount :expr expr})
+  [shape amount] @{:amount amount :shape shape})
 
 # TODO: "amount" is interpolated multiple times here
 (def-operator- new-stretch
-  {:amount amount :expr expr}
+  {:amount amount :shape shape}
   (string/format "(%s * abs(min3(%s)))"
-    (:compile expr comp-state (string/format "(%s / %s)" coord (vec3 amount)))
+    (:compile shape comp-state (string/format "(%s / %s)" coord (vec3 amount)))
     (vec3 amount))
-  [expr amount] @{:amount amount :expr expr})
+  [shape amount] @{:amount amount :shape shape})
 
 (def-primitive- new-box
   {:size size}
@@ -226,7 +226,7 @@
 
 (def-input-operator- new-transform
   (fn [{:matrix matrix} comp-state coord] (string/format "(%s * %s)" coord (mat3 matrix)))
-  [matrix expr] @{:matrix matrix :expr expr})
+  [matrix shape] @{:matrix matrix :shape shape})
 
 (defn mat3/make-identity []
   @[1 0 0 0 1 0 0 0 1])
@@ -252,9 +252,9 @@
   (default extra-args [])
   (default extra-params [])
   (fn [self comp-state coord]
-    (defn proxy [expr]
-      {:compile (fn [_] (:compile expr comp-state "p"))
-       :surface (fn [_] (:surface expr comp-state "p"))})
+    (defn proxy [shape]
+      {:compile (fn [_] (:compile shape comp-state "p"))
+       :surface (fn [_] (:surface shape comp-state "p"))})
     (def exprs (self :exprs))
     (:function comp-state type [self base-name] base-name
       [coord ;extra-args]
@@ -267,18 +267,18 @@
         (string/format "return %s;" return)
         ] "\n"))))
 
-(defn- get-axes-and-expr [args]
+(defn- get-axes-and-shape [args]
   (var x false)
   (var y false)
   (var z false)
-  (var expr nil)
+  (var shape nil)
 
   (each arg args
     (match arg
       :x (if x (error "duplicate axis") (set x true))
       :y (if y (error "duplicate axis") (set y true))
       :z (if z (error "duplicate axis") (set z true))
-      (if expr (error "multiple expressions") (set expr arg))))
+      (if shape (error "multiple expressions") (set shape arg))))
 
   (when (not (or x y z)) (error "no axis"))
 
@@ -287,22 +287,22 @@
   (when y (buffer/push-string axes "y"))
   (when z (buffer/push-string axes "z"))
 
-  (when (nil? expr) (error "no expression"))
+  (when (nil? shape) (error "no expression"))
 
-  [axes expr])
+  [axes shape])
 
 # TODO: instead of generating a function, we could generate abs_xyz functions.
 # maybe slightly nicer.
 (def-operator- new-mirror
   self
-  (let [{:expr expr :axes axes} self]
+  (let [{:shape shape :axes axes} self]
     (if (= 3 (length axes))
-      (:compile expr comp-state (string/format "abs(%s)" coord))
+      (:compile shape comp-state (string/format "abs(%s)" coord))
       (- comp-state self "mirror" coord (fn [coord]
-        (string/format "%s.%s = abs(%s.%s); return %s;" coord axes coord axes (:compile expr comp-state coord))))))
+        (string/format "%s.%s = abs(%s.%s); return %s;" coord axes coord axes (:compile shape comp-state coord))))))
   [& args]
-  (def [axes expr] (get-axes-and-expr args))
-  @{:axes axes :expr expr})
+  (def [axes shape] (get-axes-and-shape args))
+  @{:axes axes :shape shape})
 
 (defn- transpose-other-axes [axis]
   (case axis
@@ -319,14 +319,14 @@
     (error "unknown axis")))
 
 (def-operator- new-flip
-  {:expr expr :axes axes :signs signs}
+  {:shape shape :axes axes :signs signs}
   (if (nil? signs)
-    (:compile expr comp-state (string coord "." axes))
-    (:compile expr comp-state (string/format "(%s.%s * %s)" coord axes (vec3 signs))))
-  [signed-axis expr]
+    (:compile shape comp-state (string coord "." axes))
+    (:compile shape comp-state (string/format "(%s.%s * %s)" coord axes (vec3 signs))))
+  [signed-axis shape]
   (let [[sign axis] (split-signed-axis signed-axis)]
     @{:axes (transpose-other-axes axis)
-      :expr expr
+      :shape shape
       :signs (if (neg? sign) (negate-other-axes axis) nil)}))
 
 # this is a "full" symmetry that mirrors across every axis and rotation.
@@ -335,18 +335,18 @@
 # operation seems slightly insane.
 # TODO: also doesn't respect surfaces
 (def-input-operator- new-symmetry
-  (fn [{:expr expr} comp-state coord] (string/format "sort3(abs(%s))" coord))
-  [expr] @{:expr expr})
+  (fn [{:shape shape} comp-state coord] (string/format "sort3(abs(%s))" coord))
+  [shape] @{:shape shape})
 
 # TODO: this should be an input operator
 (def-operator- new-reflect
   self
   (:sdf-3d comp-state self "reflect" coord (fn [coord]
-    (def {:expr expr :axes axes} self)
-    (string/format "%s.%s = -%s.%s; return %s;" coord axes coord axes (:compile expr comp-state coord))))
+    (def {:shape shape :axes axes} self)
+    (string/format "%s.%s = -%s.%s; return %s;" coord axes coord axes (:compile shape comp-state coord))))
   [& args]
-  (def [axes expr] (get-axes-and-expr args))
-  @{:axes axes :expr expr})
+  (def [axes shape] (get-axes-and-shape args))
+  @{:axes axes :shape shape})
 
 (def-constructor- new-union
   @{:compile (fold-exprs "union"
@@ -472,7 +472,7 @@
   [size exprs] @{:size size :exprs exprs})
 
 (def-input-operator- new-tile
-  (fn [{:offset offset :expr expr :limit limit} comp-state coord]
+  (fn [{:offset offset :shape shape :limit limit} comp-state coord]
     (if (nil? limit)
       (:function comp-state "vec3" :tile "tile"
         [coord (vec3 offset)]
@@ -484,7 +484,7 @@
           [coord (vec3 offset) (vec3 min-limit) (vec3 max-limit)]
           ["vec3 p" "vec3 offset" "vec3 min_limit" "vec3 max_limit"]
           "return p - offset * clamp(round(p / offset), -min_limit, max_limit);"))))
-  [expr offset limit] @{:offset offset :expr expr :limit limit})
+  [shape offset limit] @{:offset offset :shape shape :limit limit})
 
 (def-constructor- new-morph
   @{:compile (fn [self comp-state coord]
@@ -507,7 +507,7 @@
 
 (def-surfacer- new-flat-color
   {:color color} (vec3 color)
-  [color shape] @{:color color :shape shape})
+  [shape color] @{:shape shape :color color})
 
 (def-surfacer- new-blinn-phong
   {:color color :shine shine :gloss gloss :ambient ambient}
@@ -633,12 +633,12 @@
     (rgb r g b)))
 
 # TODO: this is a terrible name for this
-(defmacro reflex [combine expr & fs]
-  (let [$expr (gensym)
+(defmacro reflex [combine shape & fs]
+  (let [$shape (gensym)
         combine (if (tuple? combine) combine [combine])
-        transformed (map (fn [f] (if (tuple? f) [;f $expr] [f $expr])) fs)]
-    ~(let [,$expr ,expr]
-      (,;combine ,$expr ,;transformed))))
+        transformed (map (fn [f] (if (tuple? f) [;f $shape] [f $shape])) fs)]
+    ~(let [,$shape ,shape]
+      (,;combine ,$shape ,;transformed))))
 
 # --- pipe macro ---
 
@@ -988,7 +988,7 @@
   [[color] [shape]]
   {type/vec3 |(set-param color $)
    type/3d |(set-param shape $)}
-  (new-flat-color color shape))
+  (new-flat-color shape color))
 
 (def-flexible-fn fresnel
   [[color type/vec3 [1 1 1]]
