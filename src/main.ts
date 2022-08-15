@@ -101,7 +101,7 @@ const initialScript = `
 
 # You can also edit values with your
 # mouse. Uncomment the next block of
-# code, then right-click and drag the
+# code, then ctrl-click and drag the
 # value 0.00 left to right.
 
 # (def r 0.00)
@@ -109,16 +109,19 @@ const initialScript = `
 #   (rotate-tau :y r :z r)
 #   (symmetry))
 
-# (Note for macOS Firefox users with a
-# trackpad: there is a longstanding bug
-# in Firefox that will prevent
-# ctrl-click dragging from working
-# here. Use two-fingers to get an actual
-# right click, or as a hacky workaround,
-# position the text cursor on the number
-# you want to change, then hold down
-# cmd+shift (without clicking) and move
-# the mouse.)
+# (Note for macOS Firefox users:
+# there is a longstanding bug in Firefox
+# where it doesn't report ctrl-click
+# events correctly. If you have a
+# physical mouse, you can use ctrl-right
+# click instead. If you have a trackpad,
+# that means ctrl-two finger drag. Since
+# that's very annoying, there is also a
+# hacky workaround: position the text
+# cursor on the number you want to
+# change, then hold down cmd+shift
+# (without clicking) and move the
+# mouse around.)
 # https://bugzilla.mozilla.org/show_bug.cgi?id=1504210
 
 # When editing values with your mouse,
@@ -649,7 +652,7 @@ document.addEventListener("DOMContentLoaded", (_) => {
   }
   
   editorContainer.addEventListener('pointerdown', (e) => {
-    if (e.buttons === 2 || e.buttons === 1 && e.ctrlKey) {
+    if ((e.buttons === 1 || e.buttons === 2) && e.ctrlKey) {
       ctrlClickedAt = performance.now();
       editorContainer.setPointerCapture(e.pointerId)
       e.preventDefault();
