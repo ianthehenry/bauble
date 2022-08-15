@@ -112,7 +112,7 @@ header .image-link img {
 }
 
 #output-resize-handle {
-  height: 4px;
+  height: 6px;
   background-color: #eee;
   cursor: ns-resize;
   touch-action: none;
