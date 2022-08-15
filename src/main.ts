@@ -101,15 +101,25 @@ const initialScript = `
 
 # You can also edit values with your
 # mouse. Uncomment the next block of
-# code, then put your cursor on the
-# value 0.00. Then hold down the
-# control key, and move your mouse left
-# to right.
+# code, then right-click and drag the
+# value 0.00 left to right.
 
 # (def r 0.00)
 # (-> (cone :x 60 80 :r 1)
 #   (rotate-tau :y r :z r)
 #   (symmetry))
+
+# (Note for macOS Firefox users with a
+# trackpad: there is a longstanding bug
+# in Firefox that will prevent
+# ctrl-click dragging from working
+# here. Use two-fingers to get an actual
+# right click, or as a hacky workaround,
+# position the text cursor on the number
+# you want to change, then hold down
+# cmd+shift (without clicking) and move
+# the mouse.)
+# https://bugzilla.mozilla.org/show_bug.cgi?id=1504210
 
 # When editing values with your mouse,
 # Bauble will increment the smallest
@@ -119,6 +129,10 @@ const initialScript = `
 # editing a value like 3.0 will
 # increment by 0.1, but editing 3.000
 # will increment by 0.001.
+
+# There will be keyboard shortcuts for
+# these things eventually but I haven't
+# implemented them yet.
 
 #### Surfacing ####
 
@@ -630,47 +644,40 @@ document.addEventListener("DOMContentLoaded", (_) => {
   });
 
   let ctrlClickedAt = 0;
-  let isDraggingNumber = false;
   const isTryingToEngageNumberDrag = () => {
     return performance.now() - ctrlClickedAt < 100;
   }
-  editorContainer.addEventListener('mousedown', (e) => {
-    if (e.buttons === 1 && e.ctrlKey) {
+  
+  editorContainer.addEventListener('pointerdown', (e) => {
+    if (e.buttons === 2 || e.buttons === 1 && e.ctrlKey) {
       ctrlClickedAt = performance.now();
-      isDraggingNumber = true;
+      editorContainer.setPointerCapture(e.pointerId)
+      e.preventDefault();
     }
   });
   editorContainer.addEventListener('contextmenu', (e) => {
     if (isTryingToEngageNumberDrag()) {
       e.preventDefault();
-      return false;
+    }
+  });
+  editorContainer.addEventListener('pointermove', (e) => {
+    if (editorContainer.hasPointerCapture(e.pointerId)) {
+      alterNumber(editor, Big(e.movementX).times('1'));
     }
   });
 
-  // So for some reason ctrl-clicking doesn't trigger the pointerdown event.
-  // Right click does, but not ctrl-left click. So we can't setPointerCapture
-  // on a ctrl-click. This means we have to listen to move events on the entire
-  // document, which is very annoying.
-  // editor.dom.addEventListener('pointerdown', (e) => {
-  //   if (isTryingToEngageNumberDrag()) {
-  //     editorContainer.setPointerCapture(e.pointerId);
-  //   }
-  // });
-  // editorContainer.addEventListener('pointermove', (e) => {
-  //   if (editorContainer.hasPointerCapture(e.pointerId)) {
-  //     alterNumber(editor, Big(e.movementX).times('1'));
-  //   }
-  // });
-  document.body.addEventListener('mouseup', (e) => {
-    isDraggingNumber = false;
-  });
-  document.body.addEventListener('pointermove', (e) => {
-    if (e.buttons == 1) {
-      if (e.ctrlKey) {
-        alterNumber(editor, Big(e.movementX).times('1'));
-      }
-    } else {
-      isDraggingNumber = false;
+  // There is a bug in Firefox where ctrl-click fires as
+  // a pointermove event instead of a pointerdown event,
+  // and then will not respect setPointerCapture() when
+  // called from the pointermove event.
+  //
+  // https://bugzilla.mozilla.org/show_bug.cgi?id=1504210
+  //
+  // So on Firefox you have to use an actual right-click.
+  // It's very annoying. This is an *okay* workaround.
+  document.addEventListener('pointermove', (e) => {
+    if (e.shiftKey && e.metaKey) {
+      alterNumber(editor, Big(e.movementX).times('1'));
     }
   });
 
