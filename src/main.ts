@@ -151,7 +151,7 @@ const initialScript = `
 # also combine their surfaces. For
 # example, here are a couple shapes:
 
-# (def green-box (color [0 1 0] (box 50 :r 5)))
+# (def green-box (color [0 1 0] (box 50 :r 5) :gloss 12 :shine 1))
 # (def red-sphere (color [1 0 0] (sphere 60)))
 
 # Now uncomment each of these one at a
@@ -196,7 +196,26 @@ const initialScript = `
 # shape to determine the color.
 
 # This is a useful technique for
-# "painting" complex colors onto shapes.
+# "painting" complex colors onto shapes,
+# but you can also use (resurface) to
+# save a material to apply to multiple
+# shapes. Instead of this:
+
+# (color [1 1 0] (sphere 50))
+
+# You can write:
+
+# (def yellow (color [1 1 0]))
+# (resurface (sphere 50) yellow)
+
+# The way this works is that (color) and
+# other material primitives, when not
+# given a shape to act on, default to
+# the entirety of ℝ³ -- the shape that
+# is a distance 0 away from every point.
+# So a "material" is still a pair of
+# distance and color functions, but the
+# distance function isn't really useful.
 
 # Last thing: Bauble also has functions
 # to modify the underlying color field
