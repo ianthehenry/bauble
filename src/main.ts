@@ -649,12 +649,12 @@ document.addEventListener("DOMContentLoaded", (_) => {
   let ctrlClickedAt = 0;
   const isTryingToEngageNumberDrag = () => {
     return performance.now() - ctrlClickedAt < 100;
-  }
-  
+  };
+
   editorContainer.addEventListener('pointerdown', (e) => {
     if ((e.buttons === 1 || e.buttons === 2) && e.ctrlKey) {
       ctrlClickedAt = performance.now();
-      editorContainer.setPointerCapture(e.pointerId)
+      editorContainer.setPointerCapture(e.pointerId);
       e.preventDefault();
     }
   });
