@@ -473,6 +473,12 @@ document.addEventListener("DOMContentLoaded", (_) => {
           draw();
         }
       }),
+      EditorView.theme({
+        ".cm-content": {
+          fontFamily: "Menlo, monospace",
+          fontSize: "13px",
+        }
+      }),
     ],
     parent: document.getElementById('editor-container')!,
     doc: script,
