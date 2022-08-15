@@ -56,9 +56,12 @@ struct Light {
   float radius;
 };
 
+// TODO: obviously these should be user-customizable,
+// but it's kind of a whole thing and I'm working on
+// it okay
 const Light lights[3] = Light[3](
-  Light(vec3(512.0, 512.0, 0.0), vec3(1.0), 2048.0),
-  Light(vec3(0.0, 0.0, -512.0), vec3(1.0), 2048.0),
+  Light(vec3(512.0, 512.0, 256.0), vec3(1.0), 2048.0),
+  Light(vec3(0.0, 0.0, -512.0), vec3(0.0), 2048.0),
   Light(vec3(0.0, 0.0, 256.0), vec3(0.0), 2048.0)
 );
 
