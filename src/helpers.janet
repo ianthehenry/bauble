@@ -82,26 +82,36 @@
         b (-> hex (band 0x0000ff))]
     (rgb r g b)))
 
-(defn- fork-helper [initial args]
+(defn- fork-helper [include-self args]
   (var expecting-join false)
+  (var expecting-r false)
   (var join nil)
+  (var r nil)
   (var shape nil)
-  (def fs (if initial @[id] @[]))
+  (def fs (if include-self @[id] @[]))
   (each arg args
-    (if expecting-join
-      (do
+    (cond
+      expecting-join (do
         (set expecting-join false)
-        (set join arg))
-      (if (= arg :join)
-        (do
-          (unless (nil? join)
-            (error "join specified multiple times"))
-          (set expecting-join true))
-        (if (nil? shape)
-          (set shape arg)
-          (array/push fs arg)))))
+        (if (nil? join)
+          (set join arg)
+          (error ":join specified multiple times")))
+      expecting-r (do
+        (set expecting-r false)
+        (if (nil? r)
+          (set r arg)
+          (error ":r specified multiple times")))
+      (= arg :join) (set expecting-join true)
+      (= arg :r) (set expecting-r true)
+      (nil? shape) (set shape arg)
+      (array/push fs arg)))
 
-  (default join '(union))
+  (if expecting-join (error ":join requires an argument"))
+  (if expecting-r (error ":r requires an argument"))
+  (if (and join r)
+    (error "cannot specify both :r and :join"))
+
+  (default join (if r ~(union :r ,r) '(union)))
   (default shape (error "must specify an initial shape"))
 
   (let [$shape (gensym)
