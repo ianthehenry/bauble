@@ -1,6 +1,6 @@
 import {basicSetup} from 'codemirror';
 import {EditorView, keymap, ViewUpdate} from '@codemirror/view';
-import {indentWithTab, cursorDocEnd} from '@codemirror/commands';
+import {indentWithTab} from '@codemirror/commands';
 import {syntaxTree} from '@codemirror/language';
 import {SyntaxNode} from '@lezer/common';
 import {janet} from 'codemirror-lang-janet';
@@ -321,7 +321,7 @@ const initialScript = `
 const preamble = '(use ./helpers) (use ./shapes) (use ./pipe) (pipe\n';
 const postamble = '\n)'; // newline is necessary in case the script ends in a comment
 
-function executeJanet(code: string, camera) {
+function executeJanet(code: string, camera: Camera) {
   if (evaluateJanet === null) {
     console.error('not ready yet');
     return;
@@ -359,7 +359,7 @@ const Module: Partial<MyEmscripten> = {
     } else {
       return prefix + path;
     }
-  }
+  },
 };
 
 function isNumberNode(node: SyntaxNode) {
@@ -412,11 +412,11 @@ function alterNumber({state, dispatch}: StateCommandInput, amount: Big) {
   return true;
 }
 
-function clamp(value, min, max) {
+function clamp(value: number, min: number, max: number) {
   return Math.max(Math.min(value, max), min);
 }
 
-function save({state, dispatch}: StateCommandInput) {
+function save({state}: StateCommandInput) {
   const script = state.doc.toString();
   if (script.trim().length > 0) {
     localStorage.setItem(LOCAL_STORAGE_KEY, script);
@@ -426,7 +426,7 @@ function save({state, dispatch}: StateCommandInput) {
   return true;
 }
 
-function mod(a, b) {
+function mod(a: number, b: number) {
   return ((a % b) + b) % b;
 }
 
@@ -438,7 +438,7 @@ document.addEventListener("DOMContentLoaded", (_) => {
   const camera = {
     x: -0.125,
     y: 0.125,
-    zoom: 2.0
+    zoom: 2.0,
   };
 
   let drawScheduled = false;
@@ -477,7 +477,7 @@ document.addEventListener("DOMContentLoaded", (_) => {
         ".cm-content": {
           fontFamily: "Menlo, monospace",
           fontSize: "13px",
-        }
+        },
       }),
     ],
     parent: document.getElementById('editor-container')!,
@@ -500,7 +500,7 @@ document.addEventListener("DOMContentLoaded", (_) => {
     });
   }
 
-  const canvas = <HTMLCanvasElement>document.getElementById('render-target')!;
+  const canvas = document.getElementById('render-target')! as HTMLCanvasElement;
   let canvasPointerAt = [0, 0];
   let rotatePointerId = null;
   canvas.addEventListener('pointerdown', (e) => {
@@ -525,7 +525,7 @@ document.addEventListener("DOMContentLoaded", (_) => {
     if (e.pointerId === rotatePointerId) {
       e.preventDefault();
       const pointerWasAt = canvasPointerAt;
-      canvasPointerAt = [e.offsetX, e.offsetY]
+      canvasPointerAt = [e.offsetX, e.offsetY];
 
       if (isGesturing) {
         return;
@@ -554,11 +554,11 @@ document.addEventListener("DOMContentLoaded", (_) => {
 
   // TODO: I haven't actually tested if this is anything
   let initialZoom = 1;
-  canvas.addEventListener('gesturestart', (e: GestureEvent) => {
+  canvas.addEventListener('gesturestart', (_e: GestureEvent) => {
     initialZoom = camera.zoom;
     isGesturing = true;
   });
-  canvas.addEventListener('gestureend', (e: GestureEvent) => {
+  canvas.addEventListener('gestureend', (_e: GestureEvent) => {
     initialZoom = camera.zoom;
     isGesturing = false;
     gestureEndedAt = performance.now();
@@ -593,7 +593,7 @@ document.addEventListener("DOMContentLoaded", (_) => {
       const oldScrollTop = outputContainer.scrollTop;
       const handlePointerWasAt = handlePointerAt;
       handlePointerAt = [e.screenX, e.screenY];
-      const delta = handlePointerAt[1] - handlePointerWasAt[1]
+      const delta = handlePointerAt[1] - handlePointerWasAt[1];
       outputContainer.style.height = `${oldHeight - delta}px`;
       outputContainer.scrollTop = clamp(oldScrollTop + delta, 0, outputContainer.scrollHeight - outputContainer.offsetHeight);
     }
@@ -605,7 +605,7 @@ document.addEventListener("DOMContentLoaded", (_) => {
     }
   });
 
-  document.addEventListener('pagehide', (e) => {
+  document.addEventListener('pagehide', (_e) => {
     save(editor);
   });
   let savedBefore = false;
@@ -623,7 +623,6 @@ document.addEventListener("DOMContentLoaded", (_) => {
 
   onReady(draw);
   editor.focus();
-  // cursorDocEnd(editor);
 });
 
 window.Module = Module;

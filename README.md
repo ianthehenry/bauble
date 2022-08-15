@@ -20,6 +20,12 @@ Also requires [`yarn`](https://yarnpkg.com/), to install JavaScript dependencies
 
 Run `./build` to compile Janet to wasm; run `./build --prod` for an optimized, minified build that will take much longer. Run `./build --js` to only rebuild the UI or `./build --wasm` to only rebuild the Janet/C components.
 
+Lint the JS with:
+
+```
+yarn eslint src/
+```
+
 # Running
 
 ```
