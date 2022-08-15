@@ -108,6 +108,15 @@
     return length(pa - ba * h);
     `))
 
+(def-primitive torus [axis major-radius minor-radius]
+  (:function comp-state "float" [:torus axis] "s3d_torus"
+    [coord (float major-radius) (float minor-radius)]
+    ["vec3 p" "float major_radius" "float minor_radius"]
+    (string `
+      vec2 q = vec2(length(p.`(string-of-axes (other-axes axis))`) - major_radius, p.`(string-of-axis axis)`);
+      return length(q) - minor_radius;
+    `)))
+
 (def-input-operator transform [matrix shape]
   (fn [{:matrix matrix} comp-state coord] (string/format "(%s * %s)" coord (mat3 matrix))))
 

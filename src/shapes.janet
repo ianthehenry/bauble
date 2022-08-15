@@ -32,6 +32,12 @@
     (raw/offset round
       (raw/cylinder axis (- radius round) (- height round)))))
 
+(def-flexible-fn torus
+  [[axis] [major-radius] [minor-radius]]
+  {type/float |(set-first [major-radius minor-radius] $)
+   type/axis |(set-param axis $)}
+  (raw/torus axis major-radius minor-radius))
+
 (def-flexible-fn half-space [[axis] [offset type/float 0]]
   {type/signed-axis |(set-param axis $)
    type/axis |(set-param axis $)

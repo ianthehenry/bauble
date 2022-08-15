@@ -310,6 +310,7 @@ const initialScript = `
 # (box 40 | scale 1.5)
 # (box 40 | scale :x 0.5)
 # (box 40 | scale [1 2 0.5])
+# (torus :y 100 25)
 
 # Comments? Questions? Requests?
 # https://github.com/ianthehenry/bauble/discussions
