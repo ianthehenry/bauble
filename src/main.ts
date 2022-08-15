@@ -487,6 +487,7 @@ document.addEventListener("DOMContentLoaded", (_) => {
   const decrementNumber = (editor: StateCommandInput) => alterNumber(editor, Big('-1'));
 
   const script = localStorage.getItem(LOCAL_STORAGE_KEY) ?? initialScript;
+  const editorContainer = document.getElementById('editor-container')!;
 
   const editor = new EditorView({
     extensions: [
@@ -509,7 +510,7 @@ document.addEventListener("DOMContentLoaded", (_) => {
         },
       }),
     ],
-    parent: document.getElementById('editor-container')!,
+    parent: editorContainer,
     doc: script,
   });
 
@@ -628,9 +629,48 @@ document.addEventListener("DOMContentLoaded", (_) => {
     }
   });
 
+  let ctrlClickedAt = 0;
+  let isDraggingNumber = false;
+  const isTryingToEngageNumberDrag = () => {
+    return performance.now() - ctrlClickedAt < 100;
+  }
+  editorContainer.addEventListener('mousedown', (e) => {
+    if (e.buttons === 1 && e.ctrlKey) {
+      ctrlClickedAt = performance.now();
+      isDraggingNumber = true;
+    }
+  });
+  editorContainer.addEventListener('contextmenu', (e) => {
+    if (isTryingToEngageNumberDrag()) {
+      e.preventDefault();
+      return false;
+    }
+  });
+
+  // So for some reason ctrl-clicking doesn't trigger the pointerdown event.
+  // Right click does, but not ctrl-left click. So we can't setPointerCapture
+  // on a ctrl-click. This means we have to listen to move events on the entire
+  // document, which is very annoying.
+  // editor.dom.addEventListener('pointerdown', (e) => {
+  //   if (isTryingToEngageNumberDrag()) {
+  //     editorContainer.setPointerCapture(e.pointerId);
+  //   }
+  // });
+  // editorContainer.addEventListener('pointermove', (e) => {
+  //   if (editorContainer.hasPointerCapture(e.pointerId)) {
+  //     alterNumber(editor, Big(e.movementX).times('1'));
+  //   }
+  // });
+  document.body.addEventListener('mouseup', (e) => {
+    isDraggingNumber = false;
+  });
   document.body.addEventListener('pointermove', (e) => {
-    if (e.ctrlKey) {
-      alterNumber(editor, Big(e.movementX).times('1'));
+    if (e.buttons == 1) {
+      if (e.ctrlKey) {
+        alterNumber(editor, Big(e.movementX).times('1'));
+      }
+    } else {
+      isDraggingNumber = false;
     }
   });
 
