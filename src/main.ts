@@ -58,9 +58,10 @@ const initialScript = `
 # and rendering 3D shapes using signed
 # distance functions. Like this one:
 
-(intersect
-  (box 50)
-  (sphere 70))
+(spoon :r 15
+  (torus :z 50 25)
+  (move :y 50 | rotate :y tau/4)
+| fresnel 1)
 
 # Drag the viewport around with your
 # mouse, and scroll to move the camera
@@ -70,9 +71,9 @@ const initialScript = `
 # that is re-evaluated every time you
 # make a change. This program "returns"
 # whatever the final expression is --
-# in this case, that little rounded-ish
-# box up there. Uncomment the next line
-# to return something else:
+# in this case, those interlocking
+# donuts up there. Uncomment the next
+# line to return something else:
 
 # (morph 2.50 (sphere 50) (box 50))
 
@@ -141,13 +142,10 @@ const initialScript = `
 # a simple material shader. Try tweaking
 # the parameters to see how they work,
 # and remember that you can use your
-# mouse! Also note that specular
-# highlights depend on viewing angle,
-# so rotate the viewport a little.
-
-# (Note: the specular exponent is
-# actually the square of the "gloss"
-# value, if that means anything to you.)
+# mouse to edit numbers! Also note that
+# specular highlights depend on the
+# viewing angle, so rotate the viewport
+# a little too.
 
 # When you combine shapes together, you
 # also combine their surfaces. For
@@ -170,15 +168,25 @@ const initialScript = `
 # (intersect :r 5 green-box red-sphere)
 # (subtract :r 5 green-box red-sphere)
 
-# Now here's where it gets interesting:
-# you can sample the color from one
-# shape and use it to shade another
-# shape. It's easy to understand
-# with an example:
+# That's interesting, but sometimes you
+# might not want to see that yellow
+# bleeding through. Sometimes you want
+# a smooth shape transition, but a sharp
+# color transition. And you can have it:
 
 # (resurface
-#  green-box
-#  (union green-box red-sphere))
+#   (subtract :r 5 green-box red-sphere)
+#   (subtract green-box red-sphere))
+
+# (resurface) works to transplant the
+# color field from any shape to
+# another shape. In that case the shapes
+# were very similar, but they don't have
+# to be.
+
+# (resurface
+#   green-box
+#   (union green-box red-sphere))
 
 # The way this works is that the
 # raymarcher uses the signed distance
@@ -216,17 +224,18 @@ const initialScript = `
 
 #### Lisp heresy ####
 
-# So far our examples have only used
-# "vanilla" Janet, which, of course,
+# So far our examples have mostly stuck
+# to "vanilla" Janet, which, of course,
 # has a lot of parentheses. But Bauble
 # provides a helpful macro that you can
-# use to invoke functions. Let's take
-# a look. Starting without any helpers:
+# use to invoke functions with a little
+# less typing. Let's take a look,
+# starting without any helpers:
 
 # (color [1 0 0] (rotate :y pi/4 (box 50)))
 
 # First of all, the Bauble DSL is very
-# flexible about named and positional
+# forgiving about named and positional
 # argument order. So that's actually the
 # same as:
 
