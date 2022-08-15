@@ -564,6 +564,10 @@ document.addEventListener("DOMContentLoaded", (_) => {
 
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
+    // Linux Firefox users who do not set MOZ_USE_XINPUT2
+    // will report very large values of deltaY, resulting
+    // in very choppy scrolling. I don't really know a good
+    // way to fix this without explicit platform detection.
     camera.zoom += cameraZoomSpeed * e.deltaY;
     draw();
   });
