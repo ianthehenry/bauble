@@ -142,6 +142,18 @@
         (string/format "return %s;" return)
         ] "\n"))))
 
+(def-input-operator twist [shape axis rate]
+  (fn [{:axis axis :rate rate} comp-state coord]
+    (:function comp-state "vec3" [:twist axis] (string "twist_" axis)
+      [coord (float rate)]
+      ["vec3 p" "float rate"]
+      (string `
+      float s = sin(rate * p.`axis`);
+      float c = cos(rate * p.`axis`);
+      mat2 m = mat2(c, -s, s, c);
+      return vec3(m * p.`(string-of-axes (other-axes axis))`, p.`axis`);
+      `))))
+
 (def-input-operator mirror-axes [shape axes]
   (fn [{:axes axes} comp-state coord]
     (if (= (length axes) 3)

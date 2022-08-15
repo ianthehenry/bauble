@@ -240,6 +240,12 @@
   (def axes (transpose-other-axes axis))
   (raw/flip shape axes (if (neg? sign) (negate-other-axes axis))))
 
+(def-flexible-fn twist [[axis] [shape] [rate]]
+  {type/3d |(set-param shape $)
+   type/axis |(set-param axis $)
+   type/float |(set-param rate $)}
+  (raw/twist shape axis rate))
+
 # --- surfacing ---
 
 (def-flexible-fn blinn-phong
