@@ -148,6 +148,11 @@ vec3 march(vec3 ray_origin, vec3 ray_direction, out int result) {
 
     float nearest = nearest_distance(p);
 
+    // TODO: by relaxing MINIMUM_HIT_DISTANCE the further we
+    // get away from the camera we can theoretically speed
+    // things up without sacrificing much in the way of
+    // accuracy. should experiment with this:
+    // if (nearest < MINIMUM_HIT_DISTANCE * 0.01 * progress) {
     if (nearest < MINIMUM_HIT_DISTANCE) {
       // a useful debug view
       //return vec3(float(i) / float(MAX_STEPS));
@@ -162,6 +167,9 @@ vec3 march(vec3 ray_origin, vec3 ray_direction, out int result) {
     }
     distance += nearest;
   }
+  // TODO: using the nearest surface is also a valid option.
+  // as is using the fog color. we should let the
+  // user decide.
   result = 2;
   return vec3(0.0);
 }
