@@ -79,43 +79,7 @@
     (raw/line start end)
     (raw/offset thickness (raw/line start end))))
 
-# --- basic shape combinators ---
-
-# TODO: I don't love the name "offset"
-(def-flexible-fn offset [[distance type/float] [shape type/3d]]
-  {type/3d |(set-param shape $)
-   type/float |(set-param distance $)}
-  (if (= distance 0)
-    shape
-    (raw/offset distance shape)))
-
-(def-flexible-fn onion [[thickness type/float] [shape type/3d]]
-  {type/3d |(set-param shape $)
-   type/float |(set-param thickness $)}
-  (raw/onion thickness shape))
-
-(def-flexible-fn morph [[from-shape] [to-shape] [weight type/float 0.5]]
-  {type/3d |(set-first [from-shape to-shape] $)
-   type/float |(set-param weight $)}
-  (raw/morph weight from-shape to-shape))
-
-(defn- check-limit [vec3]
-  (each num vec3
-    (unless (and (int? num) (pos? num))
-      (error "tile: limit values must be positive integers")))
-  vec3)
-
-(def-flexible-fn tile [[offset type/vec3] [limit type/vec3 nil] [shape]]
-  {type/3d |(set-param shape $)
-   type/vec3 |(set-param offset $)
-   type/float |(set-param offset [$ $ $])
-   :limit |(set-param limit (check-limit (to-vec3 $)))}
-  (if (nil? limit)
-    (raw/tile shape offset limit)
-    (raw/translate (map3 [0 1 2] |(if (even? (limit $)) (* -0.5 (offset $)) 0))
-      (raw/tile shape offset limit))))
-
-# --- fancy shape combinators ---
+# --- shape combinators ---
 
 (def-flexible-fn union [(shapes @[]) [radius type/float 0]]
   {type/3d |(array/push shapes $)
@@ -140,6 +104,43 @@
     -1 (error "subtract: radius cannot be negative")
     0 (raw/subtract shapes)
     1 (raw/smooth-subtract radius shapes)))
+
+
+# --- basic shape combinators ---
+
+# TODO: I don't love the name "offset"
+(def-flexible-fn offset [[distance type/float] [shape type/3d]]
+  {type/3d |(set-param shape $)
+   type/float |(set-param distance $)}
+  (if (= distance 0)
+    shape
+    (raw/offset distance shape)))
+
+(def-flexible-fn onion [[thickness type/float] [shape type/3d]]
+  {type/3d |(set-param shape $)
+   type/float |(set-param thickness $)}
+  (raw/onion thickness shape))
+
+(def-flexible-fn morph [[from-shape] [to-shape] [weight type/float 0.5]]
+  {type/3d |(set-first [from-shape to-shape] $)
+   type/float |(set-param weight $)}
+  (raw/morph weight from-shape to-shape))
+
+(defn- check-limit [vec3]
+  (each num vec3
+    (unless (and (int? num) (pos? num))
+      (errorf "tile: limit value %p is not a positive integer" num)))
+  vec3)
+
+(def-flexible-fn tile [[offset type/vec3] [limit type/vec3 nil] [shape]]
+  {type/3d |(set-param shape $)
+   type/vec3 |(set-param offset $)
+   type/float |(set-param offset [$ $ $])
+   :limit |(set-param limit (check-limit (to-vec3 $)))}
+  (if (nil? limit)
+    (raw/tile shape offset limit)
+    (raw/translate (map3 [0 1 2] |(if (even? (limit $)) (* -0.5 (offset $)) 0))
+      (raw/tile shape offset limit))))
 
 (def-flexible-fn translate
   [(offset @[0 0 0]) [shape type/3d]]

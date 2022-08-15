@@ -73,6 +73,7 @@ float nearest_distance(vec3 p) {
 }
 
 vec3 nearest_color(vec3 p, vec3 camera) {
+  vec3 world_p = p;
   vec3 normal = calculate_normal(p);
   // Array initialization syntax doesn't work
   // on Google Pixel 6a (and maybe other Android
@@ -81,9 +82,7 @@ vec3 nearest_color(vec3 p, vec3 camera) {
   light_intensities[0] = cast_light(p + 2.0 * MINIMUM_HIT_DISTANCE * normal, lights[0].position, lights[0].radius);
   light_intensities[1] = cast_light(p + 2.0 * MINIMUM_HIT_DISTANCE * normal, lights[1].position, lights[1].radius);
   light_intensities[2] = cast_light(p + 2.0 * MINIMUM_HIT_DISTANCE * normal, lights[2].position, lights[2].radius);
-  vec3 world_p = p;
   // TODO: for some reason the obvious thing just... doesn't work.
-  // float light_intensities[3];
   // for (int i = 0; i < lights.length(); i++) {
   //   light_intensities[i] = cast_light(p + 2.0 * MINIMUM_HIT_DISTANCE * normal, lights[i].position, lights[i].radius);
   // }
