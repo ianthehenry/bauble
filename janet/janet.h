@@ -26,10 +26,10 @@
 #define JANETCONF_H
 
 #define JANET_VERSION_MAJOR 1
-#define JANET_VERSION_MINOR 23
+#define JANET_VERSION_MINOR 24
 #define JANET_VERSION_PATCH 0
 #define JANET_VERSION_EXTRA ""
-#define JANET_VERSION "1.23.0"
+#define JANET_VERSION "1.24.0"
 
 /* #define JANET_BUILD "local" */
 
@@ -228,9 +228,9 @@ extern "C" {
 #endif
 
 /* Enable or disable the FFI library. Currently, FFI only enabled on
- * x86-64, non-windows operating systems. */
+ * x86-64 operating systems. */
 #ifndef JANET_NO_FFI
-#if !defined(JANET_WINDOWS) && !defined(__EMSCRIPTEN__) && (defined(__x86_64__) || defined(_M_X64))
+#if !defined(__EMSCRIPTEN__) && (defined(__x86_64__) || defined(_M_X64))
 #define JANET_FFI
 #endif
 #endif

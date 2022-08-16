@@ -1,0 +1,21 @@
+diff --git a/janet/janet.c b/janet/janet.c
+index 2d5de6d..2f86ca2 100644
+--- a/janet/janet.c
++++ b/janet/janet.c
+@@ -23597,6 +23597,7 @@ void janet_formatbv(JanetBuffer *b, const char *format, va_list args) {
+                     break;
+                 }
+                 case 'd':
++                case 'l':
+                 case 'i':
+                 case 'o':
+                 case 'x':
+@@ -24103,7 +24104,7 @@ int janet_dobytes(JanetTable *env, const uint8_t *bytes, int32_t len, const char
+                 ret = janet_cstringv(e);
+                 size_t line = parser.line;
+                 size_t col = parser.column;
+-                janet_eprintf("%s:%lu:%lu: parse error: %s\n", sourcePath, line, col, e);
++                janet_eprintf("%s:%d:%d: parse error: %s\n", sourcePath, line, col, e);
+                 done = 1;
+                 break;
+             }
