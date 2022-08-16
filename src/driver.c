@@ -106,21 +106,19 @@ void draw_triangles() {
 
 // caller must free result
 char *slurp(char *filename) {
-  FILE *file;
-  char *text;
-   
-  file = fopen(filename, "r");
+  FILE *file = fopen(filename, "r");
   fseek(file, 0L, SEEK_END);
   long length = ftell(file);
   fseek(file, 0L, SEEK_SET);
 
-  text = (char *)calloc(length, sizeof(char));
+  char *text = (char *)calloc(length + 1, sizeof(char));
 
   long bytes_read = 0;
   while (bytes_read < length) {
     bytes_read += fread(text, sizeof(char), length, file);
   }
   fclose(file);
+  text[length] = 0;
   return text;
 }
 
