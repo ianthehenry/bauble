@@ -144,6 +144,12 @@
 
 (def-input-operator twist [shape axis rate]
   (fn [{:axis axis :rate rate} comp-state coord]
+    (def other-axes (other-axes axis))
+    (defn select [axis]
+      (cond
+        (= axis (other-axes 0)) "transformed.x"
+        (= axis (other-axes 1)) "transformed.y"
+        (string "p." axis)))
     (:function comp-state "vec3" [:twist axis] (string "twist_" axis)
       [coord (float rate)]
       ["vec3 p" "float rate"]
@@ -151,7 +157,8 @@
       float s = sin(rate * p.`axis`);
       float c = cos(rate * p.`axis`);
       mat2 m = mat2(c, -s, s, c);
-      return vec3(m * p.`(string-of-axes (other-axes axis))`, p.`axis`);
+      vec2 transformed = m * p.`(string-of-axes other-axes)`;
+      return vec3(`(select :x)`, `(select :y)`, `(select :z)`);
       `))))
 
 (def-input-operator mirror-axes [shape axes]
