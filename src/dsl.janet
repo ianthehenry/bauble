@@ -6,13 +6,13 @@
 
 # --- primitives ---
 
-(def-flexible-fn box [size [r 0]]
+(def-flexible-fn box [size [round 0]]
   {type/vec3 |(set-param size $)
    type/float |(set-param size [$ $ $])
-   :r |(set-param r $ type/float)}
-  (if (= r 0)
+   :r |(set-param round $ type/float)}
+  (if (= round 0)
     (raw/box size)
-    (raw/offset r (raw/box (map |(- $ r) size)))))
+    (raw/offset round (raw/box (map |(- $ round) size)))))
 
 (def-flexible-fn sphere [radius]
   {type/float |(set-param radius $)}
@@ -20,14 +20,14 @@
 
 # TODO: is it weird that the height is double the thing you pass it? it seems weird.
 # this is true of box as well, though.
-(def-flexible-fn cylinder [axis radius height [r 0]]
+(def-flexible-fn cylinder [axis radius height [round 0]]
   {type/float |(set-first [radius height] $)
    type/axis |(set-param axis $)
-   :r |(set-param r $ type/float)}
-  (if (= r 0)
+   :r |(set-param round $ type/float)}
+  (if (= round 0)
     (raw/cylinder axis radius height)
-    (raw/offset r
-      (raw/cylinder axis (- radius r) (- height r)))))
+    (raw/offset round
+      (raw/cylinder axis (- radius round) (- height round)))))
 
 (def-flexible-fn torus [axis major-radius minor-radius]
   {type/float |(set-first [major-radius minor-radius] $)
@@ -43,22 +43,22 @@
       (raw/half-space axis sign)
       (raw/translate (axis-vec axis offset) (raw/half-space axis sign)))))
 
-(def-flexible-fn cone [axis radius height [r 0]]
+(def-flexible-fn cone [axis radius height [round 0]]
   {type/signed-axis |(set-param axis $)
    type/axis |(set-param axis $)
    type/float |(set-first [radius height] $)
-   :r |(set-param r $ type/float)}
+   :r |(set-param round $ type/float)}
   (let [[sign axis] (split-signed-axis axis)
         upside-down (neg? height)
         height (* 2 sign (math/abs height))]
-    (def tip-offset (* r (/ height radius)))
-    (if (= 0 r)
+    (def tip-offset (* round (/ height radius)))
+    (if (= 0 round)
       (raw/cone axis radius height upside-down)
-      (raw/offset r
-        (raw/translate (axis-vec axis (+ (* (if upside-down -1 1) sign r) (if upside-down tip-offset 0)))
+      (raw/offset round
+        (raw/translate (axis-vec axis (+ (* (if upside-down -1 1) sign round) (if upside-down tip-offset 0)))
           (raw/cone
             axis
-            (- radius r)
+            (- radius round)
             (- height tip-offset)
             upside-down))))))
 
@@ -71,30 +71,29 @@
 
 # --- shape combinators ---
 
-(def-flexible-fn union [(shapes @[]) [r 0]]
+(def-flexible-fn union [(shapes @[]) [round 0]]
   {type/3d |(array/push shapes $)
-   :r |(set-param r $ type/float)}
-  (case (math/sign r)
-    # TODO: the union: prefix will not be necessary
-    -1 (error "union:r cannot be negative")
+   :r |(set-param round $ type/float)}
+  (case (math/sign round)
+    -1 (error "r cannot be negative")
     0 (raw/union shapes)
-    1 (raw/smooth-union r shapes)))
+    1 (raw/smooth-union round shapes)))
 
-(def-flexible-fn intersect [(shapes @[]) [r 0]]
+(def-flexible-fn intersect [(shapes @[]) [round 0]]
   {type/3d |(array/push shapes $)
-   :r |(set-param r $ type/float)}
-  (case (math/sign r)
-    -1 (error "intersect:r cannot be negative")
+   :r |(set-param round $ type/float)}
+  (case (math/sign round)
+    -1 (error "r cannot be negative")
     0 (raw/intersect shapes)
-    1 (raw/smooth-intersect r shapes)))
+    1 (raw/smooth-intersect round shapes)))
 
-(def-flexible-fn subtract [(shapes @[]) [r 0]]
+(def-flexible-fn subtract [(shapes @[]) [round 0]]
   {type/3d |(array/push shapes $)
-   :r |(set-param r $ type/float)}
-  (case (math/sign r)
-    -1 (error "subtract:r cannot be negative")
+   :r |(set-param round $ type/float)}
+  (case (math/sign round)
+    -1 (error "r cannot be negative")
     0 (raw/subtract shapes)
-    1 (raw/smooth-subtract r shapes)))
+    1 (raw/smooth-subtract round shapes)))
 
 
 # --- basic shape combinators ---

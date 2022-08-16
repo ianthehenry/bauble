@@ -42,12 +42,12 @@
   (if (tuple? expected-type)
     (if (find |(= (typeof value) $) expected-type)
       value
-      (errorf "%s:%s type mismatch: %p should be one of %s"
-        (dyn :fn-name) name value (string/join expected-type ", ")))
+      (errorf "%s type mismatch: %p should be one of %s"
+        name value (string/join expected-type ", ")))
     (if (= expected-type (typeof value))
       value
-      (errorf "%s:%s type mismatch: %p should be %s"
-        (dyn :fn-name) name value expected-type))))
+      (errorf "%s type mismatch: %p should be %s"
+        name value expected-type))))
 
 (defn- set? [value]
   (not= value unset))
@@ -56,7 +56,7 @@
 
 (defmacro set-param [param value &opt type]
   ~(if (,set? ,param)
-    (errorf "%s:%s specified multiple times" (dyn :fn-name) ',param)
+    (errorf "%s specified multiple times" ',param)
     (set ,param ,(if (nil? type) value ~(,typecheck ',param ,type ,value)))))
 
 # the error message here only makes sense if this is
@@ -70,7 +70,7 @@
     ~(let [,$value ,value]
       (prompt :break
         ,;checks
-        (errorf "%s: unexpected argument %p" (dyn :fn-name) ,$value)))))
+        (errorf "unexpected argument %p" ,$value)))))
 
 (defn- handle-args [args spec]
   (var i 0)
@@ -84,13 +84,13 @@
         (if (= (function/max-arity dispatch) 0)
           (dispatch)
           (if (= i last-index)
-            (errorf "%s:%s needs a value" (dyn :fn-name) arg)
+            (errorf "%s needs a value" arg)
             (dispatch (args (++ i)))))))
     (def type (typeof arg))
     (unless handled-as-keyword
       (if-let [dispatch (spec type)]
         (dispatch arg)
-        (errorf "%s: unexpected argument %p" (dyn :fn-name) arg)))
+        (errorf "unexpected argument %p" arg)))
     (++ i)))
 
 (defn- binding-default-value [binding]
@@ -123,8 +123,12 @@
           ~(set ,name ,default-value))))))
   (def $args (gensym))
   ~(defn ,fn-name [& ,$args]
-    (with-dyns [:fn-name ',fn-name]
+    (try (do
       ,;param-defs
       (,handle-args ,$args ,spec)
       ,;check-required-params
-      ,;body)))
+      ,;body)
+    ([e]
+      (if (string? e)
+        (errorf "(%s) %s" ',fn-name e)
+        (error e))))))
