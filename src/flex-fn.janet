@@ -10,6 +10,9 @@
 (def- type/unknown @"unknown")
 (def- unset (gensym))
 
+(defmacro- swap [f arg1 arg2]
+  ~(,f ,arg2 ,arg1))
+
 (def- keyword-types {
   :x type/axis
   :y type/axis
@@ -35,39 +38,39 @@
       type/unknown)
     type/unknown))
 
-(defn typecheck [expected-type value]
-  (if (nil? expected-type) value
-    (let [actual-type (typeof value)]
-      (if (= expected-type actual-type)
-        value
-        (errorf "%s: expected %s, got %s" (dyn :fn-name) expected-type actual-type)))))
-
-(defn- def-param [name type]
-  ~(def ,name @{:type ,type :value ',unset :name ',name}))
+(defn typecheck [name expected-type value]
+  (if (tuple? expected-type)
+    (if (find |(= (typeof value) $) expected-type)
+      value
+      (errorf "%s:%s type mismatch: %p should be one of %s"
+        (dyn :fn-name) name value (string/join expected-type ", ")))
+    (if (= expected-type (typeof value))
+      value
+      (errorf "%s:%s type mismatch: %p should be %s"
+        (dyn :fn-name) name value expected-type))))
 
 (defn- set? [value]
   (not= value unset))
+(defn- unset? [value]
+  (= value unset))
 
-(defn set-param [param value]
-  (if (set? (param :value))
-    (errorf "%s: %s specified multiple times" (dyn :fn-name) (param :name))
-    (set (param :value) (typecheck (param :type) value))))
+(defmacro set-param [param value &opt type]
+  ~(if (,set? ,param)
+    (errorf "%s:%s specified multiple times" (dyn :fn-name) ',param)
+    (set ,param ,(if (nil? type) value ~(,typecheck ',param ,type ,value)))))
 
 # the error message here only makes sense if this is
 # used for handling positional arguments
-(defn set-first [params value]
-  (prompt :break
-    (each param params
-      (when (not (set? (param :value)))
-        (set-param param value)
-        (return :break)))
-    (errorf "%s: unexpected argument %p" (dyn :fn-name) value)))
-
-(defn- get-param [param default-value]
-  (let [value (param :value)]
-    (if (set? value) value
-      (if (set? default-value) default-value
-        (errorf "%s: %s: missing required argument" (dyn :fn-name) (param :name))))))
+(defmacro set-first [params value]
+  (let [$value (gensym)]
+    (def checks (swap map params (fn [param]
+      ~(when (,unset? ,param)
+        (set-param ,param ,$value)
+        (return :break)))))
+    ~(let [,$value ,value]
+      (prompt :break
+        ,;checks
+        (errorf "%s: unexpected argument %p" (dyn :fn-name) ,$value)))))
 
 (defn- handle-args [args spec]
   (var i 0)
@@ -81,7 +84,7 @@
         (if (= (function/max-arity dispatch) 0)
           (dispatch)
           (if (= i last-index)
-            (errorf "%s: named argument %s without value" (dyn :fn-name) arg)
+            (errorf "%s:%s needs a value" (dyn :fn-name) arg)
             (dispatch (args (++ i)))))))
     (def type (typeof arg))
     (unless handled-as-keyword
@@ -90,30 +93,38 @@
         (errorf "%s: unexpected argument %p" (dyn :fn-name) arg)))
     (++ i)))
 
-(defmacro- swap [f arg1 arg2]
-  ~(,f ,arg2 ,arg1))
+(defn- binding-default-value [binding]
+  (if (and (tuple? binding) (= (tuple/type binding) :brackets))
+    (binding 1)
+    unset))
 
-(defn- get-strict [list index default-value]
-  (if (< index (length list))
-    (list index)
-    default-value))
+(defn- binding-name [binding]
+  (if (tuple? binding)
+    (binding 0)
+    binding))
 
 (defmacro def-flexible-fn [fn-name bindings spec & body]
   (def param-defs
     (swap map bindings (fn [binding]
-      (def [name arg] binding)
-      (case (tuple/type binding)
-        :parens ~(var ,name ,arg)
-        :brackets (def-param name arg)))))
-  (def get-bindings-defs
-    (swap mapcat bindings (fn [binding]
-      (if (= (tuple/type binding) :parens) []
-        (let [[name type] binding
-              default-value (get-strict binding 2 ~(quote ,unset))]
-          ~(,name (,get-param ,name ,default-value)))))))
+      (def [name initial-value]
+        (if (tuple? binding)
+          (case (tuple/type binding)
+            :parens binding
+            :brackets [(binding 0) ~(quote ,unset)])
+          [binding ~(quote ,unset)]))
+      ~(var ,name ,initial-value))))
+  (def check-required-params
+    (swap map bindings (fn [binding]
+      (def name (binding-name binding))
+      (def default-value (binding-default-value binding))
+      ~(if (,unset? ,name)
+        ,(if (unset? default-value)
+          ~(errorf "%s required" ',name)
+          ~(set ,name ,default-value))))))
   (def $args (gensym))
   ~(defn ,fn-name [& ,$args]
     (with-dyns [:fn-name ',fn-name]
       ,;param-defs
       (,handle-args ,$args ,spec)
-      (let ,get-bindings-defs ,;body))))
+      ,;check-required-params
+      ,;body)))
