@@ -6,39 +6,45 @@
 (defn- arg-kvps [args]
   (mapcat |[(keyword $) $] args))
 
+(defn- arg-kvps-no-shape [args]
+  (mapcat |(if (= $ 'shape) [] [(keyword $) $]) args))
+
 (defmacro- def-constructor [name args proto]
   (let [$proto (gensym)]
     ~(def ,name
       (let [,$proto ,proto]
         (fn ,args (struct/with-proto ,$proto ,;(arg-kvps args)))))))
 
-(defmacro- def-primitive [name args compile-body]
+(defmacro- def-primitive [name args & compile-body]
   ~(def-constructor ,name ,args
-    {:compile (fn [self comp-state coord] (let [,(struct ;(arg-kvps args)) self] ,compile-body))
+    {:compile (fn [self comp-state coord] (let [,(struct ;(arg-kvps args)) self] ,;compile-body))
      :surface (fn [self comp-state coord] "0.5 * (1.0 + normal)")}))
 
 # an input-operator can only change the input coordinates
 # TODO: alter shouldn't be a function. should get the same
 # arg-kvps treatment as everyone else.
-(defmacro- def-input-operator [name args alter-fn]
-  ~(def-constructor ,name ,args
-    (let [alter ,alter-fn]
-      {:compile (fn [self comp-state coord] (:compile (self :shape) comp-state (alter self comp-state coord)))
-       :surface (fn [self comp-state coord] (:surface (self :shape) comp-state (alter self comp-state coord)))})))
+(defmacro- def-input-operator [name args & alter-body]
+  (let [$alter (gensym)]
+    ~(def-constructor ,name ,args
+      (let [,$alter (fn [self comp-state coord]
+                      (let [,(struct ;(arg-kvps-no-shape args)) self] ,;alter-body))]
+        {:compile (fn [self comp-state coord]
+          (:compile (self :shape) comp-state (,$alter self comp-state coord)))
+         :surface (fn [self comp-state coord]
+          (:surface (self :shape) comp-state (,$alter self comp-state coord)))}))))
 
-(defmacro- def-operator [name args compile-body]
+(defmacro- def-operator [name args & compile-body]
   ~(def-constructor ,name ,args
-    {:compile (fn [self comp-state coord] (let [,(struct ;(arg-kvps args)) self] ,compile-body))
+    {:compile (fn [self comp-state coord] (let [,(struct ;(arg-kvps args)) self] ,;compile-body))
      :surface (fn [self comp-state coord] (:surface (self :shape) comp-state coord))}))
 
-(defmacro- def-surfacer [name args surface-body]
+(defmacro- def-surfacer [name args & surface-body]
   ~(def-constructor ,name ,args
     {:compile (fn [self comp-state coord] (:compile (self :shape) comp-state coord))
-     :surface (fn [self comp-state coord] (let [,(struct ;(arg-kvps args)) self] ,surface-body))}))
+     :surface (fn [self comp-state coord] (let [,(struct ;(arg-kvps args)) self] ,;surface-body))}))
 
 (def-input-operator translate [offset shape]
-  (fn [{:offset offset} comp-state coord]
-    (string/format "(%s - %s)" coord (vec3 offset))))
+  (string/format "(%s - %s)" coord (vec3 offset)))
 
 (def-operator offset [amount shape]
   (string/format "(%s - %s)" (:compile shape comp-state coord) (float amount)))
@@ -118,7 +124,7 @@
     `)))
 
 (def-input-operator transform [matrix shape]
-  (fn [{:matrix matrix} comp-state coord] (string/format "(%s * %s)" coord (mat3 matrix))))
+  (string/format "(%s * %s)" coord (mat3 matrix)))
 
 (defn- fold-shapes [base-name &named preamble fn-first fn-rest postamble type extra-args extra-params return]
   (default preamble (fn [_] ""))
@@ -143,80 +149,74 @@
         ] "\n"))))
 
 (def-input-operator twist [shape axis rate]
-  (fn [{:axis axis :rate rate} comp-state coord]
-    (def other-axes (other-axes axis))
-    (defn select [axis]
-      (cond
-        (= axis (other-axes 0)) "transformed.x"
-        (= axis (other-axes 1)) "transformed.y"
-        (string "p." axis)))
-    (:function comp-state "vec3" [:twist axis] (string "twist_" axis)
-      [coord (float rate)]
-      ["vec3 p" "float rate"]
-      (string `
-      float s = sin(rate * p.`axis`);
-      float c = cos(rate * p.`axis`);
-      mat2 m = mat2(c, -s, s, c);
-      vec2 transformed = m * p.`(string-of-axes other-axes)`;
-      return vec3(`(select :x)`, `(select :y)`, `(select :z)`);
-      `))))
+  (def other-axes (other-axes axis))
+  (defn select [axis]
+    (cond
+      (= axis (other-axes 0)) "transformed.x"
+      (= axis (other-axes 1)) "transformed.y"
+      (string "p." axis)))
+  (:function comp-state "vec3" [:twist axis] (string "twist_" axis)
+    [coord (float rate)]
+    ["vec3 p" "float rate"]
+    (string `
+    float s = sin(rate * p.`axis`);
+    float c = cos(rate * p.`axis`);
+    mat2 m = mat2(c, -s, s, c);
+    vec2 transformed = m * p.`(string-of-axes other-axes)`;
+    return vec3(`(select :x)`, `(select :y)`, `(select :z)`);
+    `)))
 
 (def-input-operator mirror-axes [shape axes]
-  (fn [{:axes axes} comp-state coord]
-    (if (= (length axes) 3)
-      (string `abs(`coord`)`)
-      (:function comp-state "vec3" [:abs axes] (string "abs_" axes)
-        [coord]
-        ["vec3 p"]
-        (string `p.`axes` = abs(p.`axes`); return p;`)))))
+  (if (= (length axes) 3)
+    (string `abs(`coord`)`)
+    (:function comp-state "vec3" [:abs axes] (string "abs_" axes)
+      [coord]
+      ["vec3 p"]
+      (string `p.`axes` = abs(p.`axes`); return p;`))))
 
 (def-input-operator mirror-plane [shape axes]
-  (fn [{:axes axes} comp-state coord]
-    (def [axis1 axis2] axes)
-    (defn select [axis]
-      (cond
-        (= axis1 axis) "hi"
-        (= axis2 axis) "lo"
-        (string `p.` axis)))
-    (:function comp-state "vec3" [:sort axes] (string "sort_" axis1 axis2)
-      [coord]
-      ["vec3 p"]
-      (string `
-        float lo = min(p.`axis1`, p.`axis2`);
-        float hi = max(p.`axis1`, p.`axis2`);
-        return vec3(`(select :x)`, `(select :y)`, `(select :z)`);
-        `))))
-
-(def-input-operator mirror-space [shape]
-  (fn [self comp-state coord]
-    (:function comp-state "vec3" :sort-xyz "sort_xyz"
-      [coord]
-      ["vec3 p"]
-      `
-      float smallest = min3(p);
-      float largest = max3(p);
-      float middlest =
-        p.x > smallest && p.x < largest ? p.x :
-        p.y > smallest && p.y < largest ? p.y :
-        p.z;
-      return vec3(smallest, middlest, largest);
+  (def [axis1 axis2] axes)
+  (defn select [axis]
+    (cond
+      (= axis1 axis) "hi"
+      (= axis2 axis) "lo"
+      (string `p.` axis)))
+  (:function comp-state "vec3" [:sort axes] (string "sort_" axis1 axis2)
+    [coord]
+    ["vec3 p"]
+    (string `
+      float lo = min(p.`axis1`, p.`axis2`);
+      float hi = max(p.`axis1`, p.`axis2`);
+      return vec3(`(select :x)`, `(select :y)`, `(select :z)`);
       `)))
 
+(def-input-operator mirror-space [shape]
+  (:function comp-state "vec3" :sort-xyz "sort_xyz"
+    [coord]
+    ["vec3 p"]
+    `
+    float smallest = min3(p);
+    float largest = max3(p);
+    float middlest =
+      p.x > smallest && p.x < largest ? p.x :
+      p.y > smallest && p.y < largest ? p.y :
+      p.z;
+    return vec3(smallest, middlest, largest);
+    `))
+
 (def-input-operator flip [shape axes signs]
-  (fn [{:axes axes :signs signs} comp-state coord]
-    (def axes (string-of-axes axes))
-    (if (nil? signs)
-      (string coord "." axes)
-      (string `(`coord`.`axes` * `(vec3 signs)`)`))))
+  (def axes (string-of-axes axes))
+  (if (nil? signs)
+    (string coord "." axes)
+    (string `(`coord`.`axes` * `(vec3 signs)`)`)))
 
 (def-input-operator reflect-axes [shape axes]
-  (fn [{:axes axes} comp-state coord]
-    (if (= (length axes) 3)
-      (string `-` coord)
-      (:function comp-state "vec3" [:neg axes] (string "neg_" axes)
-        [coord]
-        ["vec3 p"]
-        (string `p.`axes` = -p.`axes`; return p;`)))))
+  (if (= (length axes) 3)
+    (string `-` coord)
+    (:function comp-state "vec3" [:neg axes] (string "neg_" axes)
+      [coord]
+      ["vec3 p"]
+      (string `p.`axes` = -p.`axes`; return p;`))))
 
 # TODO: all of the union/intersect/subtract operators evaluate
 # every surface in their collection, even when it will not
@@ -335,18 +335,17 @@
       :return "color")})
 
 (def-input-operator tile [shape offset limit]
-  (fn [{:offset offset :shape shape :limit limit} comp-state coord]
-    (if (nil? limit)
-      (:function comp-state "vec3" :tile "tile"
-        [coord (vec3 offset)]
-        ["vec3 p" "vec3 offset"]
-        "return mod(p + 0.5 * offset, offset) - 0.5 * offset;")
-      (let [min-limit (map3 limit |(idiv (- $ 1) 2))
-            max-limit (map3 limit |(idiv $ 2))]
-        (:function comp-state "vec3" :tile-limit "tile"
-          [coord (vec3 offset) (vec3 min-limit) (vec3 max-limit)]
-          ["vec3 p" "vec3 offset" "vec3 min_limit" "vec3 max_limit"]
-          "return p - offset * clamp(round(p / offset), -min_limit, max_limit);")))))
+  (if (nil? limit)
+    (:function comp-state "vec3" :tile "tile"
+      [coord (vec3 offset)]
+      ["vec3 p" "vec3 offset"]
+      "return mod(p + 0.5 * offset, offset) - 0.5 * offset;")
+    (let [min-limit (map3 limit |(idiv (- $ 1) 2))
+          max-limit (map3 limit |(idiv $ 2))]
+      (:function comp-state "vec3" :tile-limit "tile"
+        [coord (vec3 offset) (vec3 min-limit) (vec3 max-limit)]
+        ["vec3 p" "vec3 offset" "vec3 min_limit" "vec3 max_limit"]
+        "return p - offset * clamp(round(p / offset), -min_limit, max_limit);"))))
 
 (def-constructor morph [weight shape1 shape2]
   {:compile (fn [self comp-state coord]
