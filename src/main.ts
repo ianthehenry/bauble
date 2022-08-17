@@ -105,8 +105,8 @@ const initialScript = `
 # value 0.00 left to right.
 
 # (def r 0.00)
-# (-> (cone :x 60 80 :r 1)
-#   (rotate-tau :y r :z r)
+# (-> (box 80)
+#   (rotate-pi :y r :z r)
 #   (symmetry))
 
 # (Note for macOS Firefox users:
