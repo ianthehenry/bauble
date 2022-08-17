@@ -186,7 +186,7 @@
 # in some way. Actually, just one at the
 # moment:
 
-# (fresnel red-sphere [1 1 0] 0.5 :exponent 5)
+# (fresnel green-box [1 1 0] 0.5 :exponent 5)
 
 # That adds a little bit of (simulated)
 # fresnel reflectivity to a surface.
