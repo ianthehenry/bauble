@@ -44,9 +44,10 @@
 precision highp float;
 
 const int MAX_STEPS = 256;
-const float MINIMUM_HIT_DISTANCE = 0.1;
+const float CAMERA_RAY_HIT_SCALE = 0.001;
+const float MINIMUM_SHADOW_HIT_DISTANCE = 0.1;
 const float NORMAL_OFFSET = 0.005;
-const float MAXIMUM_TRACE_DISTANCE = 8192.0;
+const float MAXIMUM_TRACE_DISTANCE = 8.0 * 1024.0;
 
 float min3(vec3 p) {
   return min(p.x, min(p.y, p.z));
@@ -88,12 +89,12 @@ vec3 nearest_color(vec3 p, vec3 camera) {
   // on Google Pixel 6a (and maybe other Android
   // phones, not tested).
   float light_intensities[3];
-  light_intensities[0] = cast_light(p + 2.0 * MINIMUM_HIT_DISTANCE * normal, lights[0].position, lights[0].radius);
-  light_intensities[1] = cast_light(p + 2.0 * MINIMUM_HIT_DISTANCE * normal, lights[1].position, lights[1].radius);
-  light_intensities[2] = cast_light(p + 2.0 * MINIMUM_HIT_DISTANCE * normal, lights[2].position, lights[2].radius);
+  light_intensities[0] = cast_light(p + 2.0 * MINIMUM_SHADOW_HIT_DISTANCE * normal, lights[0].position, lights[0].radius);
+  light_intensities[1] = cast_light(p + 2.0 * MINIMUM_SHADOW_HIT_DISTANCE * normal, lights[1].position, lights[1].radius);
+  light_intensities[2] = cast_light(p + 2.0 * MINIMUM_SHADOW_HIT_DISTANCE * normal, lights[2].position, lights[2].radius);
   // TODO: for some reason the obvious thing just... doesn't work.
   // for (int i = 0; i < lights.length(); i++) {
-  //   light_intensities[i] = cast_light(p + 2.0 * MINIMUM_HIT_DISTANCE * normal, lights[i].position, lights[i].radius);
+  //   light_intensities[i] = cast_light(p + 2.0 * MINIMUM_SHADOW_HIT_DISTANCE * normal, lights[i].position, lights[i].radius);
   // }
   return `top-level-color`;
 }
@@ -121,7 +122,10 @@ float cast_light(vec3 p, vec3 light, float radius) {
   float sharpness = 16.0;
 
   float last_distance = 1e20;
-  float progress = MINIMUM_HIT_DISTANCE;
+  // TODO: It would make more sense to start at
+  // the light and cast towards the point, so that
+  // we don't have to worry about this nonsense.
+  float progress = MINIMUM_SHADOW_HIT_DISTANCE;
   for (int i = 0; i < MAX_STEPS; i++) {
     if (progress > light_distance) {
       return in_light * light_brightness;
@@ -129,7 +133,7 @@ float cast_light(vec3 p, vec3 light, float radius) {
 
     float distance = nearest_distance(p + progress * direction);
 
-    if (distance < MINIMUM_HIT_DISTANCE) {
+    if (distance < MINIMUM_SHADOW_HIT_DISTANCE) {
       // we hit something
       return 0.0;
     }
@@ -154,15 +158,12 @@ vec3 march(vec3 ray_origin, vec3 ray_direction, out int result) {
 
     float nearest = nearest_distance(p);
 
-    // TODO: by relaxing MINIMUM_HIT_DISTANCE the further we
-    // get away from the camera we can theoretically speed
-    // things up without sacrificing much in the way of
-    // accuracy. should experiment with this:
-    // if (nearest < MINIMUM_HIT_DISTANCE * 0.01 * progress) {
-    if (nearest < MINIMUM_HIT_DISTANCE) {
-      // a useful debug view
-      //return vec3(float(i) / float(MAX_STEPS));
-
+    // TODO: this attenuation only works when we're
+    // using march to render from the camera's point
+    // of view, so we can't use the march function
+    // as-is to render reflections. I don't know if
+    // it's worth having.
+    if (nearest < distance * CAMERA_RAY_HIT_SCALE) {
       result = 0;
       return p + nearest * ray_direction;
     }
@@ -173,9 +174,14 @@ vec3 march(vec3 ray_origin, vec3 ray_direction, out int result) {
     }
     distance += nearest;
   }
-  // TODO: using the nearest surface is also a valid option.
-  // as is using the fog color. we should let the
-  // user decide.
+  // TODO: this seems to have great results in all
+  // cases. I think the abort_color thing should
+  // only show up in the debug view that visualizes
+  // number of steps taken. This also means that
+  // we could get replace "result" with "steps taken"
+  // to decide how to render that.
+  // result = 0;
+  // return ray_origin + distance * ray_direction;
   result = 2;
   return vec3(0.0);
 }
