@@ -53,6 +53,7 @@
   (string/format "(abs(%s) - %s)" (:compile shape comp-state coord) (float thickness)))
 
 # TODO: "amount" is interpolated multiple times here
+# TODO: also this should do something to surfaces and it doesn't
 (def-operator scale [shape amount]
   (string/format "(%s * %s)"
     (:compile shape comp-state (string/format "(%s / %s)" coord (float amount)))
