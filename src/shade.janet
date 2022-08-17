@@ -150,10 +150,10 @@ float cast_light(vec3 p, vec3 light, float radius) {
   return 0.0;
 }
 
-vec3 march(vec3 ray_origin, vec3 ray_direction, out int result) {
+vec3 march(vec3 ray_origin, vec3 ray_direction, out int steps) {
   float distance = 0.0;
 
-  for (int i = 0; i < MAX_STEPS; i++) {
+  for (steps = 0; steps < MAX_STEPS; steps++) {
     vec3 p = ray_origin + distance * ray_direction;
 
     float nearest = nearest_distance(p);
@@ -163,27 +163,14 @@ vec3 march(vec3 ray_origin, vec3 ray_direction, out int result) {
     // of view, so we can't use the march function
     // as-is to render reflections. I don't know if
     // it's worth having.
-    if (nearest < distance * CAMERA_RAY_HIT_SCALE) {
-      result = 0;
+    //if (nearest < distance * CAMERA_RAY_HIT_SCALE) {
+    if (nearest < MINIMUM_SHADOW_HIT_DISTANCE || distance > MAXIMUM_TRACE_DISTANCE) {
       return p + nearest * ray_direction;
     }
 
-    if (distance > MAXIMUM_TRACE_DISTANCE) {
-      result = 1;
-      return vec3(0.0);
-    }
     distance += nearest;
   }
-  // TODO: this seems to have great results in all
-  // cases. I think the abort_color thing should
-  // only show up in the debug view that visualizes
-  // number of steps taken. This also means that
-  // we could get replace "result" with "steps taken"
-  // to decide how to render that.
-  // result = 0;
-  // return ray_origin + distance * ray_direction;
-  result = 2;
-  return vec3(0.0);
+  return ray_origin + distance * ray_direction;
 }
 
 mat4 view_matrix(vec3 eye, vec3 target, vec3 up) {
@@ -236,25 +223,27 @@ void main() {
   eye = camera_matrix * eye;
 
   const vec3 fog_color = vec3(0.15);
-  const vec3 abort_color = vec3(1.0, 0.0, 0.0);
+  const vec3 abort_color = vec3(1.0, 0.0, 1.0);
 
-  int result;
-  vec3 hit = march(eye, dir, result);
-  vec3 color;
+  // TODO: we only need the steps out parameter when
+  // we're rendering the debug view. Should try to
+  // see if there's any performance difference between
+  // an out parameter and a local variable.
+  int steps;
+  vec3 hit = march(eye, dir, steps);
 
-  switch (result) {
-    case 0:
-      color = nearest_color(hit, eye);
-      float depth = length(hit - eye);
-      color = mix(color, fog_color, depth / MAXIMUM_TRACE_DISTANCE);
-      break;
-    case 1:
-      color = fog_color;
-      break;
-    case 2:
-      color = abort_color;
-      break;
-  }
+  vec3 color = nearest_color(hit, eye);
+  float depth = length(hit - eye);
+  float attenuation = depth / MAXIMUM_TRACE_DISTANCE;
+  color = mix(color, fog_color, clamp(attenuation, 0.0, 1.0));
+
+  // This is a view for debugging convergence, but it also just...
+  // looks really cool on its own:
+  // if (steps == MAX_STEPS) {
+  //   color = abort_color;
+  // } else {
+  //   color = vec3(float(steps) / float(MAX_STEPS));
+  // }
 
   frag_color = vec4(pow(color, vec3(1.0 / gamma)), 1.0);
 }
