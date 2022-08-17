@@ -4,6 +4,8 @@ Bauble is a toy for composing signed distance functions in a high-level language
 
 Bauble is very much not ready for anyone to use yet, but there is a live demo running at <https://bauble.studio>. I sometimes tweet videos of it:
 
+- [non-rigid deformations](https://twitter.com/ianthehenry/status/1559778903324954624)
+- [announcement](https://twitter.com/ianthehenry/status/1559049547099254785)
 - [surfaces](https://twitter.com/ianthehenry/status/1557881955156275200)
 - [shapes](https://twitter.com/ianthehenry/status/1554729639183937536)
 - [first ever demo](https://twitter.com/ianthehenry/status/1551422839307190272)
