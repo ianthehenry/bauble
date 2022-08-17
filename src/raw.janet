@@ -166,6 +166,44 @@
     return vec3(`(select :x)`, `(select :y)`, `(select :z)`);
     `)))
 
+(def-input-operator swirl [shape axis rate]
+  (def other-axes (other-axes axis))
+  (defn select [axis]
+    (cond
+      (= axis (other-axes 0)) "transformed.x"
+      (= axis (other-axes 1)) "transformed.y"
+      (string "p." axis)))
+  (:function comp-state "vec3" [:bend axis] (string "bend_" axis)
+    [coord (float rate)]
+    ["vec3 p" "float rate"]
+    (string `
+    float a = length(p.`(string-of-axes other-axes)`);
+    float s = sin(rate * a);
+    float c = cos(rate * a);
+    mat2 m = mat2(c, -s, s, c);
+    vec2 transformed = m * p.`(string-of-axes other-axes)`;
+    return vec3(`(select :x)`, `(select :y)`, `(select :z)`);
+    `)))
+
+(def-input-operator bend [shape axis towards rate]
+  (def rate-axis (other-axis axis towards))
+  (def distortion-axes [towards rate-axis])
+  (defn select [axis]
+    (cond
+      (= axis (distortion-axes 0)) "transformed.x"
+      (= axis (distortion-axes 1)) "transformed.y"
+      (string "p." axis)))
+  (:function comp-state "vec3" [:bend axis] (string "bend_" axis)
+    [coord (float rate)]
+    ["vec3 p" "float rate"]
+    (string `
+    float s = sin(rate * p.`rate-axis`);
+    float c = cos(rate * p.`rate-axis`);
+    mat2 m = mat2(c, -s, s, c);
+    vec2 transformed = m * p.`(string-of-axes distortion-axes)`;
+    return vec3(`(select :x)`, `(select :y)`, `(select :z)`);
+    `)))
+
 (def-input-operator mirror-axes [shape axes]
   (if (= (length axes) 3)
     (string `abs(`coord`)`)

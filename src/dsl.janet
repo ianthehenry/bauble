@@ -239,6 +239,21 @@
    type/float |(set-param rate $)}
   (raw/twist shape axis rate))
 
+(def-flexible-fn swirl [shape axis rate]
+  {type/3d |(set-param shape $)
+   type/axis |(set-param axis $)
+   type/float |(set-param rate $)}
+  (raw/swirl shape axis rate))
+
+(def-flexible-fn bend [shape axis towards rate]
+  {type/3d |(set-param shape $)
+   type/axis |(set-first [axis towards] $)
+   type/signed-axis |(set-first [axis towards] $)
+   type/float |(set-param rate $)}
+  (let [[sign1 axis] (split-signed-axis axis)
+        [sign2 towards] (split-signed-axis towards)]
+    (raw/bend shape axis towards (* -1 rate sign1 sign2))))
+
 # --- surfacing ---
 
 (def-flexible-fn blinn-phong

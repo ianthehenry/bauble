@@ -356,6 +356,9 @@ const initialScript = `
 # (box 40 | scale :x 0.5)
 # (box 40 | scale [1 2 0.5])
 # (torus :y 100 25)
+# (box 50 | twist :y 0.010)
+# (box [50 10 50] | bend :x :y 0.010)
+# (box 50 | swirl :y 0.040)
 
 # Comments? Questions? Requests?
 # https://github.com/ianthehenry/bauble/discussions

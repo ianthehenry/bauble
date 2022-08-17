@@ -19,6 +19,24 @@
     :z [:x :y]
     (errorf "unknown axis %p" axis)))
 
+(defn other-axis [axis1 axis2]
+  (if (= axis1 axis2)
+    (errorf "duplicate axis %p" axis1))
+  (var x false)
+  (var y false)
+  (var z false)
+  (each axis [axis1 axis2]
+    (case axis
+      :x (set x true)
+      :y (set y true)
+      :z (set z true)
+      (errorf "unknown axis %p" axis)))
+  (cond
+    (and y z) :x
+    (and x z) :y
+    (and x y) :z
+    (error "impossible")))
+
 (defn string-of-axis [axis]
   (case axis
     :x "x"
