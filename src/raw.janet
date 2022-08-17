@@ -43,6 +43,11 @@
     {:compile (fn [self comp-state coord] (:compile (self :shape) comp-state coord))
      :surface (fn [self comp-state coord] (let [,(struct ;(arg-kvps args)) self] ,;surface-body))}))
 
+(defmacro- def-complicated [name args compile-body surface-body]
+  ~(def-constructor ,name ,args
+    {:compile (fn [self comp-state coord] (let [,(struct ;(arg-kvps args)) self] ,compile-body))
+     :surface (fn [self comp-state coord] (let [,(struct ;(arg-kvps args)) self] ,surface-body))}))
+
 (def-input-operator translate [offset shape]
   (string/format "(%s - %s)" coord (vec3 offset)))
 
@@ -53,17 +58,18 @@
   (string/format "(abs(%s) - %s)" (:compile shape comp-state coord) (float thickness)))
 
 # TODO: "amount" is interpolated multiple times here
-# TODO: also this should do something to surfaces and it doesn't
-(def-operator scale [shape amount]
+(def-complicated scale [shape amount]
   (string/format "(%s * %s)"
     (:compile shape comp-state (string/format "(%s / %s)" coord (float amount)))
-    (float amount)))
+    (float amount))
+  (:surface shape comp-state (string/format "(%s / %s)" coord (float amount))))
 
 # TODO: "amount" is interpolated multiple times here
-(def-operator stretch [shape amount]
+(def-complicated stretch [shape amount]
   (string/format "(%s * abs(min3(%s)))"
     (:compile shape comp-state (string/format "(%s / %s)" coord (vec3 amount)))
-    (vec3 amount)))
+    (vec3 amount))
+  (:surface shape comp-state (string/format "(%s / %s)" coord (vec3 amount))))
 
 (def-primitive r3 [] "0.0")
 (def r3 (r3))
