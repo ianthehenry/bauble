@@ -266,5 +266,5 @@ void main() {
         (try
           (make-fragment-shader expr camera)
           ([err fiber] 
-            (debug/stacktrace fiber err)))
+            (debug/stacktrace fiber err "")))
         (eprint "cannot compile " expr))))))
