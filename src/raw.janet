@@ -392,23 +392,19 @@
         ["vec3 p" "vec3 offset" "vec3 min_limit" "vec3 max_limit"]
         "return p - offset * clamp(round(p / offset), -min_limit, max_limit);"))))
 
-(def-constructor morph [weight shape1 shape2]
-  {:compile (fn [self comp-state coord]
-    (def {:weight weight :shape1 shape1 :shape2 shape2} self)
-    (:function comp-state "float" [self :distance] "morph"
-      [coord (float weight)]
-      ["vec3 p" "float weight"]
-      (string/format "return mix(%s, %s, weight);"
-        (:compile shape1 comp-state "p")
-        (:compile shape2 comp-state "p"))))
-    :surface (fn [self comp-state coord]
-      (def {:weight weight :shape1 shape1 :shape2 shape2} self)
-      (:function comp-state "vec3" [self :surface] "morph_surface"
-        [coord "world_p" "camera" "normal" "light_intensities" (float weight)]
-        ["vec3 p" "vec3 world_p" "vec3 camera" "vec3 normal" "float light_intensities[3]" "float weight"]
-        (string/format "return mix(%s, %s, weight);"
-          (:surface shape1 comp-state "p")
-          (:surface shape2 comp-state "p"))))})
+(def-complicated morph [weight shape1 shape2]
+  (:function comp-state "float" [self :distance] "morph"
+    [coord (float weight)]
+    ["vec3 p" "float weight"]
+    (string/format "return mix(%s, %s, weight);"
+      (:compile shape1 comp-state "p")
+      (:compile shape2 comp-state "p")))
+  (:function comp-state "vec3" [self :surface] "morph_surface"
+    [coord "world_p" "camera" "normal" "light_intensities" (float weight)]
+    ["vec3 p" "vec3 world_p" "vec3 camera" "vec3 normal" "float light_intensities[3]" "float weight"]
+    (string/format "return mix(%s, %s, weight);"
+      (:surface shape1 comp-state "p")
+      (:surface shape2 comp-state "p"))))
 
 (def-surfacer flat-color [shape color]
   (vec3 color))
@@ -464,6 +460,6 @@
     return `(:surface shape comp-state coord)` + color * strength * fresnel;
     `)))
 
-(def-constructor resurface [shape color]
-  {:compile (fn [{:shape shape} comp-state coord] (:compile shape comp-state coord))
-    :surface (fn [{:color color} comp-state coord] (:surface color comp-state coord))})
+(def-complicated resurface [shape color]
+  (:compile shape comp-state coord)
+  (:surface color comp-state coord))
