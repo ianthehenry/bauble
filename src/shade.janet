@@ -235,7 +235,7 @@ void main() {
   vec3 color = nearest_color(hit, eye);
   float depth = length(hit - eye);
   float attenuation = depth / MAXIMUM_TRACE_DISTANCE;
-  color = mix(color, fog_color, clamp(attenuation, 0.0, 1.0));
+  color = mix(color, fog_color, clamp(attenuation * attenuation, 0.0, 1.0));
 
   // This is a view for debugging convergence, but it also just...
   // looks really cool on its own:
