@@ -1,3 +1,9 @@
+# TODO: performance question: would the cached lookup here
+# perform better if shapes were tables instead of structs?
+# because we'd get pointer lookup instead of value lookup?
+# then again, would that be *worse* because we'd end up
+# generating identical functions for surface operations
+# in some cases?
 (def comp-state-proto @{
   :function (fn [self return-type key name-base args parameters body]
     (defn invocation [name] (string/format "%s(%s)" name (string/join args ", ")))
