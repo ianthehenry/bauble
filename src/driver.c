@@ -150,7 +150,6 @@ JANET_FN(set_fragment_shader, "(set-fragment-shader)", "") {
   return janet_wrap_nil();
 }
 
-
 JANET_FN(janet_function_arity, "(function/arity)", "") {
   janet_fixarity(argc, 1);
   const JanetFunction *function = janet_getfunction(argv, 0);
@@ -211,6 +210,7 @@ int run_janet(char *source, float camera_x, float camera_y, float camera_zoom) {
   }
 
   if (draw_fiber == NULL) {
+    fprintf(stderr, "unable to initialize compilation fiber\n");
     return 1;
   }
 
@@ -220,6 +220,10 @@ int run_janet(char *source, float camera_x, float camera_y, float camera_zoom) {
   JanetSignal status = janet_dostring(env, source, "playground", &result);
 
   long long done_evaluating = emscripten_get_now();
+
+  if (status != JANET_SIGNAL_OK) {
+    return status;
+  }
 
   JanetKV *camera_struct = janet_struct_begin(2 * 3);
   janet_struct_put(camera_struct, janet_ckeywordv("x"), janet_wrap_number(camera_x));
@@ -232,19 +236,15 @@ int run_janet(char *source, float camera_x, float camera_y, float camera_zoom) {
   arg_tuple[1] = camera;
   Janet args = janet_wrap_tuple(janet_tuple_end(arg_tuple));
 
-  if (status == JANET_SIGNAL_OK) {
-    Janet query;
-    JanetSignal status = janet_continue(draw_fiber, args, &query);
-    if (status == JANET_SIGNAL_YIELD) {
-      if (janet_checktype(query, JANET_NIL) == 0) {
-        fprintf(stderr, "yielded a value?? that's bizarre.\n");
-      }
-    } else {
-      fprintf(stderr, "Fiber did not yield\n");
-      janet_stacktrace(draw_fiber, query);
+  Janet query;
+  status = janet_continue(draw_fiber, args, &query);
+  if (status == JANET_SIGNAL_YIELD) {
+    if (janet_checktype(query, JANET_NIL) == 0) {
+      fprintf(stderr, "compilation fiber yielded a value\n");
     }
   } else {
-    fprintf(stderr, "Error while evaluating value\n");
+    fprintf(stderr, "compilation fiber did not yield\n");
+    janet_stacktrace(draw_fiber, query);
   }
 
   long long done_rendering = emscripten_get_now();

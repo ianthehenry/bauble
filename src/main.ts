@@ -378,7 +378,7 @@ function executeJanet(code: string, camera: Camera) {
 
   const result = evaluateJanet(preamble + code + postamble, TAU * camera.x, TAU * camera.y, camera.zoom);
   if (result !== 0) {
-    print('ERREXIT: ' + result.toString(), true);
+    console.error('compilation error: ', result.toString());
   }
 }
 
