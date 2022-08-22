@@ -12,5 +12,3 @@
 
 (defmacro resolve-dots [form]
   (prewalk |(if (symbol? $) (expand-dots $) $) form))
-
-(pp (macex '(resolve-dots p.x.y)))

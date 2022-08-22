@@ -6,17 +6,20 @@
 
 # --- primitives ---
 
+# TODO: okay, so, interesting. because i broke this into
+# separate steps, :round actually gets evaluated twice
+# here. ugh. gotta fix that...
 (def-flexible-fn box [size [round 0]]
   {type/vec3 |(set-param size $)
-   type/float |(set-param size [$ $ $])
+   type/float |(set-param size ~(vec3 ,$))
    :r |(set-param round $ type/float)}
   (if (= round 0)
-    (raw/box size)
-    (raw/offset round (raw/box (map |(- $ round) size)))))
+    (raw/box2 size)
+    (raw/offset2 round (raw/box2 ~(- ,size ,round)))))
 
 (def-flexible-fn sphere [radius]
   {type/float |(set-param radius $)}
-  (raw/sphere radius))
+  (raw/sphere2 radius))
 
 # TODO: is it weird that the height is double the thing you pass it? it seems weird.
 # this is true of box as well, though.
@@ -25,14 +28,14 @@
    type/axis |(set-param axis $)
    :r |(set-param round $ type/float)}
   (if (= round 0)
-    (raw/cylinder axis radius height)
-    (raw/offset round
-      (raw/cylinder axis (- radius round) (- height round)))))
+    (raw/cylinder2 axis radius height)
+    (raw/offset2 round
+      (raw/cylinder2 axis (- radius round) (- height round)))))
 
 (def-flexible-fn torus [axis major-radius minor-radius]
   {type/float |(set-first [major-radius minor-radius] $)
    type/axis |(set-param axis $)}
-  (raw/torus axis major-radius minor-radius))
+  (raw/torus2 axis major-radius minor-radius))
 
 (def-flexible-fn half-space [axis [offset 0]]
   {type/signed-axis |(set-param axis $)
@@ -40,9 +43,12 @@
    type/float |(set-param offset $)}
   (let [[sign axis] (split-signed-axis axis)]
     (if (= offset 0)
-      (raw/half-space axis sign)
-      (raw/translate (axis-vec axis offset) (raw/half-space axis sign)))))
+      (raw/half-space2 axis sign)
+      (raw/translate2
+        (raw/half-space2 axis sign)
+        (axis-vec axis offset)))))
 
+# TODO: a *lot* of this doesn't work anymore.
 (def-flexible-fn cone [axis radius height [round 0]]
   {type/signed-axis |(set-param axis $)
    type/axis |(set-param axis $)
@@ -53,10 +59,10 @@
         height (* 2 sign (math/abs height))]
     (def tip-offset (* round (/ height radius)))
     (if (= 0 round)
-      (raw/cone axis radius height upside-down)
-      (raw/offset round
-        (raw/translate (axis-vec axis (+ (* (if upside-down -1 1) sign round) (if upside-down tip-offset 0)))
-          (raw/cone
+      (raw/cone2 axis radius height upside-down)
+      (raw/offset2 round
+        (raw/translate2 (axis-vec axis (+ (* (if upside-down -1 1) sign round) (if upside-down tip-offset 0)))
+          (raw/cone2
             axis
             (- radius round)
             (- height tip-offset)
@@ -66,8 +72,8 @@
   {type/vec3 |(set-first [start end] $)
    type/float |(set-param thickness $)}
   (if (= 0 thickness)
-    (raw/line start end)
-    (raw/offset thickness (raw/line start end))))
+    (raw/line2 start end)
+    (raw/offset2 thickness (raw/line2 start end))))
 
 # --- shape combinators ---
 
@@ -95,7 +101,6 @@
     0 (raw/subtract shapes)
     1 (raw/smooth-subtract round shapes)))
 
-
 # --- basic shape combinators ---
 
 # TODO: I don't love the name "offset"
@@ -104,22 +109,22 @@
    type/float |(set-param distance $)}
   (if (= distance 0)
     shape
-    (raw/offset distance shape)))
+    (raw/offset2 distance shape)))
 
 (def-flexible-fn onion [shape thickness]
   {type/3d |(set-param shape $)
    type/float |(set-param thickness $)}
-  (raw/onion thickness shape))
+  (raw/onion2 thickness shape))
 
 (def-flexible-fn slow [shape rate]
   {type/3d |(set-param shape $)
    type/float |(set-param rate $)}
-  (raw/slow shape rate))
+  (raw/slow2 shape rate))
 
 (def-flexible-fn morph [from-shape to-shape [weight 0.5]]
   {type/3d |(set-first [from-shape to-shape] $)
    type/float |(set-param weight $)}
-  (raw/morph weight from-shape to-shape))
+  (raw/morph2 weight from-shape to-shape))
 
 (defn- check-limit [vec3]
   (each num vec3
@@ -127,6 +132,7 @@
       (errorf "tile:limit %p is not a positive integer" num)))
   vec3)
 
+# TODO: can't check limit anymore
 (def-flexible-fn tile [shape offset [limit nil]]
   {type/3d |(set-param shape $)
    type/vec3 |(set-param offset $)
@@ -141,13 +147,20 @@
     (raw/translate (map3 [0 1 2] |(if (even? (limit $)) (* -0.5 (offset $)) 0))
       (raw/tile shape offset limit))))
 
+(def-flexible-fn distort [shape expression]
+  {type/3d |(set-param shape $)
+   type/vec3 |(set-param expression $)}
+  (raw/distort2 shape expression))
+
+# TODO: does incrementally building the offset
+# just transparently work for free? Am I smart?
 (def-flexible-fn translate [shape (offset @[0 0 0])]
   {type/3d |(set-param shape $)
    type/vec3 |(vec3/+= offset $)
    :x |(+= (offset 0) (typecheck :x type/float $))
    :y |(+= (offset 1) (typecheck :y type/float $))
    :z |(+= (offset 2) (typecheck :z type/float $))}
-  (raw/translate offset shape))
+  (raw/translate2 shape offset))
 
 (def move translate)
 
@@ -178,8 +191,8 @@
    :y |(vec3/*= scale [1 (typecheck :y type/float $) 1])
    :z |(vec3/*= scale [1 1 (typecheck :z type/float $)])}
   (if (vec3/same? scale)
-    (raw/scale shape (scale 0))
-    (raw/stretch shape scale)))
+    (raw/scale2 shape (scale 0))
+    (raw/stretch2 shape scale)))
 
 (defn- get-axes [x y z]
   (def axes (buffer/new 3))
@@ -243,7 +256,7 @@
   {type/3d |(set-param shape $)
    type/axis |(set-param axis $)
    type/float |(set-param rate $)}
-  (raw/twist shape axis rate))
+  (raw/twist2 shape axis rate))
 
 (def-flexible-fn swirl [shape axis rate]
   {type/3d |(set-param shape $)
@@ -269,7 +282,7 @@
    :shine |(set-param shine $ type/float)
    :gloss |(set-param gloss $ type/float)
    :ambient |(set-param ambient $ type/float)}
-  (raw/blinn-phong shape color shine gloss ambient))
+  (raw/blinn-phong2 shape color shine gloss ambient))
 
 (def color blinn-phong)
 

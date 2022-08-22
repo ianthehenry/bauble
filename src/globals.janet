@@ -1,0 +1,7 @@
+(import ./glslisp/src/index :as glslisp)
+(import ./glslisp/src/type :as type)
+(def p (glslisp/variable "p" type/vec3))
+(def world-p (glslisp/variable 'world_p type/vec3))
+(def camera (glslisp/variable 'camera type/vec3))
+(def normal (glslisp/variable 'normal type/vec3))
+(def light-intensities (glslisp/variable 'light_intensities (type/array 3 type/float)))

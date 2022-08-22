@@ -1,13 +1,11 @@
-(def type/bool @"bool")
-(def type/vec2 @"vec2")
-(def type/vec3 @"vec3")
-(def type/vec4 @"vec4")
-(def type/float @"float")
-(def type/keyword @"keyword")
-(def type/3d @"3d-sdf")
-(def type/axis @"axis")
-(def type/signed-axis @"signed-axis")
-(def- type/unknown @"unknown")
+(import ./glslisp/src/index :as glslisp)
+
+(import ./glslisp/src/type :as type :export true)
+(def type/keyword :keyword)
+(def type/3d :3d-sdf)
+(def type/axis :axis)
+(def type/signed-axis :signed-axis)
+
 (def- unset (gensym))
 
 (defmacro- swap [f arg1 arg2]
@@ -27,24 +25,18 @@
 
 (defn- typeof [value]
   (case (type value)
-    :number type/float
-    :boolean type/bool
     :keyword (get keyword-types value type/unknown)
     :struct type/3d # TODO: obviously this is wrong once I add 2D SDFs
-    :tuple (case (length value)
-      2 type/vec2
-      3 type/vec3
-      4 type/vec4
-      type/unknown)
-    type/unknown))
+    (glslisp/typecheck value)))
 
 (defn typecheck [name expected-type value]
+  (def actual-type (typeof value))
   (if (tuple? expected-type)
-    (if (find |(= (typeof value) $) expected-type)
+    (if (find |(= actual-type $) expected-type)
       value
       (errorf "%s type mismatch: %p should be one of %s"
         name value (string/join expected-type ", ")))
-    (if (= expected-type (typeof value))
+    (if (= expected-type actual-type)
       value
       (errorf "%s type mismatch: %p should be %s"
         name value expected-type))))

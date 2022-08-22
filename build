@@ -43,6 +43,7 @@ if [[ "$build_wasm" == "true" ]]; then
   for file in src/*.janet; do
     preload_args="$preload_args --preload-file $file@$(basename $file)"
   done
+  preload_args="$preload_args --preload-file src/glslisp/@glslisp/"
 
   emcc \
     $emcc_args \
