@@ -195,14 +195,14 @@ vec3 ray_dir(float fov, vec2 size, vec2 pos) {
 
   float cot_half_fov = tan((90.0 - fov * 0.5) * DEG_TO_RAD);
   float z = size.y * 0.5 * cot_half_fov;
-  
+
   return normalize(vec3(xy, -z));
 }
 
 mat3 rotate_xy(vec2 angle) {
   vec2 c = cos(angle);
   vec2 s = sin(angle);
-  
+
   return mat3(
     c.y      ,  0.0, -s.y,
     s.y * s.x,  c.x,  c.y * s.x,
@@ -217,7 +217,7 @@ void main() {
   vec2 rotation = vec2(`(float (camera :x))`, `(float (camera :y))`);
   mat3 camera_matrix = rotate_xy(rotation);
 
-  vec3 dir = ray_dir(45.0, resolution, gl_FragCoord.xy);  
+  vec3 dir = ray_dir(45.0, resolution, gl_FragCoord.xy);
   vec3 eye = vec3(0.0, 0.0, `(float (* 256 (camera :zoom)))`);
   dir = camera_matrix * dir;
   eye = camera_matrix * eye;
@@ -260,6 +260,6 @@ void main() {
       (if (is-good-value? expr)
         (try
           (make-fragment-shader expr camera)
-          ([err fiber] 
+          ([err fiber]
             (debug/stacktrace fiber err "")))
         (eprint "cannot compile " expr))))))
