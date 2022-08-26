@@ -176,33 +176,34 @@
     (raw/scale shape (scale 0))
     (raw/stretch shape scale)))
 
-(def-flexible-fn mirror [shape [x false] [y false] [z false]]
+(defn- get-axes [x y z]
+  (def axes (buffer/new 3))
+  (when x (buffer/push-string axes "x"))
+  (when y (buffer/push-string axes "y"))
+  (when z (buffer/push-string axes "z"))
+  axes)
+
+(def-flexible-fn mirror [shape [r 0] [x false] [y false] [z false]]
   {type/3d |(set-param shape $)
+   :r |(set-param r $ type/float)
    :x |(set-param x true)
    :y |(set-param y true)
    :z |(set-param z true)}
-  (if (not (or x y z)) shape
-    (do
-      (def axes (buffer/new 3))
-      (when x (buffer/push-string axes "x"))
-      (when y (buffer/push-string axes "y"))
-      (when z (buffer/push-string axes "z"))
-      (raw/mirror-axes shape axes))))
+  (if (not (or x y z))
+    shape
+    (let [axes (get-axes x y z)]
+      (if (= r 0)
+        (raw/mirror-axes shape axes)
+        (raw/biased-sqrt-axes shape r axes)))))
 
-# TODO: duplicated code between mirror and reflect.
-# could make a macro to define them both.
 (def-flexible-fn reflect [shape [x false] [y false] [z false]]
   {type/3d |(set-param shape $)
    :x |(set-param x true)
    :y |(set-param y true)
    :z |(set-param z true)}
-  (if (not (or x y z)) shape
-    (do
-      (def axes (buffer/new 3))
-      (when x (buffer/push-string axes "x"))
-      (when y (buffer/push-string axes "y"))
-      (when z (buffer/push-string axes "z"))
-      (raw/reflect-axes shape axes))))
+  (if (not (or x y z))
+    shape
+    (raw/reflect-axes shape (get-axes x y z))))
 
 # TODO: should probably support the negative versions as well?
 (def-flexible-fn mirror-plane [shape axes]

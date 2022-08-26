@@ -211,6 +211,12 @@
     return vec3(`(select :x)`, `(select :y)`, `(select :z)`);
     `)))
 
+(def-input-operator biased-sqrt-axes [shape r axes]
+  (:function comp-state "vec3" [:abs axes] (string "biased_sqrt_" axes)
+    [coord (float r)]
+    ["vec3 p" "float r"]
+    (string `p.`axes` = sqrt(p.`axes` * p.`axes` + r * r); return p;`)))
+
 (def-input-operator mirror-axes [shape axes]
   (if (= (length axes) 3)
     (string `abs(`coord`)`)
