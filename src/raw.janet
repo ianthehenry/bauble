@@ -57,6 +57,9 @@
 (def-operator onion [thickness shape]
   (string/format "(abs(%s) - %s)" (:compile shape comp-state coord) (float thickness)))
 
+(def-operator slow [shape rate]
+  (string/format "(%s * %s)" (:compile shape comp-state coord) (float rate)))
+
 # TODO: "amount" is interpolated multiple times here
 (def-complicated scale [shape amount]
   (string/format "(%s * %s)"

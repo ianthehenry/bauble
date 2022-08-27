@@ -111,6 +111,11 @@
    type/float |(set-param thickness $)}
   (raw/onion thickness shape))
 
+(def-flexible-fn slow [shape rate]
+  {type/3d |(set-param shape $)
+   type/float |(set-param rate $)}
+  (raw/slow shape rate))
+
 (def-flexible-fn morph [from-shape to-shape [weight 0.5]]
   {type/3d |(set-first [from-shape to-shape] $)
    type/float |(set-param weight $)}
