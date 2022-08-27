@@ -50,7 +50,7 @@ function onReady(f: (() => void)) {
   }
 }
 
-const preamble = '(use ./helpers) (use ./dsl) (use ./pipe) (pipe\n';
+const preamble = '(use ./helpers) (use ./dsl) (use ./pipe-syntax) (pipe \n';
 const postamble = '\n)'; // newline is necessary in case the script ends in a comment
 
 function executeJanet(code: string, camera: Camera) {
