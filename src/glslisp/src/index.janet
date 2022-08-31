@@ -23,20 +23,6 @@
 (defn- vec-fields? [keyword]
   (all vec-field-char? keyword))
 
-# TODO: I don't think there's any reason to support variadic
-# binops at this level.
-(defn- variadic-binop? [symbol]
-  (case symbol
-    '+ true
-    '- true
-    '* true
-    '/ true
-
-    'and true
-    'or true
-    'xor true
-    false))
-
 (defn- unop? [symbol]
   (case symbol
     '- true
@@ -83,9 +69,7 @@
   (cond
     (< (length args) 2) (errorf "not enough arguments for binary operator %s" f)
     (= (length args) 2) (string "("(args 0)" "(binop-to-string f)" "(args 1)")")
-    (if (variadic-binop? f)
-      (binop f [(binop f [(args 0) (args 1)]) ;(drop 2 args)])
-      (errorf "too many arguments to %s" f))))
+    (> (length args) 2) (errorf "too many arguments for binary operator %s" f)))
 
 (defn- vector-type? [type]
   (case type
@@ -131,30 +115,50 @@
     'vec4 type/vec4
     'float type/float
     'length type/float
+    'distance type/float
     'not type/bool
     '= type/bool
     'not= type/bool
     'and type/bool
     'or type/bool
     'xor type/bool
+
+    # TODO: this is kind of a gross hack
+    'hsv type/vec3
+    'hsl type/vec3
+
     (typeof-generic-application args)))
 
-(defn- compile-function-application [lookup f args]
-  (def args (map |(compile! lookup $) args))
+(defn- compile-function-application [state f args]
+  (def args (map |(compile! state $) args))
   (cond
     (and (unop? f) (= (length args) 1)) (unop-to-string f (args 0))
     (binop? f) (binop f args)
-    (string f "(" (string/join args ", ") ")")))
+    (do
+      (:require-function state f)
+      (string f "(" (string/join args ", ") ")"))))
 
-(defn- compile-access [lookup args]
-  (if (= (length args) 2)
-    (string (compile! lookup (args 0)) "." (args 1))
-    (errorf "wrong number of arguments to .")))
+(defn- compile-access [state args]
+  (assert (= (length args) 2) "wrong number of arguments to .")
+  (def [expr field] args)
+  (string (compile! state expr) "." field))
 
-(defn- compile-application [lookup f args]
+(defn- compile-with [state args]
+  (assert (= (length args) 3) "wrong number of arguments to with")
+  (def [variable value expr] args)
+  (def new-name (:new-name state variable))
+  (:push-var state variable (fn []
+    (:statement state (string (variable :type)` `new-name` = `(compile! state value)`;`))
+    new-name))
+  (def result (compile! state expr))
+  (:pop-var state variable)
+  result)
+
+(defn- compile-application [state f args]
   (case f
-    '. (compile-access lookup args)
-    (compile-function-application lookup f args)))
+    '. (compile-access state args)
+    'with (compile-with state args)
+    (compile-function-application state f args)))
 
 (defn- vec-constructor [tuple]
   (case (length tuple)
@@ -171,15 +175,15 @@
 (defn variable [name type] @{:name name :type type})
 
 (set compile!
-(defn compile! [lookup expr]
+(defn compile! [state expr]
   (cond
     (number? expr) (glsl-float-string expr)
     # TODO: this is sort of a hack that shouldn't be here and i don't remember
     # why it's necessary in the first place.
-    (symbol? expr) (string expr)
-    (table? expr) (lookup expr)
-    (application? expr) (compile-application lookup (head expr) (tail expr))
-    (vec? expr) (compile-function-application lookup (vec-constructor expr) expr)
+    #(symbol? expr) (string expr)
+    (table? expr) (string (:get-var state expr))
+    (application? expr) (compile-application state (head expr) (tail expr))
+    (vec? expr) (compile-function-application state (vec-constructor expr) expr)
     (errorf "cannot compile %p" expr))))
 
 (set typecheck

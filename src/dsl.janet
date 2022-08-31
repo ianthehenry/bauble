@@ -3,6 +3,7 @@
 (use ./axes)
 (use ./flex-fn)
 (import ./raw)
+(import ./glslisp/src/builtins :as generic)
 
 # --- primitives ---
 
@@ -14,12 +15,12 @@
    type/float |(set-param size ~(vec3 ,$))
    :r |(set-param round $ type/float)}
   (if (= round 0)
-    (raw/box2 size)
-    (raw/offset2 round (raw/box2 ~(- ,size ,round)))))
+    (raw/box size)
+    (raw/offset round (raw/box ~(- ,size ,round)))))
 
 (def-flexible-fn sphere [radius]
   {type/float |(set-param radius $)}
-  (raw/sphere2 radius))
+  (raw/sphere radius))
 
 # TODO: is it weird that the height is double the thing you pass it? it seems weird.
 # this is true of box as well, though.
@@ -28,14 +29,14 @@
    type/axis |(set-param axis $)
    :r |(set-param round $ type/float)}
   (if (= round 0)
-    (raw/cylinder2 axis radius height)
-    (raw/offset2 round
-      (raw/cylinder2 axis (- radius round) (- height round)))))
+    (raw/cylinder axis radius height)
+    (raw/offset round
+      (raw/cylinder axis (- radius round) (- height round)))))
 
 (def-flexible-fn torus [axis major-radius minor-radius]
   {type/float |(set-first [major-radius minor-radius] $)
    type/axis |(set-param axis $)}
-  (raw/torus2 axis major-radius minor-radius))
+  (raw/torus axis major-radius minor-radius))
 
 (def-flexible-fn half-space [axis [offset 0]]
   {type/signed-axis |(set-param axis $)
@@ -43,88 +44,77 @@
    type/float |(set-param offset $)}
   (let [[sign axis] (split-signed-axis axis)]
     (if (= offset 0)
-      (raw/half-space2 axis sign)
-      (raw/translate2
-        (raw/half-space2 axis sign)
+      (raw/half-space axis sign)
+      (raw/translate
+        (raw/half-space axis sign)
         (axis-vec axis offset)))))
 
-# TODO: a *lot* of this doesn't work anymore.
 (def-flexible-fn cone [axis radius height [round 0]]
   {type/signed-axis |(set-param axis $)
    type/axis |(set-param axis $)
    type/float |(set-first [radius height] $)
    :r |(set-param round $ type/float)}
   (let [[sign axis] (split-signed-axis axis)
-        upside-down (neg? height)
-        height (* 2 sign (math/abs height))]
-    (def tip-offset (* round (/ height radius)))
+        upside-down (neg? sign)]
     (if (= 0 round)
-      (raw/cone2 axis radius height upside-down)
-      (raw/offset2 round
-        (raw/translate2 (axis-vec axis (+ (* (if upside-down -1 1) sign round) (if upside-down tip-offset 0)))
-          (raw/cone2
-            axis
-            (- radius round)
-            (- height tip-offset)
-            upside-down))))))
+      (raw/cone axis radius height upside-down)
+      (raw/rounded-cone axis radius height round upside-down))))
 
 (def-flexible-fn line [start end [thickness 0]]
   {type/vec3 |(set-first [start end] $)
    type/float |(set-param thickness $)}
   (if (= 0 thickness)
-    (raw/line2 start end)
-    (raw/offset2 thickness (raw/line2 start end))))
+    (raw/line start end)
+    (raw/offset thickness (raw/line start end))))
 
 # --- shape combinators ---
 
 (def-flexible-fn union [(shapes @[]) [round 0]]
   {type/3d |(array/push shapes $)
    :r |(set-param round $ type/float)}
-  (case (math/sign round)
-    -1 (error "r cannot be negative")
-    0 (raw/union shapes)
-    1 (raw/smooth-union round shapes)))
+  (if (= round 0)
+    (raw/union shapes)
+    (raw/smooth-union round shapes)))
 
 (def-flexible-fn intersect [(shapes @[]) [round 0]]
   {type/3d |(array/push shapes $)
    :r |(set-param round $ type/float)}
-  (case (math/sign round)
-    -1 (error "r cannot be negative")
-    0 (raw/intersect shapes)
-    1 (raw/smooth-intersect round shapes)))
+  (if (= round 0)
+    (raw/intersect shapes)
+    (raw/smooth-intersect round shapes)))
 
 (def-flexible-fn subtract [(shapes @[]) [round 0]]
   {type/3d |(array/push shapes $)
    :r |(set-param round $ type/float)}
-  (case (math/sign round)
-    -1 (error "r cannot be negative")
-    0 (raw/subtract shapes)
-    1 (raw/smooth-subtract round shapes)))
+  (if (= round 0)
+    (raw/subtract shapes)
+    (raw/smooth-subtract round shapes)))
 
 # --- basic shape combinators ---
 
-# TODO: I don't love the name "offset"
+# TODO: I don't love the name "offset".
+# can we get by with something like (distort (+ p 5))?
 (def-flexible-fn offset [shape distance]
   {type/3d |(set-param shape $)
    type/float |(set-param distance $)}
   (if (= distance 0)
     shape
-    (raw/offset2 distance shape)))
+    (raw/offset distance shape)))
 
 (def-flexible-fn onion [shape thickness]
   {type/3d |(set-param shape $)
    type/float |(set-param thickness $)}
-  (raw/onion2 thickness shape))
+  (raw/onion thickness shape))
 
 (def-flexible-fn slow [shape rate]
   {type/3d |(set-param shape $)
    type/float |(set-param rate $)}
-  (raw/slow2 shape rate))
+  (raw/slow shape rate))
 
 (def-flexible-fn morph [from-shape to-shape [weight 0.5]]
   {type/3d |(set-first [from-shape to-shape] $)
    type/float |(set-param weight $)}
-  (raw/morph2 weight from-shape to-shape))
+  (raw/morph weight from-shape to-shape))
 
 (defn- check-limit [vec3]
   (each num vec3
@@ -132,7 +122,9 @@
       (errorf "tile:limit %p is not a positive integer" num)))
   vec3)
 
-# TODO: can't check limit anymore
+# TODO: we interpolate `offset` multiple times
+# in the limit case in order to center it, which
+# is probably not good
 (def-flexible-fn tile [shape offset [limit nil]]
   {type/3d |(set-param shape $)
    type/vec3 |(set-param offset $)
@@ -144,35 +136,34 @@
       (set-param limit))}
   (if (nil? limit)
     (raw/tile shape offset limit)
-    (raw/translate (map3 [0 1 2] |(if (even? (limit $)) (* -0.5 (offset $)) 0))
-      (raw/tile shape offset limit))))
+    (raw/translate (raw/tile shape offset limit)
+      (map3 [0 1 2] |(if (even? (limit $)) (* -0.5 (offset $)) 0)))))
 
 (def-flexible-fn distort [shape expression]
   {type/3d |(set-param shape $)
    type/vec3 |(set-param expression $)}
-  (raw/distort2 shape expression))
+  (raw/distort shape expression))
 
-# TODO: does incrementally building the offset
-# just transparently work for free? Am I smart?
 (def-flexible-fn translate [shape (offset @[0 0 0])]
   {type/3d |(set-param shape $)
    type/vec3 |(vec3/+= offset $)
-   :x |(+= (offset 0) (typecheck :x type/float $))
-   :y |(+= (offset 1) (typecheck :y type/float $))
-   :z |(+= (offset 2) (typecheck :z type/float $))}
-  (raw/translate2 shape offset))
+   :x |(generic/+= (offset 0) (typecheck :x type/float $))
+   :y |(generic/+= (offset 1) (typecheck :y type/float $))
+   :z |(generic/+= (offset 2) (typecheck :z type/float $))}
+  (raw/translate shape offset))
 
 (def move translate)
 
-(def-flexible-fn rotate [shape (matrix (mat3/make-identity)) (scale 1)]
+(def-flexible-fn rotate [shape (matrix mat3/identity) (scale 1)]
   {type/3d |(set-param shape $)
    :tau |(set scale tau)
    :pi |(set scale pi)
    :deg |(set scale tau/360)
-   :x |(mat3/multiply! matrix (rotate-x-matrix (* scale (typecheck :x type/float $))))
-   :y |(mat3/multiply! matrix (rotate-y-matrix (* scale (typecheck :y type/float $))))
-   :z |(mat3/multiply! matrix (rotate-z-matrix (* scale (typecheck :z type/float $))))}
-  (raw/transform matrix shape))
+   :x |(set matrix (generic/mat3/multiply matrix (generic/rotate-x-matrix (generic/* scale (typecheck :x type/float $)))))
+   :y |(set matrix (generic/mat3/multiply matrix (generic/rotate-y-matrix (generic/* scale (typecheck :y type/float $)))))
+   :z |(set matrix (generic/mat3/multiply matrix (generic/rotate-z-matrix (generic/* scale (typecheck :z type/float $)))))}
+
+  (raw/transform shape matrix))
 
 (defn rotate-tau [& args]
   (rotate :tau ;args))
@@ -185,14 +176,14 @@
 
 (def-flexible-fn scale [shape (scale @[1 1 1])]
   {type/3d |(set-param shape $)
-   type/float |(vec3/*= scale [$ $ $])
-   type/vec3 |(vec3/*= scale $)
-   :x |(vec3/*= scale [(typecheck :x type/float $) 1 1])
-   :y |(vec3/*= scale [1 (typecheck :y type/float $) 1])
-   :z |(vec3/*= scale [1 1 (typecheck :z type/float $)])}
+   type/float |(generic/*= scale $)
+   type/vec3 |(generic/*= scale $)
+   :x |(generic/*= scale [(typecheck :x type/float $) 1 1])
+   :y |(generic/*= scale [1 (typecheck :y type/float $) 1])
+   :z |(generic/*= scale [1 1 (typecheck :z type/float $)])}
   (if (vec3/same? scale)
-    (raw/scale2 shape (scale 0))
-    (raw/stretch2 shape scale)))
+    (raw/scale shape (scale 0))
+    (raw/stretch shape scale)))
 
 (defn- get-axes [x y z]
   (def axes (buffer/new 3))
@@ -211,8 +202,8 @@
     shape
     (let [axes (get-axes x y z)]
       (if (= r 0)
-        (raw/mirror-axes shape axes)
-        (raw/biased-sqrt-axes shape r axes)))))
+        (raw/mirror shape axes)
+        (raw/biased-sqrt shape r axes)))))
 
 (def-flexible-fn reflect [shape [x false] [y false] [z false]]
   {type/3d |(set-param shape $)
@@ -237,7 +228,7 @@
 
 (def-flexible-fn symmetry [shape]
   {type/3d |(set-param shape $)}
-  (raw/mirror-axes (raw/mirror-space shape) "xyz"))
+  (raw/mirror (raw/mirror-space shape) "xyz"))
 
 # TODO: it's weird that mirror-plane takes :xz and this
 # takes :y to mean basically the same thing. on the one
@@ -256,7 +247,7 @@
   {type/3d |(set-param shape $)
    type/axis |(set-param axis $)
    type/float |(set-param rate $)}
-  (raw/twist2 shape axis rate))
+  (raw/twist shape axis rate))
 
 (def-flexible-fn swirl [shape axis rate]
   {type/3d |(set-param shape $)
@@ -282,9 +273,9 @@
    :shine |(set-param shine $ type/float)
    :gloss |(set-param gloss $ type/float)
    :ambient |(set-param ambient $ type/float)}
-  (raw/blinn-phong2 shape color shine gloss ambient))
+  (raw/blinn-phong shape color shine gloss ambient))
 
-(def color blinn-phong)
+(def shade blinn-phong)
 
 (def-flexible-fn flat-color [[shape raw/r3] color]
   {type/vec3 |(set-param color $)
@@ -321,31 +312,31 @@
 # TODO: are these useful?
 
 (defn red [& args]
-  (color [0.9 0.1 0.1] ;args))
+  (blinn-phong [0.9 0.1 0.1] ;args))
 
 (defn green [& args]
-  (color [0.1 0.9 0.1] ;args))
+  (blinn-phong [0.1 0.9 0.1] ;args))
 
 (defn blue [& args]
-  (color [0.1 0.2 0.9] ;args))
+  (blinn-phong [0.1 0.2 0.9] ;args))
 
 (defn cyan [& args]
-  (color [0.1 0.9 0.9] ;args))
+  (blinn-phong [0.1 0.9 0.9] ;args))
 
 (defn magenta [& args]
-  (color [0.9 0.1 0.9] ;args))
+  (blinn-phong [0.9 0.1 0.9] ;args))
 
 (defn yellow [& args]
-  (color [0.9 0.9 0.1] ;args))
+  (blinn-phong [0.9 0.9 0.1] ;args))
 
 (defn orange [& args]
-  (color [1.0 0.3 0.1] ;args))
+  (blinn-phong [1.0 0.3 0.1] ;args))
 
 (defn white [& args]
-  (color [0.9 0.9 0.9] ;args))
+  (blinn-phong [0.9 0.9 0.9] ;args))
 
 (defn gray [& args]
-  (color [0.4 0.4 0.4] ;args))
+  (blinn-phong [0.4 0.4 0.4] ;args))
 
 (defn black [& args]
-  (color [0.05 0.05 0.05] ;args))
+  (blinn-phong [0.05 0.05 0.05] ;args))

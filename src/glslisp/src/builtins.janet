@@ -1,120 +1,48 @@
 (use ./util)
+(use ./builtin-macros)
+(use ./glsl-ports)
+(import ./index :as glslisp)
+(import ./type)
 
-(defn- map-vec-l [f vec x]
-  (def len (length vec))
-  (def result (array/new len))
-  (for i 0 len
-    (set (result i) (f (vec i) x)))
-  result)
+(make-generic-1 sin :f math/sin)
+(make-generic-1 cos :f math/cos)
+(make-generic-1 abs :f math/abs)
+(make-generic-1 round :f math/round)
+(make-generic-1 floor :f math/floor)
+(make-generic-1 ceil :f math/ceil)
+(make-generic-1 fract)
+(make-generic-1 sign)
 
-(defn- map-vec-r [f x vec]
-  (def len (length vec))
-  (def result (array/new len))
-  (for i 0 len
-    (set (result i) (f x (vec i))))
-  result)
+(make-vec-2 distance)
 
-(defn- zip-with2 [f a b]
-  (def len (length a))
-  (def result (array/new len))
-  (for i 0 len
-    (set (result i) (f (a i) (b i))))
-  result)
-
-(defn- zip-with3 [f a b c]
-  (def len (length a))
-  (def result (array/new len))
-  (for i 0 len
-    (set (result i) (f (a i) (b i) (c i))))
-  result)
-
-(defn- same-length? [a b]
-  (= (length a) (length b)))
-
-(defn- find-vec-len [args]
-  (var result nil)
-  (each arg args
-    (unless (number? arg)
-      (def len (length arg))
-      (if (nil? result)
-        (set result len)
-        (assert (= result len) "vector length mismatch"))))
-  result)
-
-(defn- num-to-array [x len]
-  (if (number? x)
-    (array/new-filled len x)
-    x))
-
-(defmacro make-generic-1 [name &opt f]
-  (assert (symbol? name))
-  (assert (not= name 'a))
-  (def $prim-f (gensym))
-  ~(upscope
-    (def- ,$prim-f ,(or f name))
-    (defn ,name [a]
-      (cond
-        (number? a) (,$prim-f a)
-        (vec? a) (map ,name a)
-        ~(,',name ,a)))))
-
-(defmacro make-generic-2 [name &opt f]
-  (assert (symbol? name))
-  (assert (not= name 'a))
-  (assert (not= name 'b))
-  (def $prim-f (gensym))
-  ~(upscope
-    (def- ,$prim-f ,(or f name))
-    (defn ,name [a b]
-      (cond
-        (and (number? a) (number? b)) (,$prim-f a b)
-        (and (vec? a) (number? b)) (map-vec-l ,name a b)
-        (and (number? a) (vec? b)) (map-vec-r ,name a b)
-        (and (vec? a) (vec? b))
-          (if (same-length? a b)
-            (zip-with2 ,name a b)
-            (error "vector length mismatch"))
-        ~(,',name ,a ,b)))))
-
-(defmacro make-generic-3 [name &opt f]
-  (assert (symbol? name))
-  (assert (not- in? name ['a 'b 'c 'args]))
-  (def $prim-f (gensym))
-  ~(upscope
-    (def- ,$prim-f ,(or f name))
-    (defn ,name [a b c]
-      (def args [a b c])
-      (if (all number? args)
-        (,$prim-f a b c)
-        (if (all |(or (number? $) (vec? $)) args)
-          (let [len (find-vec-len args)]
-            (zip-with3 ,name
-              (num-to-array a len)
-              (num-to-array b len)
-              (num-to-array c len)))
-          ~(,',name ,a ,b ,c))))))
-
-(defn- variadic [f one]
-  (fn [& args]
-    (cond
-      (= (length args) 1) (one (args 0))
-      (= (length args) 2) (f (args 0) (args 1))
-      (reduce2 f args))))
-
-(defmacro make-variadic [name one]
-  ~(upscope
-    (make-generic-2 ,name)
-    (def ,name (,variadic ,name ,one))))
-
-(make-generic-1 sin math/sin)
-(make-generic-1 cos math/cos)
-(make-generic-1 abs math/abs)
+(make-vec-1 length :f vec-length)
 
 # TODO: so this is a tricky one. this is overloaded
 # on the GPU to accept one or two arguments, so it
 # should work with one or two arguments. But... it
 # doesn't, yet.
-(make-generic-2 atan math/atan2)
+(make-generic-2 atan :f math/atan2)
+(make-generic-2 max)
+(make-generic-2 min)
+(make-generic-2 mod)
+
+# TODO: I'm inverting the order here because
+# the GLSL order makes absolutely no sense.
+# But this is the only function where I'm doing
+# this, so maybe that will be upsetting to people.
+# I dunno. Seems strictly better.
+(make-generic-2 step :expr ~(step ,b ,a))
+
+(make-generic-2 pow :f math/pow :expr ~(pow ,a ,b))
+(def- pow- pow)
+
+(defn pow [a b]
+  (if (= (glslisp/typecheck b) type/float)
+    (case (glslisp/typecheck a)
+      type/vec2 (pow- a ~(vec2 ,b))
+      type/vec3 (pow- a ~(vec3 ,b))
+      type/vec4 (pow- a ~(vec4 ,b))
+      (pow- a b))))
 
 (defn- neg [x] (- x))
 (defn- recip [x] (/ x))
@@ -124,25 +52,52 @@
 (make-variadic * identity)
 (make-variadic / recip)
 
-(make-generic-3 clamp
-  (fn [x lo hi]
-    (cond
-      (< x lo) lo
-      (> x hi) hi
-      x)))
+(make-generic-3 smoothstep)
+(make-generic-3 clamp)
+(make-generic-3 mix)
+(make-numeric-3 hsv)
+(make-numeric-3 hsl)
+
+(defn step [x edge] (step edge x))
+
+(defn ss [x &opt from-lo from-hi to-lo to-hi]
+  (cond
+    (nil? from-lo) (smoothstep 0 1 x)
+    (nil? from-hi) (smoothstep 0 from-lo x)
+    (nil? to-lo) (smoothstep from-lo from-hi x)
+    (nil? to-hi) (* (smoothstep from-lo from-hi x) to-lo)
+    (+ to-lo (* (smoothstep from-lo from-hi x) (- to-hi to-lo)))))
+
+(make-generic-1 rotate-x-matrix :glf rotate_x)
+(make-generic-1 rotate-y-matrix :glf rotate_y)
+(make-generic-1 rotate-z-matrix :glf rotate_z)
+
+(make-matrix-2 mat3/multiply :glf *)
 
 # TODO: these don't really belong here?
 
 (defn . [x k] ~(. ,x ,k))
 
+(defn rgb [r g b] [(/ r 255) (/ g 255) (/ b 255)])
+
+(defn hsv-deg [h s v] (hsv (/ h 360) s v))
+
+(defn hsl-deg [h s l] (hsl (/ h 360) s l))
+
 (defn sin+ [x]
   (* 0.5 (+ (sin x) 1)))
 
 (defn sin- [x]
-  (* 0.5 (- (sin x) 1)))
+  (- 1 (sin+ x)))
 
 (defn cos+ [x]
   (* 0.5 (+ (cos x) 1)))
 
 (defn cos- [x]
-  (* 0.5 (- (cos x) 1)))
+  (- 1 (cos+ x)))
+
+# TODO: should probably fill out the rest of these
+(defmacro += [expr value]
+  ~(set ,expr (,+ ,expr ,value)))
+(defmacro *= [expr value]
+  ~(set ,expr (,* ,expr ,value)))

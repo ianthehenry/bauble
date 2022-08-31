@@ -1,159 +1,9 @@
+(import ./glslisp/src/comp-state :as comp-state)
 (import ./glslisp/src/index :as glslisp)
-(import ./globals :as globals)
+(import ./glsl-helpers)
+(import ./globals)
 
-(defn- get-or-insert [t k f]
-  (or (t k) (set (t k) (f))))
-
-(defn- get-or-default [t k f]
-  (or (t k) (f)))
-
-(defn- get-or-error [t k]
-  (or (t k) (errorf "%p not found" k)))
-
-(defn- param-string [{:type type :name name}]
-  (match type
-    [:array len elem-type] (string/format "%s %s[%d]" elem-type name len)
-    (string type " " name)))
-
-(defn- bool [x] (if x true false))
-
-(defn- variable? [x]
-  (and (table? x) (x :name) (x :type)))
-
-(defn- group-bool [f list]
-  (def t (group-by |(bool (f $)) list))
-  [(or (t true) []) (or (t false) [])])
-
-# TODO: performance question: would the cached lookup here
-# perform better if shapes were tables instead of structs?
-# because we'd get pointer lookup instead of value lookup?
-# then again, would that be *worse* because we'd end up
-# generating identical functions for surface operations
-# in some cases?
-(def comp-state-proto @{
-  :function (fn [self return-type key name-base args params body]
-    (defn invocation [name] (string/format "%s(%s)" name (string/join args ", ")))
-    # if we've already compiled this node, return it
-    (if-let [cached ((self :cache) key)]
-      (invocation (cached :name))
-      (do
-        (def name-index (get (self :names) name-base 0))
-        (set ((self :names) name-base) (inc name-index))
-        (def name (string/format "%s_%d" name-base name-index))
-        (def entry {:name name :params params :body body :return-type return-type})
-
-        (array/push (self :functions) entry)
-        (set ((self :cache) key) entry)
-        (invocation name))))
-
-  :push-scope (fn [self]
-    (array/push (self :scopes) @{}))
-  :pop-scope (fn [self]
-    (array/pop (self :scopes)))
-
-  :push-var (fn [self variable value]
-    (def current-stack (get-or-insert (last (self :scopes)) variable |@[]))
-    (array/push current-stack value))
-  :pop-var (fn [self variable]
-    (def current-stack (get-or-error (last (self :scopes)) variable))
-    (array/pop current-stack))
-  :get-var (fn [self variable]
-    (if-let [hook (last (self :get-var-hooks))]
-      (hook variable))
-    (def current-stack (get-or-default (last (self :scopes)) variable |[]))
-    (or (last current-stack) (string (variable :name))))
-
-  :with-var (fn [self variable expr body]
-    # TODO: probably shouldn't gensym things here, but whatever.
-    # also it's silly to assign new names in *most* situations,
-    # because *usually* you know that you can never access the
-    # original p. unless that's how world-p works?? that's
-    # an interesting notion. hmm. unsure.
-    (def $sym (gensym))
-    (:statement self (string (variable :type)` `$sym` = `(glslisp/compile! |(:get-var self $) expr)`;`))
-    (:push-var self variable $sym)
-    (def expression (body))
-    (:pop-var self variable)
-    expression)
-
-  #:compile-expression (fn [self expr]
-  #  (def statements @[])
-  #  (array/push (self :statements) statements)
-  #  (def expression (glslisp/compile! |(:get-var self $) expr))
-  #  (array/pop (self :statements))
-  #  [statements expression])
-
-  :compile-expression (fn [self expr] (glslisp/compile! |(:get-var self $) expr))
-
-  :compile-distance (fn [self shape]
-    (def statements @[])
-    (array/push (self :statements) statements)
-    (def expression (:compile shape self))
-    (array/pop (self :statements))
-    [statements expression])
-  :compile-color (fn [self shape]
-    (def statements @[])
-    (array/push (self :statements) statements)
-    (def expression (:surface shape self))
-    (array/pop (self :statements))
-    [statements expression])
-  :statement (fn [self statement]
-    (array/push (last (self :statements)) statement))
-
-  :function2 (fn [self return-type key name-base args get-body]
-    (defn compile [expr]
-      (glslisp/compile! |(:get-var self $) expr))
-    (def [deps explicit-params-and-args] (group-bool variable? args))
-    (def explicit-args (map |(compile ($ 1)) explicit-params-and-args))
-    (def free-vars @{})
-    (each dep deps (set (free-vars dep) true))
-
-    # okay, so... when we evaluate the body, we need to have a trace of all of the
-    # variables required. but no variable can be overridden here. so when we do a
-    # lookup, we need to return the original name. hmm.
-    (array/push (self :get-var-hooks) (fn [name] (set (free-vars name) true)))
-    (:push-scope self)
-    (def body (get-body))
-    (:pop-scope self)
-    (array/pop (self :get-var-hooks))
-    (def variables-required (keys free-vars))
-    (def implicit-args (map compile variables-required))
-
-    (def args [;implicit-args ;explicit-args])
-    (defn invocation [name] (string/format "%s(%s)" name (string/join args ", ")))
-
-    # So this assumes that, if your implicit parameters can vary,
-    # then your body will also vary, so you're going to use a
-    # reference-equality key here. so we can assume that
-    # we don't need to check that the implicit parameters are
-    # the same -- we assume that information is redundant with
-    # the key.
-    (if-let [cached ((self :cache) key)]
-      (invocation (cached :name))
-      (do
-        (def implicit-params (map param-string variables-required))
-        (def explicit-params (map |($ 0) explicit-params-and-args))
-        (def params [;implicit-params ;explicit-params])
-
-        # okay so we reset everything to their initial names,
-        # right, so we have to make sure that we interpolate
-        # expressions as such.
-        #(each dep variables-required (:push-var self dep (dep :name)))
-        #(def body (get-body))
-        #(each dep variables-required (:pop-var self dep))
-
-        (def name-index (get (self :names) name-base 0))
-        (set ((self :names) name-base) (inc name-index))
-        (def name (string/format "%s_%d" name-base name-index))
-        (def entry {:name name :params params :body body :return-type return-type})
-        (array/push (self :functions) entry)
-        (set ((self :cache) key) entry)
-        (invocation name))))
-  :sdf-3d (fn [self key name-base coord get-body]
-    (:function self "float" key name-base [coord] ["vec3 p"] (get-body "p")))
-  :sdf-2d (fn [self key name-base coord get-body]
-    (:function self "float" key name-base [coord] ["vec2 p"] (get-body "p")))
-  })
+(def debug? false)
 
 (defn compile-function [{:name name :params params :body body :return-type return-type}]
   (string/format "%s %s(%s) {\n%s\n}" return-type name (string/join params ", ") body))
@@ -163,43 +13,61 @@
   (if (int? n) (string n ".0") (string n)))
 
 (defn make-fragment-shader [expr camera]
-  (def comp-state
-    @{:names @{}
-      :cache @{}
-      :functions @[]
-      :statements @[]
-      :get-var-hooks @[]
-      :scopes @[@{}]})
-  (table/setproto comp-state comp-state-proto)
-  #(:push-var comp-state globals/p (globals/p :name))
-  # TODO: instead of returning statements and expressions,
-  # what if we did something similiar to functions where
-  # there's a :statement method that you invoke? it's
-  # functionally equivalent, but more convenient in the (common?)
-  # case that you don't emit any statements. maybe worth thinking
-  # about? i dunno.
-  (def [distance-statements distance-expression] (:compile-distance comp-state expr))
+  (def comp-state (comp-state/new glsl-helpers/functions))
 
-  # TODO: this should probably reset the in-scope state
-  #(:push-var comp-state globals/world-p (globals/world-p :name))
-  #(:push-var comp-state globals/normal (globals/normal :name))
-  #(:push-var comp-state globals/camera (globals/camera :name))
-  #(:push-var comp-state globals/light-intensities (globals/light-intensities :name))
-  (def [color-statements color-expression] (:compile-color comp-state expr))
+  (when debug?
+    (pp (:compile expr (:new-scope comp-state)))
+    (pp (:surface expr (:new-scope comp-state))))
+  (def distance-scope (:new-scope comp-state))
+  (def color-scope (:new-scope comp-state))
+  (def [distance-statements distance-expression] (:compile-distance distance-scope expr))
+
+  (def [color-statements color-expression] (:compile-color color-scope expr))
   (def function-defs (string/join (map compile-function (comp-state :functions)) "\n"))
 
-  (print
-    (string function-defs "\n"
-`float nearest_distance(vec3 p) {
-  `(string/join distance-statements "\n  ")"\n"`
-  return `distance-expression`;
-}`))
-  (print
-    (string function-defs "\n"
-`vec3 nearest_color(vec3 p) {
-  ...`(string/join color-statements "\n  ")"\n"`
-  return `color-expression`;
-}`))
+  # TODO: we should inspect (scope :free-variables) to determine which
+  # of the builtins we actually need to compute when we're shading.
+  # also, it will allow us to give better error messages if you do something
+  # like use `normal` during a shape compilation
+
+  (def distance-prep-statements @[])
+  (each free-variable (keys (distance-scope :free-variables))
+    (case free-variable
+      globals/p nil
+      globals/world-p (array/push distance-prep-statements "vec3 world_p = p;")
+      (errorf "cannot use %s in a distance expression" (free-variable :name))))
+
+  (def color-prep-statements @[])
+  (each free-variable (keys (color-scope :free-variables))
+    (case free-variable
+      globals/p nil
+      globals/camera nil
+      globals/world-p (array/push color-prep-statements "vec3 world_p = p;")
+      globals/normal (array/push color-prep-statements "vec3 normal = calculate_normal(p);")
+      globals/light-intensities (do
+        # Array initialization syntax doesn't work on the Google
+        # Pixel 6a, so we do this kinda dumb thing. Also a simple
+        # for loop doesn't work on my mac. So I dunno.
+        (array/push color-prep-statements "float light_intensities[3];")
+        # A for loop would be obvious, but it doesn't work for some reason.
+        (for i 0 3
+          (array/push color-prep-statements
+            (string `light_intensities[`i`] = cast_light(p + 2.0 * MINIMUM_SHADOW_HIT_DISTANCE * normal, lights[`i`].position, lights[`i`].radius);`))))
+      (errorf "unexpected free variable %s" (free-variable :name))))
+
+  (when debug?
+    (print
+      (string function-defs "\n"
+        "float nearest_distance(vec3 p) {\n"
+        (string/join distance-prep-statements "\n  ")"\n"
+        (string/join distance-statements "\n  ")"\n"
+        "return "distance-expression";\n}"))
+    (print
+      (string
+        "vec3 nearest_color(vec3 p) {\n"
+        (string/join color-prep-statements "\n  ") "\n"
+        (string/join color-statements "\n  ") "\n"
+        "return "color-expression";\n}")))
 
   (set-fragment-shader
     (string `
@@ -211,14 +79,6 @@ const float CAMERA_RAY_HIT_SCALE = 0.001;
 const float MINIMUM_SHADOW_HIT_DISTANCE = 0.1;
 const float NORMAL_OFFSET = 0.005;
 const float MAXIMUM_TRACE_DISTANCE = 8.0 * 1024.0;
-
-float min3(vec3 p) {
-  return min(p.x, min(p.y, p.z));
-}
-
-float max3(vec3 p) {
-  return max(p.x, max(p.y, p.z));
-}
 
 struct Light {
   vec3 position;
@@ -242,25 +102,18 @@ float cast_light(vec3 destination, vec3 light, float radius);
 function-defs
 `
 float nearest_distance(vec3 p) {
-  `(string/join distance-statements "\n  ")`
+  `
+  (string/join distance-prep-statements "\n  ") "\n  "
+  (string/join distance-statements "\n  ")
+  `
   return `distance-expression`;
 }
 
 vec3 nearest_color(vec3 p, vec3 camera) {
-  vec3 world_p = p;
-  vec3 normal = calculate_normal(p);
-  // Array initialization syntax doesn't work
-  // on Google Pixel 6a (and maybe other Android
-  // phones, not tested).
-  float light_intensities[3];
-  light_intensities[0] = cast_light(p + 2.0 * MINIMUM_SHADOW_HIT_DISTANCE * normal, lights[0].position, lights[0].radius);
-  light_intensities[1] = cast_light(p + 2.0 * MINIMUM_SHADOW_HIT_DISTANCE * normal, lights[1].position, lights[1].radius);
-  light_intensities[2] = cast_light(p + 2.0 * MINIMUM_SHADOW_HIT_DISTANCE * normal, lights[2].position, lights[2].radius);
-  // TODO: for some reason the obvious thing just... doesn't work.
-  // for (int i = 0; i < lights.length(); i++) {
-  //   light_intensities[i] = cast_light(p + 2.0 * MINIMUM_SHADOW_HIT_DISTANCE * normal, lights[i].position, lights[i].radius);
-  // }
-  `(string/join color-statements "\n  ")`
+  `
+  (string/join color-prep-statements "\n  ") "\n  "
+  (string/join color-statements "\n  ")
+  `
   return `color-expression`;
 }
 

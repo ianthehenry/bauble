@@ -1,6 +1,3 @@
-# TODO: maybe better to compile this to a function called `.`,
-# and let that be a function that takes care of the quoting
-# *when necessary*? This feels like a bit of a weird hack.
 (defn- expand-dots [sym]
   (if (string/find "." sym)
     (let [components (string/split "." sym)]

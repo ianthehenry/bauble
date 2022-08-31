@@ -53,7 +53,7 @@
 
 # (def r 0.00)
 # (-> (box 80)
-#   (rotate-pi :y r :z r)
+#   (rotate-pi :y r :z (* r 0.7) :x (* 0.5 r))
 #   (symmetry))
 
 # (Note for macOS Firefox users:
@@ -94,15 +94,15 @@
 # surfaces:
 
 # (union
-#   (color (box 50 :r 10)
+#   (shade (box 50 :r 10)
 #     (hsv 0.00 1 1)
 #     :gloss 4
 #     :shine 0.5
 #     :ambient 0.2)
-#   (color (half-space :-y -50)
+#   (shade (half-space :-y -50)
 #     [0.9 0.9 0.9]))
 
-# (color) is an alias for (blinn-phong),
+# (shade) is an alias for (blinn-phong),
 # a simple material shader. Try tweaking
 # the parameters to see how they work,
 # and remember that you can use your
@@ -115,8 +115,8 @@
 # also combine their surfaces. For
 # example, here are a couple shapes:
 
-# (def green-box (color [0 1 0] (box 50 :r 5) :gloss 12 :shine 1))
-# (def red-sphere (color [1 0 0] (sphere 60)))
+# (def green-box (shade [0 1 0] (box 50 :r 5) :gloss 12 :shine 1))
+# (def red-sphere (shade [1 0 0] (sphere 60)))
 
 # Now uncomment each of these one at a
 # time to see how the colors interact:
@@ -165,14 +165,14 @@
 # save a material to apply to multiple
 # shapes. Instead of this:
 
-# (color [1 1 0] (sphere 50))
+# (shade [1 1 0] (sphere 50))
 
 # You can write:
 
-# (def yellow (color [1 1 0]))
+# (def yellow (shade [1 1 0]))
 # (resurface (sphere 50) yellow)
 
-# The way this works is that (color) and
+# The way this works is that (shade) and
 # other material primitives, when not
 # given a shape to act on, default to
 # the entirety of ℝ³ -- the shape that
@@ -215,14 +215,14 @@
 # less typing. Let's take a look,
 # starting without any helpers:
 
-# (color [1 0 0] (rotate :y pi/4 (box 50)))
+# (shade [1 0.1 0.1] (rotate :y pi/4 (box 50 :r 5)))
 
 # First of all, the Bauble DSL is very
 # forgiving about named and positional
 # argument order. So that's actually the
 # same as:
 
-# (color (rotate (box 50) :y pi/4) [1 0 0])
+# (shade (rotate (box :r 5 50) :y pi/4) [0.1 1 0.1])
 
 # Janet provides a useful threading
 # macro that we can use to write this
@@ -230,18 +230,18 @@
 # transformations, so that the
 # expression is not as nested:
 
-# (-> (box 50) (rotate :y pi/4) (color [1 0 0]))
+# (-> (box 50 :r 5) (rotate :y pi/4) (shade [0.1 0.1 1]))
 
 # Which is very useful. Bauble lets you
 # go a little bit further:
 
-# (box 50 | rotate :y pi/4 | color [1 0 0])
+# (box 50 :r 5 | rotate :y pi/4 | shade [1 1 0.1])
 
 # At first this might not look like Lisp
 # at all, but it's a pretty simple macro
 # that has the same effect as the (->)
 # threading macro -- but it's a lot
-# easier to type it out.
+# easier to type out.
 
 #### Light and shadow ####
 
@@ -286,15 +286,15 @@
 # Or try studying these examples:
 
 # (union (box 50) (sphere 70))
-# (union :r 10 (box 50) (cone :z 40 50))
+# (union :r 10 (box 50) (cone :z 40 100))
 # (sphere 100 | onion 5 | intersect (half-space :-z))
 # (sphere 100 | onion 5 | intersect :r 5 (half-space :-z 60))
 # (morph 0.5 (box 50) (sphere 50))
 # (box 50 | subtract (cylinder :z 30 100))
 # (subtract :r 30 (box 50 | rotate :y tau/8 :z tau/8) (sphere 50 | move :x 50))
-# (cone :x 50 70)
-# (cone :x 50 70 | reflect :x)
-# (cone :x 50 70 | rotate :y pi/4 | mirror :x :z)
+# (cone :x 50 100)
+# (cone :x 50 100 | reflect :x)
+# (cone :x 50 100 | rotate :y pi/4 | mirror :x :z)
 # (union :r 50 (line [-50 0 0] [50 0 0] 10) (sphere 50 | move :x 100 | mirror :x))
 # (sphere 50 | tile [100 100 100] :limit [3 10 2])
 # (cone :-z 50 100 :r 10)
