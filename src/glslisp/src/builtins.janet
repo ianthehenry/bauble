@@ -58,8 +58,6 @@
 (make-numeric-3 hsv)
 (make-numeric-3 hsl)
 
-(defn step [x edge] (step edge x))
-
 (defn ss [x &opt from-lo from-hi to-lo to-hi]
   (cond
     (nil? from-lo) (smoothstep 0 1 x)
@@ -68,15 +66,43 @@
     (nil? to-hi) (* (smoothstep from-lo from-hi x) to-lo)
     (+ to-lo (* (smoothstep from-lo from-hi x) (- to-hi to-lo)))))
 
+(defn remap+ [x]
+  ~(* 0.5 (+ ,x 1)))
+
+(defn perlin [x]
+  (case (glslisp/typecheck x)
+    type/vec2 ~(perlin2 ,x)
+    type/vec3 ~(perlin3 ,x)
+    type/vec4 ~(perlin4 ,x)
+    type/unknown (errorf "cannot determine type of expression; please tell ian about this")
+    (errorf "noise requires a vector")))
+
+(defn perlin+ [x] (remap+ (perlin x)))
+
+# TODO...
+# (defn simplex [x]
+#   (case (glslisp/typecheck x)
+#     type/vec2 ~(simplex2 ,x)
+#     type/vec3 ~(simplex3 ,x)
+#     type/vec4 ~(simplex4 ,x)
+#     type/unknown (errorf "cannot determine type of expression; please tell ian about this")
+#     (errorf "noise requires a vector")))
+
 (make-generic-1 rotate-x-matrix :glf rotate_x)
 (make-generic-1 rotate-y-matrix :glf rotate_y)
 (make-generic-1 rotate-z-matrix :glf rotate_z)
 
 (make-matrix-2 mat3/multiply :glf *)
 
-# TODO: these don't really belong here?
+# Primitives
+
+(defn vec2 [& args] ~(vec2 ,;args))
+(defn vec3 [& args] ~(vec3 ,;args))
+(defn vec4 [& args] ~(vec4 ,;args))
 
 (defn . [x k] ~(. ,x ,k))
+
+# Helpers
 
 (defn rgb [r g b] [(/ r 255) (/ g 255) (/ b 255)])
 
@@ -85,13 +111,13 @@
 (defn hsl-deg [h s l] (hsl (/ h 360) s l))
 
 (defn sin+ [x]
-  (* 0.5 (+ (sin x) 1)))
+  (remap+ (sin x)))
 
 (defn sin- [x]
   (- 1 (sin+ x)))
 
 (defn cos+ [x]
-  (* 0.5 (+ (cos x) 1)))
+  (remap+ (cos x)))
 
 (defn cos- [x]
   (- 1 (cos+ x)))

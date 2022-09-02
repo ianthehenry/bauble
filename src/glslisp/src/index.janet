@@ -126,6 +126,9 @@
     # TODO: this is kind of a gross hack
     'hsv type/vec3
     'hsl type/vec3
+    'perlin2 type/float
+    'perlin3 type/float
+    'perlin4 type/float
 
     (typeof-generic-application args)))
 
