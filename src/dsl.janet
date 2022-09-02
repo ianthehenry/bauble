@@ -30,8 +30,9 @@
    :r |(set-param round $ type/float)}
   (if (= round 0)
     (raw/cylinder axis radius height)
+    # TODO: round interpolated multiple times
     (raw/offset round
-      (raw/cylinder axis (- radius round) (- height round)))))
+      (raw/cylinder axis (generic/- radius round) (generic/- height round)))))
 
 (def-flexible-fn torus [axis major-radius minor-radius]
   {type/float |(set-first [major-radius minor-radius] $)
