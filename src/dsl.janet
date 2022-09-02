@@ -282,7 +282,7 @@
 
 (def shade blinn-phong)
 
-(def-flexible-fn flat-color [[shape raw/r3] color]
+(def-flexible-fn color [[shape raw/r3] color]
   {type/vec3 |(set-param color $)
    type/3d |(set-param shape $)}
   (raw/flat-color shape color))
