@@ -50,6 +50,10 @@
         (raw/half-space axis sign)
         (axis-vec axis offset)))))
 
+(def-flexible-fn ground [[offset 0]]
+  {type/float |(set-param offset $)}
+  (raw/ground offset))
+
 (def-flexible-fn cone [axis radius height [round 0]]
   {type/signed-axis |(set-param axis $)
    type/axis |(set-param axis $)

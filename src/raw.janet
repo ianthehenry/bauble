@@ -85,6 +85,14 @@
 (def-primitive sphere [radius]
   ~(- (length ,globals/p) ,radius))
 
+(def-primitive ground [y]
+  (let [temp (:temp-var comp-state type/float 'height)
+        # TODO: through should really depend on minimum hit distance, right?
+        # but whatever this is just a little hack
+        through -0.01]
+  ~(with ,temp (- (. ,globals/p :y) ,y)
+    (+ (* ,temp (step ,through ,temp)) (* 10000 (- 1 (step ,through ,temp)))))))
+
 (def-primitive box [size]
   (:generate-function comp-state "float" :box "s3d_box"
     [globals/p ["vec3 size" size]]
