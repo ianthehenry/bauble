@@ -72,7 +72,7 @@
       ,(:surface shape comp-state)))
 
 (def-complicated stretch [shape amount]
-  (let [temp @{:type type/vec3 :name 'scale}]
+  (let [temp (:temp-var comp-state type/vec3 'scale)]
     ~(with ,temp ,amount
       (with ,globals/p (/ ,globals/p ,temp)
         (* ,(:compile shape comp-state) (min3 (abs ,temp))))))
