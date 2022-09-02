@@ -12,11 +12,11 @@
 # here. ugh. gotta fix that...
 (def-flexible-fn box [size [round 0]]
   {type/vec3 |(set-param size $)
-   type/float |(set-param size ~(vec3 ,$))
+   type/float |(set-param size [$ $ $])
    :r |(set-param round $ type/float)}
   (if (= round 0)
     (raw/box size)
-    (raw/offset round (raw/box ~(- ,size ,round)))))
+    (raw/offset round (raw/box (generic/- size round)))))
 
 (def-flexible-fn sphere [radius]
   {type/float |(set-param radius $)}
