@@ -72,6 +72,10 @@
   (each x v (+= sum (* x x)))
   (math/sqrt sum))
 
+(defn normalize [v]
+  (def len (vec-length v))
+  (map |(/ $ len) v))
+
 (defn rotate-x-matrix [angle]
   (let [c (math/cos angle)
         s (math/sin angle)]

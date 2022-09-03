@@ -20,6 +20,8 @@
 (make-vec-1 length)
 (make-vec-1 vec-length :glf length)
 
+(make-vec-1 normalize)
+
 # TODO: so this is a tricky one. this is overloaded
 # on the GPU to accept one or two arguments, so it
 # should work with one or two arguments. But... it
