@@ -12,7 +12,7 @@
 (defn- float [n]
   (if (int? n) (string n ".0") (string n)))
 
-(defn make-fragment-shader [expr camera]
+(defn compile-fragment-shader [expr camera]
   (def comp-state (comp-state/new glsl-helpers/functions))
 
   (when debug?
@@ -73,8 +73,7 @@
         (string/join color-statements "\n  ") "\n"
         "return "color-expression";\n}")))
 
-  (set-fragment-shader
-    (string `
+  (string `
 #version 300 es
 precision highp float;
 
@@ -274,7 +273,7 @@ void main() {
 
   frag_color = vec4(pow(color, vec3(1.0 / gamma)), 1.0);
 }
-`)))
+`))
 
 # surely I can do better
 (defn is-good-value? [value]
@@ -282,11 +281,15 @@ void main() {
        (not (nil? (value :compile)))))
 
 (fiber/new (fn []
+  (def context (new-gl-context "#render-target"))
   (while true
     (let [[expr camera] (yield)]
       (if (is-good-value? expr)
         (try
-          (make-fragment-shader expr camera)
+          (do
+            (set-fragment-shader context
+              (compile-fragment-shader expr camera))
+            (render context))
           ([err fiber]
             (debug/stacktrace fiber err "")))
         (eprint "cannot compile " expr))))))

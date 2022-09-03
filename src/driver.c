@@ -8,8 +8,12 @@
 #include <EGL/egl.h>
 #include <emscripten/html5.h>
 
-static GLuint program = 0;
-static GLuint current_fragment_shader = 0;
+typedef struct {
+  EMSCRIPTEN_WEBGL_CONTEXT_HANDLE handle;
+  GLuint program;
+  GLuint current_fragment_shader;
+} gl_context;
+
 static JanetFiber *draw_fiber = NULL;
 
 GLuint compile_shader(GLenum type, char *source) {
@@ -38,39 +42,9 @@ GLuint compile_shader(GLenum type, char *source) {
   return shader;
 }
 
-void init_gl() {
-  EmscriptenWebGLContextAttributes attrs;
-  emscripten_webgl_init_context_attributes(&attrs);
-  attrs.antialias = 0;
-  // attrs.alpha = 0;
-  attrs.depth = 0;
-  attrs.stencil = 0;
-  attrs.majorVersion = 2;
+void draw_triangles(gl_context *context) {
+  emscripten_webgl_make_context_current(context->handle);
 
-  EMSCRIPTEN_WEBGL_CONTEXT_HANDLE context = emscripten_webgl_create_context("#render-target", &attrs);
-
-  if (context <= 0) {
-    fprintf(stderr, "failed to create context %d\n", context);
-  }
-
-  emscripten_webgl_make_context_current(context);
-
-  program = glCreateProgram();
-
-  char *vertex_shader_source =
-    "#version 300 es\n"
-    "in vec4 position;\n"
-    "void main() {\n"
-    "  gl_Position = position;\n"
-    "}\n"
-  ;
-
-  GLuint vertexShader = compile_shader(GL_VERTEX_SHADER, vertex_shader_source);
-
-  glAttachShader(program, vertexShader);
-}
-
-void draw_triangles() {
   const GLfloat width = 1024.0;
   const GLfloat height = 1024.0;
 
@@ -85,7 +59,7 @@ void draw_triangles() {
                          left, bottom, 0.0 };
   GLushort indices[] = { 0, 1, 2, 0, 2, 3 };
 
-  GLint positionLoc = glGetAttribLocation(program, "position");
+  GLint positionLoc = glGetAttribLocation(context->program, "position");
 
   GLuint vertexBuffer;
   glGenBuffers(1, &vertexBuffer);
@@ -122,31 +96,82 @@ char *slurp(char *filename) {
   return text;
 }
 
-JANET_FN(set_fragment_shader, "(set-fragment-shader)", "") {
+JANET_FN(new_gl_context, "(new-gl-context)", "") {
   janet_fixarity(argc, 1);
-  const uint8_t *shader_source = janet_getstring(argv, 0);
+  const JanetString selector = janet_getstring(argv, 0);
 
-  if (0) {
-    printf("%s\n", shader_source);
+  EmscriptenWebGLContextAttributes attrs;
+  emscripten_webgl_init_context_attributes(&attrs);
+  attrs.antialias = 0;
+  // attrs.alpha = 0;
+  attrs.depth = 0;
+  attrs.stencil = 0;
+  attrs.majorVersion = 2;
+
+  EMSCRIPTEN_WEBGL_CONTEXT_HANDLE handle = emscripten_webgl_create_context((char *)selector, &attrs);
+
+  if (handle <= 0) {
+    fprintf(stderr, "failed to create context %d\n", handle);
   }
 
-  if (current_fragment_shader == 0) {
-    init_gl();
-  } else {
-    glDetachShader(program, current_fragment_shader);
-    glDeleteShader(current_fragment_shader);
-  }
+  emscripten_webgl_make_context_current(handle);
+
+  GLuint program = glCreateProgram();
+
+  char *vertex_shader_source =
+    "#version 300 es\n"
+    "in vec4 position;\n"
+    "void main() {\n"
+    "  gl_Position = position;\n"
+    "}\n";
+  GLuint vertex_shader = compile_shader(GL_VERTEX_SHADER, vertex_shader_source);
+
+  char *fragment_shader_source =
+    "#version 300 es\n"
+    "precision highp float;"
+    "in vec4 position;\n"
+    "out vec4 frag_color;\n"
+    "void main() {\n"
+    "  frag_color = vec4(0.0);\n"
+    "}\n";
+  GLuint fragment_shader = compile_shader(GL_FRAGMENT_SHADER, fragment_shader_source);
+
+  glAttachShader(program, vertex_shader);
+  glAttachShader(program, fragment_shader);
+
+  // TODO: currently no way to tear down the graphics context and free this memory
+  gl_context *context = malloc(sizeof(*context));
+  context->handle = handle;
+  context->program = program;
+  context->current_fragment_shader = fragment_shader;
+
+  return janet_wrap_pointer(context);
+}
+
+JANET_FN(set_fragment_shader, "(set-fragment-shader)", "") {
+  janet_fixarity(argc, 2);
+  gl_context *context = janet_getpointer(argv, 0);
+  const uint8_t *shader_source = janet_getstring(argv, 1);
+
+  glDetachShader(context->program, context->current_fragment_shader);
+  glDeleteShader(context->current_fragment_shader);
 
   GLuint fragment_shader = compile_shader(GL_FRAGMENT_SHADER, (char *)shader_source);
 
-  glAttachShader(program, fragment_shader);
-  glLinkProgram(program);
-  glUseProgram(program);
+  glAttachShader(context->program, fragment_shader);
+  glLinkProgram(context->program);
+  emscripten_webgl_make_context_current(context->handle);
+  glUseProgram(context->program);
 
-  draw_triangles();
+  context->current_fragment_shader = fragment_shader;
 
-  current_fragment_shader = fragment_shader;
+  return janet_wrap_nil();
+}
 
+JANET_FN(render, "(render)", "") {
+  janet_fixarity(argc, 1);
+  gl_context *context = janet_getpointer(argv, 0);
+  draw_triangles(context);
   return janet_wrap_nil();
 }
 
@@ -174,6 +199,8 @@ void initialize() {
 
   const JanetRegExt regs[] = {
     JANET_REG("set-fragment-shader", set_fragment_shader),
+    JANET_REG("new-gl-context", new_gl_context),
+    JANET_REG("render", render),
     JANET_REG("function/arity", janet_function_arity),
     JANET_REG("function/min-arity", janet_function_min_arity),
     JANET_REG("function/max-arity", janet_function_max_arity),
@@ -245,11 +272,12 @@ int run_janet(char *source, float camera_x, float camera_y, float camera_zoom) {
   } else {
     fprintf(stderr, "compilation fiber did not yield\n");
     janet_stacktrace(draw_fiber, query);
+    return status;
   }
 
   long long done_rendering = emscripten_get_now();
 
   printf("eval: %lldms render: %lldms\n", (done_evaluating - start_time), (done_rendering - done_evaluating));
 
-  return status;
+  return 0;
 }
