@@ -5,10 +5,15 @@
 # and rendering 3D shapes using signed
 # distance functions. Like this one:
 
-(spoon :r 15
-  (torus :z 50 25)
-  (move :y 50 | rotate :y tau/4)
-| fresnel 1)
+(torus :z 60 30
+| twist :y 0.07
+| rotate-pi :y t
+| move :x 50
+| mirror :r 10 :x
+| move :y (* 30 (sin t))
+| rotate :y t
+| fresnel
+| slow 0.25)
 
 # Drag the viewport around with your
 # mouse, and scroll to move the camera
@@ -18,11 +23,11 @@
 # that is re-evaluated every time you
 # make a change. This program "returns"
 # whatever the final expression is --
-# in this case, those interlocking
-# donuts up there. Uncomment the next
-# line to return something else:
+# in this case, that animated bauble up
+# there. Uncomment the next line to
+# return something else:
 
-# (morph 2.50 (sphere 50) (box 50))
+# (spoon :r 15 (torus :z 50 25) (move :y 50 | rotate :y tau/4) | fresnel 1)
 
 # Janet is a fully-featured language, so
 # you can define variables, functions,
@@ -93,7 +98,7 @@
 #     :gloss 4
 #     :shine 0.5
 #     :ambient 0.2)
-#   (shade (half-space :-y -50)
+#   (shade (ground -50)
 #     [0.9 0.9 0.9]))
 
 # (shade) is an alias for (blinn-phong),
@@ -257,8 +262,7 @@
 
 # (cone :y 100 (+ 100 (* 10 (cos (/ ~(. ,p :x) 5)))))
 
-# But what is p? And why can you divide
-# by this weird symbolic expression?
+# But what is p?
 
 # p is a magic variable that represents
 # the current point in space. It's a
@@ -281,17 +285,28 @@
 
 # Oh, hey! S-expressions! That's what
 # that stands for. Look at us: we're
-# doing lisp. Real live lisp.
+# lisp programmers now.
 
-# p isn't the only magic variable. p is
-# the point in space local to the
-# current shape(so translated, rotated,
-# etc), but you can also use world-p.
+# p isn't the only magic variable. You
+# also have t, which is the current
+# time in seconds:
 
+# (cone :y 100 (+ 100 (* 10 (cos (+ (* 5 t) (/ p.x 5))))))
+
+# There's also world-p -- while p is the
+# point in space local to the current
+# shape (so translated, rotated, etc),
 # world-p is the global position of the
 # ray, which is mostly useful for
-# surfacing, to calculate reflections
-# or specular highlights.
+# calculating reflections or specular
+# highlights during surfacing. But
+# here's a contrived example just to
+# show you the difference:
+
+# (union
+#   (sphere 50 | shade [1 (abs (/ p.x 50)) 0] | move :y 50)
+#   (sphere 50 | shade [1 (abs (/ world-p.x 50)) 0] | move :y -50)
+# | move :x (* 50 (sin t)))
 
 # There's also camera, which is the
 # position of the camera in world
@@ -307,6 +322,7 @@
 # Just to review, the only magic
 # variables are:
 
+# - t: time in seconds
 # - p: point in local coordinate system
 # - world-p: point in global coordinate
 #   system
@@ -367,7 +383,7 @@
 # reported distance value. This is called
 # (slow):
 
-# (torus :x 100 25 | rotate :y (* p.y 0.020) | slow 0.5)
+# (torus :x 100 25 | rotate :y (* p.y 0.020) | slow 0.50)
 
 # It's aptly named, because it will
 # increase the number of raymarching
@@ -403,7 +419,7 @@
 # (sphere 50 | move :y -10 | slow 0.5 | union :r 10 (sphere 40 | move :y 45))
 
 # But if we slow down space around the
-# whole shape, we won't have a
+# whole shape, we won't have that
 # problem:
 
 # (sphere 50 | move :y -10 | union :r 10 (sphere 40 | move :y 45) | slow 0.5)
@@ -417,7 +433,7 @@
 # (union
 #   (sphere 50 | move :z -70 | slow 0.25)
 #   (sphere 50 | move :z 70)
-#   (half-space :-y -50 | shade [1 1 1]))
+#   (ground -50 | shade [1 1 1]))
 
 #### Overloading ####
 
@@ -439,11 +455,12 @@
 # GLSL functions have been ported to
 # Janet, and when you call them with
 # constant arguments they will execute
-# on the CPU. For example, (distance
-# [0 0] [1 1]) will give you the number
-# 1.414. But(distance [0 0] p.xy) will
-# produce a symbolic expression that
-# will execute on the GPU.
+# on the CPU. For example,
+# (distance [0 0] [1 1]) will give you
+# the number 1.41421. But
+# (distance [0 0] p.xy) will produce a
+# symbolic expression that will
+# execute on the GPU.
 
 # One notable exception is length(),
 # since that's already a very
@@ -467,7 +484,7 @@
 # example, the procedural noise
 # functions -- always produce symbolic
 # expressions, even with constant
-# arguments. So they'll always execute
+# arguments, so they'll always execute
 # on the GPU.
 
 #### Helpers ####
@@ -522,11 +539,17 @@
 # (perlin) can take a vec2, vec3, or
 # vec4. Each one is more expensive to
 # compute than the last, so only use
-# what you need. (The vec4 version is
-# useful if you want a 3D noise signal
-# that varies over time.)
+# what you need.
 
 # (box 100 :r 10 | color [0 (perlin+ (* 0.1 p.xz)) 0])
+
+# The vec4 version is useful if you want
+# a 3D noise signal that varies over
+# time without imparting a sense of
+# motion. Compare these two:
+
+# (box 100 :r 10 | color [0 (perlin+ (+ (* 0.1 p) t)) 0])
+# (box 100 :r 10 | color [0 (perlin+ (vec4 (* 0.1 p) t)) 0])
 
 # You can use noise to compute complex
 # procedural textures:
