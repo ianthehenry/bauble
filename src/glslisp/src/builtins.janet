@@ -47,8 +47,8 @@
       type/vec4 (pow- a ~(vec4 ,b))
       (pow- a b))))
 
-(defn- neg [x] (- x))
-(defn- recip [x] (/ x))
+(make-generic-1 neg :glf - :f |(- $))
+(make-generic-1 recip :expr ~(/ 1 ,a) :f |(/ $))
 
 (make-variadic + identity)
 (make-variadic - neg)
