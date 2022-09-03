@@ -56,7 +56,7 @@
         # A for loop would be obvious, but it doesn't work for some reason.
         (for i 0 3
           (array/push color-prep-statements
-            (string `light_intensities[`i`] = cast_light(p + 2.0 * MINIMUM_SHADOW_HIT_DISTANCE * normal, lights[`i`].position, lights[`i`].radius);`))))
+            (string `light_intensities[`i`] = cast_light(p + 2.0 * MINIMUM_HIT_DISTANCE * normal, lights[`i`].position, lights[`i`].radius);`))))
       (errorf "unexpected free variable %s" (free-variable :name))))
 
   (when debug?
@@ -79,8 +79,7 @@
 precision highp float;
 
 const int MAX_STEPS = 256;
-const float CAMERA_RAY_HIT_SCALE = 0.001;
-const float MINIMUM_SHADOW_HIT_DISTANCE = 0.1;
+const float MINIMUM_HIT_DISTANCE = 0.1;
 const float NORMAL_OFFSET = 0.005;
 const float MAXIMUM_TRACE_DISTANCE = 8.0 * 1024.0;
 
@@ -147,7 +146,7 @@ float cast_light(vec3 p, vec3 light, float radius) {
   // TODO: It would make more sense to start at
   // the light and cast towards the point, so that
   // we don't have to worry about this nonsense.
-  float progress = MINIMUM_SHADOW_HIT_DISTANCE;
+  float progress = MINIMUM_HIT_DISTANCE;
   for (int i = 0; i < MAX_STEPS; i++) {
     if (progress > light_distance) {
       return in_light * light_brightness;
@@ -155,7 +154,7 @@ float cast_light(vec3 p, vec3 light, float radius) {
 
     float distance = nearest_distance(p + progress * direction);
 
-    if (distance < MINIMUM_SHADOW_HIT_DISTANCE) {
+    if (distance < MINIMUM_HIT_DISTANCE) {
       // we hit something
       return 0.0;
     }
@@ -185,8 +184,8 @@ vec3 march(vec3 ray_origin, vec3 ray_direction, out int steps) {
     // of view, so we can't use the march function
     // as-is to render reflections. I don't know if
     // it's worth having.
-    //if (nearest < distance * CAMERA_RAY_HIT_SCALE) {
-    if (nearest < MINIMUM_SHADOW_HIT_DISTANCE || distance > MAXIMUM_TRACE_DISTANCE) {
+    // if (nearest < distance * MINIMUM_HIT_DISTANCE * 0.01) {
+    if (nearest < MINIMUM_HIT_DISTANCE || distance > MAXIMUM_TRACE_DISTANCE) {
       return p + nearest * ray_direction;
     }
 
