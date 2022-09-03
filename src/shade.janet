@@ -266,6 +266,12 @@ void main() {
   //   color = vec3(float(steps) / float(MAX_STEPS));
   // }
 
+  // This is a good view for debugging overshooting.
+  // float distance = nearest_distance(hit);
+  // float overshoot = max(-distance, 0.0) / MINIMUM_HIT_DISTANCE;
+  // float undershoot = max(distance, 0.0) / MINIMUM_HIT_DISTANCE;
+  // color = vec3(overshoot, 1.0 - undershoot - overshoot, 0.0);
+
   frag_color = vec4(pow(color, vec3(1.0 / gamma)), 1.0);
 }
 `)))
