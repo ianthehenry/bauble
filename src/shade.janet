@@ -79,6 +79,7 @@ precision highp float;
 uniform vec3 camera_origin;
 uniform mat3 camera_matrix;
 uniform float t;
+uniform int view_type;
 
 out vec4 frag_color;
 
@@ -215,36 +216,40 @@ void main() {
   const vec2 resolution = vec2(1024.0, 1024.0);
 
   vec3 dir = camera_matrix * ray_dir(45.0, resolution, gl_FragCoord.xy);
-  vec3 eye = camera_origin;
 
   const vec3 fog_color = vec3(0.15);
   const vec3 abort_color = vec3(1.0, 0.0, 1.0);
 
-  // TODO: we only need the steps out parameter when
-  // we're rendering the debug view. Should try to
-  // see if there's any performance difference between
-  // an out parameter and a local variable.
   int steps;
-  vec3 hit = march(eye, dir, steps);
+  vec3 hit = march(camera_origin, dir, steps);
 
-  vec3 color = nearest_color(hit);
-  float depth = length(hit - eye);
-  float attenuation = depth / MAXIMUM_TRACE_DISTANCE;
-  color = mix(color, fog_color, clamp(attenuation * attenuation, 0.0, 1.0));
-
-  // This is a view for debugging convergence, but it also just...
-  // looks really cool on its own:
-  // if (steps == MAX_STEPS) {
-  //   color = abort_color;
-  // } else {
-  //   color = vec3(float(steps) / float(MAX_STEPS));
-  // }
-
-  // This is a good view for debugging overshooting.
-  // float distance = nearest_distance(hit);
-  // float overshoot = max(-distance, 0.0) / MINIMUM_HIT_DISTANCE;
-  // float undershoot = max(distance, 0.0) / MINIMUM_HIT_DISTANCE;
-  // color = vec3(overshoot, 1.0 - undershoot - overshoot, 0.0);
+  vec3 color;
+  switch (view_type) {
+    case 0: {
+      color = nearest_color(hit);
+      float depth = distance(camera_origin, hit);
+      float attenuation = depth / MAXIMUM_TRACE_DISTANCE;
+      color = mix(color, fog_color, clamp(attenuation * attenuation, 0.0, 1.0));
+      break;
+    }
+    case 1: {
+      // convergence debugging
+      if (steps == MAX_STEPS) {
+        color = abort_color;
+      } else {
+        color = vec3(float(steps) / float(MAX_STEPS));
+      }
+      break;
+    }
+    case 2: {
+      // overshoot debugging
+      float distance = nearest_distance(hit);
+      float overshoot = max(-distance, 0.0) / MINIMUM_HIT_DISTANCE;
+      float undershoot = max(distance, 0.0) / MINIMUM_HIT_DISTANCE;
+      color = vec3(overshoot, 1.0 - undershoot - overshoot, 1.0 - step(1.0, undershoot));
+      break;
+    }
+  }
 
   frag_color = vec4(pow(color, vec3(1.0 / gamma)), 1.0);
 }

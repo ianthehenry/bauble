@@ -38,6 +38,7 @@ interface Camera { x: number, y: number, zoom: number; }
 let evaluateScript: ((_code: string) => number) | null = null;
 let updateCamera: ((_cameraX: number, _cameraY: number, _cameraZoom: number) => void) | null = null;
 let updateTime: ((_t: number) => void) | null = null;
+let updateViewType: ((_t: number) => void) | null = null;
 let rerender: (() => void) | null = null;
 let ready: (() => void) | null = function() { ready = null; };
 
@@ -84,6 +85,7 @@ const Module: Partial<MyEmscripten> = {
     evaluateScript = Module.cwrap!("evaluate_script", 'number', ['string']);
     updateCamera = Module.cwrap!("update_camera", null, ['number', 'number', 'number']);
     updateTime = Module.cwrap!("update_time", null, ['number']);
+    updateViewType = Module.cwrap!("update_view_type", null, ['number']);
     rerender = Module.cwrap!("rerender", null, []);
     Module.ccall!("initialize_janet", null, [], []);
     ready();
@@ -207,7 +209,9 @@ function initialize(script) {
     zoom: 2.0,
   };
 
-  let timer = new Timer();
+  let viewType = 0;
+
+  const timer = new Timer();
   let drawScheduled = false;
   let recompileScheduled = false;
   let isAnimation = false;
@@ -287,6 +291,22 @@ function initialize(script) {
       }
     });
   }
+
+  const controls = document.getElementById('view-controls')!;
+  controls.addEventListener('input', (e) => {
+    const target = <HTMLInputElement>e.target;
+    switch (target.name) {
+      case 'view-type': {
+        if (target.checked) {
+          updateViewType(parseInt(target.value, 10));
+          draw(false);
+        }
+        break;
+      }
+      default:
+        throw new Error("unknown field");
+    }
+  });
 
   const canvas = document.getElementById('render-target')! as HTMLCanvasElement;
   let canvasPointerAt = [0, 0];

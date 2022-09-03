@@ -11,7 +11,16 @@
   <header><a class="title" href="/">Bauble</a><span class="spacer"></span><a class="text-link" href="/about">About</a><a class="image-link" href="https://github.com/ianthehenry/bauble"><img src="/github-logo.svg" /></a></header>
   <div id="code-and-preview">
     <div id="canvas-container">
+      <div id="view-controls">
+        <button>Reset</button>
+        <fieldset><!--
+          --><label><input type="radio" autocomplete="off" name="view-type" value="0" checked /><span>Normal</span></label><!--
+          --><label><input type="radio" autocomplete="off" name="view-type" value="1" /><span>Convergence</span></label><!--
+          --><label><input type="radio" autocomplete="off" name="view-type" value="2" /><span>Overshoot</span></label><!--
+        --></fieldset>
+      </div>
       <canvas id="render-target" width="1024" height="1024"></canvas>
+      <div id="animation-controls">Animation controls here</div>
     </div>
     <div id="editor-container"></div>
   </div>

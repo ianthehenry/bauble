@@ -48,7 +48,7 @@ header {
   --header-padding: 0.5em;
   --text-color: #000;
   background-color: #ffc6f9;
-  background-image: linear-gradient(to right, #ffc6f9, rgb(255, 225, 186));
+  background-image: linear-gradient(to right, #ffc6f9, #ffffba);
   height: var(--header-height);
   line-height: var(--header-height);
   display: flex;
@@ -83,10 +83,10 @@ header img {
   fill: #4b0053;
 }
 
-header :first-child {
+header > :first-child {
   padding-left: var(--header-padding);
 }
-header :last-child {
+header > :last-child {
   padding-right: var(--header-padding);
 }
 header .image-link {
@@ -140,11 +140,54 @@ header .image-link img {
   justify-content: center;
   align-items: center;
   max-width: 512px;
+  flex-direction: column;
+  --control-height: 40px;
+  background-color: #ff8;
+}
+
+#animation-controls, #view-controls {
+  width: 100%;
+  height: var(--control-height);
+  line-height: var(--control-height);
+  background-color: #f8f;
+  display: flex;
+}
+
+fieldset {
+  display: inline;
+  border: none;
+  padding: none;
+  background-color: #88f;
+  white-space: nowrap;
+}
+
+fieldset label {
+  display: inline-block;
+  height: 100%;
+  background-color: #8ff;
+  cursor: pointer;
+}
+
+fieldset input[type=radio] {
+  display: none;
+}
+
+fieldset input[type=radio] + span {
+  padding: 4px;
+  border-radius: 6px;
+}
+
+fieldset input[type=radio]:checked + span {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+fieldset label:hover input[type=radio] + span {
+  text-decoration: underline;
 }
 
 canvas {
   max-width: calc(min(100%, 512px));
-  max-height: calc(min(100%, 512px));
+  max-height: calc(min(100% - 2 * var(--control-height), 512px));
   flex: 0;
   aspect-ratio: 1;
   touch-action: none;

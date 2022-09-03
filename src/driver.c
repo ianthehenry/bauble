@@ -48,7 +48,7 @@ typedef struct {
   vec3 camera_origin;
   mat3 camera_matrix;
   GLfloat time;
-  int animation;
+  GLint view_type;
 } gl_context;
 
 static JanetFiber *draw_fiber = NULL;
@@ -82,12 +82,15 @@ GLuint compile_shader(GLenum type, char *source) {
 
 void set_all_uniforms(gl_context *ctx) {
   emscripten_webgl_make_context_current(ctx->handle);
+  glUseProgram(ctx->program);
   GLuint camera_matrix_uniform = glGetUniformLocation(ctx->program, "camera_matrix");
   GLuint camera_origin_uniform = glGetUniformLocation(ctx->program, "camera_origin");
   GLuint t_uniform = glGetUniformLocation(ctx->program, "t");
+  GLuint view_type_uniform = glGetUniformLocation(ctx->program, "view_type");
   glUniform3fv(camera_origin_uniform, 1, ctx->camera_origin.v);
   glUniformMatrix3fv(camera_matrix_uniform, 1, 1, ctx->camera_matrix.v);
-  glUniform1fv(t_uniform, 1, &ctx->time);
+  glUniform1f(t_uniform, ctx->time);
+  glUniform1i(view_type_uniform, ctx->view_type);
 }
 
 void draw_triangles(gl_context *context) {
@@ -190,7 +193,7 @@ gl_context *new_gl_context(const char*selector) {
   glAttachShader(program, fragment_shader);
 
   // TODO: currently no way to tear down the graphics context and free this memory
-  gl_context *context = malloc(sizeof(*context));
+  gl_context *context = calloc(1, sizeof(*context));
   context->handle = handle;
   context->program = program;
   context->current_fragment_shader = fragment_shader;
@@ -281,6 +284,12 @@ EMSCRIPTEN_KEEPALIVE
 void update_time(float t) {
   gl_context *ctx = global_context;
   ctx->time = t;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void update_view_type(int view_type) {
+  gl_context *ctx = global_context;
+  ctx->view_type = view_type;
 }
 
 EMSCRIPTEN_KEEPALIVE
