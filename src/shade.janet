@@ -12,7 +12,8 @@
 (defn- float [n]
   (if (int? n) (string n ".0") (string n)))
 
-(defn compile-fragment-shader [expr camera]
+(defn compile-fragment-shader [expr]
+  (def camera {:x 0 :y 0 :zoom 1})
   (def comp-state (comp-state/new glsl-helpers/functions))
 
   (when debug?
@@ -76,6 +77,9 @@
   (string `
 #version 300 es
 precision highp float;
+
+uniform vec3 camera_origin;
+uniform mat3 camera_matrix;
 
 const int MAX_STEPS = 256;
 const float MINIMUM_HIT_DISTANCE = 0.1;
@@ -234,13 +238,8 @@ void main() {
   const float gamma = 2.2;
   const vec2 resolution = vec2(1024.0, 1024.0);
 
-  vec2 rotation = vec2(`(float (camera :x))`, `(float (camera :y))`);
-  mat3 camera_matrix = rotate_xy(rotation);
-
-  vec3 dir = ray_dir(45.0, resolution, gl_FragCoord.xy);
-  vec3 eye = vec3(0.0, 0.0, `(float (* 256 (camera :zoom)))`);
-  dir = camera_matrix * dir;
-  eye = camera_matrix * eye;
+  vec3 dir = camera_matrix * ray_dir(45.0, resolution, gl_FragCoord.xy);
+  vec3 eye = camera_origin;
 
   const vec3 fog_color = vec3(0.15);
   const vec3 abort_color = vec3(1.0, 0.0, 1.0);
@@ -280,16 +279,29 @@ void main() {
   (and (struct? value)
        (not (nil? (value :compile)))))
 
+# absolutely no reason for this to be a fiber anymore;
+# this can just be a function that we invoke, and we
+# can just hold onto the previous expression in C code
+
 (fiber/new (fn []
-  (def context (new-gl-context "#render-target"))
+  (var last-expr nil)
+  # TODO: should also say whether or not it's an
+  # animated image?
+  (var response nil)
   (while true
-    (let [[expr camera] (yield)]
+    (let [expr (yield response)]
       (if (is-good-value? expr)
         (try
-          (do
-            (set-fragment-shader context
-              (compile-fragment-shader expr camera))
-            (render context))
+          # TODO: sadly this does not work;
+          # will need to look into it
+          (if (and false (= expr last-expr))
+            (do
+              (print "skipping compilation")
+              (set response nil))
+            (do
+              (set last-expr expr)
+              (set response (compile-fragment-shader expr))))
           ([err fiber]
+            (set response nil)
             (debug/stacktrace fiber err "")))
-        (eprint "cannot compile " expr))))))
+        (eprintf "cannot compile %p" expr))))))

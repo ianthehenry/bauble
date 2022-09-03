@@ -3,18 +3,55 @@
 
 #define GL_DEBUG
 
-#include <emscripten.h>
 #include <GLES2/gl2.h>
 #include <EGL/egl.h>
 #include <emscripten/html5.h>
+#include <math.h>
+
+typedef struct {
+  GLfloat v[3];
+} vec3;
+
+typedef struct {
+  GLfloat v[9];
+} mat3;
+
+vec3 mat3_times_vec3(mat3 x, vec3 y) {
+  return (vec3) {
+    .v = {
+      x.v[0*3+0] * y.v[0] + x.v[0*3+1] * y.v[1] + x.v[0*3+2] * y.v[2],
+      x.v[1*3+0] * y.v[0] + x.v[1*3+1] * y.v[1] + x.v[1*3+2] * y.v[2],
+      x.v[2*3+0] * y.v[0] + x.v[2*3+1] * y.v[1] + x.v[2*3+2] * y.v[2],
+    }
+  };
+}
+
+mat3 rotate_xy(float x, float y) {
+  float sx = sin(x);
+  float sy = sin(y);
+  float cx = cos(x);
+  float cy = cos(y);
+
+  return (mat3) {
+    .v = {
+      cy , sy * sx, sy * cx,
+      0.0,      cx,     -sx,
+      -sy, cy * sx, cy * cx
+    }
+  };
+}
 
 typedef struct {
   EMSCRIPTEN_WEBGL_CONTEXT_HANDLE handle;
   GLuint program;
   GLuint current_fragment_shader;
+  vec3 camera_origin;
+  mat3 camera_matrix;
+  int animation;
 } gl_context;
 
 static JanetFiber *draw_fiber = NULL;
+static gl_context *global_context = NULL;
 
 GLuint compile_shader(GLenum type, char *source) {
   GLuint shader = glCreateShader(type);
@@ -42,8 +79,17 @@ GLuint compile_shader(GLenum type, char *source) {
   return shader;
 }
 
+void set_all_uniforms(gl_context *ctx) {
+  emscripten_webgl_make_context_current(ctx->handle);
+  GLuint camera_matrix_uniform = glGetUniformLocation(ctx->program, "camera_matrix");
+  GLuint camera_origin_uniform = glGetUniformLocation(ctx->program, "camera_origin");
+  glUniform3fv(camera_origin_uniform, 1, ctx->camera_origin.v);
+  glUniformMatrix3fv(camera_matrix_uniform, 1, 1, ctx->camera_matrix.v);
+}
+
 void draw_triangles(gl_context *context) {
   emscripten_webgl_make_context_current(context->handle);
+  set_all_uniforms(context);
 
   const GLfloat width = 1024.0;
   const GLfloat height = 1024.0;
@@ -75,7 +121,11 @@ void draw_triangles(gl_context *context) {
   glClear(GL_COLOR_BUFFER_BIT);
   glVertexAttribPointer(positionLoc, 3, GL_FLOAT, GL_FALSE, 0, 0);
   glEnableVertexAttribArray(positionLoc);
+
+  long long start = emscripten_get_now();
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+  long long end = emscripten_get_now();
+  printf("rendered in %lldms\n", end - start);
 }
 
 // caller must free result
@@ -96,10 +146,7 @@ char *slurp(char *filename) {
   return text;
 }
 
-JANET_FN(new_gl_context, "(new-gl-context)", "") {
-  janet_fixarity(argc, 1);
-  const JanetString selector = janet_getstring(argv, 0);
-
+gl_context *new_gl_context(const char*selector) {
   EmscriptenWebGLContextAttributes attrs;
   emscripten_webgl_init_context_attributes(&attrs);
   attrs.antialias = 0;
@@ -108,7 +155,7 @@ JANET_FN(new_gl_context, "(new-gl-context)", "") {
   attrs.stencil = 0;
   attrs.majorVersion = 2;
 
-  EMSCRIPTEN_WEBGL_CONTEXT_HANDLE handle = emscripten_webgl_create_context((char *)selector, &attrs);
+  EMSCRIPTEN_WEBGL_CONTEXT_HANDLE handle = emscripten_webgl_create_context(selector, &attrs);
 
   if (handle <= 0) {
     fprintf(stderr, "failed to create context %d\n", handle);
@@ -145,14 +192,10 @@ JANET_FN(new_gl_context, "(new-gl-context)", "") {
   context->program = program;
   context->current_fragment_shader = fragment_shader;
 
-  return janet_wrap_pointer(context);
+  return context;
 }
 
-JANET_FN(set_fragment_shader, "(set-fragment-shader)", "") {
-  janet_fixarity(argc, 2);
-  gl_context *context = janet_getpointer(argv, 0);
-  const uint8_t *shader_source = janet_getstring(argv, 1);
-
+void set_fragment_shader(gl_context *context, const uint8_t *shader_source) {
   glDetachShader(context->program, context->current_fragment_shader);
   glDeleteShader(context->current_fragment_shader);
 
@@ -164,15 +207,6 @@ JANET_FN(set_fragment_shader, "(set-fragment-shader)", "") {
   glUseProgram(context->program);
 
   context->current_fragment_shader = fragment_shader;
-
-  return janet_wrap_nil();
-}
-
-JANET_FN(render, "(render)", "") {
-  janet_fixarity(argc, 1);
-  gl_context *context = janet_getpointer(argv, 0);
-  draw_triangles(context);
-  return janet_wrap_nil();
 }
 
 JANET_FN(janet_function_arity, "(function/arity)", "") {
@@ -193,14 +227,11 @@ JANET_FN(janet_function_max_arity, "(function/max-arity)", "") {
   return janet_wrap_number(function->def->max_arity);
 }
 
-void initialize() {
+void initialize_janet() {
   janet_init();
   JanetTable *env = janet_core_env(NULL);
 
   const JanetRegExt regs[] = {
-    JANET_REG("set-fragment-shader", set_fragment_shader),
-    JANET_REG("new-gl-context", new_gl_context),
-    JANET_REG("render", render),
     JANET_REG("function/arity", janet_function_arity),
     JANET_REG("function/min-arity", janet_function_min_arity),
     JANET_REG("function/max-arity", janet_function_max_arity),
@@ -218,10 +249,14 @@ void initialize() {
   if (status == JANET_SIGNAL_OK) {
     janet_gcroot(result);
     draw_fiber = janet_unwrap_fiber(result);
+    global_context = new_gl_context("#render-target");
 
     // we want to resume it once here so that it's ready to be yielded to in the future
-    Janet query;
-    janet_continue(draw_fiber, result, &query);
+    Janet response;
+    int status = janet_continue(draw_fiber, result, &response);
+    if (status != JANET_SIGNAL_YIELD || !janet_checktype(response, JANET_NIL)) {
+      janet_eprintf("fiber began in a weird state %d %p\n", status, response);
+    }
   } else {
     fprintf(stderr, "unable to initialize\n");
     janet_deinit();
@@ -229,12 +264,24 @@ void initialize() {
 }
 
 EMSCRIPTEN_KEEPALIVE
-int run_janet(char *source, float camera_x, float camera_y, float camera_zoom) {
-  long long start_time = emscripten_get_now();
+void update_camera(float x, float y, float zoom) {
+  mat3 camera_matrix = rotate_xy(x, y);
+  vec3 camera_origin = { .v = { 0.0, 0.0, 256.0 * zoom } };
+  camera_origin = mat3_times_vec3(camera_matrix, camera_origin);
 
-  if (draw_fiber == NULL) {
-    initialize();
-  }
+  gl_context *ctx = global_context;
+  ctx->camera_origin = camera_origin;
+  ctx->camera_matrix = camera_matrix;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void rerender(float x, float y, float zoom) {
+  draw_triangles(global_context);
+}
+
+EMSCRIPTEN_KEEPALIVE
+int evaluate_script(char *source) {
+  long long start_time = emscripten_get_now();
 
   if (draw_fiber == NULL) {
     fprintf(stderr, "unable to initialize compilation fiber\n");
@@ -252,32 +299,35 @@ int run_janet(char *source, float camera_x, float camera_y, float camera_zoom) {
     return status;
   }
 
-  JanetKV *camera_struct = janet_struct_begin(2 * 3);
-  janet_struct_put(camera_struct, janet_ckeywordv("x"), janet_wrap_number(camera_x));
-  janet_struct_put(camera_struct, janet_ckeywordv("y"), janet_wrap_number(camera_y));
-  janet_struct_put(camera_struct, janet_ckeywordv("zoom"), janet_wrap_number(camera_zoom));
-  Janet camera = janet_wrap_struct(janet_struct_end(camera_struct));
-
-  Janet *arg_tuple = janet_tuple_begin(2);
-  arg_tuple[0] = result;
-  arg_tuple[1] = camera;
-  Janet args = janet_wrap_tuple(janet_tuple_end(arg_tuple));
-
-  Janet query;
-  status = janet_continue(draw_fiber, args, &query);
+  Janet response;
+  status = janet_continue(draw_fiber, result, &response);
+  long long done_compiling_glsl = emscripten_get_now();
+  long long done_compiling_shader = -1;
   if (status == JANET_SIGNAL_YIELD) {
-    if (janet_checktype(query, JANET_NIL) == 0) {
-      fprintf(stderr, "compilation fiber yielded a value\n");
+    if (janet_checktype(response, JANET_NIL)) {
+      // value was identical; nothing to do
+    } else if (janet_checktype(response, JANET_STRING)) {
+      const uint8_t *source = janet_unwrap_string(response);
+      set_fragment_shader(global_context, source);
+      done_compiling_shader = emscripten_get_now();
+    } else {
+      janet_eprintf("fiber yielded an unexpected value %p\n", response);
     }
   } else {
     fprintf(stderr, "compilation fiber did not yield\n");
-    janet_stacktrace(draw_fiber, query);
+    janet_stacktrace(draw_fiber, response);
     return status;
   }
 
-  long long done_rendering = emscripten_get_now();
+  if (done_compiling_shader == -1) {
+    printf("eval: %lldms diff: %lldms\n", (done_evaluating - start_time), (done_compiling_glsl - done_evaluating));
+  } else {
+    printf("eval: %lldms generate glsl: %lldms compile shader: %lldms\n",
+      (done_evaluating - start_time),
+      (done_compiling_glsl - done_evaluating),
+      (done_compiling_shader - done_compiling_glsl));
+  }
 
-  printf("eval: %lldms render: %lldms\n", (done_evaluating - start_time), (done_rendering - done_evaluating));
 
   return 0;
 }

@@ -53,7 +53,7 @@ if [[ "$build_wasm" == "true" ]]; then
     src/driver.c \
     -std=c11 \
     $preload_args \
-    -s EXPORTED_FUNCTIONS=['_run_janet'] \
+    -s "EXPORTED_FUNCTIONS=['_evaluate_script', '_update_camera', '_rerender', '_initialize_janet']" \
     -s USE_WEBGL2=1 \
     -s ALLOW_MEMORY_GROWTH=1 \
     -s AGGRESSIVE_VARIABLE_ELIMINATION=1 \

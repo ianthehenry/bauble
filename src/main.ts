@@ -35,7 +35,9 @@ function print(text: string, isErr=false) {
 }
 
 interface Camera { x: number, y: number, zoom: number; }
-let evaluateJanet: ((_code: string, _cameraX: number, _cameraY: number, _cameraZoom: number) => number) | null = null;
+let evaluateScript: ((_code: string) => number) | null = null;
+let updateCamera: ((_cameraX: number, _cameraY: number, _cameraZoom: number) => void) | null = null;
+let rerender: (() => void) | null = null;
 let ready: (() => void) | null = function() { ready = null; };
 
 function onReady(f: (() => void)) {
@@ -53,13 +55,13 @@ function onReady(f: (() => void)) {
 const preamble = '(use ./helpers) (use ./dsl) (use ./pipe-syntax) (use ./dot-syntax) (use ./globals) (use ./glslisp/src/builtins) (resolve-dots (pipe \n';
 const postamble = '\n))'; // newline is necessary in case the script ends in a comment
 
-function executeJanet(code: string, camera: Camera) {
-  if (evaluateJanet === null) {
+function recompileScript(script: string) {
+  if (evaluateScript === null) {
     console.error('not ready yet');
     return;
   }
 
-  const result = evaluateJanet(preamble + code + postamble, TAU * camera.x, TAU * camera.y, camera.zoom);
+  const result = evaluateScript(preamble + script + postamble);
   if (result !== 0) {
     console.error('compilation error: ', result.toString());
   }
@@ -67,6 +69,7 @@ function executeJanet(code: string, camera: Camera) {
 
 interface MyEmscripten extends EmscriptenModule {
   cwrap: typeof cwrap;
+  ccall: typeof ccall;
 }
 
 declare global {
@@ -85,7 +88,10 @@ const Module: Partial<MyEmscripten> = {
     print(x, true);
   },
   postRun: [function() {
-    evaluateJanet = Module.cwrap!("run_janet", 'number', ['string', 'number', 'number', 'number']);
+    evaluateScript = Module.cwrap!("evaluate_script", 'number', ['string']);
+    updateCamera = Module.cwrap!("update_camera", null, ['number', 'number', 'number']);
+    rerender = Module.cwrap!("rerender", null, []);
+    Module.ccall!("initialize_janet", null, [], []);
     ready();
     resolveInitialScript(FS.readFile('intro.janet', {encoding: 'utf8'}));
   }],
@@ -178,15 +184,22 @@ function initialize(script) {
   };
 
   let drawScheduled = false;
-  function draw() {
+  let recompileScheduled = false;
+  function draw(recompile) {
+    recompileScheduled ||= recompile;
     if (drawScheduled) {
       return;
     }
     drawScheduled = true;
     requestAnimationFrame(function() {
-      drawScheduled = false;
       clearOutput();
-      executeJanet(editor.state.doc.toString(), camera);
+      updateCamera(TAU * camera.x, TAU * camera.y, camera.zoom);
+      if (recompile) {
+        recompileScript(editor.state.doc.toString());
+      }
+      rerender();
+      drawScheduled = false;
+      recompile = false;
     });
   }
 
@@ -206,7 +219,7 @@ function initialize(script) {
       ]),
       EditorView.updateListener.of(function(viewUpdate: ViewUpdate) {
         if (viewUpdate.docChanged) {
-          draw();
+          draw(true);
         }
       }),
       EditorView.theme({
@@ -284,7 +297,7 @@ function initialize(script) {
       // TODO: invert the meaning of camera.x/y so that this actually makes sense
       camera.x = mod(camera.x - scaleAdjustmentY * cameraRotateSpeed * movementY, 1.0);
       camera.y = mod(camera.y - scaleAdjustmentX * cameraRotateSpeed * movementX, 1.0);
-      draw();
+      draw(false);
     }
   });
 
@@ -301,7 +314,7 @@ function initialize(script) {
   });
   canvas.addEventListener('gesturechange', (e: GestureEvent) => {
     camera.zoom = initialZoom / e.scale;
-    draw();
+    draw(false);
   });
 
   canvas.addEventListener('wheel', (e) => {
@@ -311,7 +324,7 @@ function initialize(script) {
     // in very choppy scrolling. I don't really know a good
     // way to fix this without explicit platform detection.
     camera.zoom += cameraZoomSpeed * e.deltaY;
-    draw();
+    draw(false);
   });
 
   const outputContainer = document.getElementById('output')!;
@@ -389,7 +402,7 @@ function initialize(script) {
     }
   });
 
-  onReady(draw);
+  onReady(() => draw(true));
   editor.focus();
 }
 
