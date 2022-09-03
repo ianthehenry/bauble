@@ -38,12 +38,16 @@
       (errorf "cannot use %s in a distance expression" (free-variable :name))))
 
   (def color-prep-statements @[])
+  # this statement must come first so that the light intensity can see it
+  (if (or ((color-scope :free-variables) globals/normal)
+          ((color-scope :free-variables) globals/light-intensities))
+    (array/push color-prep-statements "vec3 normal = calculate_normal(p);"))
   (each free-variable (keys (color-scope :free-variables))
     (case free-variable
       globals/p nil
       globals/camera nil
+      globals/normal nil
       globals/world-p (array/push color-prep-statements "vec3 world_p = p;")
-      globals/normal (array/push color-prep-statements "vec3 normal = calculate_normal(p);")
       globals/light-intensities (do
         # Array initialization syntax doesn't work on the Google
         # Pixel 6a, so we do this kinda dumb thing. Also a simple
