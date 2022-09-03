@@ -37,6 +37,7 @@ function print(text: string, isErr=false) {
 interface Camera { x: number, y: number, zoom: number; }
 let evaluateScript: ((_code: string) => number) | null = null;
 let updateCamera: ((_cameraX: number, _cameraY: number, _cameraZoom: number) => void) | null = null;
+let updateTime: ((_t: number) => void) | null = null;
 let rerender: (() => void) | null = null;
 let ready: (() => void) | null = function() { ready = null; };
 
@@ -56,15 +57,7 @@ const preamble = '(use ./helpers) (use ./dsl) (use ./pipe-syntax) (use ./dot-syn
 const postamble = '\n))'; // newline is necessary in case the script ends in a comment
 
 function recompileScript(script: string) {
-  if (evaluateScript === null) {
-    console.error('not ready yet');
-    return;
-  }
-
-  const result = evaluateScript(preamble + script + postamble);
-  if (result !== 0) {
-    console.error('compilation error: ', result.toString());
-  }
+  return evaluateScript(preamble + script + postamble);
 }
 
 interface MyEmscripten extends EmscriptenModule {
@@ -90,6 +83,7 @@ const Module: Partial<MyEmscripten> = {
   postRun: [function() {
     evaluateScript = Module.cwrap!("evaluate_script", 'number', ['string']);
     updateCamera = Module.cwrap!("update_camera", null, ['number', 'number', 'number']);
+    updateTime = Module.cwrap!("update_time", null, ['number']);
     rerender = Module.cwrap!("rerender", null, []);
     Module.ccall!("initialize_janet", null, [], []);
     ready();
@@ -176,6 +170,36 @@ interface GestureEvent extends TouchEvent {
   scale: number
 }
 
+enum CompilationResult {
+  NoChange = 0,
+  ChangedStatic = 1,
+  ChangedAnimated = 2,
+}
+
+enum TimerState {
+  Ambivalent,
+  Playing,
+  Paused,
+}
+
+class Timer {
+  t = 0;
+  state = TimerState.Ambivalent;
+  then: number | null = null;
+
+  tick(now, isAnimation) {
+    if (isAnimation && this.state === TimerState.Ambivalent) {
+      this.state = TimerState.Playing;
+    }
+    now /= 1000;
+    if (this.state === TimerState.Playing && isAnimation) {
+      const then = this.then ?? now;
+      this.t += now - then;
+    }
+    this.then = now;
+  }
+}
+
 function initialize(script) {
   const camera = {
     x: -0.125,
@@ -183,25 +207,40 @@ function initialize(script) {
     zoom: 2.0,
   };
 
+  let timer = new Timer();
   let drawScheduled = false;
   let recompileScheduled = false;
+  let isAnimation = false;
   function draw(recompile) {
     recompileScheduled ||= recompile;
-    if (drawScheduled) {
+    drawScheduled = true;
+  }
+  function tick(now) {
+    requestAnimationFrame(tick);
+    timer.tick(now, isAnimation);
+
+    if (!drawScheduled) {
       return;
     }
-    drawScheduled = true;
-    requestAnimationFrame(function() {
-      clearOutput();
-      updateCamera(TAU * camera.x, TAU * camera.y, camera.zoom);
-      if (recompile) {
-        recompileScript(editor.state.doc.toString());
+    clearOutput();
+    updateCamera(TAU * camera.x, TAU * camera.y, camera.zoom);
+    updateTime(timer.t);
+    if (recompileScheduled) {
+      let result = recompileScript(editor.state.doc.toString());
+      if (result >= 0) {
+        // TODO: surely this isn't actually how you do this
+        switch (CompilationResult[CompilationResult[result]]) {
+          case CompilationResult.NoChange: break;
+          case CompilationResult.ChangedAnimated: isAnimation = true; break;
+          case CompilationResult.ChangedStatic: isAnimation = false; break;
+        }
       }
-      rerender();
-      drawScheduled = false;
-      recompile = false;
-    });
+    }
+    rerender();
+    drawScheduled = isAnimation;
+    recompileScheduled = false;
   }
+  requestAnimationFrame(tick);
 
   const incrementNumber = (editor: StateCommandInput) => alterNumber(editor, Big('1'));
   const decrementNumber = (editor: StateCommandInput) => alterNumber(editor, Big('-1'));

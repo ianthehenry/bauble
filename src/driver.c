@@ -47,6 +47,7 @@ typedef struct {
   GLuint current_fragment_shader;
   vec3 camera_origin;
   mat3 camera_matrix;
+  GLfloat time;
   int animation;
 } gl_context;
 
@@ -83,8 +84,10 @@ void set_all_uniforms(gl_context *ctx) {
   emscripten_webgl_make_context_current(ctx->handle);
   GLuint camera_matrix_uniform = glGetUniformLocation(ctx->program, "camera_matrix");
   GLuint camera_origin_uniform = glGetUniformLocation(ctx->program, "camera_origin");
+  GLuint t_uniform = glGetUniformLocation(ctx->program, "t");
   glUniform3fv(camera_origin_uniform, 1, ctx->camera_origin.v);
   glUniformMatrix3fv(camera_matrix_uniform, 1, 1, ctx->camera_matrix.v);
+  glUniform1fv(t_uniform, 1, &ctx->time);
 }
 
 void draw_triangles(gl_context *context) {
@@ -275,6 +278,12 @@ void update_camera(float x, float y, float zoom) {
 }
 
 EMSCRIPTEN_KEEPALIVE
+void update_time(float t) {
+  gl_context *ctx = global_context;
+  ctx->time = t;
+}
+
+EMSCRIPTEN_KEEPALIVE
 void rerender(float x, float y, float zoom) {
   draw_triangles(global_context);
 }
@@ -296,27 +305,33 @@ int evaluate_script(char *source) {
   long long done_evaluating = emscripten_get_now();
 
   if (status != JANET_SIGNAL_OK) {
-    return status;
+    return -status;
   }
 
   Janet response;
   status = janet_continue(draw_fiber, result, &response);
   long long done_compiling_glsl = emscripten_get_now();
   long long done_compiling_shader = -1;
+  int to_return;
   if (status == JANET_SIGNAL_YIELD) {
     if (janet_checktype(response, JANET_NIL)) {
+      to_return = 0;
       // value was identical; nothing to do
-    } else if (janet_checktype(response, JANET_STRING)) {
-      const uint8_t *source = janet_unwrap_string(response);
+    } else if (janet_checktype(response, JANET_TUPLE)) {
+      const Janet *tuple = janet_unwrap_tuple(response);
+      int is_animated = janet_unwrap_boolean(tuple[0]);
+      const uint8_t *source = janet_unwrap_string(tuple[1]);
       set_fragment_shader(global_context, source);
       done_compiling_shader = emscripten_get_now();
+      to_return = is_animated ? 2 : 1;
     } else {
+      to_return = -1;
       janet_eprintf("fiber yielded an unexpected value %p\n", response);
     }
   } else {
     fprintf(stderr, "compilation fiber did not yield\n");
     janet_stacktrace(draw_fiber, response);
-    return status;
+    to_return = -status;
   }
 
   if (done_compiling_shader == -1) {
@@ -328,6 +343,9 @@ int evaluate_script(char *source) {
       (done_compiling_shader - done_compiling_glsl));
   }
 
-
-  return 0;
+  // 0 => no change
+  // 1 => recompiled; static image
+  // 2 => recompiled; animated
+  // any negative value => error
+  return to_return;
 }

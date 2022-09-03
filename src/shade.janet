@@ -13,6 +13,7 @@
   (if (int? n) (string n ".0") (string n)))
 
 (defn compile-fragment-shader [expr]
+  (var animated? false)
   (def comp-state (comp-state/new glsl-helpers/functions))
 
   (when debug?
@@ -29,6 +30,7 @@
   (each free-variable (keys (distance-scope :free-variables))
     (case free-variable
       globals/p nil
+      globals/t (set animated? true)
       globals/camera nil
       globals/world-p (array/push distance-prep-statements "vec3 world_p = p;")
       (errorf "cannot use %s in a distance expression" (free-variable :name))))
@@ -41,6 +43,7 @@
   (each free-variable (keys (color-scope :free-variables))
     (case free-variable
       globals/p nil
+      globals/t (set animated? true)
       globals/camera nil
       globals/normal nil
       globals/world-p (array/push color-prep-statements "vec3 world_p = p;")
@@ -69,12 +72,13 @@
         (string/join color-statements "\n  ") "\n"
         "return "color-expression";\n}")))
 
-  (string `
+  [animated? (string `
 #version 300 es
 precision highp float;
 
 uniform vec3 camera_origin;
 uniform mat3 camera_matrix;
+uniform float t;
 
 out vec4 frag_color;
 
@@ -244,7 +248,7 @@ void main() {
 
   frag_color = vec4(pow(color, vec3(1.0 / gamma)), 1.0);
 }
-`))
+`)])
 
 # surely I can do better
 (defn is-good-value? [value]
