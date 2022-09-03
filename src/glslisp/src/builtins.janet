@@ -15,7 +15,10 @@
 
 (make-vec-2 distance)
 
-(make-vec-1 length :f vec-length)
+# Okay, this is confusing, but I think it's a good
+# compromise.
+(make-vec-1 length)
+(make-vec-1 vec-length :glf length)
 
 # TODO: so this is a tricky one. this is overloaded
 # on the GPU to accept one or two arguments, so it
