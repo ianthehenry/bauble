@@ -56,19 +56,13 @@
 #   (rotate-pi :y r :z (* r 0.7) :x (* 0.5 r))
 #   (symmetry))
 
-# (Note for macOS Firefox users:
-# there is a longstanding bug in Firefox
-# where it doesn't report ctrl-click
-# events correctly. If you have a
-# physical mouse, you can use ctrl-right
-# click instead. If you have a trackpad,
-# that means ctrl-two finger drag. Since
-# that's very annoying, there is also a
-# hacky workaround: position the text
-# cursor on the number you want to
-# change, then hold down cmd+shift
-# (without clicking) and move the
-# mouse around.)
+# You can also hold down cmd-shift to
+# move your mouse without clicking
+# anywhere to edit the value under the
+# text cursor. This is a workaround for
+# Firefox on macOS, which due to a
+# long-standing bug cannot report
+# ctrl-click events correctly.
 # https://bugzilla.mozilla.org/show_bug.cgi?id=1504210
 
 # When editing values with your mouse,
@@ -243,17 +237,307 @@
 # threading macro -- but it's a lot
 # easier to type out.
 
+#### Expressions ####
+
+# Alright, now we're getting to the good stuff.
+
+# (cone :y 100 100)
+
+# We made a cone. Boring. Let's make it
+# less boring:
+
+# (cone :y 100 (+ 100 (* 10 (cos (/ p.x 5)))))
+
+# Whoa, okay; there's a lot to unpack
+# there.
+
+# First of all: p.x is more lisp heresy.
+# This is equivalent to writing the
+# more verbose:
+
+# (cone :y 100 (+ 100 (* 10 (cos (/ ~(. ,p :x) 5)))))
+
+# But what is p? And why can you divide
+# by this weird symbolic expression?
+
+# p is a magic variable that represents
+# the current point in space. It's a
+# symbolic expression, and the /
+# operator -- and all other
+# operators -- are overloaded to work
+# on symbolic expressions. (+ 1 2)
+# produces 3, but (+ 1 p.x) produces
+# the Janet tuple ~(+ 1 (. ,p :x)), and
+# Bauble knows how to compiles that
+# into a string of GLSL code that will
+# execute on the GPU.
+
+# Symbolic expressions nest, so when we
+# take the cosine of ~(/ (. ,p :x) 5),
+# we wind up with the symbolic
+# expression ~(cos (/ (. ,p :x) 5)).
+# And so on, until we finally have an
+# expression for the cone's height.
+
+# Oh, hey! S-expressions! That's what
+# that stands for. Look at us: we're
+# doing lisp. Real live lisp.
+
+# When writing a distance expression,
+# the only magic variables you can use
+# are p and world-p. p is the point in
+# space local to the current shape
+# (so translated, rotated, etc), while
+# world-p is the global position of the
+# ray (this is useful for lighting, to
+# calculate reflection or specular
+# highlights).
+
+# When writing a color expression, you
+# also have access to these other magic
+# variables:
+
+# - camera: (the position of the camera,
+#   in global (world) coordinates)
+# - normal: an approximation of the
+#   normal vector at the point you're
+#   shading
+
+#### Spatial artifacts ####
+
+# Let's return to our cone.
+
+# (cone :y 100 (+ 100 (* 10 (cos (/ p.x 5)))))
+
+# Actually, let's really lean on the
+# pipe operator for a second:
+
+# (cone :y 100 (p.x | / 5 | cos | * 10 | + 100))
+
+# What do you think? Neat? Horrifying? I
+# kinda like that, but it's definitely an
+# acquired taste.
+
+# Anyway, drag the camera around, and
+# direct your attention to the tip of
+# the cone. See how it seems to flicker?
+
+# That's because we no longer have an
+# accurate distance field to raymarch.
+# Because the shape depends on the
+# position of the ray, the distance
+# field is only correct when the ray is
+# very close to the distorted cone.
+
+# This means that sometimes the
+# raymarcher will overshoot the surface
+# of the cone -- landing inside the
+# cone or, in this case, passing
+# through it entirely.
+
+# Here's a more extreme example:
+
+# (torus :x 100 25 | rotate :y (* p.y 0.020))
+
+# We're rotating this torus by an angle
+# that varies over the y axis, which
+# gives us a twisting effect. But it
+# looks really bad! Especially if you
+# view it from the top down.
+
+# We can mitigate this sort of error by
+# slowing down the raymarcher as it
+# approaches the torus. Since the
+# distance field is no longer giving us
+# accurate values, we can choose to
+# advance our rays by only half the
+# reported distance value. This is called
+# slow:
+
+# (torus :x 100 25 | rotate :y (* p.y 0.020) | slow 0.5)
+
+# It's aptly named, because it will
+# increase the number of raymarching
+# steps we have to take.
+
+# Try increasing the twist amount.
+# Eventually you will notice that a
+# slow coefficient of 0.5 isn't enough,
+# and you'll have to reduce it. But
+# reducing it too much will start to
+# introduce new artifacts, as the
+# raymarcher might begin to hit the
+# maximum steps per fragment
+# (currently hardcoded to 256) before
+# it finds the torus. So there's sort
+# of a limit to how distorted you can
+# make space.
+
+# Also note that slowing down the
+# raymarcher has other effects as well.
+# Functions that rely on the distance
+# field, like boolean operations, will
+# not be as accurate. For example, look
+# at this snowman:
+
+# (sphere 50 | move :y -10 | union :r 10 (sphere 40 | move :y 45))
+
+# If we slow down space around one of
+# the spheres, the smooth union will no
+# longer be symmetric:
+
+# (sphere 50 | move :y -10 | slow 0.5 | union :r 10 (sphere 40 | move :y 45))
+
+# But if we slow down space around the
+# whole shape, we won't have a
+# problem:
+
+# (sphere 50 | move :y -10 | union :r 10 (sphere 40 | move :y 45) | slow 0.5)
+
+# Lastly, slowing down space will cause
+# soft shadows to become too soft, for
+# complicated reasons that I don't want
+# to explain right now this is so long
+# already.
+
+#### Overloading ####
+
+# I already mentioned that many of the
+# built-in operators are overloaded to
+# work on symbolic expressions. They're
+# also overloaded to work on vectors,
+# in ways that mirror GLSL functions.
+
+# For example, you can write (+ [1 2 3]
+# [4 5 6]) to add the elements of two
+# tuples together. That would normally
+# be a type error in Janet, but inside
+# Bauble, + has been overloaded to
+# match GLSL's semantics.
+
+# In addition many -- but not all --
+# GLSL functions have been ported to
+# Janet, and when you call them with
+# constant arguments they will execute
+# on the CPU. For example, (distance
+# [0 0] [1 1]) will give you the number
+# 1.414. But(distance [0 0] p.xy) will
+# produce a symbolic expression that
+# will execute on the GPU.
+
+# One notable exception is length
+# (), since that's already a very
+# common Janet function that returns
+# the length of an array or tuple. As
+# such (length [1 2 3]) is 3, but
+# (length p) is the symbolic expression
+# ~(length ,p). The generic version of
+# GLSL's length() is called
+# (vec-length).
+
+# If for some reason you want to *force*
+# a computation to occur on the GPU,
+# you can quote it like this:
+# ~(distance [0 0] ,p.xy). Note that you
+# have to unquote p.xy, because the
+# magic variable p is more than just a
+# symbol.
+
+# Also note that some functions -- for
+# example, the procedural noise
+# functions -- always produce symbolic
+# expressions, even with constant
+# arguments. So they'll always execute
+# on the GPU.
+
+#### Helpers ####
+
+# smoothstep is a cubic interpolation
+# function with native GPU support that
+# shows up all the time in procedural
+# art.
+
+# Bauble has a helper that makes it a
+# little more convenient to use:
+
+# (ss x) = (smoothstep 0 1 x)
+# (ss x hi) = (smoothstep 0 hi x)
+# (ss x lo hi) = (smoothstep lo hi x)
+# (ss x lo hi to-hi) = (* (smoothstep lo hi x) to-hi)
+# (ss x lo hi to-lo to-hi) = (+ to-lo (* (smoothstep lo hi x) (- to-hi to-lo)))
+
+# Also, there are many functions that
+# return values in the range -1 to 1,
+# when often you want values in the
+# range 0 to 1 (to use as a color, for
+# example). There is a helper function
+# called remap+ defined like this:
+
+# (defn remap+ [x]
+#   (* 0.5 (+ x 1)))
+
+# For example, you can use it to
+# re-create the default normal
+# coloring, but with lighting and
+# shadows:
+
+# (sphere 50)
+# (sphere 50 | shade (remap+ normal))
+
+# There are also "+" versions of a few
+# functions that you might frequently
+# want to remap into the 0 to 1 range:
+
+# (sin+ x)    = (remap+ (sin x))
+# (cos+ x)    = (remap+ (cos x))
+# (perlin+ x) = (remap+ (perlin x))
+
+#### Procedural noise ####
+
+# Bauble currently has a single noise
+# function:
+
+# (box 100 :r 10 | color [0 (perlin+ (* 0.1 p)) 0])
+
+# (perlin) can take a vec2, vec3, or
+# vec4. Each one is more expensive to
+# compute than the last, so only use
+# what you need. (The vec4 version is
+# useful if you want a 3D noise signal
+# that varies over time.)
+
+# (box 100 :r 10 | color [0 (perlin+ (* 0.1 p.xz)) 0])
+
+# You can use noise to compute complex
+# procedural textures:
+
+# (def spots (+ 0.15 (perlin+ (* 0.103 p))))
+# (def outline (step (abs (- 0.5 spots)) 0.016))
+# (def brown (hsv 0.01 0.63 0.5))
+# (def tan   (hsv 0.07 0.63 0.9))
+# (sphere 100 | shade (mix brown tan (round spots) | * (max outline 0.05)))
+
+# Just beautiful. Let's hold on to that
+# one, I have a feeling we're going to
+# do great things together:
+
+# (def leppard (shade (mix brown tan (round spots) | * (max outline 0.05))))
+# (line [20 0 32] [50 -50 50] 5
+# | mirror :x :z
+# | union :r 10
+#   (box [33 20 41] :r 10)
+#   (sphere 20 | move :z 51 :y 24)
+# | resurface leppard
+# | union (sphere 5 | move [7 34 67] | mirror :x | shade [1 1 1]))
+
+# We will never speak of this again.
+
 #### Light and shadow ####
 
 # Currently there's no way to customize
-# anything about the lighting. But it's
-# coming soon!
-
-#### Procedural texturing ####
-
-# Haha aw I haven't gotten to that yet
-# either. But a future version of Bauble
-# will support it!
+# anything about the lighting used by
+# the built-in Blinn-Phong shader. But
+# it's coming soon!
 
 #### Getting Help ####
 
@@ -303,9 +587,9 @@
 # (box 40 | scale :x 0.5)
 # (box 40 | scale [1 2 0.5])
 # (torus :y 100 25)
-# (box 50 | twist :y 0.010)
-# (box [50 10 50] | bend :x :y 0.010)
-# (box 50 | swirl :y 0.040)
+# (box 50 | twist :y 0.010 | slow 0.5)
+# (box [50 10 50] | bend :x :y 0.010 | slow 0.5)
+# (box 50 | swirl :y 0.040 | slow 0.5)
 
 # Comments? Questions? Requests?
 # https://github.com/ianthehenry/bauble/discussions
