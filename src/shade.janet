@@ -76,6 +76,8 @@ precision highp float;
 uniform vec3 camera_origin;
 uniform mat3 camera_matrix;
 
+out vec4 frag_color;
+
 const int MAX_STEPS = 256;
 const float MINIMUM_HIT_DISTANCE = 0.1;
 const float NORMAL_OFFSET = 0.005;
@@ -192,20 +194,6 @@ vec3 march(vec3 ray_origin, vec3 ray_direction, out int steps) {
   return ray_origin + distance * ray_direction;
 }
 
-mat4 view_matrix(vec3 eye, vec3 target, vec3 up) {
-  vec3 f = normalize(target - eye);
-  vec3 s = normalize(cross(f, up));
-  vec3 u = cross(s, f);
-  return mat4(
-      vec4(s, 0.0),
-      vec4(f, 0.0),
-      vec4(u, 0.0),
-      vec4(0.0, 0.0, 0.0, 1.0)
-  );
-}
-
-out vec4 frag_color;
-
 const float PI = 3.14159265359;
 const float DEG_TO_RAD = PI / 180.0;
 
@@ -216,17 +204,6 @@ vec3 ray_dir(float fov, vec2 size, vec2 pos) {
   float z = size.y * 0.5 * cot_half_fov;
 
   return normalize(vec3(xy, -z));
-}
-
-mat3 rotate_xy(vec2 angle) {
-  vec2 c = cos(angle);
-  vec2 s = sin(angle);
-
-  return mat3(
-    c.y      ,  0.0, -s.y,
-    s.y * s.x,  c.x,  c.y * s.x,
-    s.y * c.x, -s.x,  c.y * c.x
-  );
 }
 
 void main() {
