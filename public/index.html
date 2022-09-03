@@ -8,11 +8,11 @@
   <script type="text/javascript" src="/js/janet.js"></script>
 </head>
 <body class="main-page">
-  <header><a class="title" href="/">Bauble</a><span class="spacer"></span><a class="text-link" href="/about">About</a><a class="image-link" href="https://github.com/ianthehenry/bauble"><img src="/github-logo.svg" /></a></header>
+  <header><a class="title" href="/">Bauble</a><span class="spacer"></span><a class="text-link" href="/about">About</a><a class="image-link" href="https://github.com/ianthehenry/bauble"><img src="/icons/github-logo.svg" /></a></header>
   <div id="code-and-preview">
     <div id="canvas-container">
-      <div id="view-controls">
-        <button>Reset</button>
+      <div class="toolbar">
+        <button data-action="reset">Reset</button>
         <fieldset><!--
           --><label><input type="radio" autocomplete="off" name="view-type" value="0" checked /><span>Normal</span></label><!--
           --><label><input type="radio" autocomplete="off" name="view-type" value="1" /><span>Convergence</span></label><!--
@@ -20,7 +20,19 @@
         --></fieldset>
       </div>
       <canvas id="render-target" width="1024" height="1024"></canvas>
-      <div id="animation-controls">Animation controls here</div>
+      <div class="toolbar">
+        <button title="Play" data-action="play"><img src="/icons/play.svg" /></button>
+        <button title="Pause" data-action="pause" class="hidden"><img src="/icons/pause.svg" /></button>
+        <button title="Stop" data-action="stop"><img src="/icons/stop.svg" /></button>
+        <input name="timestamp" inputmode="numeric" value="0.000" autocomplete="off" />
+        <fieldset><!--
+          --><label title="No loop"><input type="radio" autocomplete="off" name="loop-mode" value="no-loop" checked /><img src="/icons/arrow-bar-right.svg" /></label><!--
+          --><label title="Loop"><input type="radio" autocomplete="off" name="loop-mode" value="wrap" /><img src="/icons/repeat.svg" /></label><!--
+          --><label title="Loop back and forth"><input type="radio" autocomplete="off" name="loop-mode" value="reverse" /><img src="/icons/arrow-left-right.svg" /></label>
+        </fieldset>
+        <input name="loop-start" inputmode="numeric" value="0.00" autocomplete="off" />
+        to
+        <input name="loop-end" inputmode="numeric" value="6.2832" autocomplete="off" /></div>
     </div>
     <div id="editor-container"></div>
   </div>

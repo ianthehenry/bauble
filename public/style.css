@@ -145,15 +145,22 @@ header .image-link img {
   background-color: #ff8;
 }
 
-#animation-controls, #view-controls {
+.toolbar {
   width: 100%;
   height: var(--control-height);
   line-height: var(--control-height);
   background-color: #f8f;
   display: flex;
+  user-select: none;
 }
 
-fieldset {
+.toolbar input[inputmode=numeric] {
+  text-align: right;
+  width: 6ch;
+  font-family: Menlo, monospace;
+}
+
+.toolbar fieldset {
   display: inline;
   border: none;
   padding: none;
@@ -161,29 +168,72 @@ fieldset {
   white-space: nowrap;
 }
 
-fieldset label {
+.toolbar button {
+  min-width: var(--control-height);
+}
+
+.toolbar fieldset label {
   display: inline-block;
   height: 100%;
   background-color: #8ff;
   cursor: pointer;
+  min-width: var(--control-height);
+  text-align: center;
 }
 
-fieldset input[type=radio] {
+.toolbar button {
+  background-color: #f8f;
+  border: none;
+  cursor: pointer;
+}
+
+.toolbar fieldset input[type=radio] {
   display: none;
 }
 
-fieldset input[type=radio] + span {
+.toolbar button img,
+.toolbar fieldset input[type=radio] + span,
+.toolbar fieldset input[type=radio] + img {
   padding: 4px;
   border-radius: 6px;
 }
 
-fieldset input[type=radio]:checked + span {
+.toolbar fieldset input[type=radio]:checked + span,
+.toolbar fieldset input[type=radio]:checked + img {
+  background-color: rgba(0, 0, 0, 0.25);
+}
+
+.toolbar button:hover img,
+.toolbar fieldset label:hover input[type=radio] + span,
+.toolbar fieldset label:hover input[type=radio] + img {
   background-color: rgba(0, 0, 0, 0.1);
 }
 
-fieldset label:hover input[type=radio] + span {
-  text-decoration: underline;
+.toolbar button:active img,
+.toolbar fieldset label:hover input[type=radio]:checked + span,
+.toolbar fieldset label:hover input[type=radio]:checked + img {
+  background-color: rgba(0, 0, 0, 0.3);
 }
+
+.toolbar fieldset {
+  display: flex;
+  flex-direction: row;
+}
+.toolbar fieldset label,
+.toolbar button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.toolbar button.hidden {
+  display: none;
+}
+.toolbar fieldset label img,
+.toolbar button img {
+  width: 20px;
+  height: 20px;
+}
+
 
 canvas {
   max-width: calc(min(100%, 512px));

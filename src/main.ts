@@ -184,10 +184,30 @@ enum TimerState {
   Paused,
 }
 
+enum LoopMode {
+  NoLoop = "no-loop",
+  Wrap = "wrap",
+  Reverse = "reverse",
+}
+
 class Timer {
   t = 0;
   state = TimerState.Ambivalent;
-  then: number | null = null;
+  private then: number | null = null;
+  private loopMode = LoopMode.NoLoop;
+  loopStart = 0;
+  loopEnd = Math.PI * 2;
+  private rate = 1;
+
+  playPause() {
+    this.state = this.state === TimerState.Playing ? TimerState.Paused : TimerState.Playing;
+  }
+
+  stop() {
+    this.t = this.loopStart;
+    this.state = TimerState.Paused;
+    this.rate = 1;
+  }
 
   tick(now, isAnimation) {
     if (isAnimation && this.state === TimerState.Ambivalent) {
@@ -196,9 +216,46 @@ class Timer {
     now /= 1000;
     if (this.state === TimerState.Playing && isAnimation) {
       const then = this.then ?? now;
-      this.t += now - then;
+      let next = this.t + this.rate * (now - then);
+
+      if (next > this.loopEnd) {
+        switch (this.loopMode) {
+          case LoopMode.NoLoop: break;
+          case LoopMode.Wrap:
+            next = this.loopStart + (next - this.loopEnd);
+            break;
+          case LoopMode.Reverse:
+            next = this.loopEnd - (next - this.loopEnd);
+            this.rate = -1;
+            break;
+        }
+      }
+      if (next < this.loopStart) {
+        switch (this.loopMode) {
+          case LoopMode.NoLoop: break;
+          case LoopMode.Wrap:
+            next = this.loopStart;
+            break;
+          case LoopMode.Reverse:
+            next = this.loopStart + (this.loopStart - next);
+            this.rate = 1;
+            break;
+        }
+      }
+
+      this.t = next;
     }
     this.then = now;
+  }
+
+  setLoopMode(loopMode) {
+    if (loopMode != LoopMode.Reverse) {
+      this.rate = 1;
+    }
+    this.loopMode = loopMode;
+    if (loopMode != LoopMode.NoLoop) {
+      this.t = clamp(this.t, this.loopStart, this.loopEnd);
+    }
   }
 }
 
@@ -211,6 +268,8 @@ function initialize(script) {
 
   let viewType = 0;
 
+  const timestampInput: HTMLInputElement = document.querySelector('input[name=timestamp]')!;
+
   const timer = new Timer();
   let drawScheduled = false;
   let recompileScheduled = false;
@@ -222,26 +281,32 @@ function initialize(script) {
   function tick(now) {
     requestAnimationFrame(tick);
     timer.tick(now, isAnimation);
-
-    if (!drawScheduled) {
-      return;
+    if (timer.state === TimerState.Playing) {
+      playButton.classList.add('hidden');
+      pauseButton.classList.remove('hidden');
+    } else {
+      playButton.classList.remove('hidden');
+      pauseButton.classList.add('hidden');
     }
-    clearOutput();
-    updateCamera(TAU * camera.x, TAU * camera.y, camera.zoom);
-    updateTime(timer.t);
-    if (recompileScheduled) {
-      let result = recompileScript(editor.state.doc.toString());
-      if (result >= 0) {
-        // TODO: surely this isn't actually how you do this
-        switch (CompilationResult[CompilationResult[result]]) {
-          case CompilationResult.NoChange: break;
-          case CompilationResult.ChangedAnimated: isAnimation = true; break;
-          case CompilationResult.ChangedStatic: isAnimation = false; break;
+    timestampInput.value = timer.t.toFixed(2);
+    if (drawScheduled) {
+      clearOutput();
+      updateCamera(TAU * camera.x, TAU * camera.y, camera.zoom);
+      updateTime(timer.t);
+      if (recompileScheduled) {
+        let result = recompileScript(editor.state.doc.toString());
+        if (result >= 0) {
+          // TODO: surely this isn't actually how you do this
+          switch (CompilationResult[CompilationResult[result]]) {
+            case CompilationResult.NoChange: break;
+            case CompilationResult.ChangedAnimated: isAnimation = true; break;
+            case CompilationResult.ChangedStatic: isAnimation = false; break;
+          }
         }
       }
+      rerender();
     }
-    rerender();
-    drawScheduled = isAnimation;
+    drawScheduled = timer.state === TimerState.Playing;
     recompileScheduled = false;
   }
   requestAnimationFrame(tick);
@@ -292,8 +357,24 @@ function initialize(script) {
     });
   }
 
-  const controls = document.getElementById('view-controls')!;
-  controls.addEventListener('input', (e) => {
+  const playButton: HTMLButtonElement = document.querySelector('#canvas-container button[data-action=play]')!;
+  const pauseButton: HTMLButtonElement = document.querySelector('#canvas-container button[data-action=pause]')!;
+  const stopButton: HTMLButtonElement = document.querySelector('#canvas-container button[data-action=stop]')!;
+  const resetButton: HTMLButtonElement = document.querySelector('#canvas-container button[data-action=reset]')!;
+  resetButton.addEventListener('click', (e) => {
+    console.log("reset");
+  });
+  playButton.addEventListener('click', (e) => {
+    timer.state = TimerState.Playing;
+  });
+  pauseButton.addEventListener('click', (e) => {
+    timer.state = TimerState.Paused;
+  });
+  stopButton.addEventListener('click', (e) => {
+    timer.stop();
+  });
+
+  document.getElementById('canvas-container')!.addEventListener('input', (e) => {
     const target = <HTMLInputElement>e.target;
     switch (target.name) {
       case 'view-type': {
@@ -303,8 +384,27 @@ function initialize(script) {
         }
         break;
       }
+      case 'loop-mode': {
+        if (target.checked) {
+          switch (target.value) {
+            case 'no-loop': timer.setLoopMode(LoopMode.NoLoop); break;
+            case 'wrap': timer.setLoopMode(LoopMode.Wrap); break;
+            case 'reverse': timer.setLoopMode(LoopMode.Reverse); break;
+            default: throw new Error("invalid loop value " + target.value);
+          }
+        }
+        break;
+      }
+      case 'loop-start': {
+        timer.loopStart = parseFloat(target.value);
+        break;
+      }
+      case 'loop-end': {
+        timer.loopEnd = parseFloat(target.value);
+        break;
+      }
       default:
-        throw new Error("unknown field");
+        throw new Error("unknown field " + target.name);
     }
   });
 
