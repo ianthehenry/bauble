@@ -7,11 +7,10 @@
 
 (torus :z 60 30
 | twist :y 0.07
-| rotate-pi :y t
+| rotate-pi :y t :z 0.05
 | move :x 50
 | mirror :r 10 :x
-| move :y (* 30 (sin t))
-| rotate :y t
+| rotate-tau :y (/ t 20)
 | fresnel
 | slow 0.25)
 
