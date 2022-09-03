@@ -151,7 +151,7 @@
 
 (def-flexible-fn translate [shape (offset @[0 0 0])]
   {type/3d |(set-param shape $)
-   type/vec3 |(vec3/+= offset $)
+   type/vec3 |(generic/+= offset $)
    :x |(generic/+= (offset 0) (typecheck :x type/float $))
    :y |(generic/+= (offset 1) (typecheck :y type/float $))
    :z |(generic/+= (offset 2) (typecheck :z type/float $))}
