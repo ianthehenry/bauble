@@ -309,18 +309,19 @@
 
 # (cone :y 100 (+ 100 (* 10 (cos (/ p.x 5)))))
 
-# Actually, let's really lean on the
+# Actually, let's really lean into the
 # pipe operator for a second:
 
 # (cone :y 100 (p.x | / 5 | cos | * 10 | + 100))
 
 # What do you think? Neat? Horrifying? I
-# kinda like that, but it's definitely an
+# kinda like it, but it's definitely an
 # acquired taste.
 
 # Anyway, drag the camera around, and
 # direct your attention to the tip of
-# the cone. See how it seems to flicker?
+# the cone. See how it seems to flicker
+# at certain angles?
 
 # That's because we no longer have an
 # accurate distance field to raymarch.
@@ -352,13 +353,14 @@
 # accurate values, we can choose to
 # advance our rays by only half the
 # reported distance value. This is called
-# slow:
+# (slow):
 
 # (torus :x 100 25 | rotate :y (* p.y 0.020) | slow 0.5)
 
 # It's aptly named, because it will
 # increase the number of raymarching
-# steps we have to take.
+# steps we have to take, and slow down
+# our render.
 
 # Try increasing the twist amount.
 # Eventually you will notice that a
@@ -366,12 +368,12 @@
 # and you'll have to reduce it. But
 # reducing it too much will start to
 # introduce new artifacts, as the
-# raymarcher might begin to hit the
-# maximum steps per fragment
+# raymarcher might begin to abort after
+# taking the maximum steps per fragment
 # (currently hardcoded to 256) before
 # it finds the torus. So there's sort
 # of a limit to how distorted you can
-# make space.
+# make space. At least for now.
 
 # Also note that slowing down the
 # raymarcher has other effects as well.
@@ -397,8 +399,13 @@
 # Lastly, slowing down space will cause
 # soft shadows to become too soft, for
 # complicated reasons that I don't want
-# to explain right now this is so long
-# already.
+# to explain right now because this is
+# so long already.
+
+# (union
+#   (sphere 50 | move :z -70 | slow 0.25)
+#   (sphere 50 | move :z 70)
+#   (half-space :-y -50 | shade [1 1 1]))
 
 #### Overloading ####
 
@@ -412,8 +419,9 @@
 # [4 5 6]) to add the elements of two
 # tuples together. That would normally
 # be a type error in Janet, but inside
-# Bauble, + has been overloaded to
-# match GLSL's semantics.
+# Bauble, numeric functions like + or
+# sin or pow have all been overloaded
+# to match GLSL's semantics.
 
 # In addition many -- but not all --
 # GLSL functions have been ported to
@@ -425,8 +433,8 @@
 # produce a symbolic expression that
 # will execute on the GPU.
 
-# One notable exception is length
-# (), since that's already a very
+# One notable exception is length(),
+# since that's already a very
 # common Janet function that returns
 # the length of an array or tuple. As
 # such (length [1 2 3]) is 3, but
@@ -518,17 +526,21 @@
 # (sphere 100 | shade (mix brown tan (round spots) | * (max outline 0.05)))
 
 # Just beautiful. Let's hold on to that
-# one, I have a feeling we're going to
+# one; I have a feeling we're going to
 # do great things together:
 
 # (def leppard (shade (mix brown tan (round spots) | * (max outline 0.05))))
+# (def eye (sphere 5 | shade [1 1 1] | union (sphere 2 | move :z 4 | shade [0.1 0.1 0.1])))
 # (line [20 0 32] [50 -50 50] 5
 # | mirror :x :z
 # | union :r 10
+#   (line [0 9 -31] [0 -14 -90] 5)
 #   (box [33 20 41] :r 10)
 #   (sphere 20 | move :z 51 :y 24)
 # | resurface leppard
-# | union (sphere 5 | move [7 34 67] | mirror :x | shade [1 1 1]))
+# | union
+#   (eye | rotate :x 0.63 :y -0.47 | move [7 34 67])
+#   (eye | scale 0.95 | rotate :x -0.09 :y 0.52 | move [-7 33 67]))
 
 # We will never speak of this again.
 
@@ -565,6 +577,7 @@
 # source?
 
 # https://github.com/ianthehenry/bauble/blob/master/src/dsl.janet
+# https://github.com/ianthehenry/bauble/blob/master/src/glslisp/src/builtins.janet
 # https://github.com/ianthehenry/bauble/blob/master/src/helpers.janet
 
 # Or try studying these examples:
