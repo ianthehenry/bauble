@@ -477,7 +477,7 @@
      ["float shine" shine]
      ["float gloss" gloss]
      ["float ambient" ambient]]
-    `vec3 view_dir = normalize(camera - world_p);
+    `vec3 view_dir = normalize(camera_origin - world_p);
      vec3 result = color * ambient;
      for (int i = 0; i < lights.length(); i++) {
        vec3 light_color = lights[i].color * light_intensities[i];
@@ -502,7 +502,7 @@
      ["float gloss" gloss]
      ["float ambient" ambient]
      ["float steps" steps]]
-    `vec3 view_dir = normalize(camera - world_p);
+    `vec3 view_dir = normalize(camera_origin - world_p);
      vec3 light = vec3(0.0);
 
      for (int i = 0; i < lights.length(); i++) {
@@ -526,7 +526,7 @@
        ["vec3 color" color]
        ["float strength" strength]
        ["float exponent" exponent]]
-      `vec3 view_dir = normalize(camera - world_p);
+      `vec3 view_dir = normalize(camera_origin - world_p);
        float fresnel = pow(1.0 - dot(normal, view_dir), exponent);
        return color * strength * fresnel;
        `))

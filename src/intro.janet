@@ -283,25 +283,37 @@
 # that stands for. Look at us: we're
 # doing lisp. Real live lisp.
 
-# When writing a distance expression,
-# the only magic variables you can use
-# are p and world-p. p is the point in
-# space local to the current shape
-# (so translated, rotated, etc), while
+# p isn't the only magic variable. p is
+# the point in space local to the
+# current shape(so translated, rotated,
+# etc), but you can also use world-p.
+
 # world-p is the global position of the
-# ray (this is useful for lighting, to
-# calculate reflection or specular
-# highlights).
+# ray, which is mostly useful for
+# surfacing, to calculate reflections
+# or specular highlights.
+
+# There's also camera, which is the
+# position of the camera in world
+# coordinates. Once again, mostly
+# useful for surfacing.
 
 # When writing a color expression, you
-# also have access to these other magic
-# variables:
+# have access to another magic
+# variable: normal. normal is an
+# approximation of the surface normal
+# at the point that you're shading.
 
-# - camera: (the position of the camera,
-#   in global (world) coordinates)
-# - normal: an approximation of the
-#   normal vector at the point you're
-#   shading
+# Just to review, the only magic
+# variables are:
+
+# - p: point in local coordinate system
+# - world-p: point in global coordinate
+#   system
+# - camera: camera position in global
+#   coordinate system
+# - normal: surface normal (cannot be
+#   used in distance expressions)
 
 #### Spatial artifacts ####
 

@@ -13,7 +13,6 @@
   (if (int? n) (string n ".0") (string n)))
 
 (defn compile-fragment-shader [expr]
-  (def camera {:x 0 :y 0 :zoom 1})
   (def comp-state (comp-state/new glsl-helpers/functions))
 
   (when debug?
@@ -26,15 +25,11 @@
   (def [color-statements color-expression] (:compile-color color-scope expr))
   (def function-defs (string/join (map compile-function (comp-state :functions)) "\n"))
 
-  # TODO: we should inspect (scope :free-variables) to determine which
-  # of the builtins we actually need to compute when we're shading.
-  # also, it will allow us to give better error messages if you do something
-  # like use `normal` during a shape compilation
-
   (def distance-prep-statements @[])
   (each free-variable (keys (distance-scope :free-variables))
     (case free-variable
       globals/p nil
+      globals/camera nil
       globals/world-p (array/push distance-prep-statements "vec3 world_p = p;")
       (errorf "cannot use %s in a distance expression" (free-variable :name))))
 
@@ -115,7 +110,7 @@ float nearest_distance(vec3 p) {
   return `distance-expression`;
 }
 
-vec3 nearest_color(vec3 p, vec3 camera) {
+vec3 nearest_color(vec3 p) {
   `
   (string/join color-prep-statements "\n  ") "\n  "
   (string/join color-statements "\n  ")
@@ -251,7 +246,7 @@ void main() {
   int steps;
   vec3 hit = march(eye, dir, steps);
 
-  vec3 color = nearest_color(hit, eye);
+  vec3 color = nearest_color(hit);
   float depth = length(hit - eye);
   float attenuation = depth / MAXIMUM_TRACE_DISTANCE;
   color = mix(color, fog_color, clamp(attenuation * attenuation, 0.0, 1.0));
