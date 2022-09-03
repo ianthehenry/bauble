@@ -70,7 +70,7 @@
     (+ to-lo (* (smoothstep from-lo from-hi x) (- to-hi to-lo)))))
 
 (defn remap+ [x]
-  ~(* 0.5 (+ ,x 1)))
+  (* 0.5 (+ x 1)))
 
 (defn perlin [x]
   (case (glslisp/typecheck x)
