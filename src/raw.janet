@@ -465,8 +465,6 @@
         color2 (:surface shape2 comp-state)]
     ~(mix ,color1 ,color2 ,weight)))
 
-(def-surfacer flat-color [shape color] color)
-
 (def-surfacer blinn-phong [shape color shine gloss ambient]
   (:generate-function comp-state "vec3" :blinn-phong "blinn_phong"
     [globals/world-p
@@ -532,6 +530,12 @@
        return color * strength * fresnel;
        `))
   ~(+ ,(:surface shape comp-state) ,fresnel))
+
+(def-operator map-distance [shape f]
+  (f (:compile shape comp-state)))
+
+(def-surfacer map-color [shape f]
+  (f (:surface shape comp-state)))
 
 (def-complicated resurface [shape color]
   (:compile shape comp-state)

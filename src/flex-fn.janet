@@ -3,6 +3,7 @@
 (import ./glslisp/src/type :as type :export true)
 (def type/keyword :keyword)
 (def type/3d :3d-sdf)
+(def type/fn :fn)
 (def type/axis :axis)
 (def type/signed-axis :signed-axis)
 
@@ -27,6 +28,7 @@
   (case (type value)
     :keyword (get keyword-types value type/unknown)
     :struct type/3d # TODO: obviously this is wrong once I add 2D SDFs
+    :function type/fn
     (glslisp/typecheck value)))
 
 (defn typecheck [name expected-type value]

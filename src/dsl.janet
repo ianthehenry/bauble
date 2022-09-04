@@ -282,11 +282,6 @@
 
 (def shade blinn-phong)
 
-(def-flexible-fn color [[shape raw/r3] color]
-  {type/vec3 |(set-param color $)
-   type/3d |(set-param shape $)}
-  (raw/flat-color shape color))
-
 (def-flexible-fn fresnel
   [shape [color [1 1 1]] [strength 0.25] [exponent 5]]
   {type/vec3 |(set-param color $)
@@ -313,6 +308,19 @@
    :shape |(set-param shape $ type/3d)
    :color |(set-param color $ type/3d)}
   (raw/resurface shape color))
+
+(def-flexible-fn map-distance [shape function]
+  {type/3d |(set-param shape $)
+   type/fn |(set-param function $)}
+  (raw/map-distance shape function))
+
+(def-flexible-fn map-color [shape function]
+  {type/3d |(set-param shape $)
+   type/fn |(set-param function $)}
+  (raw/map-color shape function))
+
+(defmacro color [shape & body]
+  ~(map-color ,shape (fn [c] ,;body)))
 
 # TODO: are these useful?
 
