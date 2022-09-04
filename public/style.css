@@ -177,6 +177,10 @@ header .image-link img {
   box-shadow: inset 2px 0 2px -2px #000, inset -2px 0 2px -2px #000;
 }
 
+.toolbar .label {
+  padding: 0 4px;
+}
+
 .toolbar fieldset {
   display: inline;
   border: none;
