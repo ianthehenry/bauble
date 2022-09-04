@@ -5,4 +5,5 @@
 (def world-p (glslisp/variable 'world_p type/vec3))
 (def camera (glslisp/variable 'camera_origin type/vec3))
 (def normal (glslisp/variable 'normal type/vec3))
+(def occlusion (glslisp/variable 'occlusion type/float))
 (def light-intensities (glslisp/variable 'light_intensities (type/array 3 type/float)))

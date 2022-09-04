@@ -472,6 +472,7 @@
     [globals/world-p
      globals/camera
      globals/normal
+     globals/occlusion
      globals/light-intensities
      ["vec3 color" color]
      ["float shine" shine]

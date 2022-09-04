@@ -317,24 +317,47 @@
 # | shade [1 (/ (distance camera world-p) 1000) 0])
 
 # When writing a color expression, you
-# have access to another magic
-# variable: normal. normal is an
-# approximation of the surface normal
-# at the point that you're shading.
+# have access to a couple other magic
+# variables: "normal" and "occlusion."
+
+# normal is an approximation of the
+# surface normal at the point that
+# you're shading:
 
 # (box 50 :r 10 | shade [1 (clamp normal.y 0 1) 0])
+
+# occlusion is an approximation of how
+# much stuff is near the point that
+# you're shading. 0 means there is
+# nothing around you, while 1 means
+# there is another shape right next to
+# you. It's commonly used to modulate
+# light:
+
+# (defn shade-ao [shape color]
+#   (shade shape color :ambient (mix 0.2 0.1 occlusion)))
+# (box 50 :r 10 | spoon (rotate :x tau/8 :y tau/4 :x tau/3 | scale 0.75 | move :y 70)
+# | shade-ao [0 1 1]
+# | union (half-space :-y -50 | shade-ao [1 1 1]))
+
+# Try changing (shade-ao) back to
+# (shade). Without ambient occlusion,
+# the areas in shadow appear completely
+# flat. With AO, you get a sense of
+# depth.
 
 # Just to review, the only magic
 # variables are:
 
-# - t: time in seconds
-# - p: point in local coordinate system
-# - world-p: point in global coordinate
+# - (always) t: time in seconds
+# - (always) p: point in local coordinate system
+# - (always) world-p: point in global coordinate
 #   system
-# - camera: camera position in global
+# - (always) camera: camera position in global
 #   coordinate system
-# - normal: surface normal (cannot be
-#   used in distance expressions)
+# - (color only) normal: surface normal
+# - (color only) occlusion: an approximation of the
+#   concavity of the distance field near this point
 
 #### Spatial artifacts ####
 

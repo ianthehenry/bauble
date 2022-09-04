@@ -38,6 +38,7 @@
   (def color-prep-statements @[])
   # this statement must come first so that the light intensity can see it
   (if (or ((color-scope :free-variables) globals/normal)
+          ((color-scope :free-variables) globals/occlusion)
           ((color-scope :free-variables) globals/light-intensities))
     (array/push color-prep-statements "vec3 normal = calculate_normal(p);"))
   (each free-variable (keys (color-scope :free-variables))
@@ -47,6 +48,7 @@
       globals/camera nil
       globals/normal nil
       globals/world-p (array/push color-prep-statements "vec3 world_p = p;")
+      globals/occlusion (array/push color-prep-statements "float occlusion = calculate_occlusion(p, normal);")
       globals/light-intensities (do
         # Array initialization syntax doesn't work on the Google
         # Pixel 6a, so we do this kinda dumb thing. Also a simple
@@ -103,9 +105,6 @@ const Light lights[3] = Light[3](
   Light(vec3(0.0, 0.0, 256.0), vec3(0.0), 2048.0)
 );
 
-vec3 calculate_normal(vec3 p);
-float cast_light(vec3 destination, vec3 light, float radius);
-
 `
 function-defs
 `
@@ -117,14 +116,6 @@ float nearest_distance(vec3 p) {
   return `distance-expression`;
 }
 
-vec3 nearest_color(vec3 p) {
-  `
-  (string/join color-prep-statements "\n  ") "\n  "
-  (string/join color-statements "\n  ")
-  `
-  return `color-expression`;
-}
-
 vec3 calculate_normal(vec3 p) {
   const vec3 step = vec3(NORMAL_OFFSET, 0.0, 0.0);
 
@@ -133,6 +124,28 @@ vec3 calculate_normal(vec3 p) {
     nearest_distance(p + step.yxy) - nearest_distance(p - step.yxy),
     nearest_distance(p + step.yyx) - nearest_distance(p - step.yyx)
   ));
+}
+
+float calculate_occlusion(vec3 p, vec3 normal) {
+  const int step_count = 10;
+  const float max_distance = 10.0;
+  const float step_size = max_distance / float(step_count);
+  float baseline = nearest_distance(p);
+  float occlusion = 0.0;
+  // TODO: this does some good to reduce the problem where a "neck" will
+  // have band of completely unoccluded space, but it introduces some
+  // terrible banding artifacts on flat surfaces.
+  // vec3 sine_noise = sin(p * 43758.5453);
+  // vec3 rand = sign(sine_noise) * fract(sine_noise);
+  // vec3 step = normalize(normal + rand) * step_size;
+  vec3 step = normal * step_size;
+  for (int i = 1; i <= step_count; i++) {
+    float expected_distance = baseline + float(i) * step_size;
+    float actual_distance = max(nearest_distance(p + float(i) * step), 0.0);
+    occlusion += 1.0 - (actual_distance / expected_distance);
+  }
+  occlusion /= float(step_count);
+  return clamp(occlusion, 0.0, 1.0);
 }
 
 float cast_light(vec3 p, vec3 light, float radius) {
@@ -197,6 +210,14 @@ vec3 march(vec3 ray_origin, vec3 ray_direction, out int steps) {
     distance += nearest;
   }
   return ray_origin + distance * ray_direction;
+}
+
+vec3 nearest_color(vec3 p) {
+  `
+  (string/join color-prep-statements "\n  ") "\n  "
+  (string/join color-statements "\n  ")
+  `
+  return `color-expression`;
 }
 
 const float PI = 3.14159265359;
