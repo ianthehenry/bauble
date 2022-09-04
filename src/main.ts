@@ -274,7 +274,7 @@ function initialize(script) {
 
   let viewType = 0;
 
-  const timestampInput: HTMLInputElement = document.querySelector('input[name=timestamp]')!;
+  const timestampSpan: HTMLInputElement = document.querySelector('.toolbar span.timestamp')!;
 
   const timer = new Timer();
   let drawScheduled = false;
@@ -294,7 +294,7 @@ function initialize(script) {
       playButton.classList.remove('hidden');
       pauseButton.classList.add('hidden');
     }
-    timestampInput.value = timer.t.toFixed(2);
+    timestampSpan.innerText = timer.t.toFixed(2);
     if (drawScheduled) {
       clearOutput();
       updateCamera(TAU * camera.x, TAU * camera.y, camera.zoom);

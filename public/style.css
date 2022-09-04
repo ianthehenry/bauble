@@ -129,7 +129,7 @@ header .image-link img {
   color: #900;
 }
 
-#output {
+#output, span.timestamp, .toolbar input[inputmode=numeric] {
   font-family: Menlo, monospace;
   font-size: 11pt;
 }
@@ -166,13 +166,15 @@ header .image-link img {
   flex: 1;
   background-color: #8f8;
 }
+.toolbar .timestamp {
+  padding: 0 1ch;
+}
 .toolbar input[inputmode=numeric] {
   text-align: center;
-  width: 6ch;
-  font-family: Menlo, monospace;
   border: none;
+  width: 6ch;
   background-color: #eee;
-  box-shadow: inset 0 0 2px #000;
+  box-shadow: inset 2px 0 2px -2px #000, inset -2px 0 2px -2px #000;
 }
 
 .toolbar fieldset {
