@@ -10,6 +10,7 @@
 (make-generic-1 round :f math/round)
 (make-generic-1 floor :f math/floor)
 (make-generic-1 ceil :f math/ceil)
+(make-generic-1 sqrt :f math/sqrt)
 (make-generic-1 fract)
 (make-generic-1 sign)
 
