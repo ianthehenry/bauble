@@ -109,100 +109,6 @@
 # viewing angle, so rotate the viewport
 # a little too.
 
-# When you combine shapes together, you
-# also combine their surfaces. For
-# example, here are a couple shapes:
-
-# (def green-box (shade [0 1 0] (box 50 :r 5) :gloss 12 :shine 1))
-# (def red-sphere (shade [1 0 0] (sphere 60)))
-
-# Now uncomment each of these one at a
-# time to see how the colors interact:
-
-# (union green-box red-sphere)
-# (intersect green-box red-sphere)
-# (subtract green-box red-sphere)
-
-# And now let's try it with smooth
-# transitions:
-
-# (union :r 5 green-box red-sphere)
-# (intersect :r 5 green-box red-sphere)
-# (subtract :r 5 green-box red-sphere)
-
-# That's interesting, but sometimes you
-# might not want to see that yellow
-# bleeding through. Sometimes you want
-# a smooth shape transition, but a sharp
-# color transition. And you can have it:
-
-# (resurface
-#   (subtract :r 5 green-box red-sphere)
-#   (subtract green-box red-sphere))
-
-# (resurface) works to transplant the
-# color field from any shape to
-# another shape. In that case the shapes
-# were very similar, but they don't have
-# to be.
-
-# (resurface
-#   green-box
-#   (union green-box red-sphere))
-
-# The way this works is that the
-# raymarcher uses the signed distance
-# field from the first shape to
-# determine the geometry, but when it
-# hits the surface it uses the second
-# shape to determine the color.
-
-# This is a useful technique for
-# "painting" complex colors onto shapes,
-# but you can also use (resurface) to
-# save a material to apply to multiple
-# shapes. Instead of this:
-
-# (shade [1 1 0] (sphere 50))
-
-# You can write:
-
-# (def yellow (shade [1 1 0]))
-# (resurface (sphere 50) yellow)
-
-# The way this works is that (shade) and
-# other material primitives, when not
-# given a shape to act on, default to
-# the entirety of ℝ³ -- the shape that
-# is a distance 0 away from every point.
-# So a "material" is still a pair of
-# distance and color functions, but the
-# distance function isn't really useful.
-
-# Last thing: Bauble also has functions
-# to modify the underlying color field
-# in some way. Actually, just one at the
-# moment:
-
-# (fresnel green-box [1 1 0] 0.5 :exponent 5)
-
-# That adds a little bit of (simulated)
-# fresnel reflectivity to a surface.
-# Move the camera around a bit to see
-# what it does. Note that Bauble doesn't
-# actually support reflection yet, so it
-# just tints the edges, but it still
-# looks pretty nice.
-
-# All of the arguments are optional,
-# so you can quickly apply it to a shape
-# and add a little depth. Note that it
-# works even with the default
-# normal-coloring:
-
-# (sphere 50)
-# (fresnel (sphere 50))
-
 #### Lisp heresy ####
 
 # So far our examples have mostly stuck
@@ -488,6 +394,145 @@
 #   (sphere 50 | move :z -70 | slow 0.25)
 #   (sphere 50 | move :z 70)
 #   (ground -50 | shade [1 1 1]))
+
+#### Surfacing expressions ####
+
+# You can change the color of a shape
+# using the (map-color) helper. Let's
+# go back to our pastel sphere:
+
+# (sphere 50)
+
+# We can tint it red:
+
+# (sphere 50 | map-color (fn [col] (+ [1 0 0] col)))
+
+# We can deepen the color intensity:
+
+# (sphere 50 | map-color (fn [col] (pow col 2)))
+
+# We can replace the color with
+# something else altogether:
+
+# (sphere 50 | map-color (fn [col] [1 0 1]))
+
+# Bauble also has a (color) macro. This
+# is just like map-color, except it
+# automatically wraps our expression in
+# a function that takes its argument
+# as "c". So these two lines are
+# exactly equivalent:
+
+# (sphere 50 | color [c.b c.r c.g])
+# (sphere 50 | map-color (fn [c] [c.b c.r c.g]))
+
+# (Note that (color) is a *macro*, not a
+# function, so unlike most of Bauble,
+# the argument order matters here.)
+
+# For an example using some of the
+# fancier magic variables to good
+# effect, consider this expression:
+
+# (box 50 :r 10
+# | color (let [view-dir (normalize (- camera world-p))]
+#     (+ c (pow (- 1.0 (dot normal view-dir)) 5))))
+
+# That adds a little bit of
+# (simulated) fresnel reflectivity to a
+# surface. Move the camera around a bit
+# to see what it does. Note that Bauble
+# doesn't actually support reflection
+# yet, so it just tints the edges, but
+# it still looks pretty nice.
+
+# There is actually a built-in that does
+# exactly the same thing as that
+# complicated expression above, but with a
+# few more knobs to tweak:
+
+# (fresnel (box 50 :r 10) [1 1 0] 0.5 :exponent 5)
+
+# All of the arguments are optional, so
+# you can quickly apply it to a shape
+# and add a little depth. You can use a
+# lower exponent and a warmer color to
+# evoke a subsurface scattering
+# effect.
+
+# (fresnel (sphere 50 | shade [1 1 1]) [1 0.6 0.5] 0.25 :exponent 0.5)
+
+#### Surfacing with boolean operations ####
+
+# When you combine shapes together, you
+# also combine their surfaces. For
+# example, here are a couple shapes:
+
+# (def green-box (shade [0 1 0] (box 50 :r 5) :gloss 12 :shine 1))
+# (def red-sphere (shade [1 0 0] (sphere 60)))
+
+# Now uncomment each of these one at a
+# time to see how the colors interact:
+
+# (union green-box red-sphere)
+# (intersect green-box red-sphere)
+# (subtract green-box red-sphere)
+
+# And now let's try it with smooth
+# transitions:
+
+# (union :r 5 green-box red-sphere)
+# (intersect :r 5 green-box red-sphere)
+# (subtract :r 5 green-box red-sphere)
+
+# That's interesting, but sometimes you
+# might not want to see that yellow
+# bleeding through. Sometimes you want
+# a smooth shape transition, but a sharp
+# color transition. And you can have it:
+
+# (resurface
+#   (subtract :r 5 green-box red-sphere)
+#   (subtract green-box red-sphere))
+
+# (resurface) works to transplant the
+# color field from any shape to
+# another shape. In that case the shapes
+# were very similar, but they don't have
+# to be.
+
+# (resurface
+#   green-box
+#   (union green-box red-sphere))
+
+# The way this works is that the
+# raymarcher uses the signed distance
+# field from the first shape to
+# determine the geometry, but when it
+# hits the surface it uses the second
+# shape to determine the color.
+
+# This is a useful technique for
+# "painting" complex colors onto shapes,
+# but you can also use (resurface) to
+# save a material to apply to multiple
+# shapes. Instead of this:
+
+# (shade [1 1 0] (sphere 50))
+
+# You can write:
+
+# (def yellow (shade [1 1 0]))
+# (resurface (sphere 50) yellow)
+
+# The way this works is that (shade) and
+# other material primitives, when not
+# given a shape to act on, default to
+# the entirety of ℝ³ -- the shape that
+# is a distance 0 away from every point.
+# So a "material" is still a pair of
+# distance and color functions, but the
+# distance function isn't really useful.
 
 #### Overloading ####
 
