@@ -88,7 +88,7 @@ out vec4 frag_color;
 const int MAX_STEPS = 256;
 const float MINIMUM_HIT_DISTANCE = 0.1;
 const float NORMAL_OFFSET = 0.005;
-const float MAXIMUM_TRACE_DISTANCE = 8.0 * 1024.0;
+const float MAXIMUM_TRACE_DISTANCE = 64.0 * 1024.0;
 
 struct Light {
   vec3 position;
