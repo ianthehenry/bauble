@@ -79,8 +79,10 @@ header a:active {
   color: var(--text-color);
 }
 
-header img {
-  fill: #4b0053;
+header svg {
+  fill: var(--text-color);
+  width: 24px;
+  height: 24px;
 }
 
 header > :first-child {
@@ -96,11 +98,6 @@ header .image-link {
   height: var(--header-height);
   justify-content: center;
   align-items: center;
-}
-
-header .image-link img {
-  width: calc(0.75 * var(--header-height));
-  aspect-ratio: 1;
 }
 
 #code-container {
@@ -220,27 +217,27 @@ header .image-link img {
   display: none;
 }
 
-.toolbar button img,
+.toolbar button svg,
 .toolbar fieldset input[type=radio] + span,
-.toolbar fieldset input[type=radio] + img {
+.toolbar fieldset input[type=radio] + svg {
   padding: 4px;
   border-radius: 6px;
 }
 
 .toolbar fieldset input[type=radio]:checked + span,
-.toolbar fieldset input[type=radio]:checked + img {
+.toolbar fieldset input[type=radio]:checked + svg {
   background-color: rgba(0, 0, 0, 0.15);
 }
 
-.toolbar button:hover img,
+.toolbar button:hover svg,
 .toolbar fieldset label:hover input[type=radio] + span,
-.toolbar fieldset label:hover input[type=radio] + img {
+.toolbar fieldset label:hover input[type=radio] + svg {
   background-color: rgba(0, 0, 0, 0.1);
 }
 
-.toolbar button:active img,
+.toolbar button:active svg,
 .toolbar fieldset label:hover input[type=radio]:checked + span,
-.toolbar fieldset label:hover input[type=radio]:checked + img {
+.toolbar fieldset label:hover input[type=radio]:checked + svg {
   background-color: rgba(0, 0, 0, 0.2);
 }
 
@@ -259,19 +256,19 @@ header .image-link img {
   align-items: center;
   justify-content: center;
 }
-.toolbar .indicator img {
+.toolbar .indicator svg {
   border-radius: 12px;
   padding: 2px;
 }
-.toolbar .indicator.compilation-error img {
+.toolbar .indicator.compilation-error svg {
   background-color: #ff9ca1;
 }
 .toolbar .hidden {
   display: none;
 }
-.toolbar .indicator img,
-.toolbar fieldset label img,
-.toolbar button img {
+.toolbar .indicator svg,
+.toolbar fieldset label svg,
+.toolbar button svg {
   width: 20px;
   height: 20px;
 }
