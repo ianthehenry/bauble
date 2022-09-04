@@ -539,10 +539,10 @@ chokidar@^3.5.2:
   optionalDependencies:
     fsevents "~2.3.2"
 
-codemirror-lang-janet@^0.1.0:
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/codemirror-lang-janet/-/codemirror-lang-janet-0.1.0.tgz#bb6628bcaea0e0dc83d906ce0a3e47062c7ab9bc"
-  integrity sha512-z4Ho44sDg/N4dPYFiJ6Vfs0V0PFyTvX7TKt/ALo/Uz8N5BhBLTuLuTGIy8ncTlOR0NsbnlrDelsU62i61rwkEg==
+codemirror-lang-janet@^0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/codemirror-lang-janet/-/codemirror-lang-janet-0.2.0.tgz#c243f8f99faea041381e6bdd80536005825118bf"
+  integrity sha512-VKcoll585aE4uEPABej55c4bSO3dcH80FzB7ZM1CFz/JgEt8LQhr4hGL0jXCzuQhqIChqzhbjKFg9ph/fWbFUw==
   dependencies:
     "@codemirror/language" "^6.2.1"
     "@lezer/highlight" "^1.0.0"
