@@ -116,6 +116,7 @@
     'float type/float
     'length type/float
     'distance type/float
+    'dot type/float
     'not type/bool
     '= type/bool
     'not= type/bool

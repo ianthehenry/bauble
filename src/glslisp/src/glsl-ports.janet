@@ -24,6 +24,12 @@
     (+= sum (* x x)))
   (math/sqrt sum))
 
+(defn dot [a b]
+  (var sum 0)
+  (for i 0 (length a)
+    (+= sum (* (a i) (b i))))
+  sum)
+
 (defn mix [x y a]
   (+ (* x a) (* y (- 1 a))))
 

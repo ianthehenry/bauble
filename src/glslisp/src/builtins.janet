@@ -32,6 +32,8 @@
 (make-generic-2 min)
 (make-generic-2 mod)
 
+(make-vec-2 dot)
+
 # TODO: I'm inverting the order here because
 # the GLSL order makes absolutely no sense.
 # But this is the only function where I'm doing
