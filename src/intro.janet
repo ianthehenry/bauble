@@ -408,6 +408,32 @@
 # of a limit to how distorted you can
 # make space. At least for now.
 
+# Let me draw your attention to the
+# upper-right hand corner. See those
+# buttons? There's a camera, a magnet,
+# and a... I dunno; it's hard to come
+# up with icons for these things.
+
+# These views are useful for debugging
+# spatial distortions. The first one
+# shows the number of steps, as a
+# gradient from black to write. The
+# darker the pixel, the fewer steps it
+# took to find an intersection with the
+# shape. Rays that didn't manage to
+# converge in 256 steps show up in
+# magenta.
+
+# The second debug view shows the value
+# of the distance field as
+# (distance / minimum_hit_distance).
+# Blue values are good: that means the
+# ray stopped a small positive distance
+# from the surface. Magenta values mean
+# the ray overshot, and landed inside
+# the shape. You can use these views to
+# help you select slow coefficients.
+
 # Also note that slowing down the
 # raymarcher has other effects as well.
 # Functions that rely on the distance
