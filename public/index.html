@@ -12,11 +12,13 @@
   <div id="code-and-preview">
     <div id="canvas-container">
       <div class="toolbar">
-        <button data-action="reset">Reset</button>
+        <button title="Reset camera" data-action="reset-camera"><img src="/icons/isometric.svg" /></button>
+        <!-- <button title="Toggle quad view" data-action="toggle-quad-view"><img src="/icons/quad-view.svg" /></button> -->
+        <div class="spacer"></div>
         <fieldset><!--
-          --><label><input type="radio" autocomplete="off" name="view-type" value="0" checked /><span>Normal</span></label><!--
-          --><label><input type="radio" autocomplete="off" name="view-type" value="1" /><span>Convergence</span></label><!--
-          --><label><input type="radio" autocomplete="off" name="view-type" value="2" /><span>Overshoot</span></label><!--
+          --><label title="Render normally"><input type="radio" autocomplete="off" name="view-type" value="0" checked /><img src="/icons/camera.svg" /></label><!--
+          --><label title="Debug number of raymarching steps"><input type="radio" autocomplete="off" name="view-type" value="1" /><img src="/icons/convergence.svg" /></label><!--
+          --><label title="Debug surface distance"><input type="radio" autocomplete="off" name="view-type" value="2" /><img src="/icons/surface-distance.svg" /></label><!--
         --></fieldset>
       </div>
       <canvas id="render-target" width="1024" height="1024"></canvas>
@@ -24,7 +26,8 @@
         <button title="Play" data-action="play"><img src="/icons/play.svg" /></button>
         <button title="Pause" data-action="pause" class="hidden"><img src="/icons/pause.svg" /></button>
         <button title="Stop" data-action="stop"><img src="/icons/stop.svg" /></button>
-        <input name="timestamp" inputmode="numeric" value="0.000" autocomplete="off" />
+        <input name="timestamp" inputmode="numeric" value="0.00" autocomplete="off" />
+        <div class="scrubber"></div>
         <fieldset><!--
           --><label title="No loop"><input type="radio" autocomplete="off" name="loop-mode" value="no-loop" checked /><img src="/icons/arrow-bar-right.svg" /></label><!--
           --><label title="Loop"><input type="radio" autocomplete="off" name="loop-mode" value="wrap" /><img src="/icons/repeat.svg" /></label><!--
@@ -32,7 +35,7 @@
         </fieldset>
         <input name="loop-start" inputmode="numeric" value="0.00" autocomplete="off" />
         to
-        <input name="loop-end" inputmode="numeric" value="6.2832" autocomplete="off" /></div>
+        <input name="loop-end" inputmode="numeric" value="6.28" autocomplete="off" /></div>
     </div>
     <div id="editor-container"></div>
   </div>

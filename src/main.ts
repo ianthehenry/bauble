@@ -259,11 +259,17 @@ class Timer {
   }
 }
 
+const defaultCamera = {
+  x: -0.125,
+  y: 0.125,
+  zoom: 2.0,
+}
+
 function initialize(script) {
   const camera = {
-    x: -0.125,
-    y: 0.125,
-    zoom: 2.0,
+    x: defaultCamera.x,
+    y: defaultCamera.y,
+    zoom: defaultCamera.zoom,
   };
 
   let viewType = 0;
@@ -360,9 +366,12 @@ function initialize(script) {
   const playButton: HTMLButtonElement = document.querySelector('#canvas-container button[data-action=play]')!;
   const pauseButton: HTMLButtonElement = document.querySelector('#canvas-container button[data-action=pause]')!;
   const stopButton: HTMLButtonElement = document.querySelector('#canvas-container button[data-action=stop]')!;
-  const resetButton: HTMLButtonElement = document.querySelector('#canvas-container button[data-action=reset]')!;
+  const resetButton: HTMLButtonElement = document.querySelector('#canvas-container button[data-action=reset-camera]')!;
   resetButton.addEventListener('click', (e) => {
-    console.log("reset");
+    camera.x = defaultCamera.x;
+    camera.y = defaultCamera.y;
+    camera.zoom = defaultCamera.zoom;
+    draw(false);
   });
   playButton.addEventListener('click', (e) => {
     timer.state = TimerState.Playing;

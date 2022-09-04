@@ -113,10 +113,10 @@ header .image-link img {
 }
 
 #output-resize-handle {
-  height: 6px;
-  background-color: #eee;
+  height: 12px;
   cursor: ns-resize;
   touch-action: none;
+  background: #eee url(/icons/grip-horizontal.svg) no-repeat center;
 }
 
 #output {
@@ -142,49 +142,62 @@ header .image-link img {
   max-width: 512px;
   flex-direction: column;
   --control-height: 40px;
-  background-color: #ff8;
+  /*background-color*/: #ff8;
 }
 
 .toolbar {
   width: 100%;
   height: var(--control-height);
   line-height: var(--control-height);
-  background-color: #f8f;
+  /*background-color: #f8f;*/
   display: flex;
   user-select: none;
+  background-color: #eee;
 }
 
+.toolbar button:not(.hidden:first-child)+button, .toolbar label+label {
+  margin-left: -6px;
+}
+
+.toolbar .spacer {
+  flex: 1;
+}
+.toolbar .scrubber {
+  flex: 1;
+  background-color: #8f8;
+}
 .toolbar input[inputmode=numeric] {
-  text-align: right;
+  text-align: center;
   width: 6ch;
   font-family: Menlo, monospace;
+  border: none;
+  background-color: #eee;
+  box-shadow: inset 0 0 2px #000;
 }
 
 .toolbar fieldset {
   display: inline;
   border: none;
   padding: none;
-  background-color: #88f;
+  /*background-color: #88f;*/
   white-space: nowrap;
 }
 
 .toolbar button {
   min-width: var(--control-height);
+  /*background-color: #f8f;*/
+  border: none;
+  cursor: pointer;
+  background-color: initial;
 }
 
 .toolbar fieldset label {
   display: inline-block;
   height: 100%;
-  background-color: #8ff;
+  /*background-color: #8ff;*/
   cursor: pointer;
   min-width: var(--control-height);
   text-align: center;
-}
-
-.toolbar button {
-  background-color: #f8f;
-  border: none;
-  cursor: pointer;
 }
 
 .toolbar fieldset input[type=radio] {
@@ -200,7 +213,7 @@ header .image-link img {
 
 .toolbar fieldset input[type=radio]:checked + span,
 .toolbar fieldset input[type=radio]:checked + img {
-  background-color: rgba(0, 0, 0, 0.25);
+  background-color: rgba(0, 0, 0, 0.15);
 }
 
 .toolbar button:hover img,
@@ -212,7 +225,7 @@ header .image-link img {
 .toolbar button:active img,
 .toolbar fieldset label:hover input[type=radio]:checked + span,
 .toolbar fieldset label:hover input[type=radio]:checked + img {
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: rgba(0, 0, 0, 0.2);
 }
 
 .toolbar fieldset {
@@ -234,7 +247,6 @@ header .image-link img {
   height: 20px;
 }
 
-
 canvas {
   max-width: calc(min(100%, 512px));
   max-height: calc(min(100% - 2 * var(--control-height), 512px));
@@ -250,5 +262,4 @@ canvas {
   #canvas-container { flex: 1; }
   #editor-container { flex: 1; }
   #output { height: 1.5em; }
-  #output-resize-handle { height: 12px }
 }
