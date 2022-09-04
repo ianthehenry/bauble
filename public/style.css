@@ -46,7 +46,7 @@ body.main-page {
 header {
   --header-height: 40px;
   --header-padding: 0.5em;
-  --text-color: #000;
+  --text-color: #4b0053;
   background-color: #ffc6f9;
   background-image: linear-gradient(to right, #ffc6f9, #ffffba);
   height: var(--header-height);
@@ -61,6 +61,10 @@ header {
 
 #code-container { flex: 4; overflow: hidden; }
 #canvas-container { flex: 3; max-width: 512px; overflow: hidden; }
+
+header .title {
+  color: #290099;
+}
 
 header .title, header .spacer {
   flex: 1;
