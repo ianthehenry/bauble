@@ -27,17 +27,26 @@
         <button title="Pause" data-action="pause" class="hidden"><img src="/icons/pause.svg" /></button>
         <button title="Stop" data-action="stop"><img src="/icons/stop.svg" /></button>
         <span title="Current timestamp" class="timestamp">0.00</span>
-        <div class="scrubber"></div>
+        <div class="spacer"></div>
+        <!-- <div class="scrubber"></div> -->
         <fieldset><!--
           --><label title="No loop"><input type="radio" autocomplete="off" name="loop-mode" value="no-loop" checked /><img src="/icons/arrow-bar-right.svg" /></label><!--
           --><label title="Loop"><input type="radio" autocomplete="off" name="loop-mode" value="wrap" /><img src="/icons/repeat.svg" /></label><!--
           --><label title="Loop back and forth"><input type="radio" autocomplete="off" name="loop-mode" value="reverse" /><img src="/icons/arrow-left-right.svg" /></label>
         </fieldset>
         <input name="loop-start" inputmode="numeric" value="0.00" autocomplete="off" />
-        <span class="label">to</span>
+        <span class="text">to</span>
         <input name="loop-end" inputmode="numeric" value="6.28" autocomplete="off" /></div>
     </div>
-    <div id="editor-container"></div>
+    <div id="code-container">
+      <div class="toolbar">
+        <div class="spacer"></div>
+        <div title="Compilation result unknown" class="indicator compilation-unknown"><img src="/icons/neutral.svg" /></div>
+        <div title="Compilation success" class="indicator compilation-success hidden"><img src="/icons/smile.svg" /></div>
+        <div title="Compilation error" class="indicator compilation-error hidden"><img src="/icons/frown.svg" /></div>
+      </div>
+      <div id="editor-container"></div>
+    </div>
   </div>
   <div id="output-resize-handle"></div>
   <pre id="output"></pre>

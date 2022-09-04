@@ -265,12 +265,26 @@ const defaultCamera = {
   zoom: 2.0,
 }
 
+enum CompilationState {
+  Unknown,
+  Success,
+  Error,
+}
+
 function initialize(script) {
   const camera = {
     x: defaultCamera.x,
     y: defaultCamera.y,
     zoom: defaultCamera.zoom,
   };
+
+  const playButton: HTMLButtonElement = document.querySelector('#canvas-container button[data-action=play]')!;
+  const pauseButton: HTMLButtonElement = document.querySelector('#canvas-container button[data-action=pause]')!;
+  const stopButton: HTMLButtonElement = document.querySelector('#canvas-container button[data-action=stop]')!;
+  const resetButton: HTMLButtonElement = document.querySelector('#canvas-container button[data-action=reset-camera]')!;
+  const compilationErrorIndicator: HTMLElement = document.querySelector('#code-container .indicator.compilation-error')!;
+  const compilationSuccessIndicator: HTMLElement = document.querySelector('#code-container .indicator.compilation-success')!;
+  const compilationUnknownIndicator: HTMLElement = document.querySelector('#code-container .indicator.compilation-unknown')!;
 
   let viewType = 0;
 
@@ -284,9 +298,39 @@ function initialize(script) {
     recompileScheduled ||= recompile;
     drawScheduled = true;
   }
+
+  let compilationState = CompilationState.Unknown;
+
   function tick(now) {
     requestAnimationFrame(tick);
     timer.tick(now, isAnimation);
+    if (drawScheduled) {
+      updateCamera(TAU * camera.x, TAU * camera.y, camera.zoom);
+      updateTime(timer.t);
+      if (recompileScheduled) {
+        clearOutput();
+        const result = recompileScript(editor.state.doc.toString());
+        if (result < 0) {
+          compilationState = CompilationState.Error;
+        } else {
+          compilationState = CompilationState.Success;
+          // TODO: surely this isn't actually how you're supposed to do this
+          switch (CompilationResult[CompilationResult[result]]) {
+            case CompilationResult.NoChange: break;
+            case CompilationResult.ChangedAnimated: isAnimation = true; break;
+            case CompilationResult.ChangedStatic: isAnimation = false; break;
+          }
+        }
+      }
+      try {
+        rerender();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    drawScheduled = timer.state === TimerState.Playing;
+    recompileScheduled = false;
+
     if (timer.state === TimerState.Playing) {
       playButton.classList.add('hidden');
       pauseButton.classList.remove('hidden');
@@ -295,25 +339,18 @@ function initialize(script) {
       pauseButton.classList.add('hidden');
     }
     timestampSpan.innerText = timer.t.toFixed(2);
-    if (drawScheduled) {
-      clearOutput();
-      updateCamera(TAU * camera.x, TAU * camera.y, camera.zoom);
-      updateTime(timer.t);
-      if (recompileScheduled) {
-        let result = recompileScript(editor.state.doc.toString());
-        if (result >= 0) {
-          // TODO: surely this isn't actually how you do this
-          switch (CompilationResult[CompilationResult[result]]) {
-            case CompilationResult.NoChange: break;
-            case CompilationResult.ChangedAnimated: isAnimation = true; break;
-            case CompilationResult.ChangedStatic: isAnimation = false; break;
-          }
-        }
-      }
-      rerender();
+    switch (compilationState) {
+      case CompilationState.Success:
+        compilationUnknownIndicator.classList.add('hidden');
+        compilationErrorIndicator.classList.add('hidden');
+        compilationSuccessIndicator.classList.remove('hidden');
+        break;
+      case CompilationState.Error:
+        compilationUnknownIndicator.classList.add('hidden');
+        compilationSuccessIndicator.classList.add('hidden');
+        compilationErrorIndicator.classList.remove('hidden');
+        break;
     }
-    drawScheduled = timer.state === TimerState.Playing;
-    recompileScheduled = false;
   }
   requestAnimationFrame(tick);
 
@@ -363,10 +400,6 @@ function initialize(script) {
     });
   }
 
-  const playButton: HTMLButtonElement = document.querySelector('#canvas-container button[data-action=play]')!;
-  const pauseButton: HTMLButtonElement = document.querySelector('#canvas-container button[data-action=pause]')!;
-  const stopButton: HTMLButtonElement = document.querySelector('#canvas-container button[data-action=stop]')!;
-  const resetButton: HTMLButtonElement = document.querySelector('#canvas-container button[data-action=reset-camera]')!;
   resetButton.addEventListener('click', (e) => {
     camera.x = defaultCamera.x;
     camera.y = defaultCamera.y;

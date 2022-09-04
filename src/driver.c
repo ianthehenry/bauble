@@ -128,10 +128,7 @@ void draw_triangles(gl_context *context) {
   glVertexAttribPointer(positionLoc, 3, GL_FLOAT, GL_FALSE, 0, 0);
   glEnableVertexAttribArray(positionLoc);
 
-  long long start = emscripten_get_now();
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
-  long long end = emscripten_get_now();
-  printf("rendered in %lldms\n", end - start);
 }
 
 // caller must free result

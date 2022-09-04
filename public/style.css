@@ -59,7 +59,7 @@ header {
   flex-direction: row-reverse;
 }
 
-#editor-container { flex: 4; overflow: hidden; }
+#code-container { flex: 4; overflow: hidden; }
 #canvas-container { flex: 3; max-width: 512px; overflow: hidden; }
 
 header .title, header .spacer {
@@ -103,8 +103,15 @@ header .image-link img {
   aspect-ratio: 1;
 }
 
-#editor-container {
+#code-container {
   display: flex;
+  flex-direction: column;
+}
+
+#editor-container {
+  overflow: hidden;
+  display: flex;
+  flex: 1;
 }
 
 #editor-container > * {
@@ -134,14 +141,17 @@ header .image-link img {
   font-size: 11pt;
 }
 
+#code-and-preview {
+  --control-height: 40px;
+}
+
 #canvas-container {
   grid-area: preview;
   display: flex;
-  justify-content: center;
+  justify-content: top;
   align-items: center;
   max-width: 512px;
   flex-direction: column;
-  --control-height: 40px;
   /*background-color*/: #ff8;
 }
 
@@ -177,7 +187,7 @@ header .image-link img {
   box-shadow: inset 2px 0 2px -2px #000, inset -2px 0 2px -2px #000;
 }
 
-.toolbar .label {
+.toolbar .text {
   padding: 0 4px;
 }
 
@@ -234,19 +244,32 @@ header .image-link img {
   background-color: rgba(0, 0, 0, 0.2);
 }
 
+.toolbar .indicator {
+  min-width: var(--control-height);
+  display: flex;
+}
 .toolbar fieldset {
   display: flex;
   flex-direction: row;
 }
+.toolbar .indicator,
 .toolbar fieldset label,
 .toolbar button {
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.toolbar button.hidden {
+.toolbar .indicator img {
+  border-radius: 12px;
+  padding: 2px;
+}
+.toolbar .indicator.compilation-error img {
+  background-color: #ff9ca1;
+}
+.toolbar .hidden {
   display: none;
 }
+.toolbar .indicator img,
 .toolbar fieldset label img,
 .toolbar button img {
   width: 20px;
@@ -265,7 +288,7 @@ canvas {
   #code-and-preview {
     flex-direction: column;
   }
-  #canvas-container { flex: 1; }
+  #canvas-container { flex: 4; }
   #editor-container { flex: 1; }
   #output { height: 1.5em; }
 }
