@@ -312,11 +312,17 @@
 # coordinates. Once again, mostly
 # useful for surfacing.
 
+# (box 50 :r 10
+# | tile [150 0 150]
+# | shade [1 (/ (distance camera world-p) 1000) 0])
+
 # When writing a color expression, you
 # have access to another magic
 # variable: normal. normal is an
 # approximation of the surface normal
 # at the point that you're shading.
+
+# (box 50 :r 10 | shade [1 (clamp normal.y 0 1) 0])
 
 # Just to review, the only magic
 # variables are:
