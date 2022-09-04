@@ -283,6 +283,8 @@ void main() {
               (set last-expr expr)
               (set response (compile-fragment-shader expr))))
           ([err fiber]
-            (set response nil)
+            (set response :error)
             (debug/stacktrace fiber err "")))
-        (eprintf "cannot compile %p" expr))))))
+        (do
+          (eprintf "cannot compile %p" expr)
+          (set response :error)))))))

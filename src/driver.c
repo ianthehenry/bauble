@@ -330,8 +330,12 @@ int evaluate_script(char *source) {
       set_fragment_shader(global_context, source);
       done_compiling_shader = emscripten_get_now();
       to_return = is_animated ? 2 : 1;
-    } else {
+    } else if (janet_checktype(response, JANET_KEYWORD)) {
+      // either an error during compilation, or it was
+      // passed an invalid value
       to_return = -1;
+    } else {
+      to_return = -2;
       janet_eprintf("fiber yielded an unexpected value %p\n", response);
     }
   } else {
