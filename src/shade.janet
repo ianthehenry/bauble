@@ -239,7 +239,6 @@ void main() {
   vec3 dir = camera_matrix * ray_dir(45.0, resolution, gl_FragCoord.xy);
 
   const vec3 fog_color = vec3(0.15);
-  const vec3 abort_color = vec3(1.0, 0.0, 1.0);
 
   int steps;
   vec3 hit = march(camera_origin, dir, steps);
@@ -247,16 +246,18 @@ void main() {
   vec3 color;
   switch (view_type) {
     case 0: {
-      color = nearest_color(hit);
       float depth = distance(camera_origin, hit);
-      float attenuation = depth / MAXIMUM_TRACE_DISTANCE;
-      color = mix(color, fog_color, clamp(attenuation * attenuation, 0.0, 1.0));
+      if (depth >= MAXIMUM_TRACE_DISTANCE) {
+        color = vec3(mix(0.05, 0.15, gl_FragCoord.y / resolution.y));
+      } else {
+        color = nearest_color(hit);
+      }
       break;
     }
     case 1: {
       // convergence debugging
       if (steps == MAX_STEPS) {
-        color = abort_color;
+        color = vec3(1.0, 0.0, 1.0);
       } else {
         color = vec3(float(steps) / float(MAX_STEPS));
       }
