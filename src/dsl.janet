@@ -132,6 +132,7 @@
 # is probably not good
 (def-flexible-fn tile [shape offset [limit nil]]
   {type/3d |(set-param shape $)
+   type/fn |(set-param shape $)
    type/vec3 |(set-param offset $)
    type/float |(set-param offset [$ $ $])
    :limit |(->> $
@@ -139,10 +140,7 @@
       (to-vec3)
       (check-limit)
       (set-param limit))}
-  (if (nil? limit)
-    (raw/tile shape offset limit)
-    (raw/translate (raw/tile shape offset limit)
-      (map3 [0 1 2] |(if (even? (limit $)) (* -0.5 (offset $)) 0)))))
+  (raw/tile shape offset limit))
 
 (def-flexible-fn distort [shape expression]
   {type/3d |(set-param shape $)

@@ -443,19 +443,30 @@
           ` (:compile $) (:surface $))
         :return "color"))))
 
-(def-input-operator tile [shape offset limit]
-  (if (nil? limit)
-    # TODO: this could be a single expression with a temporary variable
-    (:generate-function comp-state "vec3" :tile "tile"
-      [globals/p ["vec3 offset" offset]]
-      "return mod(p + 0.5 * offset, offset) - 0.5 * offset;")
-    # TODO: obviously this doesn't actually work in a world with
-    # expressions
-    (let [min-limit (map3 limit |(idiv (- $ 1) 2))
-          max-limit (map3 limit |(idiv $ 2))]
-      (:generate-function comp-state "vec3" :tile-limit "tile_limit"
-        [globals/p ["vec3 offset" offset] ["vec3 min_limit" min-limit] ["vec3 max_limit" max-limit]]
-        "return p - offset * clamp(round(p / offset), -min_limit, max_limit);"))))
+# TODO: this is so gross; i just can't handle the extreme copy-and-paste.
+# i need to make a more general version of this...
+(defmacro- make-tile-body [method]
+  ~(let [$offset (:temp-var comp-state type/vec3 'offset)
+         $address (:temp-var comp-state type/vec3 'address)
+         address-expr ~(round (safe_div3 ,globals/p ,$offset))
+         address-expr
+           (if-let [limit limit
+                    min-limit (map3 limit |(idiv (- $ 1) 2))
+                    max-limit (map3 limit |(idiv $ 2))]
+             ~(clamp ,address-expr (- ,min-limit) ,max-limit)
+             address-expr)
+        recenter (if (nil? limit) id (fn [expr]
+          ~(with ,globals/p (- ,globals/p (* ,(map |(if (even? $) -0.5 0) limit) ,$offset)) ,expr)))
+        shape (if (function? shape) (shape $address) shape)]
+      ~(with ,$offset ,offset
+        ,(recenter
+          ~(with ,$address ,address-expr
+            (with ,globals/p (- ,globals/p (* ,$address ,$offset))
+              ,(,method shape comp-state)))))))
+
+(def-complicated tile [shape offset limit]
+  (make-tile-body :compile)
+  (make-tile-body :surface))
 
 (def-complicated morph [weight shape1 shape2]
   (let [distance1 (:compile shape1 comp-state)

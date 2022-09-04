@@ -23,6 +23,10 @@
   return vec3(smallest, middlest, largest);
   ` 'min3 'max3)
 
+(define type/vec3 'safe_div3 ["vec3 a" "vec3 b"] `
+  return mix(a / b, vec3(0.0), equal(b, vec3(0.0)));
+  `)
+
 (define type/vec3 'hsv ["float h" "float s" "float v"] `
   vec3 p = abs(fract(vec3(h, h, h) + vec3(1.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0);
   return v * mix(vec3(1.0), clamp(p - 1.0, 0.0, 1.0), s);

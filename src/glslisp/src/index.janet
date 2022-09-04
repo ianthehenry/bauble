@@ -151,9 +151,12 @@
   (assert (= (length args) 3) "wrong number of arguments to with")
   (def [variable value expr] args)
   (def new-name (:new-name state variable))
-  (:push-var state variable (fn []
-    (:statement state (string (variable :type)` `new-name` = `(compile! state value)`;`))
-    new-name))
+  (:statement state (string (variable :type)` `new-name` = `(compile! state value)`;`))
+  (:push-var state variable new-name)
+  # TODO: this optimization is not sound. breaks the tile operation, for one
+  #(:push-var state variable (fn []
+  #  (:statement state (string (variable :type)` `new-name` = `(compile! state value)`;`))
+  #  new-name))
   (def result (compile! state expr))
   (:pop-var state variable)
   result)
