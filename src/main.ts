@@ -414,6 +414,7 @@ function initialize(script) {
   });
   stopButton.addEventListener('click', (e) => {
     timer.stop();
+    draw(false);
   });
 
   document.getElementById('canvas-container')!.addEventListener('input', (e) => {
