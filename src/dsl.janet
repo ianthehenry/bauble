@@ -127,9 +127,6 @@
       (errorf "tile:limit %p is not a positive integer" num)))
   vec3)
 
-# TODO: we interpolate `offset` multiple times
-# in the limit case in order to center it, which
-# is probably not good
 (def-flexible-fn tile [shape offset [limit nil]]
   {type/3d |(set-param shape $)
    type/fn |(set-param shape $)
@@ -141,6 +138,13 @@
       (check-limit)
       (set-param limit))}
   (raw/tile shape offset limit))
+
+(def-flexible-fn radial [shape axis count radius]
+  {type/3d |(set-param shape $)
+   type/fn |(set-param shape $)
+   type/axis |(set-param axis $)
+   type/float |(set-first [count radius] $)}
+  (raw/radial shape (/ (* 2 math/pi) count) radius axis))
 
 (def-flexible-fn distort [shape expression]
   {type/3d |(set-param shape $)

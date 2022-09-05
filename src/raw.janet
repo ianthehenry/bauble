@@ -468,6 +468,34 @@
   (make-tile-body :compile)
   (make-tile-body :surface))
 
+(defn- angle-around [axis]
+  (def axes
+    (case axis
+      :x [:y :z]
+      :y [:z :x]
+      :z [:x :y]))
+  ~(atan (. ,globals/p ,(axes 0)) (. ,globals/p ,(axes 1))))
+
+(defn- radial-translation-axis [axis]
+  (case axis :x :z :y :x :z :y))
+
+(defmacro- make-radial-body [method]
+  ~(let [axes (other-axes axis)
+         rotate (symbol "rotate_" axis)
+         $angle (:temp-var comp-state type/float 'angle)
+         $address (:temp-var comp-state type/float 'address)
+         address-expr ~(round (/ ,(angle-around axis) ,$angle))
+         shape (if (function? shape) (shape $address) shape)]
+      ~(with ,$angle ,angle
+        (with ,$address ,address-expr
+          (with ,globals/p
+            (- (* ,globals/p (,rotate (* ,$address ,$angle))) ,(axis-vec (radial-translation-axis axis) radius))
+              ,(,method shape comp-state))))))
+
+(def-complicated radial [shape angle radius axis]
+  (make-radial-body :compile)
+  (make-radial-body :surface))
+
 (def-complicated morph [weight shape1 shape2]
   (let [distance1 (:compile shape1 comp-state)
         distance2 (:compile shape2 comp-state)]
