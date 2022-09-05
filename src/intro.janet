@@ -172,8 +172,8 @@
 # p is a magic variable that represents
 # the current point in space. It's a
 # symbolic expression, and the /
-# operator -- and all other
-# operators -- are overloaded to work
+# function -- and most math
+# functions -- are overloaded to work
 # on symbolic expressions. (+ 1 2)
 # produces 3, but (+ 1 p.x) produces
 # the Janet tuple ~(+ 1 (. ,p :x)), and
@@ -230,7 +230,7 @@
 # surface normal at the point that
 # you're shading:
 
-# (box 50 :r 10 | shade [1 (clamp normal.y 0 1) 0])
+# (box 50 :r 10 | rotate :x t | shade [1 (clamp normal.y 0 1) 0])
 
 # occlusion is an approximation of how
 # much stuff is near the point that
@@ -272,7 +272,7 @@
 # (cone :y 100 (+ 100 (* 10 (cos (/ p.x 5)))))
 
 # Actually, let's really lean into the
-# pipe operator for a second:
+# pipe syntax for a second:
 
 # (cone :y 100 (p.x | / 5 | cos | * 10 | + 100))
 
@@ -537,10 +537,11 @@
 #### Overloading ####
 
 # I already mentioned that many of the
-# built-in operators are overloaded to
-# work on symbolic expressions. They're
-# also overloaded to work on vectors,
-# in ways that mirror GLSL functions.
+# built-in math functions are
+# overloaded to work on symbolic
+# expressions. They're also overloaded
+# to work on vectors, in ways that
+# mirror GLSL functions.
 
 # For example, you can write (+ [1 2 3]
 # [4 5 6]) to add the elements of two
@@ -574,10 +575,7 @@
 # If for some reason you want to *force*
 # a computation to occur on the GPU,
 # you can quote it like this:
-# ~(distance [0 0] ,p.xy). Note that you
-# have to unquote p.xy, because the
-# magic variable p is more than just a
-# symbol.
+# ~(distance [0 0] [1 2]).
 
 # Also note that some functions -- for
 # example, the procedural noise
