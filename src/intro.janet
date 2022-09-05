@@ -234,14 +234,14 @@
 
 # occlusion is an approximation of how
 # much stuff is near the point that
-# you're shading. 0 means there is
-# nothing around you, while 1 means
+# you're shading. 1 means there is
+# nothing around you, while 0 means
 # there is another shape right next to
 # you. It's commonly used to modulate
 # light:
 
 # (defn shade-ao [shape color]
-#   (shade shape color :ambient (mix 0.2 0.1 occlusion)))
+#   (shade shape color :ambient (mix 0.1 0.2 occlusion)))
 # (box 50 :r 10 | spoon (rotate :x tau/8 :y tau/4 :x tau/3 | scale 0.75 | move :y 70)
 # | shade-ao [0 1 1]
 # | union (half-space :-y -50 | shade-ao [1 1 1]))
@@ -249,8 +249,8 @@
 # Try changing (shade-ao) back to
 # (shade). Without ambient occlusion,
 # the areas in shadow appear completely
-# flat. With AO, you get a sense of
-# depth.
+# flat. With ambient occlusion, you get
+# a sense of depth.
 
 # Just to review, the only magic
 # variables are:
@@ -423,8 +423,8 @@
 # as "c". So these two lines are
 # exactly equivalent:
 
-# (sphere 50 | color [c.b c.r c.g])
-# (sphere 50 | map-color (fn [c] [c.b c.r c.g]))
+# (fork (sphere 50) (move :y -25) (move :y 25) | color (* c (sqrt occlusion)))
+# (fork (sphere 50) (move :y -25) (move :y 25) | map-color (fn [c] (* c (sqrt occlusion))))
 
 # (Note that (color) is a *macro*, not a
 # function, so unlike most of Bauble,

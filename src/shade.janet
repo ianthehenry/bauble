@@ -142,7 +142,7 @@ float calculate_occlusion(vec3 p, vec3 normal) {
   for (int i = 1; i <= step_count; i++) {
     float expected_distance = baseline + float(i) * step_size;
     float actual_distance = max(nearest_distance(p + float(i) * step), 0.0);
-    occlusion += 1.0 - (actual_distance / expected_distance);
+    occlusion += actual_distance / expected_distance;
   }
   occlusion /= float(step_count);
   return clamp(occlusion, 0.0, 1.0);
