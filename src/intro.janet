@@ -124,7 +124,7 @@
 # First of all, the Bauble DSL is very
 # forgiving about named and positional
 # argument order. So that's actually the
-# same as:
+# same -- modulo color -- as:
 
 # (shade (rotate (box :r 5 50) :y pi/4) [0.1 1 0.1])
 
