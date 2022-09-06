@@ -139,7 +139,7 @@
       (set-param limit))}
   (raw/tile shape offset limit))
 
-(def-flexible-fn radial [shape axis count radius]
+(def-flexible-fn radial [shape axis count [radius 0]]
   {type/3d |(set-param shape $)
    type/fn |(set-param shape $)
    type/axis |(set-param axis $)
