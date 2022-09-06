@@ -546,7 +546,7 @@
 
 (def-surfacer blinn-phong [shape color shine gloss ambient]
   (:generate-function comp-state "vec3" :blinn-phong "blinn_phong"
-    [globals/world-p
+    [globals/P
      globals/camera
      globals/normal
      globals/occlusion
@@ -555,11 +555,11 @@
      ["float shine" shine]
      ["float gloss" gloss]
      ["float ambient" ambient]]
-    `vec3 view_dir = normalize(camera_origin - world_p);
+    `vec3 view_dir = normalize(camera_origin - P);
      vec3 result = color * ambient;
      for (int i = 0; i < lights.length(); i++) {
        vec3 light_color = lights[i].color * light_intensities[i];
-       vec3 light_dir = normalize(lights[i].position - world_p);
+       vec3 light_dir = normalize(lights[i].position - P);
        vec3 halfway_dir = normalize(light_dir + view_dir);
        float specular_strength = shine * pow(max(dot(normal, halfway_dir), 0.0), gloss * gloss);
        float diffuse = max(0.0, dot(normal, light_dir));
@@ -571,7 +571,7 @@
 
 (def-surfacer cel [shape color shine gloss ambient steps]
   (:generate-function comp-state "vec3" :cel "cel"
-    [globals/world-p
+    [globals/P
      globals/camera
      globals/normal
      globals/light-intensities
@@ -580,12 +580,12 @@
      ["float gloss" gloss]
      ["float ambient" ambient]
      ["float steps" steps]]
-    `vec3 view_dir = normalize(camera_origin - world_p);
+    `vec3 view_dir = normalize(camera_origin - P);
      vec3 light = vec3(0.0);
 
      for (int i = 0; i < lights.length(); i++) {
        vec3 light_color = lights[i].color * light_intensities[i];
-       vec3 light_dir = normalize(lights[i].position - world_p);
+       vec3 light_dir = normalize(lights[i].position - P);
        vec3 halfway_dir = normalize(light_dir + view_dir);
 
        float specular_strength = shine * pow(max(dot(normal, halfway_dir), 0.0), gloss * gloss);
@@ -598,13 +598,13 @@
 (def-surfacer fresnel [shape color strength exponent]
   (def fresnel
     (:generate-function comp-state "vec3" :fresnel "fresnel"
-      [globals/world-p
+      [globals/P
        globals/camera
        globals/normal
        ["vec3 color" color]
        ["float strength" strength]
        ["float exponent" exponent]]
-      `vec3 view_dir = normalize(camera_origin - world_p);
+      `vec3 view_dir = normalize(camera_origin - P);
        float fresnel = pow(1.0 - dot(normal, view_dir), exponent);
        return color * strength * fresnel;
        `))

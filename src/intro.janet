@@ -198,19 +198,19 @@
 
 # (cone :y 100 (+ 100 (* 10 (cos (+ (* 5 t) (/ p.x 5))))))
 
-# There's also world-p -- while p is the
-# point in space local to the current
-# shape (so translated, rotated, etc),
-# world-p is the global position of the
-# ray, which is mostly useful for
-# calculating reflections or specular
-# highlights during surfacing. But
-# here's a contrived example just to
-# show you the difference:
+# There's also P -- while p is the point
+# in space local to the current shape
+# (so translated, rotated, etc), P is
+# the global position of the ray, which
+# is mostly useful for calculating
+# reflections or specular highlights
+# during surfacing. But here's a
+# contrived example just to show you
+# the difference:
 
 # (union
 #   (sphere 50 | shade [1 (abs (/ p.x 50)) 0] | move :y 50)
-#   (sphere 50 | shade [1 (abs (/ world-p.x 50)) 0] | move :y -50)
+#   (sphere 50 | shade [1 (abs (/ P.x 50)) 0] | move :y -50)
 # | move :x (* 50 (sin t)))
 
 # There's also camera, which is the
@@ -220,7 +220,7 @@
 
 # (box 50 :r 10
 # | tile [150 0 150]
-# | shade [1 (/ (distance camera world-p) 1000) 0])
+# | shade [1 (/ (distance camera P) 1000) 0])
 
 # When writing a color expression, you
 # have access to a couple other magic
@@ -255,15 +255,16 @@
 # Just to review, the only magic
 # variables are:
 
-# - (always) t: time in seconds
-# - (always) p: point in local coordinate system
-# - (always) world-p: point in global coordinate
+# - t: time in seconds
+# - p: point in local coordinate system
+# - P: point in global coordinate
 #   system
-# - (always) camera: camera position in global
+# - camera: camera position in global
 #   coordinate system
-# - (color only) normal: surface normal
-# - (color only) occlusion: an approximation of the
-#   concavity of the distance field near this point
+# - normal: (color only) surface normal
+# - occlusion: (color only) an
+#   approximation of the concavity of
+#   the distance field near this point
 
 #### Spatial artifacts ####
 
@@ -435,7 +436,7 @@
 # effect, consider this expression:
 
 # (box 50 :r 10
-# | color (let [view-dir (normalize (- camera world-p))]
+# | color (let [view-dir (normalize (- camera P))]
 #     (+ c (pow (- 1.0 (dot normal view-dir)) 5))))
 
 # That adds a little bit of

@@ -32,7 +32,7 @@
       globals/p nil
       globals/t (set animated? true)
       globals/camera nil
-      globals/world-p (array/push distance-prep-statements "vec3 world_p = p;")
+      globals/P (array/push distance-prep-statements "vec3 P = p;")
       (errorf "cannot use %s in a distance expression" (free-variable :name))))
 
   (def color-prep-statements @[])
@@ -47,7 +47,7 @@
       globals/t (set animated? true)
       globals/camera nil
       globals/normal nil
-      globals/world-p (array/push color-prep-statements "vec3 world_p = p;")
+      globals/P (array/push color-prep-statements "vec3 P = p;")
       globals/occlusion (array/push color-prep-statements "float occlusion = calculate_occlusion(p, normal);")
       globals/light-intensities (do
         # Array initialization syntax doesn't work on the Google

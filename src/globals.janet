@@ -2,7 +2,7 @@
 (import ./glslisp/src/type :as type)
 (def p (glslisp/variable 'p type/vec3))
 (def t (glslisp/variable 't type/float))
-(def world-p (glslisp/variable 'world_p type/vec3))
+(def P (glslisp/variable 'P type/vec3))
 (def camera (glslisp/variable 'camera_origin type/vec3))
 (def normal (glslisp/variable 'normal type/vec3))
 (def occlusion (glslisp/variable 'occlusion type/float))
