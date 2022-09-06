@@ -649,6 +649,17 @@
 # (box 100 :r 10 | color [0 (perlin+ (+ (* 0.1 p) t)) 0])
 # (box 100 :r 10 | color [0 (perlin+ (vec4 (* 0.1 p) t)) 0])
 
+# You'll usually use noise to color your
+# shapes, but you can also deform space
+# with noise. This is quite a bit more
+# expensive than shading, so your GPU
+# might not like it if you do it too
+# much. But you can use it to produce
+# some very cool effects:
+
+# (sphere (+ 50 (p | * 0.05 | + t | perlin+ | * (* t 4 | sin+ | * 25)))
+# | slow 0.9)
+
 # You can use noise to compute complex
 # procedural textures:
 
