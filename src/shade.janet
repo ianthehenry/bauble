@@ -55,9 +55,12 @@
         # for loop doesn't work on my mac. So I dunno.
         (array/push color-prep-statements "float light_intensities[3];")
         # A for loop would be obvious, but it doesn't work for some reason.
-        (for i 0 3
+        (for i 0 1
           (array/push color-prep-statements
-            (string `light_intensities[`i`] = cast_light(p + 2.0 * MINIMUM_HIT_DISTANCE * normal, lights[`i`].position, lights[`i`].radius);`))))
+            (string `light_intensities[`i`] = cast_light(p + 2.0 * MINIMUM_HIT_DISTANCE * normal, lights[`i`].position, lights[`i`].radius);`)))
+        (for i 1 3
+          (array/push color-prep-statements
+            (string `light_intensities[`i`] = 0.0;`))))
       (errorf "unexpected free variable %s" (free-variable :name))))
 
   (when debug?
