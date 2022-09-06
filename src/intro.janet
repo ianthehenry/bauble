@@ -31,24 +31,29 @@
 # Janet is a fully-featured language, so
 # you can define variables, functions,
 # macros, loops -- anything your heart
-# desires. Here's a nonsense example --
-# to uncomment it, select the whole
-# paragraph and press "cmd-/"
-# or "ctrl-/":
+# desires. Here's a more complex
+# (minified!) example -- to uncomment
+# it, select the whole paragraph and
+# press "cmd-/" or "ctrl-/":
 
-# (var top 0)
-# (defn hollow-box [size]
-#   (subtract :r 5
-#     (box size :r 2)
-#     (sphere (* 1.20 size))))
-# (defn stack-box [size]
-#   (let [result (move :y (+ top size)
-#                  (hollow-box size))]
-#     (+= top (* 2 size))
-#     result))
-# (move :y -45
-#   (union :r 10
-#     ;(map stack-box [40 30 20])))
+# (defn sphere-sequence [radius args]
+#   (var r radius) (var pos [0 0 0]) (var period 0) (def spheres @[])
+#   (each offset args
+#     (+= pos offset)
+#     (array/push spheres (sphere r | move (+ pos (* 2 (sin (+ t period))))))
+#     (*= r 0.75) (+= period 1324.132))
+#   spheres)
+# (def body (union :r 22 (sphere 80 | scale (+ 1 (* 0.01 (sin (* 5 t)))))
+#   ;(sphere-sequence 71 [[-21 43 1] [4 36 4] [6 27 4] [8 25 7] [0 22 8] [-7 12 7] [-12 12 7] [4 10 -3] [13 15 14]])
+#   ;(sphere-sequence 40 [[67 -45 1] [37 2 21] [18 17 24] [4 -6 34] [-8 -12 28] [-22 -11 -1]])
+#   ;(sphere-sequence 40 [[-67 -37 1] [-37 25 21] [-34 -17 14] [-4 0 34] [-18 8 16] [-17 22 -1]])))
+# (defn triple [shape] (shape | fork :r 2 (move :x -20) (move :x 20) (move :y 33) | move :z 75))
+# (def bottom-eyelid (intersect :r 2 (onion 1 (sphere 15)) (half-space :y 0) | rotate :x 2.15))
+# (def top-eyelid (intersect :r 2 (onion 1 (sphere 15)) (half-space :y 0) | rotate :x (- 0.75 (cos+ (* 2 t) | ss 0.99 1 | * 2))))
+# (def eye (sphere 15 | rotate :y (- (ss (- (sin t) 0.95) 0.03) (ss (- (sin (* 0.87 (+ pi t))) 0.95) 0.03))
+#   | shade (vec3 (+ 0.1 (step 0.81 (step p.z 12)))) :gloss 15 :shine 1 | fresnel :exponent 1 | fresnel))
+# (def skin (shade [0 1 1] :ambient (mix 0.2 0.1 occlusion) :gloss 10 | fresnel :exponent 0.5 0.05 [0 1 0] | fresnel))
+# (union :r 5 body (triple (union :r 2 top-eyelid bottom-eyelid)) | resurface skin | union (triple eye) | move :y -40)
 
 # You can also edit values with your
 # mouse. Uncomment the next block of
