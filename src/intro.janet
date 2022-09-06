@@ -47,7 +47,7 @@
 #   ;(sphere-sequence 71 [[-21 43 1] [4 36 4] [6 27 4] [8 25 7] [0 22 8] [-7 12 7] [-12 12 7] [4 10 -3] [13 15 14]])
 #   ;(sphere-sequence 40 [[67 -45 1] [37 2 21] [18 17 24] [4 -6 34] [-8 -12 28] [-22 -11 -1]])
 #   ;(sphere-sequence 40 [[-67 -37 1] [-37 25 21] [-34 -17 14] [-4 0 34] [-18 8 16] [-17 22 -1]])))
-# (defn triple [shape] (shape | fork :r 2 (move :x -20) (move :x 20) (move :y 33) | move :z 75))
+# (defn triple [shape] (shape | fork :r 2 (move :x -20) (move :x 20) (reflect :y | move :y 33) | move :z 75))
 # (def bottom-eyelid (intersect :r 2 (onion 1 (sphere 15)) (half-space :y 0) | rotate :x 2.15))
 # (def top-eyelid (intersect :r 2 (onion 1 (sphere 15)) (half-space :y 0) | rotate :x (- 0.75 (cos+ (* 2 t) | ss 0.99 1 | * 2))))
 # (def eye (sphere 15 | shade (vec3 (+ 0.1 (step 0.81 (step p.z 12)))) :gloss 15 :shine 1 | fresnel :exponent 1 | fresnel
