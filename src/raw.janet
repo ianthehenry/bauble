@@ -268,12 +268,14 @@
       [globals/p]
       (string `p.`axes` = -p.`axes`; return p;`))))
 
-(defn- fold-shapes [comp-state shapes &named preamble fn-first fn-rest postamble return]
+(defn- fold-shapes [comp-state shapes &named preamble f return switch each-case]
   (default preamble [])
-  (default postamble [])
 
   (def lines @[])
   (var index 0)
+
+  (def line (partial array/push lines))
+  (def cat (partial array/concat lines))
 
   # TODO: so consider this:
   #
@@ -301,96 +303,126 @@
         expression
         (do
           (def new-name (string "_r" (++ index)))
-          (array/push lines (string type` `new-name`;`))
-          (array/push lines `{`)
-          (array/concat lines statements)
-          (array/push lines (string new-name` = ` expression`;`))
-          (array/push lines `}`)
-          (string new-name)))))
+          (line (string type` `new-name`;`))
+          (line `{`)
+          (cat statements)
+          (line (string new-name` = ` expression`;`))
+          (line `}`)
+          new-name))))
 
   (defn proxy-shape [shape]
     {:compile (proxy shape "float" :compile-distance)
      :surface (proxy shape "vec3" :compile-color)})
 
-  (array/concat lines preamble)
-  (array/push lines (fn-first (proxy-shape (first shapes))))
-  (each shape (drop 1 shapes)
-    (array/push lines (fn-rest (proxy-shape shape))))
-  (array/concat lines postamble)
-  (array/push lines (string `return `return`;`))
+  (cat preamble)
+
+  (for i 0 (length shapes)
+    (line (f i (proxy-shape (shapes i)))))
+
+  (when switch
+    (line (string `switch (`switch`) {`))
+    (for i 0 (length shapes)
+      (line (string `case `i`:`))
+      (line (each-case (proxy-shape (shapes i))))
+      (line `break;`))
+    (line `}`))
+
+  (line (string `return `return`;`))
 
   (string/join lines "\n"))
 
-# TODO: All of the union/intersect/subtract operators evaluate
-# every surface in their collection, even when it will not
-# contribute at all to the result. We could optimize this by
-# only evaluating the "nearest" surface, or surfaces with
-# a blend coefficient greater than 0.
 (def-complicated union [shapes]
   (:generate-function comp-state "float" [self :distance] "union" []
     (fn [comp-state]
       (fold-shapes comp-state shapes
-        :fn-first |(string/format "float d = %s;" (:compile $))
-        :fn-rest |(string/format "d = min(d, %s);" (:compile $))
+        :f (fn [i $]
+          (if (= i 0)
+            (string `float d = `(:compile $)`;`)
+            (string `d = min(d, `(:compile $)`);`)))
         :return "d")))
   (:generate-function comp-state "vec3" [self :color] "union_color" []
     (fn [comp-state]
       (fold-shapes comp-state shapes
-        :fn-first |(string/format "float d = %s; float d2; vec3 color = %s;" (:compile $) (:surface $))
-        :fn-rest |(string/format "d2 = %s; if (d2 < d) { d = d2; color = %s; }" (:compile $) (:surface $))
+        :f (fn [i $]
+          (if (= i 0)
+            (string `float d = `(:compile $)`; float d2; int surface = `i`; vec3 color;`)
+            (string `d2 = `(:compile $)`; if (d2 < d) { d = d2; surface = `i`; }`)))
+        :switch "surface"
+        :each-case |(string `color = `(:surface $)`;`)
         :return "color"))))
 
 (def-complicated intersect [shapes]
   (:generate-function comp-state "float" [self :distance] "union" []
     (fn [comp-state]
       (fold-shapes comp-state shapes
-        :fn-first |(string/format "float d = %s;" (:compile $))
-        :fn-rest |(string/format "d = max(d, %s);" (:compile $))
+        :f (fn [i $]
+          (if (= i 0)
+            (string `float d = `(:compile $)`;`)
+            (string `d = max(d, `(:compile $)`);`)))
         :return "d")))
   (:generate-function comp-state "vec3" [self :color] "union_color" []
     (fn [comp-state]
       (fold-shapes comp-state shapes
-        :fn-first |(string/format "float d = %s; float d2; vec3 color = %s;" (:compile $) (:surface $))
-        :fn-rest |(string/format "d2 = %s; if (d2 > d) { d = d2; color = %s; }" (:compile $) (:surface $))
+        :f (fn [i $]
+          (if (= i 0)
+            (string `float d = `(:compile $)`; float d2; int surface = `i`; vec3 color;`)
+            (string `d2 = `(:compile $)`; if (d2 > d) { d = d2; surface = `i`; }`)))
+        :switch "surface"
+        :each-case |(string `color = `(:surface $)`;`)
         :return "color"))))
 
+# TODO: can i write subtract as invert + intersect? i should be able to, right?
+# will that work with surfaces?
 (def-complicated subtract [shapes]
   (:generate-function comp-state "float" [self :distance] "union" []
     (fn [comp-state]
       (fold-shapes comp-state shapes
-        :fn-first |(string/format "float d = %s;" (:compile $))
-        :fn-rest |(string/format "d = max(d, -%s);" (:compile $))
+        :f (fn [i $]
+          (if (= i 0)
+            (string `float d = `(:compile $)`;`)
+            (string `d = max(d, -`(:compile $)`);`)))
         :return "d")))
   (:generate-function comp-state "vec3" [self :color] "union_color" []
     (fn [comp-state]
       (fold-shapes comp-state shapes
-        :fn-first |(string/format "float d = %s; float d2; vec3 color = %s;" (:compile $) (:surface $))
-        :fn-rest |(string/format "d2 = -%s; if (d2 >= d) { d = d2; color = %s; }" (:compile $) (:surface $))
+        :f (fn [i $]
+          (if (= i 0)
+            (string `float d = `(:compile $)`; float d2; int surface = `i`; vec3 color;`)
+            (string `d2 = -`(:compile $)`; if (d2 > d) { d = d2; surface = `i`; }`)))
+        :switch "surface"
+        :each-case |(string `color = `(:surface $)`;`)
         :return "color"))))
 
+# TODO: All of the smooth boolean operations evaluate
+# every surface in their collection, even when it will not
+# contribute at all to the final result.
 (def-complicated smooth-union [r shapes]
   (:generate-function comp-state "float" [self :distance] "union" [["float r" r]]
     (fn [comp-state]
       (fold-shapes comp-state shapes
         :preamble ["float b, h = 0.0;" "r = max(r, 0.0000000001);"]
-        :fn-first |(string/format "float a = %s;" (:compile $))
-        :fn-rest |(string/format `
-          b = %s;
-          h = clamp(0.5 + 0.5 * (b - a) / r, 0.0, 1.0);
-          a = mix(b, a, h) - r * h * (1.0 - h);
-          ` (:compile $))
+        :f (fn [i $]
+          (if (= i 0)
+            (string `float a = `(:compile $)`;`)
+            (string `
+              b = `(:compile $)`;
+              h = clamp(0.5 + 0.5 * (b - a) / r, 0.0, 1.0);
+              a = mix(b, a, h) - r * h * (1.0 - h);
+            `)))
         :return "a")))
   (:generate-function comp-state "vec3" [self :color] "union_color" [["float r" r]]
     (fn [comp-state]
       (fold-shapes comp-state shapes
         :preamble ["float b, h;" "r = max(r, 0.0000000001);"]
-        :fn-first |(string/format "float a = %s; vec3 color = %s;" (:compile $) (:surface $))
-        :fn-rest |(string/format `
-          b = %s;
-          h = clamp(0.5 + 0.5 * (b - a) / r, 0.0, 1.0);
-          a = mix(b, a, h) - r * h * (1.0 - h);
-          color = mix(%s, color, h);
-          ` (:compile $) (:surface $))
+        :f (fn [i $]
+          (if (= i 0)
+            (string `float a = `(:compile $)`; vec3 color = `(:surface $)`;`)
+            (string `
+            b = `(:compile $)`;
+            h = clamp(0.5 + 0.5 * (b - a) / r, 0.0, 1.0);
+            a = mix(b, a, h) - r * h * (1.0 - h);
+            color = mix(`(:surface $)`, color, h);
+            `)))
         :return "color"))))
 
 (def-complicated smooth-intersect [r shapes]
@@ -398,24 +430,28 @@
     (fn [comp-state]
       (fold-shapes comp-state shapes
         :preamble ["float b, h = 0.0;" "r = max(r, 0.0000000001);"]
-        :fn-first |(string/format "float a = %s;" (:compile $))
-        :fn-rest |(string/format `
-          b = %s;
-          h = clamp(0.5 - 0.5 * (b - a) / r, 0.0, 1.0);
-          a = mix(b, a, h) + r * h * (1.0 - h);
-          ` (:compile $))
+        :f (fn [i $]
+          (if (= i 0)
+            (string `float a = `(:compile $)`;`)
+            (string `
+              b = `(:compile $)`;
+              h = clamp(0.5 - 0.5 * (b - a) / r, 0.0, 1.0);
+              a = mix(b, a, h) + r * h * (1.0 - h);
+              `)))
         :return "a")))
   (:generate-function comp-state "vec3" [self :color] "intersect_color" [["float r" r]]
     (fn [comp-state]
       (fold-shapes comp-state shapes
         :preamble ["float b, h;" "r = max(r, 0.0000000001);"]
-        :fn-first |(string/format "float a = %s; vec3 color = %s;" (:compile $) (:surface $))
-        :fn-rest |(string/format `
-          b = %s;
-          h = clamp(0.5 - 0.5 * (b - a) / r, 0.0, 1.0);
-          a = mix(b, a, h) + r * h * (1.0 - h);
-          color = mix(%s, color, h);
-          ` (:compile $) (:surface $))
+        :f (fn [i $]
+          (if (= i 0)
+            (string `float a = `(:compile $)`; vec3 color = `(:surface $)`;`)
+            (string `
+              b = `(:compile $)`;
+              h = clamp(0.5 - 0.5 * (b - a) / r, 0.0, 1.0);
+              a = mix(b, a, h) + r * h * (1.0 - h);
+              color = mix(`(:surface $)`, color, h);
+              `)))
         :return "color"))))
 
 (def-complicated smooth-subtract [r shapes]
@@ -423,24 +459,28 @@
     (fn [comp-state]
       (fold-shapes comp-state shapes
         :preamble ["float b, h = 0.0;" "r = max(r, 0.0000000001);"]
-        :fn-first |(string/format "float a = %s;" (:compile $))
-        :fn-rest |(string/format `
-          b = %s;
-          h = clamp(0.5 - 0.5 * (a + b) / r, 0.0, 1.0);
-          a = mix(a, -b, h) + r * h * (1.0 - h);
-          ` (:compile $))
+        :f (fn [i $]
+          (if (= i 0)
+            (string `float a = `(:compile $)`;`)
+            (string `
+              b = `(:compile $)`;
+              h = clamp(0.5 - 0.5 * (a + b) / r, 0.0, 1.0);
+              a = mix(a, -b, h) + r * h * (1.0 - h);
+              `)))
         :return "a")))
   (:generate-function comp-state "vec3" [self :color] "subtract_color" [["float r" r]]
     (fn [comp-state]
       (fold-shapes comp-state shapes
         :preamble ["float b, h;" "r = max(r, 0.0000000001);"]
-        :fn-first |(string/format "float a = %s; vec3 color = %s;" (:compile $) (:surface $))
-        :fn-rest |(string/format `
-          b = %s;
-          h = clamp(0.5 - 0.5 * (a + b) / r, 0.0, 1.0);
-          a = mix(a, -b, h) + r * h * (1.0 - h);
-          color = mix(color, %s, h);
-          ` (:compile $) (:surface $))
+        :f (fn [i $]
+          (if (= i 0)
+            (string `float a = `(:compile $)`; vec3 color = `(:surface $)`;`)
+            (string `
+              b = `(:compile $)`;
+              h = clamp(0.5 - 0.5 * (a + b) / r, 0.0, 1.0);
+              a = mix(a, -b, h) + r * h * (1.0 - h);
+              color = mix(color, `(:surface $)`, h);
+              `)))
         :return "color"))))
 
 # TODO: this is so gross; i just can't handle the extreme copy-and-paste.
@@ -572,6 +612,9 @@
 
 (def-operator map-distance [shape f]
   (f (:compile shape comp-state)))
+
+(def-operator invert-distance [shape]
+  ~(- ,(:compile shape comp-state)))
 
 (def-surfacer map-color [shape f]
   (f (:surface shape comp-state)))
