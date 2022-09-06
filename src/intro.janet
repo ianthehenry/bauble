@@ -50,8 +50,8 @@
 # (defn triple [shape] (shape | fork :r 2 (move :x -20) (move :x 20) (move :y 33) | move :z 75))
 # (def bottom-eyelid (intersect :r 2 (onion 1 (sphere 15)) (half-space :y 0) | rotate :x 2.15))
 # (def top-eyelid (intersect :r 2 (onion 1 (sphere 15)) (half-space :y 0) | rotate :x (- 0.75 (cos+ (* 2 t) | ss 0.99 1 | * 2))))
-# (def eye (sphere 15 | rotate :y (- (ss (- (sin t) 0.95) 0.03) (ss (- (sin (* 0.87 (+ pi t))) 0.95) 0.03))
-#   | shade (vec3 (+ 0.1 (step 0.81 (step p.z 12)))) :gloss 15 :shine 1 | fresnel :exponent 1 | fresnel))
+# (def eye (sphere 15 | shade (vec3 (+ 0.1 (step 0.81 (step p.z 12)))) :gloss 15 :shine 1 | fresnel :exponent 1 | fresnel
+#   | rotate :y (- (sin t | - 0.95 | ss 0.03) (sin (+ pi/2 t | * 0.87) | ss 0.03))))
 # (def skin (shade [0 1 1] :ambient (mix 0.2 0.1 occlusion) :gloss 10 | fresnel :exponent 0.5 0.05 [0 1 0] | fresnel))
 # (union :r 5 body (triple (union :r 2 top-eyelid bottom-eyelid)) | resurface skin | union (triple eye) | move :y -40)
 
