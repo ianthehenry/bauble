@@ -103,10 +103,11 @@
         (set ((self :function-cache) key) entry)
         (invocation name))))
 
-  :new-scope (fn [self]
+  :new-scope (fn [self &named export-free-vars]
+    (default export-free-vars false)
     (table/setproto
       @{:bindings @{}
-        :free-variables @{}
+        :free-variables (if-not export-free-vars @{})
         :statements @[]
         :var-names @{}
         :temp-vars @{}}

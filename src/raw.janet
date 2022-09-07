@@ -295,10 +295,8 @@
   # Hmm.
   (defn proxy [shape type method]
     (fn [self]
-      (def scope (:new-scope comp-state))
+      (def scope (:new-scope comp-state :export-free-vars true))
       (def [statements expression] (method scope shape))
-      (each variable (keys (scope :free-variables))
-        (set ((comp-state :free-variables) variable) true))
       (if (empty? statements)
         expression
         (do
