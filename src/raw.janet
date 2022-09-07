@@ -623,3 +623,29 @@
 (def-complicated resurface [shape color]
   (:compile shape comp-state)
   (:surface color comp-state))
+
+(def-operator bound [shape boundary threshold]
+  (:generate-function comp-state "float" self "bound"
+    [["float threshold" threshold]]
+    (fn [comp-state]
+      (def [boundary-statements boundary-expression]
+        (:compile-distance (:new-scope comp-state :export-free-vars true) boundary))
+      (def [shape-statements shape-expression]
+        (:compile-distance (:new-scope comp-state :export-free-vars true) shape))
+      (string/join [
+        ;boundary-statements
+        (string `float boundary_distance = `boundary-expression`;`)
+        "if (boundary_distance < threshold) {"
+          ;shape-statements
+          (string `return `shape-expression`;`)
+        "} else {"
+          "return boundary_distance;"
+        "}"
+        ] "\n"))))
+
+(def-operator bounded [shape f magnitude threshold]
+  (let [$magnitude (:temp-var comp-state type/float 'magnitude)
+        boundary (offset $magnitude shape)
+        distorted-shape (f shape $magnitude)]
+    ~(with ,$magnitude ,magnitude
+      ,(:compile (bound distorted-shape boundary threshold) comp-state))))

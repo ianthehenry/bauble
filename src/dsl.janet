@@ -325,6 +325,27 @@
    type/fn |(set-param function $)}
   (raw/map-color shape function))
 
+(def-flexible-fn bound [shape boundary [threshold 1]]
+  {type/3d |(set-first [shape boundary] $)
+   :threshold |(set-param threshold (typecheck :threshold type/float $))}
+  (raw/bound shape boundary threshold))
+
+(def-flexible-fn bounded [shape f magnitude [threshold 1]]
+  {type/3d |(set-param shape $)
+   type/fn |(set-param f $)
+   type/float |(set-param magnitude $)
+   :threshold |(set-param threshold (typecheck :threshold type/float $))}
+  (raw/bounded shape f magnitude threshold))
+
+# TODO: need a better name than this. also, is this too specific?
+# could this be an argument to offset or something instead?
+# (offset 10 :bounded (perlin+ ))...? hmm. maybe something to think about.
+(def-flexible-fn bounded-offset [shape magnitude offset-scale [threshold 1]]
+  {type/3d |(set-param shape $)
+   type/float |(set-first [magnitude offset-scale] $)
+   :threshold |(set-param threshold (typecheck :threshold type/float $))}
+  (raw/bounded shape (fn [$ m] (offset ~(* ,m ,offset-scale) shape)) magnitude threshold))
+
 (defmacro color [shape & body]
   ~(map-color ,shape (fn [c] ,;body)))
 
