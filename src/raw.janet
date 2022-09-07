@@ -487,22 +487,22 @@
 # i need to make a more general version of this...
 (defmacro- make-tile-body [method]
   ~(let [$offset (:temp-var comp-state type/vec3 'offset)
-         $address (:temp-var comp-state type/vec3 'address)
-         address-expr ~(round (safe_div3 ,globals/p ,$offset))
-         address-expr
+         $index (:temp-var comp-state type/vec3 'index)
+         index-expr ~(round (safe_div3 ,globals/p ,$offset))
+         index-expr
            (if-let [limit limit
                     min-limit (map3 limit |(idiv (- $ 1) 2))
                     max-limit (map3 limit |(idiv $ 2))]
-             ~(clamp ,address-expr (- ,min-limit) ,max-limit)
-             address-expr)
+             ~(clamp ,index-expr (- ,min-limit) ,max-limit)
+             index-expr)
         recenter (if (nil? limit) id (fn [expr]
           ~(with ,globals/p (- ,globals/p (* ,(map |(if (even? $) -0.5 0) limit) ,$offset)) ,expr)))
-        shape (if (nil? shape) (f $address)
-          (if (nil? f) shape (f $address shape)))]
+        shape (if (nil? shape) (f $index)
+          (if (nil? f) shape (f $index shape)))]
       ~(with ,$offset ,offset
         ,(recenter
-          ~(with ,$address ,address-expr
-            (with ,globals/p (- ,globals/p (* ,$address ,$offset))
+          ~(with ,$index ,index-expr
+            (with ,globals/p (- ,globals/p (* ,$index ,$offset))
               ,(,method shape comp-state)))))))
 
 (def-complicated tile [shape f offset limit]
@@ -524,14 +524,14 @@
   ~(let [axes (other-axes axis)
          rotate (symbol "rotate_" axis)
          $angle (:temp-var comp-state type/float 'angle)
-         $address (:temp-var comp-state type/float 'address)
-         address-expr ~(round (/ ,(angle-around axis) ,$angle))
-         shape (if (nil? shape) (f $address)
-          (if (nil? f) shape (f $address shape)))]
+         $index (:temp-var comp-state type/float 'index)
+         index-expr ~(round (/ ,(angle-around axis) ,$angle))
+         shape (if (nil? shape) (f $index)
+          (if (nil? f) shape (f $index shape)))]
       ~(with ,$angle ,angle
-        (with ,$address ,address-expr
+        (with ,$index ,index-expr
           (with ,globals/p
-            (- (* ,globals/p (,rotate (* ,$address ,$angle))) ,(axis-vec (radial-translation-axis axis) radius))
+            (- (* ,globals/p (,rotate (* ,$index ,$angle))) ,(axis-vec (radial-translation-axis axis) radius))
               ,(,method shape comp-state))))))
 
 (def-complicated radial [shape f angle radius axis]
