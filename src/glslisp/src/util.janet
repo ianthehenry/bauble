@@ -26,7 +26,7 @@
   (and (indexed? expr) (all number? expr)))
 
 (defmacro assertf [x & args]
-  ~(assert ,x (string/format ;args)))
+  ~(assert ,x (string/format ,;args)))
 
 (defn table/remove [t k]
   (let [r (t k)]
