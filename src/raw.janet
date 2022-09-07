@@ -498,7 +498,7 @@
         recenter (if (nil? limit) id (fn [expr]
           ~(with ,globals/p (- ,globals/p (* ,(map |(if (even? $) -0.5 0) limit) ,$offset)) ,expr)))
         shape (if (nil? shape) (f $index)
-          (if (nil? f) shape (f $index shape)))]
+          (if (nil? f) shape (f shape $index)))]
       ~(with ,$offset ,offset
         ,(recenter
           ~(with ,$index ,index-expr
@@ -527,7 +527,7 @@
          $index (:temp-var comp-state type/float 'index)
          index-expr ~(round (/ ,(angle-around axis) ,$angle))
          shape (if (nil? shape) (f $index)
-          (if (nil? f) shape (f $index shape)))]
+          (if (nil? f) shape (f shape $index)))]
       ~(with ,$angle ,angle
         (with ,$index ,index-expr
           (with ,globals/p
