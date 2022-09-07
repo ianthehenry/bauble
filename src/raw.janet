@@ -610,6 +610,8 @@
        `))
   ~(+ ,(:surface shape comp-state) ,fresnel))
 
+(def-surfacer flat-color [color] color)
+
 (def-operator map-distance [shape f]
   (let [$d (:temp-var comp-state type/float 'distance)]
     ~(with ,$d ,(:compile shape comp-state)

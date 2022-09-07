@@ -347,7 +347,9 @@
   (raw/bounded shape (fn [$ m] (offset ~(* ,m ,offset-scale) shape)) magnitude threshold))
 
 (defmacro color [shape & body]
-  ~(map-color ,shape (fn [c] ,;body)))
+  (if (empty? body)
+    ~(,raw/flat-color ,shape)
+    ~(,map-color ,shape (fn [c] ,;body))))
 
 # TODO: are these useful?
 
