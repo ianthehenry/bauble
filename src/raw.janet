@@ -515,7 +515,7 @@
       :x [:y :z]
       :y [:z :x]
       :z [:x :y]))
-  ~(atan (. ,globals/p ,(axes 0)) (. ,globals/p ,(axes 1))))
+  ~(mod (atan (. ,globals/p ,(axes 0)) (. ,globals/p ,(axes 1))) ,tau))
 
 (defn- radial-translation-axis [axis]
   (case axis :x :z :y :x :z :y))
