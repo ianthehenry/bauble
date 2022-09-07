@@ -127,9 +127,9 @@
       (errorf "tile:limit %p is not a positive integer" num)))
   vec3)
 
-(def-flexible-fn tile [shape offset [limit nil]]
+(def-flexible-fn tile [[shape nil] [f nil] offset [limit nil]]
   {type/3d |(set-param shape $)
-   type/fn |(set-param shape $)
+   type/fn |(set-param f $)
    type/vec3 |(set-param offset $)
    type/float |(set-param offset [$ $ $])
    :limit |(->> $
@@ -137,14 +137,18 @@
       (to-vec3)
       (check-limit)
       (set-param limit))}
-  (raw/tile shape offset limit))
+  (if (and (nil? shape) (nil? f))
+    (error "tile requires either a shape or a function to generate a shape"))
+  (raw/tile shape f offset limit))
 
-(def-flexible-fn radial [shape axis count [radius 0]]
+(def-flexible-fn radial [[shape nil] [f nil] axis count [radius 0]]
   {type/3d |(set-param shape $)
-   type/fn |(set-param shape $)
+   type/fn |(set-param f $)
    type/axis |(set-param axis $)
    type/float |(set-first [count radius] $)}
-  (raw/radial shape (/ (* 2 math/pi) count) radius axis))
+  (if (and (nil? shape) (nil? f))
+    (error "radial requires either a shape or a function to generate a shape"))
+  (raw/radial shape f (/ (* 2 math/pi) count) radius axis))
 
 (def-flexible-fn distort [shape expression]
   {type/3d |(set-param shape $)

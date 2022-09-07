@@ -497,14 +497,15 @@
              address-expr)
         recenter (if (nil? limit) id (fn [expr]
           ~(with ,globals/p (- ,globals/p (* ,(map |(if (even? $) -0.5 0) limit) ,$offset)) ,expr)))
-        shape (if (function? shape) (shape $address) shape)]
+        shape (if (nil? shape) (f $address)
+          (if (nil? f) shape (f $address shape)))]
       ~(with ,$offset ,offset
         ,(recenter
           ~(with ,$address ,address-expr
             (with ,globals/p (- ,globals/p (* ,$address ,$offset))
               ,(,method shape comp-state)))))))
 
-(def-complicated tile [shape offset limit]
+(def-complicated tile [shape f offset limit]
   (make-tile-body :compile)
   (make-tile-body :surface))
 
@@ -525,14 +526,15 @@
          $angle (:temp-var comp-state type/float 'angle)
          $address (:temp-var comp-state type/float 'address)
          address-expr ~(round (/ ,(angle-around axis) ,$angle))
-         shape (if (function? shape) (shape $address) shape)]
+         shape (if (nil? shape) (f $address)
+          (if (nil? f) shape (f $address shape)))]
       ~(with ,$angle ,angle
         (with ,$address ,address-expr
           (with ,globals/p
             (- (* ,globals/p (,rotate (* ,$address ,$angle))) ,(axis-vec (radial-translation-axis axis) radius))
               ,(,method shape comp-state))))))
 
-(def-complicated radial [shape angle radius axis]
+(def-complicated radial [shape f angle radius axis]
   (make-radial-body :compile)
   (make-radial-body :surface))
 
