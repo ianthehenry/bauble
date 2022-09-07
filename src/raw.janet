@@ -613,13 +613,14 @@
   ~(+ ,(:surface shape comp-state) ,fresnel))
 
 (def-operator map-distance [shape f]
-  (f (:compile shape comp-state)))
-
-(def-operator invert-distance [shape]
-  ~(- ,(:compile shape comp-state)))
+  (let [$d (:temp-var comp-state type/float 'distance)]
+    ~(with ,$d ,(:compile shape comp-state)
+      ,(f $d))))
 
 (def-surfacer map-color [shape f]
-  (f (:surface shape comp-state)))
+  (let [$c (:temp-var comp-state type/vec3 'color)]
+    ~(with ,$c ,(:surface shape comp-state)
+      ,(f $c))))
 
 (def-complicated resurface [shape color]
   (:compile shape comp-state)
