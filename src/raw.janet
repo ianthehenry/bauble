@@ -513,7 +513,7 @@
       :x [:y :z]
       :y [:z :x]
       :z [:x :y]))
-  ~(mod (atan (. ,globals/p ,(axes 0)) (. ,globals/p ,(axes 1))) ,tau))
+  ~(atan (. ,globals/p ,(axes 0)) (. ,globals/p ,(axes 1))))
 
 (defn- radial-translation-axis [axis]
   (case axis :x :z :y :x :z :y))
@@ -523,7 +523,7 @@
          rotate (symbol "rotate_" axis)
          $angle (:temp-var comp-state type/float 'angle)
          $index (:temp-var comp-state type/float 'index)
-         index-expr ~(round (/ ,(angle-around axis) ,$angle))
+         index-expr ~(floor (/ (mod (+ ,(angle-around axis) (* 0.5 ,$angle)) ,tau) ,$angle))
          shape (if (nil? shape) (f $index)
           (if (nil? f) shape (f shape $index)))]
       ~(with ,$angle ,angle
