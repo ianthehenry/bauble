@@ -153,6 +153,72 @@
 # threading macro -- but it's a lot
 # easier to type out.
 
+# Because "operators" in Janet are just
+# regular functions, we can also use
+# pipe syntax to do math:
+
+# (x | + y) expands to (+ x y)
+
+# Remember that this is just a syntax
+# transform, so we can use the variadic
+# version of +:
+
+# (x | + y z) expands to (+ x y z)
+
+# But we can go even further. Babel will
+# rewrite "infix" uses of + - * / into
+# something very similar to this:
+
+# (x + y) becomes (+ x y)
+
+# However, this does *not* work with
+# variadic arguments. That's because if
+# you have multiple arguments to the
+# right of a binary operator, they will
+# be wrapped in parens.
+
+# (x + sin t) becomes (+ x (sin t))
+# (x |+ sin t) becomes (+ x sin t)
+
+# So there's still occasion to use pipe
+# with an operator.
+
+# Note that there is no "order of
+# operations" or precedence or
+# associativity in Bauble's infix
+# syntax. Operations always happen left
+# to right in the order that you write
+# them. So:
+
+# (x + y * 10)
+
+# Will expand to:
+
+# (* (+ x y) 10)
+
+# Because of this infix syntax macro,
+# it's no longer possible to pass the
+# functions + - * / as arguments to
+# higher-order functions. Instead, to
+# refer to the functions themselves,
+# use @+ @- @* @/.
+
+# For example, this would work in vanilla Janet:
+
+# (reduce + 0 [1 2 3])
+
+# But in Bauble, that will expand to
+# (+ reduce (0 [1 2 3])), and you'll
+# get a confusing error message.
+# Instead, you have to write:
+
+# (reduce @+ 0 [1 2 3])
+
+# Since you'll be doing math all the
+# time and very rarely invoking
+# higher-order functions, I think this
+# is a good tradeoff.
+
 #### Expressions ####
 
 # Alright, now we're getting to the good stuff.
@@ -279,12 +345,12 @@
 # (cone :y 100 (+ 100 (* 10 (cos (/ p.x 5)))))
 
 # Actually, let's really lean into the
-# pipe syntax for a second:
+# infix syntax for a second:
 
-# (cone :y 100 (p.x | / 5 | cos | * 10 | + 100))
+# (cone :y 100 (p.x / 5 | cos * 10 + 100))
 
 # What do you think? Neat? Horrifying? I
-# kinda like it, but it's definitely an
+# love it, but it's definitely an
 # acquired taste.
 
 # Anyway, drag the camera around, and
@@ -443,7 +509,7 @@
 
 # (box 50 :r 10
 # | color (let [view-dir (normalize (- camera P))]
-#     (+ c (pow (- 1.0 (dot normal view-dir)) 5))))
+#     (1.0 - dot normal view-dir | pow 5 + c)))
 
 # That adds a little bit of
 # (simulated) fresnel reflectivity to a

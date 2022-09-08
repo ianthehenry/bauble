@@ -54,7 +54,7 @@ function onReady(f: (() => void)) {
   }
 }
 
-const preamble = '(use ./helpers) (use ./dsl) (use ./pipe-syntax) (use ./dot-syntax) (use ./globals) (use ./glslisp/src/builtins) (resolve-dots (pipe \n';
+const preamble = '(use ./helpers) (use ./dsl) (use ./infix-syntax) (use ./dot-syntax) (use ./globals) (use ./glslisp/src/builtins) (resolve-dots (pipe \n';
 const postamble = '\n))'; // newline is necessary in case the script ends in a comment
 
 function recompileScript(script: string) {

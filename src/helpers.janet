@@ -69,3 +69,9 @@
 
 (defmacro spoon [& args]
   (fork-helper true args))
+
+# Because infix-syntax conflicts with these
+(def @+ +)
+(def @- -)
+(def @/ /)
+(def @* *)
