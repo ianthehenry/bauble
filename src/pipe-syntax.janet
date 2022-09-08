@@ -15,7 +15,7 @@
       (def up-to-now (slice xs start i))
       (if (nil? result)
         (if (= (length up-to-now) 1)
-          (set result @[prefix [maybe-invoke (up-to-now 0)]])
+          (set result @[prefix (up-to-now 0)])
           (set result @[prefix up-to-now]))
         (array/push result [saved ;up-to-now]))
       (set start (+ i 1))
