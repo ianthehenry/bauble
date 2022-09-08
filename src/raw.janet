@@ -651,3 +651,11 @@
         distorted-shape (f shape $magnitude)]
     ~(with ,$magnitude ,magnitude
       ,(:compile (bound distorted-shape boundary threshold) comp-state))))
+
+(def-complicated pivot [shape pivot-point f]
+  (let [$pivot (:temp-var comp-state type/vec3 'pivot)]
+    ~(with ,$pivot ,pivot-point
+      ,(:compile (translate (f (translate shape ~(- ,$pivot))) $pivot) comp-state)))
+  (let [$pivot (:temp-var comp-state type/vec3 'pivot)]
+    ~(with ,$pivot ,pivot-point
+      ,(:surface (translate (f (translate shape ~(- ,$pivot))) $pivot) comp-state))))

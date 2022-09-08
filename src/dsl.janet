@@ -5,6 +5,11 @@
 (import ./raw)
 (import ./glslisp/src/builtins :as generic)
 
+(defmacro- pivoting [form]
+  ~(if (nil? pivot)
+    ,form
+    (raw/pivot shape pivot (fn [shape] ,form))))
+
 # --- primitives ---
 
 # TODO: okay, so, interesting. because i broke this into
@@ -165,16 +170,16 @@
 
 (def move translate)
 
-(def-flexible-fn rotate [shape (matrix mat3/identity) (scale 1)]
+(def-flexible-fn rotate [shape (matrix mat3/identity) (scale 1) [pivot nil]]
   {type/3d |(set-param shape $)
    :tau |(set scale tau)
    :pi |(set scale pi)
    :deg |(set scale tau/360)
    :x |(set matrix (generic/mat3/multiply matrix (generic/rotate-x-matrix (generic/* scale (typecheck :x type/float $)))))
    :y |(set matrix (generic/mat3/multiply matrix (generic/rotate-y-matrix (generic/* scale (typecheck :y type/float $)))))
-   :z |(set matrix (generic/mat3/multiply matrix (generic/rotate-z-matrix (generic/* scale (typecheck :z type/float $)))))}
-
-  (raw/transform shape matrix))
+   :z |(set matrix (generic/mat3/multiply matrix (generic/rotate-z-matrix (generic/* scale (typecheck :z type/float $)))))
+   :pivot |(set-param pivot (typecheck :pivot type/vec3 $))}
+  (pivoting (raw/transform shape matrix)))
 
 (defn rotate-tau [& args]
   (rotate :tau ;args))
@@ -185,16 +190,18 @@
 (defn rotate-pi [& args]
   (rotate :pi ;args))
 
-(def-flexible-fn scale [shape (scale @[1 1 1])]
+(def-flexible-fn scale [shape (scale @[1 1 1]) [pivot nil]]
   {type/3d |(set-param shape $)
    type/float |(generic/*= scale $)
    type/vec3 |(generic/*= scale $)
    :x |(generic/*= scale [(typecheck :x type/float $) 1 1])
    :y |(generic/*= scale [1 (typecheck :y type/float $) 1])
-   :z |(generic/*= scale [1 1 (typecheck :z type/float $)])}
-  (if (vec3/same? scale)
-    (raw/scale shape (scale 0))
-    (raw/stretch shape scale)))
+   :z |(generic/*= scale [1 1 (typecheck :z type/float $)])
+   :pivot |(set-param pivot (typecheck :pivot type/vec3 $))}
+  (pivoting
+    (if (vec3/same? scale)
+      (raw/scale shape (scale 0))
+      (raw/stretch shape scale))))
 
 (defn- get-axes [x y z]
   (def axes (buffer/new 3))
@@ -345,6 +352,12 @@
    type/float |(set-first [magnitude offset-scale] $)
    :threshold |(set-param threshold (typecheck :threshold type/float $))}
   (raw/bounded shape (fn [$ m] (offset ~(* ,m ,offset-scale) shape)) magnitude threshold))
+
+(def-flexible-fn pivot [shape pivot-point f]
+  {type/3d |(set-param shape $)
+   type/vec3 |(set-param pivot-point $)
+   type/fn |(set-param f $)}
+  (raw/pivot shape pivot-point f))
 
 (defmacro color [shape & body]
   (if (empty? body)
