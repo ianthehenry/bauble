@@ -84,7 +84,7 @@
     (unless handled-as-keyword
       (if-let [dispatch (spec type)]
         (dispatch arg)
-        (errorf "unexpected argument %p" arg)))
+        (errorf "unexpected %s argument %p" type arg)))
     (++ i)))
 
 (defn- binding-default-value [binding]
