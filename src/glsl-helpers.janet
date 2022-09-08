@@ -13,6 +13,13 @@
 (define type/float 'max4 ["vec4 p"] `return max(p.x, max(p.y, max(p.z, p.w)));`)
 (define type/float 'min4 ["vec4 p"] `return min(p.x, min(p.y, max(p.z, p.w)));`)
 
+(define type/float 'sum2 ["vec2 p"] `return p.x + p.y;`)
+(define type/float 'sum3 ["vec3 p"] `return p.x + p.y + p.z;`)
+(define type/float 'sum4 ["vec4 p"] `return p.x + p.y + p.z + p.w;`)
+(define type/float 'product2 ["vec2 p"] `return p.x * p.y;`)
+(define type/float 'product3 ["vec3 p"] `return p.x * p.y * p.z;`)
+(define type/float 'product4 ["vec4 p"] `return p.x * p.y * p.z * p.w;`)
+
 (define type/vec3 'sort3 ["vec3 p"] `
   float smallest = min3(p);
   float largest = max3(p);

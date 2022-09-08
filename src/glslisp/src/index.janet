@@ -130,6 +130,18 @@
     'perlin2 type/float
     'perlin3 type/float
     'perlin4 type/float
+    'sum2 type/float
+    'sum3 type/float
+    'sum4 type/float
+    'product2 type/float
+    'product3 type/float
+    'product4 type/float
+    'min2 type/float
+    'min3 type/float
+    'min4 type/float
+    'max2 type/float
+    'max3 type/float
+    'max4 type/float
 
     (typeof-generic-application args)))
 

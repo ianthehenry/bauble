@@ -21,6 +21,39 @@
 (make-vec-1 length)
 (make-vec-1 vec-length :glf length)
 
+# TODO: I should really make a generic helper for "variadic" vectors like this.
+(make-vec-1 sum :expr
+  (case (glslisp/typecheck a)
+    type/vec2 ~(sum2 ,a)
+    type/vec3 ~(sum3 ,a)
+    type/vec4 ~(sum4 ,a)
+    type/unknown (errorf "cannot determine type of expression; please tell ian about this")
+    (errorf "sum requires a vector argument")))
+
+(make-vec-1 product :expr
+  (case (glslisp/typecheck a)
+    type/vec2 ~(product2 ,a)
+    type/vec3 ~(product3 ,a)
+    type/vec4 ~(product4 ,a)
+    type/unknown (errorf "cannot determine type of expression; please tell ian about this")
+    (errorf "sum requires a vector argument")))
+
+(make-vec-1 vec-min :expr
+  (case (glslisp/typecheck a)
+    type/vec2 ~(min2 ,a)
+    type/vec3 ~(min3 ,a)
+    type/vec4 ~(min4 ,a)
+    type/unknown (errorf "cannot determine type of expression; please tell ian about this")
+    (errorf "vec-min requires a vector argument")))
+
+(make-vec-1 vec-max :expr
+  (case (glslisp/typecheck a)
+    type/vec2 ~(max2 ,a)
+    type/vec3 ~(max3 ,a)
+    type/vec4 ~(max4 ,a)
+    type/unknown (errorf "cannot determine type of expression; please tell ian about this")
+    (errorf "vec-max requires a vector argument")))
+
 (make-vec-1 normalize)
 
 # TODO: so this is a tricky one. this is overloaded
@@ -31,6 +64,18 @@
 (make-generic-2 max)
 (make-generic-2 min)
 (make-generic-2 mod)
+
+(def- min- min)
+(defn min [a &opt b]
+  (if (nil? b)
+    (vec-min a)
+    (min- a b)))
+
+(def- max- max)
+(defn max [a &opt b]
+  (if (nil? b)
+    (vec-max a)
+    (max- a b)))
 
 (make-vec-2 dot)
 

@@ -33,6 +33,9 @@
 (defn mix [x y a]
   (+ (* x a) (* y (- 1 a))))
 
+(defn vec-min [v] (apply min v))
+(defn vec-max [v] (apply max v))
+
 (defn fract [x] (mod x 1))
 
 (defn hsv [h s v]
