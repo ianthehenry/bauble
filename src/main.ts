@@ -31,7 +31,6 @@ function print(text: string, isErr=false) {
   span.appendChild(document.createTextNode(text));
   span.appendChild(document.createTextNode('\n'));
   output.appendChild(span);
-  output.scrollTop = output.scrollHeight;
 }
 
 interface Camera { x: number, y: number, zoom: number; }
