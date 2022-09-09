@@ -1,5 +1,12 @@
-# Hello, and welcome to an extremely
-# early and unfinished demo!
+# Welcome to Bauble! This document is an
+# interactive tutorial that will teach
+# you everything you need to know to
+# make art with lisp and math.
+
+# If you'd prefer a non-interactive
+# approach, check out this introductory
+# video instead:
+# https://www.youtube.com/watch?v=0-OtdjiR7dc&list=PLjT5GDnW_UMBS6ih0kG7jWB0n1SnotnEu
 
 # Bauble is a playground for creating
 # and rendering 3D shapes using signed
