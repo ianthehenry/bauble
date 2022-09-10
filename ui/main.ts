@@ -4,9 +4,7 @@ import {indentWithTab} from '@codemirror/commands';
 import {syntaxTree} from '@codemirror/language';
 import {SyntaxNode} from '@lezer/common';
 import {janet} from 'codemirror-lang-janet';
-import {
-  EditorState, EditorSelection, Transaction,
-} from '@codemirror/state';
+import {EditorState, EditorSelection, Transaction} from '@codemirror/state';
 import Big from 'big.js';
 
 const TAU = 2 * Math.PI;
@@ -33,24 +31,12 @@ function print(text: string, isErr=false) {
   output.appendChild(span);
 }
 
-let evaluateScript: ((_code: string) => number) | null = null;
-let updateCamera: ((_cameraX: number, _cameraY: number, _cameraZoom: number) => void) | null = null;
-let updateTime: ((_t: number) => void) | null = null;
-let updateViewType: ((_t: number) => void) | null = null;
-let rerender: (() => void) | null = null;
-let ready: (() => void) | null = function() { ready = null; };
-
-function onReady(f: (() => void)) {
-  if (ready == null) {
-    f();
-  } else {
-    const old = ready;
-    ready = function() {
-      old();
-      f();
-    };
-  }
-}
+// let evaluateScript: ((_code: string) => number) | null = null;
+let evaluateScript: (_code: string) => number;
+let updateCamera: (_cameraX: number, _cameraY: number, _cameraZoom: number) => void;
+let updateTime: (_t: number) => void;
+let updateViewType: (_t: number) => void;
+let rerender: () => void;
 
 const preamble = '(use ./helpers) (use ./dsl) (use ./infix-syntax) (use ./dot-syntax) (use ./globals) (use ./glslisp/src/builtins) (resolve-dots (pipe \n';
 const postamble = '\n))'; // newline is necessary in case the script ends in a comment
@@ -68,8 +54,8 @@ declare global {
   interface Window { Module: Partial<MyEmscripten>; }
 }
 
-let resolveInitialScript: ((_: string) => void) | null = null;
-const initialScript = new Promise((x) => { resolveInitialScript = x; });
+let resolveReady: (any) => void;
+const wasmReady = new Promise((x) => { resolveReady = x; });
 
 const Module: Partial<MyEmscripten> = {
   preRun: [],
@@ -80,14 +66,13 @@ const Module: Partial<MyEmscripten> = {
     print(x, true);
   },
   postRun: [function() {
-    evaluateScript = Module.cwrap!("evaluate_script", 'number', ['string']);
-    updateCamera = Module.cwrap!("update_camera", null, ['number', 'number', 'number']);
-    updateTime = Module.cwrap!("update_time", null, ['number']);
-    updateViewType = Module.cwrap!("update_view_type", null, ['number']);
-    rerender = Module.cwrap!("rerender", null, []);
-    Module.ccall!("initialize_janet", null, [], []);
-    ready();
-    resolveInitialScript!(FS.readFile('intro.janet', {encoding: 'utf8'}));
+    evaluateScript = Module.cwrap("evaluate_script", 'number', ['string']);
+    updateCamera = Module.cwrap("update_camera", null, ['number', 'number', 'number']);
+    updateTime = Module.cwrap("update_time", null, ['number']);
+    updateViewType = Module.cwrap("update_view_type", null, ['number']);
+    rerender = Module.cwrap("rerender", null, []);
+    Module.ccall("initialize_janet", null, [], []);
+    resolveReady(void 0);
   }],
   locateFile: function(path, prefix) {
     if (prefix === '') {
@@ -584,17 +569,19 @@ function initialize(script: string) {
     }
   });
 
-  onReady(() => draw(true));
+  draw(true);
   editor.focus();
 }
 
 document.addEventListener("DOMContentLoaded", (_) => {
-  const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-  if (saved == null) {
-    initialScript.then(initialize).catch(console.error);
-  } else {
-    initialize(saved);
-  }
+  wasmReady.then(() => {
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (saved) {
+      initialize(saved);
+    } else {
+      initialize(FS.readFile('intro.janet', {encoding: 'utf8'}));
+    }
+  }).catch(console.error);
 });
 
 window.Module = Module;
