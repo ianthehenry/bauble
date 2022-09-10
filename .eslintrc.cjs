@@ -13,9 +13,9 @@ module.exports = {
     'comma-spacing': ['error'],
     'comma-style': ['error'],
     'eol-last': ['error'],
-    'indent': ['error', 2],
+    'indent': ['error', 2, { SwitchCase: 1 }],
     'comma-dangle': ['error', 'always-multiline'],
-    'no-unused-vars': ['error', { 'argsIgnorePattern': '^_' }],
+    'no-unused-vars': 'off',
     '@typescript-eslint/no-unused-vars': ['error', { 'argsIgnorePattern': '^_' }],
     '@typescript-eslint/no-non-null-assertion': 'off'
   },
@@ -24,6 +24,6 @@ module.exports = {
   root: true,
   parserOptions: {
     tsconfigRootDir: __dirname,
-    project: ['src/tsconfig.json'],
+    project: ['ui/tsconfig.json'],
   },
 };

@@ -33,7 +33,6 @@ function print(text: string, isErr=false) {
   output.appendChild(span);
 }
 
-interface Camera { x: number, y: number, zoom: number; }
 let evaluateScript: ((_code: string) => number) | null = null;
 let updateCamera: ((_cameraX: number, _cameraY: number, _cameraZoom: number) => void) | null = null;
 let updateTime: ((_t: number) => void) | null = null;
@@ -69,7 +68,7 @@ declare global {
   interface Window { Module: Partial<MyEmscripten>; }
 }
 
-let resolveInitialScript = null;
+let resolveInitialScript: ((_: string) => void) | null = null;
 const initialScript = new Promise((x) => { resolveInitialScript = x; });
 
 const Module: Partial<MyEmscripten> = {
@@ -88,7 +87,7 @@ const Module: Partial<MyEmscripten> = {
     rerender = Module.cwrap!("rerender", null, []);
     Module.ccall!("initialize_janet", null, [], []);
     ready();
-    resolveInitialScript(FS.readFile('intro.janet', {encoding: 'utf8'}));
+    resolveInitialScript!(FS.readFile('intro.janet', {encoding: 'utf8'}));
   }],
   locateFile: function(path, prefix) {
     if (prefix === '') {
@@ -208,7 +207,7 @@ class Timer {
     this.rate = 1;
   }
 
-  tick(now, isAnimation) {
+  tick(now: number, isAnimation) {
     if (isAnimation && this.state === TimerState.Ambivalent) {
       this.state = TimerState.Playing;
     }
@@ -247,7 +246,7 @@ class Timer {
     this.then = now;
   }
 
-  setLoopMode(loopMode) {
+  setLoopMode(loopMode: LoopMode) {
     if (loopMode != LoopMode.Reverse) {
       this.rate = 1;
     }
@@ -262,7 +261,7 @@ const defaultCamera = {
   x: -0.125,
   y: 0.125,
   zoom: 2.0,
-}
+};
 
 enum CompilationState {
   Unknown,
@@ -270,7 +269,7 @@ enum CompilationState {
   Error,
 }
 
-function initialize(script) {
+function initialize(script: string) {
   const camera = {
     x: defaultCamera.x,
     y: defaultCamera.y,
@@ -285,8 +284,6 @@ function initialize(script) {
   const compilationSuccessIndicator: HTMLElement = document.querySelector('#code-container .indicator.compilation-success')!;
   const compilationUnknownIndicator: HTMLElement = document.querySelector('#code-container .indicator.compilation-unknown')!;
 
-  let viewType = 0;
-
   const timestampSpan: HTMLInputElement = document.querySelector('.toolbar span.timestamp')!;
 
   const timer = new Timer();
@@ -300,7 +297,7 @@ function initialize(script) {
 
   let compilationState = CompilationState.Unknown;
 
-  function tick(now) {
+  function tick(now: number) {
     requestAnimationFrame(tick);
     timer.tick(now, isAnimation);
     if (drawScheduled) {
@@ -383,41 +380,25 @@ function initialize(script) {
     doc: script,
   });
 
-  // honestly this is so annoying on firefox that
-  // i'm not even gonna bother
-  const usePointerLock = false;
-  if (usePointerLock) {
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Control') {
-        document.body.requestPointerLock();
-      }
-    });
-    document.addEventListener('keyup', (e) => {
-      if (e.key === 'Control') {
-        document.exitPointerLock();
-      }
-    });
-  }
-
-  resetButton.addEventListener('click', (e) => {
+  resetButton.addEventListener('click', (_e) => {
     camera.x = defaultCamera.x;
     camera.y = defaultCamera.y;
     camera.zoom = defaultCamera.zoom;
     draw(false);
   });
-  playButton.addEventListener('click', (e) => {
+  playButton.addEventListener('click', (_e) => {
     timer.state = TimerState.Playing;
   });
-  pauseButton.addEventListener('click', (e) => {
+  pauseButton.addEventListener('click', (_e) => {
     timer.state = TimerState.Paused;
   });
-  stopButton.addEventListener('click', (e) => {
+  stopButton.addEventListener('click', (_e) => {
     timer.stop();
     draw(false);
   });
 
   document.getElementById('canvas-container')!.addEventListener('input', (e) => {
-    const target = <HTMLInputElement>e.target;
+    const target = e.target as HTMLInputElement;
     switch (target.name) {
       case 'view-type': {
         if (target.checked) {
@@ -610,7 +591,7 @@ function initialize(script) {
 document.addEventListener("DOMContentLoaded", (_) => {
   const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
   if (saved == null) {
-    initialScript.then(initialize);
+    initialScript.then(initialize).catch(console.error);
   } else {
     initialize(saved);
   }

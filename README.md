@@ -33,7 +33,7 @@ Run `./build` to compile Janet to wasm; run `./build --prod` for an optimized, m
 Lint the JS with:
 
 ```
-yarn eslint src/
+yarn eslint ui/
 ```
 
 # Running
