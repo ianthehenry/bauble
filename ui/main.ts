@@ -54,7 +54,7 @@ declare global {
   interface Window { Module: Partial<MyEmscripten>; }
 }
 
-let resolveReady: (any) => void;
+let resolveReady: (_: undefined) => void;
 const wasmReady = new Promise((x) => { resolveReady = x; });
 
 const Module: Partial<MyEmscripten> = {
@@ -66,13 +66,13 @@ const Module: Partial<MyEmscripten> = {
     print(x, true);
   },
   postRun: [function() {
-    evaluateScript = Module.cwrap("evaluate_script", 'number', ['string']);
-    updateCamera = Module.cwrap("update_camera", null, ['number', 'number', 'number']);
-    updateTime = Module.cwrap("update_time", null, ['number']);
-    updateViewType = Module.cwrap("update_view_type", null, ['number']);
-    rerender = Module.cwrap("rerender", null, []);
-    Module.ccall("initialize_janet", null, [], []);
-    resolveReady(void 0);
+    evaluateScript = Module.cwrap!("evaluate_script", 'number', ['string']);
+    updateCamera = Module.cwrap!("update_camera", null, ['number', 'number', 'number']);
+    updateTime = Module.cwrap!("update_time", null, ['number']);
+    updateViewType = Module.cwrap!("update_view_type", null, ['number']);
+    rerender = Module.cwrap!("rerender", null, []);
+    Module.ccall!("initialize_janet", null, [], []);
+    resolveReady(void(0));
   }],
   locateFile: function(path, prefix) {
     if (prefix === '') {
@@ -155,6 +155,14 @@ interface GestureEvent extends TouchEvent {
   scale: number
 }
 
+declare global {
+  interface HTMLElementEventMap {
+    'gesturestart': GestureEvent;
+    'gesturechange': GestureEvent;
+    'gestureend': GestureEvent;
+  }
+}
+
 enum CompilationResult {
   NoChange = 0,
   ChangedStatic = 1,
@@ -192,7 +200,7 @@ class Timer {
     this.rate = 1;
   }
 
-  tick(now: number, isAnimation) {
+  tick(now: number, isAnimation: boolean) {
     if (isAnimation && this.state === TimerState.Ambivalent) {
       this.state = TimerState.Playing;
     }
@@ -275,7 +283,7 @@ function initialize(script: string) {
   let drawScheduled = false;
   let recompileScheduled = false;
   let isAnimation = false;
-  function draw(recompile) {
+  function draw(recompile: boolean) {
     recompileScheduled ||= recompile;
     drawScheduled = true;
   }
@@ -295,8 +303,7 @@ function initialize(script: string) {
           compilationState = CompilationState.Error;
         } else {
           compilationState = CompilationState.Success;
-          // TODO: surely this isn't actually how you're supposed to do this
-          switch (CompilationResult[CompilationResult[result]]) {
+          switch (result) {
             case CompilationResult.NoChange: break;
             case CompilationResult.ChangedAnimated: isAnimation = true; break;
             case CompilationResult.ChangedStatic: isAnimation = false; break;
@@ -418,7 +425,7 @@ function initialize(script: string) {
 
   const canvas = document.getElementById('render-target')! as HTMLCanvasElement;
   let canvasPointerAt = [0, 0];
-  let rotatePointerId = null;
+  let rotatePointerId: number | null = null;
   canvas.addEventListener('pointerdown', (e) => {
     if (rotatePointerId === null) {
       e.preventDefault();
@@ -470,11 +477,11 @@ function initialize(script: string) {
 
   // TODO: I haven't actually tested if this is anything
   let initialZoom = 1;
-  canvas.addEventListener('gesturestart', (_e: GestureEvent) => {
+  canvas.addEventListener('gesturestart', (_: GestureEvent) => {
     initialZoom = camera.zoom;
     isGesturing = true;
   });
-  canvas.addEventListener('gestureend', (_e: GestureEvent) => {
+  canvas.addEventListener('gestureend', (_: GestureEvent) => {
     initialZoom = camera.zoom;
     isGesturing = false;
     gestureEndedAt = performance.now();

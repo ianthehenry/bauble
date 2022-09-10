@@ -28,12 +28,19 @@ fi
 if [[ "$build_js" == "true" ]]; then
   rm -rf public/js/main.js
 
-  node_modules/.bin/rollup ui/main.ts \
-    -f iife \
-    -o public/js/main.js \
-    -p @rollup/plugin-node-resolve \
-    -p @rollup/plugin-typescript \
-    $rollup_args
+  # I can't figure out how to specify
+  # the path to the tsconfig file, so
+  # I cd into this directory in order
+  # to read it.
+  (
+    cd ui/
+    ../node_modules/.bin/rollup main.ts \
+      -f iife \
+      -o ../public/js/main.js \
+      -p @rollup/plugin-node-resolve \
+      -p @rollup/plugin-typescript \
+      $rollup_args
+  )
 fi
 
 if [[ "$build_wasm" == "true" ]]; then
