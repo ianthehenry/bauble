@@ -4,7 +4,7 @@ Bauble is a toy for composing signed distance functions in a high-level language
 
 Bauble is still in its early days, but it's progressed to the point that you can do some pretty neat stuff with it. Try it out at <https://bauble.studio/>, or watch this video introduction where I model an infinite number of hot air balloons:
 
-[![Livecoding a hot air balloon (1/3)](https://img.youtube.com/vi/0-OtdjiR7dc/default.jpg)](https://www.youtube.com/watch?v=0-OtdjiR7dc&list=PLjT5GDnW_UMBS6ih0kG7jWB0n1SnotnEu)
+[![Livecoding a hot air balloon (1/3)](https://img.youtube.com/vi/0-OtdjiR7dc/maxresdefault.jpg)](https://www.youtube.com/watch?v=0-OtdjiR7dc&list=PLjT5GDnW_UMBS6ih0kG7jWB0n1SnotnEu)
 
 For more examples, I sometimes tweet videos of Bauble's development:
 
