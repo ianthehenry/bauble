@@ -350,7 +350,7 @@
         :return "color"))))
 
 (def-complicated intersect [shapes]
-  (:generate-function comp-state "float" [self :distance] "union" []
+  (:generate-function comp-state "float" [self :distance] "intersect" []
     (fn [comp-state]
       (fold-shapes comp-state shapes
         :f (fn [i $]
@@ -358,7 +358,7 @@
             (string `float d = `(:compile $)`;`)
             (string `d = max(d, `(:compile $)`);`)))
         :return "d")))
-  (:generate-function comp-state "vec3" [self :color] "union_color" []
+  (:generate-function comp-state "vec3" [self :color] "intersect_color" []
     (fn [comp-state]
       (fold-shapes comp-state shapes
         :f (fn [i $]
@@ -372,7 +372,7 @@
 # TODO: can i write subtract as invert + intersect? i should be able to, right?
 # will that work with surfaces?
 (def-complicated subtract [shapes]
-  (:generate-function comp-state "float" [self :distance] "union" []
+  (:generate-function comp-state "float" [self :distance] "subtract" []
     (fn [comp-state]
       (fold-shapes comp-state shapes
         :f (fn [i $]
@@ -380,7 +380,7 @@
             (string `float d = `(:compile $)`;`)
             (string `d = max(d, -`(:compile $)`);`)))
         :return "d")))
-  (:generate-function comp-state "vec3" [self :color] "union_color" []
+  (:generate-function comp-state "vec3" [self :color] "subtract_color" []
     (fn [comp-state]
       (fold-shapes comp-state shapes
         :f (fn [i $]
