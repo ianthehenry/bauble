@@ -59,13 +59,6 @@ let updateViewType: (_t: number) => void;
 let rerender: () => void;
 let recompileFragmentShader: (_: string) => void;
 
-const preamble = '(use ./helpers) (use ./dsl) (use ./infix-syntax) (use ./dot-syntax) (use ./globals) (use ./glslisp/src/builtins) (resolve-dots (pipe \n';
-const postamble = '\n))'; // newline is necessary in case the script ends in a comment
-
-function recompileScript(script: string) {
-  return Module.evaluate_script!(preamble + script + postamble);
-}
-
 let updateCamera: (_cameraX: number, _cameraY: number, _cameraZoom: number) => void
 
 let resolveReady: (_: undefined) => void;
@@ -229,27 +222,28 @@ function initialize(script: string) {
   function tick(now: number) {
     requestAnimationFrame(tick);
     timer.tick(now, isAnimation);
-    if (drawScheduled) {
-      updateCamera(TAU * camera.x, TAU * camera.y, camera.zoom);
-      updateTime(timer.t);
-      if (recompileScheduled) {
-        clearOutput();
-        const result = recompileScript(editor.state.doc.toString());
-        if (result.isError) {
-          compilationState = CompilationState.Error;
-          console.error(result.error);
-        } else {
-          compilationState = CompilationState.Success;
-          isAnimation = result.isAnimated;
-          recompileFragmentShader(result.shaderSource);
+    try {
+      if (drawScheduled) {
+        updateCamera(TAU * camera.x, TAU * camera.y, camera.zoom);
+        updateTime(timer.t);
+        if (recompileScheduled) {
+          clearOutput();
+          const result = Module.evaluate_script!(editor.state.doc.toString());
+          if (result.isError) {
+            compilationState = CompilationState.Error;
+            console.error(result.error);
+          } else {
+            compilationState = CompilationState.Success;
+            isAnimation = result.isAnimated;
+            recompileFragmentShader(result.shaderSource);
+          }
         }
-      }
-      try {
         rerender();
-      } catch (e) {
-        console.error(e);
       }
+    } catch (e) {
+      console.error(e);
     }
+
     drawScheduled = timer.state === TimerState.Playing;
     recompileScheduled = false;
 

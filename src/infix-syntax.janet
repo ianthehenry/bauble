@@ -57,6 +57,8 @@
     (rewrite-pipe form)
     form))
 
-(defmacro pipe [& forms]
-  ~(do
-    ,;(map (fn [form] (prewalk resolve-form form)) forms)))
+(defn expand [form]
+  (prewalk resolve-form form))
+
+(defmacro pipe-syntax [& forms]
+  ~(do ,;(map expand forms)))

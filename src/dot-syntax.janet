@@ -7,5 +7,8 @@
           (reduce |~(. ,$0 ,(keyword $1)) (symbol head) props))))
     sym))
 
-(defmacro resolve-dots [form]
+(defn expand [form]
   (prewalk |(if (symbol? $) (expand-dots $) $) form))
+
+(defmacro dot-syntax [& forms]
+  ~(do ,;(map expand forms)))

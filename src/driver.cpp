@@ -51,7 +51,8 @@ typedef struct {
   GLint view_type;
 } gl_context;
 
-static JanetFunction *compile = NULL;
+static JanetFunction *janetfn_bauble_evaluate = NULL;
+static JanetFunction *janetfn_compile_shape = NULL;
 static gl_context *global_context = NULL;
 
 GLuint compile_shader(GLenum type, const char *source) {
@@ -231,9 +232,26 @@ JANET_FN(janet_function_max_arity, "(function/max-arity)", "") {
 }
 
 JanetFunction *extract_function(JanetTable *env, const char *name) {
-  Janet anything = janet_table_get(env, janet_csymbolv(name));
   JanetTable *declaration = janet_unwrap_table(janet_table_get(env, janet_csymbolv(name)));
-  return janet_unwrap_function(janet_table_get(declaration, janet_ckeywordv("value")));
+  JanetFunction *function = janet_unwrap_function(janet_table_get(declaration, janet_ckeywordv("value")));
+  if (!function) {
+    fprintf(stderr, "failed to extract function %s\n", name);
+  }
+  return function;
+}
+
+Janet *call_fn(JanetFunction *fn, int argc, const Janet *argv) {
+  Janet *result = (Janet *)malloc(sizeof(Janet));
+  if (!result) {
+    return NULL;
+  }
+  JanetFiber *fiber = NULL;
+  if (janet_pcall(fn, argc, argv, result, &fiber) == JANET_SIGNAL_OK) {
+    return result;
+  } else {
+    janet_stacktrace(fiber, *result);
+    return NULL;
+  }
 }
 
 extern "C" {
@@ -248,24 +266,37 @@ void initialize_janet() {
     JANET_REG("function/max-arity", janet_function_max_arity),
     JANET_REG_END
   };
-
   janet_cfuns_ext(env, NULL, regs);
 
   JanetFunction *dofile = extract_function(env, "dofile");
-  const Janet args[1] = { janet_cstringv("shade.janet") };
-  Janet result;
-  JanetFiber *fiber = NULL;
-  JanetSignal compilation_result = janet_pcall(dofile, 1, args, &result, &fiber);
-  if (compilation_result == 0) {
-    compile = extract_function(janet_unwrap_table(result), "compile-shape");
-    janet_gcroot(janet_wrap_function(compile));
+  Janet *result;
+  bool error = false;
+
+  result = call_fn(dofile, 1, (Janet[1]){ janet_cstringv("bauble-evaluator.janet") });
+  if (result) {
+    janetfn_bauble_evaluate = extract_function(janet_unwrap_table(*result), "evaluate");
+    janet_gcroot(janet_wrap_function(janetfn_bauble_evaluate));
+    free(result);
   } else {
-    janet_eprintf("error getting compilation function\n");
-    janet_stacktrace(fiber, result);
-    janet_deinit();
+    janet_eprintf("unable to extract compilation function\n");
+    error = true;
+  }
+
+  result = call_fn(dofile, 1, (Janet[1]){ janet_cstringv("shade.janet") });
+  if (result) {
+    janetfn_compile_shape = extract_function(janet_unwrap_table(*result), "compile-shape");
+    janet_gcroot(janet_wrap_function(janetfn_compile_shape));
+    free(result);
+  } else {
+    janet_eprintf("unable to extract compilation function\n");
+    error = true;
   }
 
   global_context = new_gl_context("#render-target");
+
+  if (error) {
+    janet_deinit();
+  }
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -325,60 +356,45 @@ CompilationResult compilation_error(string message) {
 }
 
 CompilationResult evaluate_script(string source) {
-  long long start_time = emscripten_get_now();
-
-  if (compile == NULL) {
+  if (janetfn_compile_shape == NULL) {
     fprintf(stderr, "unable to initialize compilation function\n");
     return compilation_error("function uninitialized");
   }
 
-  JanetTable *env = janet_core_env(NULL);
-
-  Janet user_expression;
-  JanetSignal status = (JanetSignal)janet_dostring(env, source.c_str(), "script", &user_expression);
-
-  long long done_evaluating = emscripten_get_now();
-
-  if (status != JANET_SIGNAL_OK) {
+  long long start_time = emscripten_get_now();
+  Janet *user_expression = call_fn(janetfn_bauble_evaluate, 1, (Janet[1]){ janet_cstringv(source.c_str()) });
+  if (!user_expression) {
     return compilation_error("evaluation error");
   }
 
-  const Janet args[1] = { user_expression };
-  Janet response;
-  JanetFiber *execution_fiber = NULL;
-  status = janet_pcall(compile, 1, args, &response, &execution_fiber);
+  long long done_evaluating = emscripten_get_now();
+
+  const Janet compile_shape_args[1] = { *user_expression };
+  Janet *response_ptr = call_fn(janetfn_compile_shape, 1, compile_shape_args);
+  free(user_expression);
 
   long long done_compiling_glsl = emscripten_get_now();
-  long long done_compiling_shader = -1;
   bool is_animated;
   const uint8_t *shader_source;
-  if (status == JANET_SIGNAL_OK) {
+  if (response_ptr) {
+    Janet response = *response_ptr;
     if (janet_checktype(response, JANET_TUPLE)) {
       const Janet *tuple = janet_unwrap_tuple(response);
       is_animated = janet_unwrap_boolean(tuple[0]);
       shader_source = janet_unwrap_string(tuple[1]);
-      done_compiling_shader = emscripten_get_now();
     } else if (janet_checktype(response, JANET_KEYWORD)) {
-      // either an error during compilation, or it was
-      // passed an invalid value
+      free(response_ptr);
       return compilation_error("invalid value");
     } else {
       janet_eprintf("unexpected compilation result %p\n", response);
+      free(response_ptr);
       return compilation_error("internal error");
     }
   } else {
-    janet_stacktrace(execution_fiber, response);
     return compilation_error("compilation error");
   }
 
-  if (done_compiling_shader == -1) {
-    printf("eval: %lldms diff: %lldms\n", (done_evaluating - start_time), (done_compiling_glsl - done_evaluating));
-  } else {
-    printf("eval: %lldms generate glsl: %lldms compile shader: %lldms\n",
-      (done_evaluating - start_time),
-      (done_compiling_glsl - done_evaluating),
-      (done_compiling_shader - done_compiling_glsl));
-  }
+  printf("eval: %lldms compile: %lldms\n", (done_evaluating - start_time), (done_compiling_glsl - done_evaluating));
 
   return (CompilationResult) {
    .is_error = false,
