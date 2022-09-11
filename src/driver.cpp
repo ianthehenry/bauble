@@ -51,7 +51,7 @@ typedef struct {
   GLint view_type;
 } gl_context;
 
-static JanetFiber *draw_fiber = NULL;
+static JanetFunction *compile = NULL;
 static gl_context *global_context = NULL;
 
 GLuint compile_shader(GLenum type, const char *source) {
@@ -230,6 +230,12 @@ JANET_FN(janet_function_max_arity, "(function/max-arity)", "") {
   return janet_wrap_number(function->def->max_arity);
 }
 
+JanetFunction *extract_function(JanetTable *env, const char *name) {
+  Janet anything = janet_table_get(env, janet_csymbolv(name));
+  JanetTable *declaration = janet_unwrap_table(janet_table_get(env, janet_csymbolv(name)));
+  return janet_unwrap_function(janet_table_get(declaration, janet_ckeywordv("value")));
+}
+
 extern "C" {
 
 void initialize_janet() {
@@ -245,26 +251,21 @@ void initialize_janet() {
 
   janet_cfuns_ext(env, NULL, regs);
 
-  char *startup_source = slurp("shade.janet");
+  JanetFunction *dofile = extract_function(env, "dofile");
+  const Janet args[1] = { janet_cstringv("shade.janet") };
   Janet result;
-  JanetSignal status = (JanetSignal)janet_dostring(env, startup_source, "shade.janet", &result);
-  free(startup_source);
-
-  if (status == JANET_SIGNAL_OK) {
-    janet_gcroot(result);
-    draw_fiber = janet_unwrap_fiber(result);
-    global_context = new_gl_context("#render-target");
-
-    // we want to resume it once here so that it's ready to be yielded to in the future
-    Janet response;
-    int status = janet_continue(draw_fiber, result, &response);
-    if (status != JANET_SIGNAL_YIELD || !janet_checktype(response, JANET_NIL)) {
-      janet_eprintf("fiber began in a weird state %d %p\n", status, response);
-    }
+  JanetFiber *fiber = NULL;
+  JanetSignal compilation_result = janet_pcall(dofile, 1, args, &result, &fiber);
+  if (compilation_result == 0) {
+    compile = extract_function(janet_unwrap_table(result), "compile-shape");
+    janet_gcroot(janet_wrap_function(compile));
   } else {
-    fprintf(stderr, "unable to initialize\n");
+    janet_eprintf("error getting compilation function\n");
+    janet_stacktrace(fiber, result);
     janet_deinit();
   }
+
+  global_context = new_gl_context("#render-target");
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -326,15 +327,15 @@ CompilationResult compilation_error(string message) {
 CompilationResult evaluate_script(string source) {
   long long start_time = emscripten_get_now();
 
-  if (draw_fiber == NULL) {
-    fprintf(stderr, "unable to initialize compilation fiber\n");
-    return compilation_error("fiber uninitialized");
+  if (compile == NULL) {
+    fprintf(stderr, "unable to initialize compilation function\n");
+    return compilation_error("function uninitialized");
   }
 
   JanetTable *env = janet_core_env(NULL);
 
-  Janet result;
-  JanetSignal status = (JanetSignal)janet_dostring(env, source.c_str(), "playground", &result);
+  Janet user_expression;
+  JanetSignal status = (JanetSignal)janet_dostring(env, source.c_str(), "script", &user_expression);
 
   long long done_evaluating = emscripten_get_now();
 
@@ -342,13 +343,16 @@ CompilationResult evaluate_script(string source) {
     return compilation_error("evaluation error");
   }
 
+  const Janet args[1] = { user_expression };
   Janet response;
-  status = janet_continue(draw_fiber, result, &response);
+  JanetFiber *execution_fiber = NULL;
+  status = janet_pcall(compile, 1, args, &response, &execution_fiber);
+
   long long done_compiling_glsl = emscripten_get_now();
   long long done_compiling_shader = -1;
   bool is_animated;
   const uint8_t *shader_source;
-  if (status == JANET_SIGNAL_YIELD) {
+  if (status == JANET_SIGNAL_OK) {
     if (janet_checktype(response, JANET_TUPLE)) {
       const Janet *tuple = janet_unwrap_tuple(response);
       is_animated = janet_unwrap_boolean(tuple[0]);
@@ -359,13 +363,12 @@ CompilationResult evaluate_script(string source) {
       // passed an invalid value
       return compilation_error("invalid value");
     } else {
-      janet_eprintf("fiber yielded an unexpected value %p\n", response);
+      janet_eprintf("unexpected compilation result %p\n", response);
       return compilation_error("internal error");
     }
   } else {
-    fprintf(stderr, "compilation fiber did not yield\n");
-    janet_stacktrace(draw_fiber, response);
-    return compilation_error("did not yield");
+    janet_stacktrace(execution_fiber, response);
+    return compilation_error("compilation error");
   }
 
   if (done_compiling_shader == -1) {

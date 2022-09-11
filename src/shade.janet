@@ -3,16 +3,12 @@
 (import ./glsl-helpers)
 (import ./globals)
 
-(def debug? false)
+(def- debug? false)
 
-(defn compile-function [{:name name :params params :body body :return-type return-type}]
+(defn- compile-function [{:name name :params params :body body :return-type return-type}]
   (string/format "%s %s(%s) {\n%s\n}" return-type name (string/join params ", ") body))
 
-# TODO: this is duplicated
-(defn- float [n]
-  (if (int? n) (string n ".0") (string n)))
-
-(defn compile-fragment-shader [expr]
+(defn- compile-fragment-shader [expr]
   (var animated? false)
   (def comp-state (comp-state/new glsl-helpers/functions))
 
@@ -281,35 +277,17 @@ void main() {
 `)])
 
 # surely I can do better
-(defn is-good-value? [value]
+(defn- is-good-value? [value]
   (and (struct? value)
        (not (nil? (value :compile)))))
 
-# absolutely no reason for this to be a fiber anymore;
-# this can just be a function that we invoke, and we
-# can just hold onto the previous expression in C code
-
-(fiber/new (fn []
-  (var last-expr nil)
-  # TODO: should also say whether or not it's an
-  # animated image?
-  (var response nil)
-  (while true
-    (let [expr (yield response)]
-      (if (is-good-value? expr)
-        (try
-          # TODO: sadly this does not work;
-          # will need to look into it
-          (if (and false (= expr last-expr))
-            (do
-              (print "skipping compilation")
-              (set response nil))
-            (do
-              (set last-expr expr)
-              (set response (compile-fragment-shader expr))))
-          ([err fiber]
-            (set response :error)
-            (debug/stacktrace fiber err "")))
-        (do
-          (eprintf "cannot compile %p" expr)
-          (set response :error)))))))
+(defn compile-shape [expr]
+  (if (is-good-value? expr)
+    (try
+      (compile-fragment-shader expr)
+      ([err fiber]
+        (debug/stacktrace fiber err "")
+        :error))
+    (do
+      (eprintf "cannot compile %p" expr)
+      :error)))
