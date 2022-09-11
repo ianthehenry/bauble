@@ -54,7 +54,7 @@ typedef struct {
 static JanetFiber *draw_fiber = NULL;
 static gl_context *global_context = NULL;
 
-GLuint compile_shader(GLenum type, char *source) {
+GLuint compile_shader(GLenum type, const char *source) {
   GLuint shader = glCreateShader(type);
 
   if (shader == 0) {
@@ -132,7 +132,7 @@ void draw_triangles(gl_context *context) {
 }
 
 // caller must free result
-char *slurp(char *filename) {
+char *slurp(const char *filename) {
   FILE *file = fopen(filename, "r");
   fseek(file, 0L, SEEK_END);
   long length = ftell(file);
@@ -168,7 +168,7 @@ gl_context *new_gl_context(const char *selector) {
 
   GLuint program = glCreateProgram();
 
-  char *vertex_shader_source =
+  const char *vertex_shader_source =
     "#version 300 es\n"
     "in vec4 position;\n"
     "void main() {\n"
@@ -176,7 +176,7 @@ gl_context *new_gl_context(const char *selector) {
     "}\n";
   GLuint vertex_shader = compile_shader(GL_VERTEX_SHADER, vertex_shader_source);
 
-  char *fragment_shader_source =
+  const char *fragment_shader_source =
     "#version 300 es\n"
     "precision highp float;"
     "in vec4 position;\n"
@@ -190,7 +190,7 @@ gl_context *new_gl_context(const char *selector) {
   glAttachShader(program, fragment_shader);
 
   // TODO: currently no way to tear down the graphics context and free this memory
-  gl_context *context = calloc(1, sizeof(*context));
+  gl_context *context = (gl_context *)calloc(1, sizeof(*context));
   context->handle = handle;
   context->program = program;
   context->current_fragment_shader = fragment_shader;
@@ -230,6 +230,9 @@ JANET_FN(janet_function_max_arity, "(function/max-arity)", "") {
   return janet_wrap_number(function->def->max_arity);
 }
 
+
+extern "C" {
+
 void initialize_janet() {
   janet_init();
   JanetTable *env = janet_core_env(NULL);
@@ -244,9 +247,8 @@ void initialize_janet() {
   janet_cfuns_ext(env, NULL, regs);
 
   char *startup_source = slurp("shade.janet");
-
   Janet result;
-  JanetSignal status = janet_dostring(env, startup_source, "shade.janet", &result);
+  JanetSignal status = (JanetSignal)janet_dostring(env, startup_source, "shade.janet", &result);
   free(startup_source);
 
   if (status == JANET_SIGNAL_OK) {
@@ -269,7 +271,7 @@ void initialize_janet() {
 EMSCRIPTEN_KEEPALIVE
 void update_camera(float x, float y, float zoom) {
   mat3 camera_matrix = rotate_xy(x, y);
-  vec3 camera_origin = { .v = { 0.0, 0.0, 256.0 * zoom } };
+  vec3 camera_origin = { .v = { 0.0, 0.0, (GLfloat)(256.0 * zoom) } };
   camera_origin = mat3_times_vec3(camera_matrix, camera_origin);
 
   gl_context *ctx = global_context;
@@ -306,7 +308,7 @@ int evaluate_script(char *source) {
   JanetTable *env = janet_core_env(NULL);
 
   Janet result;
-  JanetSignal status = janet_dostring(env, source, "playground", &result);
+  JanetSignal status = (JanetSignal)janet_dostring(env, source, "playground", &result);
 
   long long done_evaluating = emscripten_get_now();
 
@@ -358,4 +360,6 @@ int evaluate_script(char *source) {
   // 2 => recompiled; animated
   // any negative value => error
   return to_return;
+}
+
 }

@@ -48,8 +48,7 @@ if [[ "$build_wasm" == "true" ]]; then
     -o public/js/janet.js \
     -I janet \
     janet/janet.c \
-    src/driver.c \
-    -std=c11 \
+    src/driver.cpp \
     $preload_args \
     -s "EXPORTED_FUNCTIONS=['_evaluate_script', '_update_camera', '_update_time', '_update_view_type', '_rerender', '_initialize_janet']" \
     -s USE_WEBGL2=1 \
