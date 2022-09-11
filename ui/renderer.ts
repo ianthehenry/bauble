@@ -100,6 +100,9 @@ export default class Renderer {
   }
 
   draw() {
+    if (!this.currentFragmentShader) {
+      return;
+    }
     this.setAllUniforms();
     const {gl, vertexBuffer, vertexData, positionLocation} = this;
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
@@ -120,6 +123,7 @@ export default class Renderer {
       const fragmentShader = compileShader(gl, gl.FRAGMENT_SHADER, fragmentSource);
       gl.attachShader(program, fragmentShader);
       gl.linkProgram(program);
+      this._positionLocation = null;
       if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
         const info = gl.getProgramInfoLog(program);
         console.error(info);
