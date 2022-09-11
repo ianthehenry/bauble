@@ -5,6 +5,7 @@
     "big.js": "^6.2.1",
     "codemirror": "^6.0.1",
     "codemirror-lang-janet": "^0.2.0",
+    "gl-matrix": "^3.4.3",
     "solid-js": "^1.5.4"
   },
   "devDependencies": {

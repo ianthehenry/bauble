@@ -1,5 +1,6 @@
 import * as Storage from './storage';
 import installCodeMirror from './editor';
+import Renderer from './renderer';
 
 interface CompilationResult {
   isError: boolean,
@@ -9,8 +10,6 @@ interface CompilationResult {
 }
 
 interface MyEmscripten extends EmscriptenModule {
-  cwrap: typeof cwrap;
-  ccall: typeof ccall;
   evaluate_script: ((_: string) => CompilationResult);
 }
 
@@ -54,13 +53,6 @@ function print(text: string, isErr=false) {
   output.appendChild(span);
 }
 
-let updateTime: (_t: number) => void;
-let updateViewType: (_t: number) => void;
-let rerender: () => void;
-let recompileFragmentShader: (_: string) => void;
-
-let updateCamera: (_cameraX: number, _cameraY: number, _cameraZoom: number) => void
-
 let resolveReady: (_: undefined) => void;
 const wasmReady = new Promise((x) => { resolveReady = x; });
 
@@ -73,12 +65,6 @@ const Module: Partial<MyEmscripten> = {
     print(x, true);
   },
   postRun: [function() {
-    updateCamera = Module.cwrap!("update_camera", null, ['number', 'number', 'number']);
-    updateTime = Module.cwrap!("update_time", null, ['number']);
-    updateViewType = Module.cwrap!("update_view_type", null, ['number']);
-    rerender = Module.cwrap!("rerender", null, []);
-    recompileFragmentShader = Module.cwrap!("recompile_fragment_shader", null, ['string']);
-    Module.ccall!("initialize_janet", null, [], []);
     resolveReady(void(0));
   }],
   locateFile: function(path, prefix) {
@@ -219,13 +205,16 @@ function initialize(script: string) {
 
   let compilationState = CompilationState.Unknown;
 
+  const canvas = fakeGetByID('render-target') as HTMLCanvasElement;
+  const renderer = new Renderer(canvas);
+
   function tick(now: number) {
     requestAnimationFrame(tick);
     timer.tick(now, isAnimation);
     try {
       if (drawScheduled) {
-        updateCamera(TAU * camera.x, TAU * camera.y, camera.zoom);
-        updateTime(timer.t);
+        renderer.updateCamera(TAU * camera.x, TAU * camera.y, camera.zoom);
+        renderer.time = timer.t;
         if (recompileScheduled) {
           clearOutput();
           const result = Module.evaluate_script!(editor.state.doc.toString());
@@ -235,10 +224,10 @@ function initialize(script: string) {
           } else {
             compilationState = CompilationState.Success;
             isAnimation = result.isAnimated;
-            recompileFragmentShader(result.shaderSource);
+            renderer.recompileShader(result.shaderSource);
           }
         }
-        rerender();
+        renderer.draw();
       }
     } catch (e) {
       console.error(e);
@@ -295,7 +284,7 @@ function initialize(script: string) {
     switch (target.name) {
       case 'view-type': {
         if (target.checked) {
-          updateViewType(parseInt(target.value, 10));
+          renderer.viewType = parseInt(target.value, 10);
           draw(false);
         }
         break;
@@ -324,7 +313,6 @@ function initialize(script: string) {
     }
   });
 
-  const canvas = fakeGetByID('render-target') as HTMLCanvasElement;
   let canvasPointerAt = [0, 0];
   let rotatePointerId: number | null = null;
   canvas.addEventListener('pointerdown', (e) => {

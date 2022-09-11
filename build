@@ -51,7 +51,7 @@ if [[ "$build_wasm" == "true" ]]; then
     src/driver.cpp \
     -lembind \
     $preload_args \
-    -s "EXPORTED_FUNCTIONS=['_update_camera', '_update_time', '_update_view_type', '_rerender', '_initialize_janet', '_recompile_fragment_shader']" \
+    -s "EXPORTED_FUNCTIONS=['_main']" \
     -s USE_WEBGL2=1 \
     -s ALLOW_MEMORY_GROWTH=1 \
     -s AGGRESSIVE_VARIABLE_ELIMINATION=1 \
