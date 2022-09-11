@@ -230,7 +230,6 @@ JANET_FN(janet_function_max_arity, "(function/max-arity)", "") {
   return janet_wrap_number(function->def->max_arity);
 }
 
-
 extern "C" {
 
 void initialize_janet() {
@@ -297,53 +296,76 @@ void rerender(float x, float y, float zoom) {
 }
 
 EMSCRIPTEN_KEEPALIVE
-int evaluate_script(char *source) {
+void recompile_fragment_shader(const char *source) {
+  set_fragment_shader(global_context, (const uint8_t *)source);
+}
+
+}
+
+#include <emscripten/bind.h>
+#include <string>
+
+using std::string;
+
+struct CompilationResult {
+  bool is_error;
+  string shader_source;
+  bool is_animated;
+  string error;
+};
+
+CompilationResult compilation_error(string message) {
+  return (CompilationResult) {
+    .is_error = true,
+    .shader_source = "",
+    .is_animated = false,
+    .error = message,
+  };
+}
+
+CompilationResult evaluate_script(string source) {
   long long start_time = emscripten_get_now();
 
   if (draw_fiber == NULL) {
     fprintf(stderr, "unable to initialize compilation fiber\n");
-    return 1;
+    return compilation_error("fiber uninitialized");
   }
 
   JanetTable *env = janet_core_env(NULL);
 
   Janet result;
-  JanetSignal status = (JanetSignal)janet_dostring(env, source, "playground", &result);
+  JanetSignal status = (JanetSignal)janet_dostring(env, source.c_str(), "playground", &result);
 
   long long done_evaluating = emscripten_get_now();
 
   if (status != JANET_SIGNAL_OK) {
-    return -status;
+    return compilation_error("evaluation error");
   }
 
   Janet response;
   status = janet_continue(draw_fiber, result, &response);
   long long done_compiling_glsl = emscripten_get_now();
   long long done_compiling_shader = -1;
-  int to_return;
+  bool is_animated;
+  const uint8_t *shader_source;
   if (status == JANET_SIGNAL_YIELD) {
-    if (janet_checktype(response, JANET_NIL)) {
-      to_return = 0;
-      // value was identical; nothing to do
-    } else if (janet_checktype(response, JANET_TUPLE)) {
+    if (janet_checktype(response, JANET_TUPLE)) {
       const Janet *tuple = janet_unwrap_tuple(response);
-      int is_animated = janet_unwrap_boolean(tuple[0]);
-      const uint8_t *source = janet_unwrap_string(tuple[1]);
-      set_fragment_shader(global_context, source);
+      is_animated = janet_unwrap_boolean(tuple[0]);
+      shader_source = janet_unwrap_string(tuple[1]);
       done_compiling_shader = emscripten_get_now();
-      to_return = is_animated ? 2 : 1;
     } else if (janet_checktype(response, JANET_KEYWORD)) {
       // either an error during compilation, or it was
       // passed an invalid value
-      to_return = -1;
+      return compilation_error("invalid value");
     } else {
-      to_return = -2;
       janet_eprintf("fiber yielded an unexpected value %p\n", response);
+      return compilation_error("internal error");
     }
   } else {
     fprintf(stderr, "compilation fiber did not yield\n");
     janet_stacktrace(draw_fiber, response);
-    to_return = -status;
+    return compilation_error("did not yield");
   }
 
   if (done_compiling_shader == -1) {
@@ -355,11 +377,23 @@ int evaluate_script(char *source) {
       (done_compiling_shader - done_compiling_glsl));
   }
 
-  // 0 => no change
-  // 1 => recompiled; static image
-  // 2 => recompiled; animated
-  // any negative value => error
-  return to_return;
+  return (CompilationResult) {
+   .is_error = false,
+   .shader_source = string((const char *)shader_source),
+   .is_animated = is_animated,
+   .error = ""
+  };
 }
 
-}
+using namespace emscripten;
+
+EMSCRIPTEN_BINDINGS(module) {
+  value_object<CompilationResult>("CompilationResult")
+    .field("isError", &CompilationResult::is_error)
+    .field("shaderSource", &CompilationResult::shader_source)
+    .field("isAnimated", &CompilationResult::is_animated)
+    .field("error", &CompilationResult::error)
+    ;
+
+  function("evaluate_script", &evaluate_script, allow_raw_pointers());
+};

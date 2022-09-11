@@ -49,8 +49,9 @@ if [[ "$build_wasm" == "true" ]]; then
     -I janet \
     janet/janet.c \
     src/driver.cpp \
+    -lembind \
     $preload_args \
-    -s "EXPORTED_FUNCTIONS=['_evaluate_script', '_update_camera', '_update_time', '_update_view_type', '_rerender', '_initialize_janet']" \
+    -s "EXPORTED_FUNCTIONS=['_update_camera', '_update_time', '_update_view_type', '_rerender', '_initialize_janet', '_recompile_fragment_shader']" \
     -s USE_WEBGL2=1 \
     -s ALLOW_MEMORY_GROWTH=1 \
     -s AGGRESSIVE_VARIABLE_ELIMINATION=1 \

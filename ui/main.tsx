@@ -1,6 +1,32 @@
 import * as Storage from './storage';
 import installCodeMirror from './editor';
 
+interface CompilationResult {
+  isError: boolean,
+  shaderSource: string,
+  isAnimated: boolean,
+  error: string,
+}
+
+interface MyEmscripten extends EmscriptenModule {
+  cwrap: typeof cwrap;
+  ccall: typeof ccall;
+  evaluate_script: ((_: string) => CompilationResult);
+}
+
+interface GestureEvent extends TouchEvent {
+  scale: number
+}
+
+declare global {
+  interface Window { Module: Partial<MyEmscripten>; }
+  interface HTMLElementEventMap {
+    'gesturestart': GestureEvent;
+    'gesturechange': GestureEvent;
+    'gestureend': GestureEvent;
+  }
+}
+
 const TAU = 2 * Math.PI;
 const cameraRotateSpeed = 1 / 512;
 const cameraZoomSpeed = 0.01;
@@ -28,28 +54,19 @@ function print(text: string, isErr=false) {
   output.appendChild(span);
 }
 
-// let evaluateScript: ((_code: string) => number) | null = null;
-let evaluateScript: (_code: string) => number;
-let updateCamera: (_cameraX: number, _cameraY: number, _cameraZoom: number) => void;
 let updateTime: (_t: number) => void;
 let updateViewType: (_t: number) => void;
 let rerender: () => void;
+let recompileFragmentShader: (_: string) => void;
 
 const preamble = '(use ./helpers) (use ./dsl) (use ./infix-syntax) (use ./dot-syntax) (use ./globals) (use ./glslisp/src/builtins) (resolve-dots (pipe \n';
 const postamble = '\n))'; // newline is necessary in case the script ends in a comment
 
 function recompileScript(script: string) {
-  return evaluateScript(preamble + script + postamble);
+  return Module.evaluate_script!(preamble + script + postamble);
 }
 
-interface MyEmscripten extends EmscriptenModule {
-  cwrap: typeof cwrap;
-  ccall: typeof ccall;
-}
-
-declare global {
-  interface Window { Module: Partial<MyEmscripten>; }
-}
+let updateCamera: (_cameraX: number, _cameraY: number, _cameraZoom: number) => void
 
 let resolveReady: (_: undefined) => void;
 const wasmReady = new Promise((x) => { resolveReady = x; });
@@ -63,11 +80,11 @@ const Module: Partial<MyEmscripten> = {
     print(x, true);
   },
   postRun: [function() {
-    evaluateScript = Module.cwrap!("evaluate_script", 'number', ['string']);
     updateCamera = Module.cwrap!("update_camera", null, ['number', 'number', 'number']);
     updateTime = Module.cwrap!("update_time", null, ['number']);
     updateViewType = Module.cwrap!("update_view_type", null, ['number']);
     rerender = Module.cwrap!("rerender", null, []);
+    recompileFragmentShader = Module.cwrap!("recompile_fragment_shader", null, ['string']);
     Module.ccall!("initialize_janet", null, [], []);
     resolveReady(void(0));
   }],
@@ -86,24 +103,6 @@ function clamp(value: number, min: number, max: number) {
 
 function mod(a: number, b: number) {
   return ((a % b) + b) % b;
-}
-
-interface GestureEvent extends TouchEvent {
-  scale: number
-}
-
-declare global {
-  interface HTMLElementEventMap {
-    'gesturestart': GestureEvent;
-    'gesturechange': GestureEvent;
-    'gestureend': GestureEvent;
-  }
-}
-
-enum CompilationResult {
-  NoChange = 0,
-  ChangedStatic = 1,
-  ChangedAnimated = 2,
 }
 
 enum TimerState {
@@ -236,15 +235,13 @@ function initialize(script: string) {
       if (recompileScheduled) {
         clearOutput();
         const result = recompileScript(editor.state.doc.toString());
-        if (result < 0) {
+        if (result.isError) {
           compilationState = CompilationState.Error;
+          console.error(result.error);
         } else {
           compilationState = CompilationState.Success;
-          switch (result) {
-            case CompilationResult.NoChange: break;
-            case CompilationResult.ChangedAnimated: isAnimation = true; break;
-            case CompilationResult.ChangedStatic: isAnimation = false; break;
-          }
+          isAnimation = result.isAnimated;
+          recompileFragmentShader(result.shaderSource);
         }
       }
       try {
