@@ -1,19 +1,16 @@
-import {basicSetup} from 'codemirror';
-import {EditorView, keymap, ViewUpdate} from '@codemirror/view';
-import {indentWithTab} from '@codemirror/commands';
-import {syntaxTree} from '@codemirror/language';
-import {SyntaxNode} from '@lezer/common';
-import {janet} from 'codemirror-lang-janet';
-import {EditorState, EditorSelection, Transaction} from '@codemirror/state';
-import Big from 'big.js';
+import * as Storage from './storage';
+import installCodeMirror from './editor';
 
 const TAU = 2 * Math.PI;
 const cameraRotateSpeed = 1 / 512;
 const cameraZoomSpeed = 0.01;
-const LOCAL_STORAGE_KEY = "script";
+
+function fakeGetByID(oldID: string): HTMLElement {
+  return document.querySelector("." + oldID)!;
+}
 
 function clearOutput() {
-  const output = document.getElementById('output')!;
+  const output = fakeGetByID('output');
   output.innerHTML = "";
 }
 
@@ -23,7 +20,7 @@ function print(text: string, isErr=false) {
   } else {
     console.log(text);
   }
-  const output = document.getElementById('output')!;
+  const output = fakeGetByID('output');
   const span = document.createElement('span');
   span.classList.toggle('err', isErr);
   span.appendChild(document.createTextNode(text));
@@ -83,68 +80,8 @@ const Module: Partial<MyEmscripten> = {
   },
 };
 
-function isNumberNode(node: SyntaxNode) {
-  return node.type.name === 'Number';
-}
-
-interface StateCommandInput {state: EditorState, dispatch: (_: Transaction) => void}
-
-function alterNumber({state, dispatch}: StateCommandInput, amount: Big) {
-  const range = state.selection.ranges[state.selection.mainIndex];
-  const tree = syntaxTree(state);
-
-  let node = tree.resolveInner(range.head, -1);
-  if (!isNumberNode(node)) {
-    node = tree.resolveInner(range.head, 1);
-  }
-  if (!isNumberNode(node)) {
-    return false;
-  }
-
-  // TODO: we shouldn't be doing any floating point math; we should
-  // parse this as a decimal number and increment it as a decimal number
-  const numberText = state.sliceDoc(node.from, node.to);
-  let number;
-  try {
-    number = Big(numberText);
-  } catch (e) {
-    console.error('unable to parse number: ', numberText);
-    return false;
-  }
-  const decimalPointIndex = numberText.indexOf('.');
-  const digitsAfterDecimalPoint = decimalPointIndex < 0 ? 0 : numberText.length - decimalPointIndex - 1;
-  const increment = Big('10').pow(-digitsAfterDecimalPoint);
-
-  const newNumber = number.add(amount.times(increment));
-  const newNumberText = newNumber.toFixed(digitsAfterDecimalPoint);
-
-  const lengthDifference = newNumberText.length - numberText.length;
-
-  dispatch(state.update({
-    changes: {
-      from: node.from,
-      to: node.to,
-      insert: newNumberText,
-    },
-    selection: EditorSelection.single(node.from, node.to + lengthDifference),
-    scrollIntoView: true,
-    userEvent: 'increment',
-  }));
-  return true;
-}
-
 function clamp(value: number, min: number, max: number) {
   return Math.max(Math.min(value, max), min);
-}
-
-function save({state}: StateCommandInput) {
-  const script = state.doc.toString();
-  if (script.trim().length > 0) {
-    localStorage.setItem(LOCAL_STORAGE_KEY, script);
-  } else {
-    localStorage.removeItem(LOCAL_STORAGE_KEY);
-  }
-  return true;
 }
 
 function mod(a: number, b: number) {
@@ -269,13 +206,13 @@ function initialize(script: string) {
     zoom: defaultCamera.zoom,
   };
 
-  const playButton: HTMLButtonElement = document.querySelector('#canvas-container button[data-action=play]')!;
-  const pauseButton: HTMLButtonElement = document.querySelector('#canvas-container button[data-action=pause]')!;
-  const stopButton: HTMLButtonElement = document.querySelector('#canvas-container button[data-action=stop]')!;
-  const resetButton: HTMLButtonElement = document.querySelector('#canvas-container button[data-action=reset-camera]')!;
-  const compilationErrorIndicator: HTMLElement = document.querySelector('#code-container .indicator.compilation-error')!;
-  const compilationSuccessIndicator: HTMLElement = document.querySelector('#code-container .indicator.compilation-success')!;
-  const compilationUnknownIndicator: HTMLElement = document.querySelector('#code-container .indicator.compilation-unknown')!;
+  const playButton: HTMLButtonElement = document.querySelector('.canvas-container button[data-action=play]')!;
+  const pauseButton: HTMLButtonElement = document.querySelector('.canvas-container button[data-action=pause]')!;
+  const stopButton: HTMLButtonElement = document.querySelector('.canvas-container button[data-action=stop]')!;
+  const resetButton: HTMLButtonElement = document.querySelector('.canvas-container button[data-action=reset-camera]')!;
+  const compilationErrorIndicator: HTMLElement = document.querySelector('.code-container .indicator.compilation-error')!;
+  const compilationSuccessIndicator: HTMLElement = document.querySelector('.code-container .indicator.compilation-success')!;
+  const compilationUnknownIndicator: HTMLElement = document.querySelector('.code-container .indicator.compilation-unknown')!;
 
   const timestampSpan: HTMLInputElement = document.querySelector('.toolbar span.timestamp')!;
 
@@ -342,35 +279,8 @@ function initialize(script: string) {
   }
   requestAnimationFrame(tick);
 
-  const incrementNumber = (editor: StateCommandInput) => alterNumber(editor, Big('1'));
-  const decrementNumber = (editor: StateCommandInput) => alterNumber(editor, Big('-1'));
-
-  const editorContainer = document.getElementById('editor-container')!;
-
-  const editor = new EditorView({
-    extensions: [
-      basicSetup,
-      janet(),
-      keymap.of([
-        indentWithTab,
-        { key: "Alt-h", run: incrementNumber, shift: decrementNumber },
-        { key: "Mod-s", run: save },
-      ]),
-      EditorView.updateListener.of(function(viewUpdate: ViewUpdate) {
-        if (viewUpdate.docChanged) {
-          draw(true);
-        }
-      }),
-      EditorView.theme({
-        ".cm-content": {
-          fontFamily: "Menlo, monospace",
-          fontSize: "13px",
-        },
-      }),
-    ],
-    parent: editorContainer,
-    doc: script,
-  });
+  const editorContainer = fakeGetByID('editor-container');
+  const editor = installCodeMirror(script, editorContainer, () => draw(true));
 
   resetButton.addEventListener('click', (_e) => {
     camera.x = defaultCamera.x;
@@ -389,7 +299,7 @@ function initialize(script: string) {
     draw(false);
   });
 
-  document.getElementById('canvas-container')!.addEventListener('input', (e) => {
+  fakeGetByID('canvas-container').addEventListener('input', (e) => {
     const target = e.target as HTMLInputElement;
     switch (target.name) {
       case 'view-type': {
@@ -423,7 +333,7 @@ function initialize(script: string) {
     }
   });
 
-  const canvas = document.getElementById('render-target')! as HTMLCanvasElement;
+  const canvas = fakeGetByID('render-target') as HTMLCanvasElement;
   let canvasPointerAt = [0, 0];
   let rotatePointerId: number | null = null;
   canvas.addEventListener('pointerdown', (e) => {
@@ -501,8 +411,8 @@ function initialize(script: string) {
     draw(false);
   });
 
-  const outputContainer = document.getElementById('output')!;
-  const outputResizeHandle = document.getElementById('output-resize-handle')!;
+  const outputContainer = fakeGetByID('output');
+  const outputResizeHandle = fakeGetByID('output-resize-handle');
   let handlePointerAt = [0, 0];
   outputResizeHandle.addEventListener('pointerdown', (e) => {
     outputResizeHandle.setPointerCapture(e.pointerId);
@@ -527,62 +437,14 @@ function initialize(script: string) {
     return performance.now() - ctrlClickedAt < 100;
   };
 
-  editorContainer.addEventListener('pointerdown', (e) => {
-    if ((e.buttons === 1 || e.buttons === 2) && e.ctrlKey) {
-      ctrlClickedAt = performance.now();
-      editorContainer.setPointerCapture(e.pointerId);
-      e.preventDefault();
-    }
-  });
-  editorContainer.addEventListener('contextmenu', (e) => {
-    if (isTryingToEngageNumberDrag()) {
-      e.preventDefault();
-    }
-  });
-  editorContainer.addEventListener('pointermove', (e) => {
-    if (editorContainer.hasPointerCapture(e.pointerId)) {
-      alterNumber(editor, Big(e.movementX).times('1'));
-    }
-  });
-
-  // There is a bug in Firefox where ctrl-click fires as
-  // a pointermove event instead of a pointerdown event,
-  // and then will not respect setPointerCapture() when
-  // called from the pointermove event.
-  //
-  // https://bugzilla.mozilla.org/show_bug.cgi?id=1504210
-  //
-  // So on Firefox you have to use an actual right-click.
-  // It's very annoying. This is an *okay* workaround.
-  document.addEventListener('pointermove', (e) => {
-    if (e.shiftKey && e.metaKey) {
-      alterNumber(editor, Big(e.movementX).times('1'));
-    }
-  });
-
-  document.addEventListener('pagehide', (_e) => {
-    save(editor);
-  });
-  let savedBefore = false;
-  // iOS Safari doesn't support beforeunload,
-  // but it does support unload.
-  window.addEventListener('beforeunload', (_e) => {
-    savedBefore = true;
-    save(editor);
-  });
-  window.addEventListener('unload', (_e) => {
-    if (!savedBefore) {
-      save(editor);
-    }
-  });
-
   draw(true);
   editor.focus();
 }
 
+if (true)
 document.addEventListener("DOMContentLoaded", (_) => {
   wasmReady.then(() => {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const saved = Storage.getScript();
     if (saved) {
       initialize(saved);
     } else {
@@ -592,3 +454,18 @@ document.addEventListener("DOMContentLoaded", (_) => {
 });
 
 window.Module = Module;
+
+import Bauble from './bauble';
+import { render as renderSolid } from "solid-js/web";
+
+function makeBauble(script: string, placeholder: HTMLElement) {
+  renderSolid(() => <Bauble script={script} />, placeholder);
+}
+
+if (false)
+document.addEventListener("DOMContentLoaded", (_) => {
+  for (const el of document.querySelectorAll('.code-example')) {
+    const placeholder = el.nextElementSibling! as HTMLElement;
+    makeBauble(el.textContent!, placeholder);
+  }
+});

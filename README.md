@@ -33,11 +33,11 @@ Run `./build` to compile Janet to wasm; run `./build --prod` for an optimized, m
 Lint the JS with:
 
 ```
-yarn eslint ui/
+(cd ui/; yarn eslint .)
 ```
 
 # Running
 
 ```
-$ node_modules/.bin/alive-server public
+$ ui/node_modules/.bin/alive-server public
 ```

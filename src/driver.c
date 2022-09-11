@@ -149,7 +149,7 @@ char *slurp(char *filename) {
   return text;
 }
 
-gl_context *new_gl_context(const char*selector) {
+gl_context *new_gl_context(const char *selector) {
   EmscriptenWebGLContextAttributes attrs;
   emscripten_webgl_init_context_attributes(&attrs);
   attrs.antialias = 0;
