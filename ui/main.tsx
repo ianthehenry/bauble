@@ -411,16 +411,11 @@ function initialize(script: string) {
     }
   });
 
-  let ctrlClickedAt = 0;
-  const isTryingToEngageNumberDrag = () => {
-    return performance.now() - ctrlClickedAt < 100;
-  };
-
   draw(true);
   editor.focus();
 }
 
-if (true)
+// if (true)
 document.addEventListener("DOMContentLoaded", (_) => {
   wasmReady.then(() => {
     const saved = Storage.getScript();
@@ -441,7 +436,7 @@ function makeBauble(script: string, placeholder: HTMLElement) {
   renderSolid(() => <Bauble script={script} />, placeholder);
 }
 
-if (false)
+// if (false)
 document.addEventListener("DOMContentLoaded", (_) => {
   for (const el of document.querySelectorAll('.code-example')) {
     const placeholder = el.nextElementSibling! as HTMLElement;

@@ -87,7 +87,6 @@ header .image-link {
 }
 
 body.main-page {
-  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -96,12 +95,14 @@ body.main-page .bauble {
   flex: 1;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .bauble .code-and-preview {
   flex: 1;
   display: flex;
   flex-direction: row-reverse;
+  overflow: hidden;
 }
 
 .bauble .code-container { flex: 4; overflow: hidden; }

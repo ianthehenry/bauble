@@ -7,8 +7,8 @@ function rotateXY(x: number, y: number): mat3 {
   const cy = Math.cos(y);
 
   return mat3.fromValues(
-    cy     , 0.0,     -sy,
-    sy * sx,  cx, cy * sx,
+    cy, 0.0, -sy,
+    sy * sx, cx, cy * sx,
     sy * cx, -sx, cy * cx,
   );
 }
@@ -29,8 +29,8 @@ function compileShader(gl: WebGLRenderingContext, type: number, source: string) 
     const info = gl.getShaderInfoLog(shader);
     gl.deleteShader(shader);
     console.error(info);
-    throw new Error("failed to compile shader ugh typescript why");
-    // throw new Error("failed to compile shader", {cause: info});
+    // throw new Error("failed to compile shader ugh typescript why");
+    throw new Error("failed to compile shader", {cause: info});
   }
 
   return shader;
@@ -40,14 +40,15 @@ export default class Renderer {
   private gl: WebGLRenderingContext;
   private program: WebGLProgram;
   private currentFragmentShader: WebGLShader | null = null;
+  private currentFragmentShaderSource: string | null = null;
   private _positionLocation: number | null = null;
   private vertexBuffer: WebGLBuffer;
   private vertexData: Float32Array;
 
   private cameraMatrix: mat3 = mat3.create();
   private cameraOrigin: vec3 = vec3.create();
-  time: number = 0;
-  viewType: number = 0;
+  time = 0;
+  viewType = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     const gl = canvas.getContext('webgl2', { antialias: false });
@@ -113,14 +114,21 @@ export default class Renderer {
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
 
-  recompileShader(fragmentSource: string) {
-    const { gl, program, currentFragmentShader } = this;
+  recompileShader(fragmentShaderSource: string) {
+    const { gl, program, currentFragmentShader, currentFragmentShaderSource } = this;
+
+    if (fragmentShaderSource === currentFragmentShaderSource) {
+      console.log("skipping shader compilation");
+      return;
+    }
+
     if (currentFragmentShader) {
       gl.detachShader(program, currentFragmentShader);
       gl.deleteShader(currentFragmentShader);
     }
     try {
-      const fragmentShader = compileShader(gl, gl.FRAGMENT_SHADER, fragmentSource);
+      const startTime = performance.now();
+      const fragmentShader = compileShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
       gl.attachShader(program, fragmentShader);
       gl.linkProgram(program);
       this._positionLocation = null;
@@ -132,6 +140,9 @@ export default class Renderer {
       }
       gl.useProgram(program);
       this.currentFragmentShader = fragmentShader;
+      this.currentFragmentShaderSource = fragmentShaderSource;
+      const endTime = performance.now();
+      console.log(`spent ${endTime - startTime}ms compiling shader`);
     } catch (e) {
       this.currentFragmentShader = null;
       console.error(e);

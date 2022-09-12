@@ -1,4 +1,4 @@
-import { createSignal, onCleanup, onMount } from "solid-js";
+import { createSignal, onMount } from "solid-js";
 import installCodeMirror from './editor';
 
 const EditorToolbar = () => {
@@ -8,7 +8,7 @@ const EditorToolbar = () => {
     <div title="Compilation success" class="indicator compilation-success hidden"><svg><use href="/icons.svg#emoji-smile" /></svg></div>
     <div title="Compilation error" class="indicator compilation-error hidden"><svg><use href="/icons.svg#emoji-frown" /></svg></div>
   </div>;
-}
+};
 
 const RenderToolbar = () => {
   return <div class="toolbar">
@@ -21,7 +21,7 @@ const RenderToolbar = () => {
       <label title="Debug surface distance"><input type="radio" autocomplete="off" name="view-type" value="2" /><svg><use href="/icons.svg#arrows-collapse" /></svg></label>
     </fieldset>
   </div>;
-}
+};
 
 const AnimationToolbar = () => {
   return <div class="toolbar">
@@ -40,11 +40,9 @@ const AnimationToolbar = () => {
     <span class="text">to</span>
     <input name="loop-end" inputmode="numeric" value="6.28" autocomplete="off" />
   </div>;
-}
+};
 
 const Bauble = (props: { script: string }) => {
-  const [count, setCount] = createSignal(0);
-
   let canvasContainer: HTMLDivElement;
   let editorContainer: HTMLDivElement;
   onMount(() => {
