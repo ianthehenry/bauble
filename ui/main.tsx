@@ -415,7 +415,7 @@ function initialize(script: string) {
   editor.focus();
 }
 
-// if (true)
+if (false)
 document.addEventListener("DOMContentLoaded", (_) => {
   wasmReady.then(() => {
     const saved = Storage.getScript();
@@ -436,10 +436,12 @@ function makeBauble(script: string, placeholder: HTMLElement) {
   renderSolid(() => <Bauble script={script} />, placeholder);
 }
 
-// if (false)
+if (true)
 document.addEventListener("DOMContentLoaded", (_) => {
-  for (const el of document.querySelectorAll('.code-example')) {
-    const placeholder = el.nextElementSibling! as HTMLElement;
-    makeBauble(el.textContent!, placeholder);
-  }
+  wasmReady.then(() => {
+    for (const el of document.querySelectorAll('.code-example')) {
+      const placeholder = el.nextElementSibling! as HTMLElement;
+      makeBauble(el.textContent!, placeholder);
+    }
+  }).catch(console.error);
 });

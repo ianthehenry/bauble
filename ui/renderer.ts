@@ -29,8 +29,8 @@ function compileShader(gl: WebGLRenderingContext, type: number, source: string) 
     const info = gl.getShaderInfoLog(shader);
     gl.deleteShader(shader);
     console.error(info);
-    // throw new Error("failed to compile shader ugh typescript why");
-    throw new Error("failed to compile shader", {cause: info});
+    throw new Error("failed to compile shader ugh typescript why");
+    // throw new Error("failed to compile shader", {cause: info});
   }
 
   return shader;

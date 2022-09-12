@@ -93,6 +93,9 @@ body.main-page {
 
 body.main-page .bauble {
   flex: 1;
+}
+
+.bauble {
   display: flex;
   flex-direction: column;
   overflow: hidden;
