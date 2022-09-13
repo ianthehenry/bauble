@@ -1,4 +1,15 @@
-import {JSX, Component, Signal, Accessor, Setter, createSignal, createEffect, createSelector, onMount} from "solid-js";
+import {
+  type Accessor,
+  type Component,
+  type JSX,
+  type Setter,
+  type Signal,
+  batch,
+  createEffect,
+  createSelector,
+  createSignal,
+  onMount,
+} from "solid-js";
 import installCodeMirror from './editor';
 import {EditorView} from '@codemirror/view';
 import Renderer from './renderer';
@@ -36,6 +47,14 @@ function setter<T>(signal: Signal<T>): Setter<T> {
 
 function getSignal<T>(signal: Signal<T>): T {
   return signal[0]();
+}
+
+function setSignal<T>(signal: Signal<T>, value: Exclude<T, Function>): T {
+  return signal[1](value);
+}
+
+function updateSignal<T>(signal: Signal<T>, update: (_: T) => T): T {
+  return signal[1](update);
 }
 
 const cameraRotateSpeed = 1 / 512;
@@ -86,7 +105,12 @@ const EditorToolbar: Component<{scriptDirty: boolean}> = (props) => {
   </div>;
 };
 
-const RenderToolbar: Component<{viewType: Signal<number>}> = (props) => {
+type RenderToolbarProps = {
+  viewType: Signal<number>,
+  rotation: Signal<{x: number, y: number}>,
+  zoom: Signal<number>,
+};
+const RenderToolbar: Component<RenderToolbarProps> = (props) => {
   const isSelected = createSelector(getter(props.viewType));
 
   const Choice: Component<{title: string, value: number, icon: string}> = (choiceProps) => {
@@ -99,8 +123,15 @@ const RenderToolbar: Component<{viewType: Signal<number>}> = (props) => {
     </label>
   };
 
+  const resetCamera = () => {
+    batch(() => {
+      setSignal(props.rotation, {x: defaultCamera.x, y: defaultCamera.y});
+      setSignal(props.zoom, defaultCamera.zoom);
+    });
+  };
+
   return <div class="toolbar">
-    <button title="Reset camera" data-action="reset-camera"><svg><use href="/icons.svg#box"/></svg></button>
+    <button title="Reset camera" onClick={resetCamera}><Icon name="box" /></button>
     {/*<button title="Toggle quad view" data-action="toggle-quad-view"><svg><use href="/icons.svg#grid" /></svg></button>*/}
     <div class="spacer"></div>
     <fieldset>
@@ -141,9 +172,8 @@ const Bauble = (props: { script: string }) => {
   let gestureEndedAt = 0;
 
   let viewType = createSignal(0);
-  let [getZoom, setZoom] = createSignal(1);
-  let [getRotation, setRotation] = createSignal({x: defaultCamera.x, y: defaultCamera.y});
-  // let [onScriptChanges, scriptChanged] = createSignal(undefined, {equals: false});
+  let zoom = createSignal(defaultCamera.zoom);
+  let rotation = createSignal({x: defaultCamera.x, y: defaultCamera.y});
   let [getScriptDirty, setScriptDirty] = createSignal(true);
 
   onMount(() => {
@@ -152,8 +182,8 @@ const Bauble = (props: { script: string }) => {
     renderer = new Renderer(canvas);
 
     createEffect(() => {
-      const {x, y} = getRotation();
-      renderer.updateCamera(TAU * x, TAU * y, getZoom());
+      const {x, y} = getSignal(rotation);
+      renderer.updateCamera(TAU * x, TAU * y, getSignal(zoom));
       renderer.draw();
     });
     createEffect(() => {
@@ -179,7 +209,7 @@ const Bauble = (props: { script: string }) => {
   });
 
   createEffect(() => {
-    console.log(getRotation(), getZoom());
+    console.log(getSignal(rotation), getSignal(zoom));
   });
 
   createEffect(() => {
@@ -229,7 +259,7 @@ const Bauble = (props: { script: string }) => {
     const scaleAdjustmentX = pixelScale * canvas.width / canvas.clientWidth;
     const scaleAdjustmentY = pixelScale * canvas.height / canvas.clientHeight;
     // TODO: invert the meaning of camera.x/y so that this actually makes sense
-    setRotation(({x, y}) => ({
+    updateSignal(rotation, ({x, y}) => ({
       x: mod(x - scaleAdjustmentY * cameraRotateSpeed * movementY, 1.0),
       y: mod(y - scaleAdjustmentX * cameraRotateSpeed * movementX, 1.0)
     }));
@@ -241,16 +271,16 @@ const Bauble = (props: { script: string }) => {
     // will report very large values of deltaY, resulting
     // in very choppy scrolling. I don't really know a good
     // way to fix this without explicit platform detection.
-    setZoom((x) => x + cameraZoomSpeed * e.deltaY);
+    updateSignal(zoom, (x) => x + cameraZoomSpeed * e.deltaY);
   };
 
   let initialZoom = 1;
   const onGestureStart = () => {
-    initialZoom = getZoom();
+    initialZoom = getSignal(zoom);
     isGesturing = true;
   };
   const onGestureChange = (e: GestureEvent) => {
-    setZoom(initialZoom / e.scale);
+    setSignal(zoom, initialZoom / e.scale);
   };
   const onGestureEnd = () => {
     isGesturing = false;
@@ -260,7 +290,7 @@ const Bauble = (props: { script: string }) => {
   return <div class="bauble standalone">
     <div class="code-and-preview">
       <div class="canvas-container" ref={canvasContainer!}>
-        <RenderToolbar viewType={viewType} />
+        <RenderToolbar viewType={viewType} rotation={rotation} zoom={zoom} />
         <canvas ref={canvas!} class="render-target" width="1024" height="1024"
           onWheel={onWheel}
           onPointerDown={onPointerDown}
