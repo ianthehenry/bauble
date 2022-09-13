@@ -1,4 +1,4 @@
-import { Component, Signal, Accessor, Setter, createSignal, createEffect, createSelector, onMount } from "solid-js";
+import {JSX, Component, Signal, Accessor, Setter, createSignal, createEffect, createSelector, onMount} from "solid-js";
 import installCodeMirror from './editor';
 import {EditorView} from '@codemirror/view';
 import Renderer from './renderer';
@@ -54,6 +54,18 @@ declare global {
     'gesturestart': GestureEvent;
     'gesturechange': GestureEvent;
     'gestureend': GestureEvent;
+  }
+}
+
+type GestureEventHandlerUnion<T> = JSX.EventHandlerUnion<T, GestureEvent>
+
+declare module "solid-js" {
+  namespace JSX {
+    interface HTMLAttributes<T> {
+      onGestureStart?: GestureEventHandlerUnion<T>;
+      onGestureChange?: GestureEventHandlerUnion<T>;
+      onGestureEnd?: GestureEventHandlerUnion<T>;
+    }
   }
 }
 
@@ -164,22 +176,6 @@ const Bauble = (props: { script: string }) => {
       renderer.viewType = getSignal(viewType);
       renderer.draw();
     });
-
-    // TODO: I can't figure out how to have SolidJS bind these events,
-    // because TypeScript is not aware of them. I don't know how to extend
-    // CanvasHTMLAttributes<HTMLCanvasElement>
-    let initialZoom = 1;
-    canvas.addEventListener('gesturestart', (_: GestureEvent) => {
-      initialZoom = getZoom();
-      isGesturing = true;
-    });
-    canvas.addEventListener('gestureend', (_: GestureEvent) => {
-      isGesturing = false;
-      gestureEndedAt = performance.now();
-    });
-    canvas.addEventListener('gesturechange', (e: GestureEvent) => {
-      setZoom(initialZoom / e.scale);
-    });
   });
 
   createEffect(() => {
@@ -248,6 +244,19 @@ const Bauble = (props: { script: string }) => {
     setZoom((x) => x + cameraZoomSpeed * e.deltaY);
   };
 
+  let initialZoom = 1;
+  const onGestureStart = () => {
+    initialZoom = getZoom();
+    isGesturing = true;
+  };
+  const onGestureChange = (e: GestureEvent) => {
+    setZoom(initialZoom / e.scale);
+  };
+  const onGestureEnd = () => {
+    isGesturing = false;
+    gestureEndedAt = performance.now();
+  };
+
   return <div class="bauble standalone">
     <div class="code-and-preview">
       <div class="canvas-container" ref={canvasContainer!}>
@@ -257,6 +266,9 @@ const Bauble = (props: { script: string }) => {
           onPointerDown={onPointerDown}
           onPointerUp={onPointerUp}
           onPointerMove={onPointerMove}
+          onGestureStart={onGestureStart}
+          onGestureChange={onGestureChange}
+          onGestureEnd={onGestureEnd}
         />
         <AnimationToolbar />
       </div>
