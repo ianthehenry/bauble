@@ -1,20 +1,19 @@
-import {
-  type Accessor,
-  type Component,
-  type JSX,
-  type Setter,
-  type Signal,
-  batch,
-  createEffect,
-  createSelector,
-  createSignal,
-  onMount,
-} from "solid-js";
+import type {Component, JSX} from 'solid-js';
+import {batch, on, createEffect, createSelector, onMount} from 'solid-js';
+import {Timer, LoopMode, TimerState} from './timer'
 import installCodeMirror from './editor';
 import {EditorView} from '@codemirror/view';
 import Renderer from './renderer';
+import * as Signal from './signals';
+import {mod, TAU} from './util';
+import type {Seconds} from './types';
 
-const TAU = 2 * Math.PI;
+enum EvaluationState {
+  Unknown,
+  Success,
+  EvaluationError,
+  ShaderCompilationError,
+}
 
 const defaultCamera = {
   x: -0.125,
@@ -22,47 +21,8 @@ const defaultCamera = {
   zoom: 2.0,
 };
 
-interface CompilationResult {
-  isError: boolean,
-  shaderSource: string,
-  isAnimated: boolean,
-  error: string,
-}
-
-interface MyEmscripten extends EmscriptenModule {
-  evaluate_script: ((_: string) => CompilationResult);
-}
-
-declare global {
-  interface Window { Module: Partial<MyEmscripten>; }
-}
-
-function getter<T>(signal: Signal<T>): Accessor<T> {
-  return signal[0];
-}
-
-function setter<T>(signal: Signal<T>): Setter<T> {
-  return signal[1];
-}
-
-function getSignal<T>(signal: Signal<T>): T {
-  return signal[0]();
-}
-
-function setSignal<T>(signal: Signal<T>, value: Exclude<T, Function>): T {
-  return signal[1](value);
-}
-
-function updateSignal<T>(signal: Signal<T>, update: (_: T) => T): T {
-  return signal[1](update);
-}
-
 const cameraRotateSpeed = 1 / 512;
 const cameraZoomSpeed = 0.01;
-
-function mod(a: number, b: number) {
-  return ((a % b) + b) % b;
-}
 
 interface GestureEvent extends TouchEvent {
   scale: number
@@ -78,7 +38,7 @@ declare global {
 
 type GestureEventHandlerUnion<T> = JSX.EventHandlerUnion<T, GestureEvent>
 
-declare module "solid-js" {
+declare module 'solid-js' {
   namespace JSX {
     interface HTMLAttributes<T> {
       onGestureStart?: GestureEventHandlerUnion<T>;
@@ -106,27 +66,27 @@ const EditorToolbar: Component<{scriptDirty: boolean}> = (props) => {
 };
 
 type RenderToolbarProps = {
-  viewType: Signal<number>,
-  rotation: Signal<{x: number, y: number}>,
-  zoom: Signal<number>,
+  viewType: Signal.T<number>,
+  rotation: Signal.T<{x: number, y: number}>,
+  zoom: Signal.T<number>,
 };
 const RenderToolbar: Component<RenderToolbarProps> = (props) => {
-  const isSelected = createSelector(getter(props.viewType));
+  const isSelected = createSelector(Signal.getter(props.viewType));
 
   const Choice: Component<{title: string, value: number, icon: string}> = (choiceProps) => {
     return <label title={choiceProps.title}>
       <input type="radio" autocomplete="off" name="view-type"
         value={choiceProps.value}
         checked={isSelected(choiceProps.value)}
-        onChange={[setter(props.viewType), choiceProps.value]} />
+        onChange={[Signal.setter(props.viewType), choiceProps.value]} />
       <Icon name={choiceProps.icon} />
     </label>
   };
 
   const resetCamera = () => {
     batch(() => {
-      setSignal(props.rotation, {x: defaultCamera.x, y: defaultCamera.y});
-      setSignal(props.zoom, defaultCamera.zoom);
+      Signal.set(props.rotation, {x: defaultCamera.x, y: defaultCamera.y});
+      Signal.set(props.zoom, defaultCamera.zoom);
     });
   };
 
@@ -161,60 +121,83 @@ const AnimationToolbar = () => {
   </div>;
 };
 
+class RenderLoop {
+  private scheduled = false;
+  private then: Seconds | null = null;
+  private f: (_: Seconds) => boolean;
+  constructor(f: (_: Seconds) => boolean) {
+    this.f = f;
+  }
+  schedule() {
+    if (this.scheduled) {
+      return;
+    }
+    this.scheduled = true;
+    requestAnimationFrame((nowMS) => {
+      const nowSeconds = nowMS / 1000 as Seconds;
+      this.scheduled = false;
+      const elapsed = this.then == null ? 0 : nowSeconds - this.then;
+      if (this.f(elapsed as Seconds)) {
+        this.schedule();
+        this.then = nowSeconds;
+      } else {
+        this.then = null;
+      }
+    });
+  }
+}
+
 const Bauble = (props: { script: string }) => {
   let canvasContainer: HTMLDivElement;
   let editorContainer: HTMLDivElement;
   let canvas: HTMLCanvasElement;
   let editor: EditorView;
-  let renderer: Renderer;
 
   let isGesturing = false;
   let gestureEndedAt = 0;
 
-  let viewType = createSignal(0);
-  let zoom = createSignal(defaultCamera.zoom);
-  let rotation = createSignal({x: defaultCamera.x, y: defaultCamera.y});
-  let [getScriptDirty, setScriptDirty] = createSignal(true);
+  let viewType = Signal.create(0);
+  let zoom = Signal.create(defaultCamera.zoom);
+  let rotation = Signal.create({x: defaultCamera.x, y: defaultCamera.y});
+  let scriptDirty = Signal.create(true);
+  let lastCompilationResult = Signal.create(EvaluationState.Unknown);
+  let isAnimation = Signal.create(false);
+
+  const timer = new Timer();
 
   onMount(() => {
-    editor = installCodeMirror(props.script, editorContainer, () => setScriptDirty(true));
+    editor = installCodeMirror(props.script, editorContainer, () => Signal.set(scriptDirty, true));
+    const renderer = new Renderer(canvas, timer.t, viewType, rotation, zoom);
 
-    renderer = new Renderer(canvas);
+    const renderLoop = new RenderLoop((elapsed) => batch(() => {
+      const isAnimation_ = Signal.get(isAnimation);
+      timer.tick(elapsed, isAnimation_);
 
-    createEffect(() => {
-      const {x, y} = getSignal(rotation);
-      renderer.updateCamera(TAU * x, TAU * y, getSignal(zoom));
-      renderer.draw();
-    });
-    createEffect(() => {
-      if (getScriptDirty()) {
-        setScriptDirty(false);
-
+      if (Signal.get(scriptDirty)) {
+        // TODO: should do something to set like the stdout/stderr target here...
         const result = window.Module.evaluate_script!(editor.state.doc.toString());
+        Signal.set(scriptDirty, false);
         if (result.isError) {
-          // compilationState = CompilationState.Error;
+          Signal.set(lastCompilationResult, EvaluationState.EvaluationError);
           console.error(result.error);
         } else {
-          // compilationState = CompilationState.Success;
-          // isAnimation = result.isAnimated;
-          renderer.recompileShader(result.shaderSource);
-          renderer.draw();
+          try {
+            renderer.recompileShader(result.shaderSource);
+            Signal.set(lastCompilationResult, EvaluationState.Success);
+            Signal.set(isAnimation, result.isAnimated);
+          } catch (e) {
+            Signal.set(lastCompilationResult, EvaluationState.ShaderCompilationError);
+            console.error(e);
+          }
         }
       }
-    });
-    createEffect(() => {
-      renderer.viewType = getSignal(viewType);
       renderer.draw();
+      return isAnimation_;
+    }));
+
+    Signal.onEffect([rotation, zoom, scriptDirty] as Signal.T<any>[], () => {
+      renderLoop.schedule();
     });
-  });
-
-  createEffect(() => {
-    console.log(getSignal(rotation), getSignal(zoom));
-  });
-
-  createEffect(() => {
-    console.log('dirty = ', getScriptDirty());
-    console.log("script = ", editor.state.doc.toString());
   });
 
   let canvasPointerAt = [0, 0];
@@ -259,7 +242,7 @@ const Bauble = (props: { script: string }) => {
     const scaleAdjustmentX = pixelScale * canvas.width / canvas.clientWidth;
     const scaleAdjustmentY = pixelScale * canvas.height / canvas.clientHeight;
     // TODO: invert the meaning of camera.x/y so that this actually makes sense
-    updateSignal(rotation, ({x, y}) => ({
+    Signal.update(rotation, ({x, y}) => ({
       x: mod(x - scaleAdjustmentY * cameraRotateSpeed * movementY, 1.0),
       y: mod(y - scaleAdjustmentX * cameraRotateSpeed * movementX, 1.0)
     }));
@@ -271,16 +254,16 @@ const Bauble = (props: { script: string }) => {
     // will report very large values of deltaY, resulting
     // in very choppy scrolling. I don't really know a good
     // way to fix this without explicit platform detection.
-    updateSignal(zoom, (x) => x + cameraZoomSpeed * e.deltaY);
+    Signal.update(zoom, (x) => x + cameraZoomSpeed * e.deltaY);
   };
 
   let initialZoom = 1;
   const onGestureStart = () => {
-    initialZoom = getSignal(zoom);
+    initialZoom = Signal.get(zoom);
     isGesturing = true;
   };
   const onGestureChange = (e: GestureEvent) => {
-    setSignal(zoom, initialZoom / e.scale);
+    Signal.set(zoom, initialZoom / e.scale);
   };
   const onGestureEnd = () => {
     isGesturing = false;
@@ -303,7 +286,7 @@ const Bauble = (props: { script: string }) => {
         <AnimationToolbar />
       </div>
       <div class="code-container">
-        <EditorToolbar scriptDirty={getScriptDirty()} />
+        <EditorToolbar scriptDirty={Signal.get(scriptDirty)} />
         <div class="editor-container" ref={editorContainer!} />
       </div>
     </div>

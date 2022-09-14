@@ -1,12 +1,14 @@
 import {mat3, vec3} from 'gl-matrix';
+import * as Signal from './signals';
+import {TAU} from './util';
 
-function rotateXY(x: number, y: number): mat3 {
+function rotateXY(target: mat3, x: number, y: number) {
   const sx = Math.sin(x);
   const sy = Math.sin(y);
   const cx = Math.cos(x);
   const cy = Math.cos(y);
 
-  return mat3.fromValues(
+  mat3.set(target,
     cy, 0.0, -sy,
     sy * sx, cx, cy * sx,
     sy * cx, -sx, cy * cx,
@@ -29,6 +31,7 @@ function compileShader(gl: WebGLRenderingContext, type: number, source: string) 
     const info = gl.getShaderInfoLog(shader);
     gl.deleteShader(shader);
     console.error(info);
+    // TODO: just don't throw here
     throw new Error("failed to compile shader ugh typescript why");
     // throw new Error("failed to compile shader", {cause: info});
   }
@@ -45,12 +48,17 @@ export default class Renderer {
   private vertexBuffer: WebGLBuffer;
   private vertexData: Float32Array;
 
+  private cameraDirty = true;
   private cameraMatrix: mat3 = mat3.create();
   private cameraOrigin: vec3 = vec3.create();
-  time = 0;
-  viewType = 0;
 
-  constructor(canvas: HTMLCanvasElement) {
+  constructor(
+    canvas: HTMLCanvasElement,
+    private time: Signal.T<number>, // TODO: give this a unique type
+    private viewType: Signal.T<number>, // TODO: give this a type
+    private rotation: Signal.T<{x: number, y: number}>,
+    private zoom: Signal.T<number>, // TODO: give this a unique type
+    ) {
     const gl = canvas.getContext('webgl2', { antialias: false });
     if (!gl) {
       throw new Error("failed to create webgl2 context");
@@ -77,9 +85,13 @@ export default class Renderer {
     this.program = program;
     this.vertexBuffer = vertexBuffer;
     this.vertexData = vertexData;
+
+    Signal.onEffect([rotation, zoom] as Signal.T<any>[], () => {
+      this.cameraDirty = true;
+    });
   }
 
-  get positionLocation(): number {
+  private get positionLocation(): number {
     if (this._positionLocation == null) {
       const {gl, program} = this;
       this._positionLocation = gl.getAttribLocation(program, "position");
@@ -87,17 +99,28 @@ export default class Renderer {
     return this._positionLocation;
   }
 
-  setAllUniforms() {
+  private calculateCameraMatrix() {
+    const {x, y} = Signal.get(this.rotation);
+    rotateXY(this.cameraMatrix, x * TAU, y * TAU);
+    vec3.set(this.cameraOrigin, 0, 0, 256 * Signal.get(this.zoom));
+    vec3.transformMat3(this.cameraOrigin, this.cameraOrigin, this.cameraMatrix);
+    this.cameraDirty = false;
+  }
+
+  private setAllUniforms() {
     const {gl, program} = this;
     const uCameraMatrix = gl.getUniformLocation(program, "camera_matrix");
     const uCameraOrigin = gl.getUniformLocation(program, "camera_origin");
     const uT = gl.getUniformLocation(program, "t");
     const uViewType = gl.getUniformLocation(program, "view_type");
 
+    if (this.cameraDirty) {
+      this.calculateCameraMatrix();
+    }
     gl.uniform3fv(uCameraOrigin, this.cameraOrigin);
     gl.uniformMatrix3fv(uCameraMatrix, false, this.cameraMatrix);
-    gl.uniform1f(uT, this.time);
-    gl.uniform1i(uViewType, this.viewType);
+    gl.uniform1f(uT, Signal.get(this.time));
+    gl.uniform1i(uViewType, Signal.get(this.viewType));
   }
 
   draw() {
@@ -151,14 +174,5 @@ export default class Renderer {
       //   print(e.stack!, true);
       // }
     }
-  }
-
-  // TODO: obviously don't call this on every frame
-  updateCamera(x: number, y: number, zoom: number) {
-    const cameraMatrix = rotateXY(x, y);
-    const cameraOrigin = vec3.fromValues(0, 0, 256 * zoom);
-    vec3.transformMat3(cameraOrigin, cameraOrigin, cameraMatrix);
-    this.cameraMatrix = cameraMatrix;
-    this.cameraOrigin = cameraOrigin;
   }
 }

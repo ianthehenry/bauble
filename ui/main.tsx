@@ -1,24 +1,15 @@
 import * as Storage from './storage';
 import installCodeMirror from './editor';
 import Renderer from './renderer';
-
-interface CompilationResult {
-  isError: boolean,
-  shaderSource: string,
-  isAnimated: boolean,
-  error: string,
-}
-
-interface MyEmscripten extends EmscriptenModule {
-  evaluate_script: ((_: string) => CompilationResult);
-}
+import {Timer, LoopMode, TimerState} from './timer'
+import {mod, clamp, TAU} from './util'
+import {Emscripten} from './wasm'
 
 interface GestureEvent extends TouchEvent {
   scale: number
 }
 
 declare global {
-  interface Window { Module: Partial<MyEmscripten>; }
   interface HTMLElementEventMap {
     'gesturestart': GestureEvent;
     'gesturechange': GestureEvent;
@@ -26,7 +17,6 @@ declare global {
   }
 }
 
-const TAU = 2 * Math.PI;
 const cameraRotateSpeed = 1 / 512;
 const cameraZoomSpeed = 0.01;
 
@@ -56,7 +46,7 @@ function print(text: string, isErr=false) {
 let resolveReady: (_: undefined) => void;
 const wasmReady = new Promise((x) => { resolveReady = x; });
 
-const Module: Partial<MyEmscripten> = {
+const Module: Partial<Emscripten> = {
   preRun: [],
   print: function(x: string) {
     print(x, false);
@@ -75,95 +65,6 @@ const Module: Partial<MyEmscripten> = {
     }
   },
 };
-
-function clamp(value: number, min: number, max: number) {
-  return Math.max(Math.min(value, max), min);
-}
-
-function mod(a: number, b: number) {
-  return ((a % b) + b) % b;
-}
-
-enum TimerState {
-  Ambivalent,
-  Playing,
-  Paused,
-}
-
-enum LoopMode {
-  NoLoop = "no-loop",
-  Wrap = "wrap",
-  Reverse = "reverse",
-}
-
-class Timer {
-  t = 0;
-  state = TimerState.Ambivalent;
-  private then: number | null = null;
-  private loopMode = LoopMode.NoLoop;
-  loopStart = 0;
-  loopEnd = Math.PI * 2;
-  private rate = 1;
-
-  playPause() {
-    this.state = this.state === TimerState.Playing ? TimerState.Paused : TimerState.Playing;
-  }
-
-  stop() {
-    this.t = this.loopStart;
-    this.state = TimerState.Paused;
-    this.rate = 1;
-  }
-
-  tick(now: number, isAnimation: boolean) {
-    if (isAnimation && this.state === TimerState.Ambivalent) {
-      this.state = TimerState.Playing;
-    }
-    now /= 1000;
-    if (this.state === TimerState.Playing && isAnimation) {
-      const then = this.then ?? now;
-      let next = this.t + this.rate * (now - then);
-
-      if (next > this.loopEnd) {
-        switch (this.loopMode) {
-          case LoopMode.NoLoop: break;
-          case LoopMode.Wrap:
-            next = this.loopStart + (next - this.loopEnd);
-            break;
-          case LoopMode.Reverse:
-            next = this.loopEnd - (next - this.loopEnd);
-            this.rate = -1;
-            break;
-        }
-      }
-      if (next < this.loopStart) {
-        switch (this.loopMode) {
-          case LoopMode.NoLoop: break;
-          case LoopMode.Wrap:
-            next = this.loopStart;
-            break;
-          case LoopMode.Reverse:
-            next = this.loopStart + (this.loopStart - next);
-            this.rate = 1;
-            break;
-        }
-      }
-
-      this.t = next;
-    }
-    this.then = now;
-  }
-
-  setLoopMode(loopMode: LoopMode) {
-    if (loopMode != LoopMode.Reverse) {
-      this.rate = 1;
-    }
-    this.loopMode = loopMode;
-    if (loopMode != LoopMode.NoLoop) {
-      this.t = clamp(this.t, this.loopStart, this.loopEnd);
-    }
-  }
-}
 
 const defaultCamera = {
   x: -0.125,
@@ -206,32 +107,11 @@ function initialize(script: string) {
   let compilationState = CompilationState.Unknown;
 
   const canvas = fakeGetByID('render-target') as HTMLCanvasElement;
-  const renderer = new Renderer(canvas);
+  // const renderer = new Renderer(canvas);
 
   function tick(now: number) {
     requestAnimationFrame(tick);
-    timer.tick(now, isAnimation);
-    try {
-      if (drawScheduled) {
-        renderer.updateCamera(TAU * camera.x, TAU * camera.y, camera.zoom);
-        renderer.time = timer.t;
-        if (recompileScheduled) {
-          clearOutput();
-          const result = Module.evaluate_script!(editor.state.doc.toString());
-          if (result.isError) {
-            compilationState = CompilationState.Error;
-            console.error(result.error);
-          } else {
-            compilationState = CompilationState.Success;
-            isAnimation = result.isAnimated;
-            renderer.recompileShader(result.shaderSource);
-          }
-        }
-        renderer.draw();
-      }
-    } catch (e) {
-      console.error(e);
-    }
+    // timer.tick(now, isAnimation);
 
     drawScheduled = timer.state === TimerState.Playing;
     recompileScheduled = false;
@@ -243,7 +123,7 @@ function initialize(script: string) {
       playButton.classList.remove('hidden');
       pauseButton.classList.add('hidden');
     }
-    timestampSpan.innerText = timer.t.toFixed(2);
+    timestampSpan.innerText = timer.t[0]().toFixed(2);
     switch (compilationState) {
       case CompilationState.Success:
         compilationUnknownIndicator.classList.add('hidden');
@@ -284,7 +164,7 @@ function initialize(script: string) {
     switch (target.name) {
       case 'view-type': {
         if (target.checked) {
-          renderer.viewType = parseInt(target.value, 10);
+          // renderer.viewType = parseInt(target.value, 10);
           draw(false);
         }
         break;
@@ -301,11 +181,11 @@ function initialize(script: string) {
         break;
       }
       case 'loop-start': {
-        timer.loopStart = parseFloat(target.value);
+        // timer.loopStart = parseFloat(target.value);
         break;
       }
       case 'loop-end': {
-        timer.loopEnd = parseFloat(target.value);
+        // timer.loopEnd = parseFloat(target.value);
         break;
       }
       default:
