@@ -136,17 +136,17 @@ body.main-page .bauble {
     no-repeat center;
 }
 
-.bauble .output {
+.bauble .output-container {
   padding: 8px;
   background-color: #ffc;
   overflow: auto;
 }
 
-.bauble .output .err {
+.bauble .output-container .err {
   color: #900;
 }
 
-.bauble .output, span.timestamp, .toolbar input[inputmode=numeric] {
+.bauble .output-container, span.timestamp, .toolbar input[inputmode=numeric] {
   font-family: Menlo, monospace;
   font-size: 11pt;
 }
@@ -300,7 +300,7 @@ canvas {
   }
   .bauble .canvas-container { flex: 4; }
   .bauble .editor-container { flex: 1; }
-  .bauble .output { height: 1.5em; }
+  .bauble .output-container { height: 1.5em; }
 }
 
 .bauble.standalone {

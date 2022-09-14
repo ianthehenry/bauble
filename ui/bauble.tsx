@@ -5,7 +5,7 @@ import installCodeMirror from './editor';
 import {EditorView} from '@codemirror/view';
 import Renderer from './renderer';
 import * as Signal from './signals';
-import {mod, TAU} from './util';
+import {mod, clamp, TAU} from './util';
 import type {Seconds} from './types';
 
 enum EvaluationState {
@@ -180,6 +180,38 @@ class RenderLoop {
   }
 }
 
+const ResizableArea = () => {
+  let outputContainer: HTMLPreElement;
+  let handlePointerAt = [0, 0];
+  return <>
+    <div class="output-resize-handle"
+      title="double click to auto size"
+      onPointerDown={(e) => {
+        e.currentTarget.setPointerCapture(e.pointerId);
+        handlePointerAt = [e.screenX, e.screenY];
+      }}
+      onDblClick={(e) => {
+        outputContainer.style.flexBasis = 'auto';
+      }}
+      onPointerMove={(e) => {
+        if (!e.currentTarget.hasPointerCapture(e.pointerId)) {
+          return;
+        }
+        const outputStyle = getComputedStyle(outputContainer);
+        const verticalPadding = parseFloat(outputStyle.paddingTop) + parseFloat(outputStyle.paddingBottom);
+        const oldHeight = outputContainer.offsetHeight - verticalPadding;
+        const oldScrollTop = outputContainer.scrollTop;
+        const handlePointerWasAt = handlePointerAt;
+        handlePointerAt = [e.screenX, e.screenY];
+        const delta = handlePointerAt[1] - handlePointerWasAt[1];
+        outputContainer.style.flexBasis = `${oldHeight - delta}px`;
+        outputContainer.scrollTop = clamp(oldScrollTop + delta, 0, outputContainer.scrollHeight - outputContainer.offsetHeight);
+      }}
+      />
+    <pre class="output-container" ref={outputContainer!} />
+  </>
+}
+
 interface BaubleProps {
   initialScript: string,
   hijackScroll: boolean,
@@ -327,8 +359,7 @@ const Bauble = (props: BaubleProps) => {
         <div class="editor-container" ref={editorContainer!} />
       </div>
     </div>
-    <div class="output-resize-handle" />
-    <pre class="output" />
+    <ResizableArea />
   </div>;
 };
 export default Bauble;

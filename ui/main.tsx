@@ -25,7 +25,7 @@ function fakeGetByID(oldID: string): HTMLElement {
 }
 
 function clearOutput() {
-  const output = fakeGetByID('output');
+  const output = fakeGetByID('output-container');
   output.innerHTML = "";
 }
 
@@ -35,7 +35,7 @@ function print(text: string, isErr=false) {
   } else {
     console.log(text);
   }
-  const output = fakeGetByID('output');
+  const output = fakeGetByID('output-container');
   const span = document.createElement('span');
   span.classList.toggle('err', isErr);
   span.appendChild(document.createTextNode(text));
@@ -270,7 +270,7 @@ function initialize(script: string) {
     draw(false);
   });
 
-  const outputContainer = fakeGetByID('output');
+  const outputContainer = fakeGetByID('output-container');
   const outputResizeHandle = fakeGetByID('output-resize-handle');
   let handlePointerAt = [0, 0];
   outputResizeHandle.addEventListener('pointerdown', (e) => {
