@@ -1,37 +1,48 @@
+(use ./walkies)
+
 (defn- invocation? [form]
   (and (= (type form) :tuple) (= (tuple/type form) :parens)))
 
 (defn- maybe-invoke [x]
   (if (function? x) (x) x))
 
+(defn with-sourcemap [source dest]
+  (tuple/setmap dest ;(tuple/sourcemap source))
+  dest)
+
+(defn slice-from [source & args]
+  (def sliced (tuple/slice ;args))
+  (tuple/setmap sliced ;(tuple/sourcemap source))
+  sliced)
+
 # split that performs no allocation if
 # it never encounters anything to split
-(defn- split-map [xs prefix f]
+(defn- split-map [form prefix f]
   (var result nil)
   (var start 0)
   (var saved nil)
   (var invoke-saved-args nil)
-  (for i 0 (length xs)
-    (when-let [[split-point invoke-args] (f (xs i) i)]
-      (def up-to-now (slice xs start i))
+  (for i 0 (length form)
+    (when-let [[split-point invoke-args] (f (form i) i)]
+      (def up-to-now (slice-from form form start i))
       (if (nil? result)
         (if (= (length up-to-now) 1)
           (set result @[prefix (up-to-now 0)])
           (set result @[prefix up-to-now]))
         (if (and invoke-saved-args (> (length up-to-now) 1))
-          (array/push result [saved up-to-now])
-          (array/push result [saved ;up-to-now])))
+          (array/push result (with-sourcemap form [saved up-to-now]))
+          (array/push result (with-sourcemap form [saved ;up-to-now]))))
       (set start (+ i 1))
       (set saved split-point)
       (set invoke-saved-args invoke-args)))
   (if (nil? result)
-    xs
+    form
     (do
-      (let [rest (slice xs start)]
+      (let [rest (slice-from form form start)]
         (if (and invoke-saved-args (> (length rest) 1))
-          (array/push result [saved rest])
-          (array/push result [saved ;rest])))
-      (tuple/slice result))))
+          (array/push result (with-sourcemap form [saved rest]))
+          (array/push result (with-sourcemap form [saved ;rest]))))
+      (slice-from form result))))
 
 (defn- binop? [x]
   (case x

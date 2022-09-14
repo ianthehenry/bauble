@@ -1,3 +1,5 @@
+(use ./walkies)
+
 (defn- expand-dots [sym]
   (if (string/find "." sym)
     (let [components (string/split "." sym)]
