@@ -86,12 +86,6 @@ export default function installCodeMirror(script: string, parent: HTMLElement, o
           onChange();
         }
       }),
-      EditorView.theme({
-        ".cm-content": {
-          fontFamily: "Menlo, monospace",
-          fontSize: "13px",
-        },
-      }),
     ],
     parent: parent,
     doc: script,

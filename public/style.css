@@ -12,6 +12,14 @@ body {
   height: 100%;
   font-family: system-ui;
   line-height: 1.5;
+
+  --monospace-family: Menlo, monospace;
+  --monospace-size: 13px;
+}
+
+.cm-content {
+  font-family: var(--monospace-family);
+  font-size: var(--monospace-size);
 }
 
 html {
@@ -88,6 +96,8 @@ header .image-link {
 
 .bauble-placeholder {
   height: 500px;
+  font-family: var(--monospace-family);
+  font-size: var(--monospace-size);
 }
 
 body.main-page {
@@ -154,8 +164,8 @@ body.main-page .bauble {
 }
 
 .bauble .output-container, span.timestamp, .toolbar input[inputmode=numeric] {
-  font-family: Menlo, monospace;
-  font-size: 11pt;
+  font-family: var(--monospace-family);
+  font-size: var(--monospace-size);
 }
 
 .bauble .code-and-preview {
