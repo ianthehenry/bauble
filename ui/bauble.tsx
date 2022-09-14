@@ -1,5 +1,5 @@
 import type {Component, JSX} from 'solid-js';
-import {batch, on, createEffect, createSelector, onMount} from 'solid-js';
+import {batch, on, createEffect, createSelector, onMount, For} from 'solid-js';
 import {Timer, LoopMode, TimerState} from './timer'
 import installCodeMirror from './editor';
 import {EditorView} from '@codemirror/view';
@@ -53,10 +53,40 @@ const Icon: Component<{name: string}> = (props) => {
   return <svg><use href={href} /></svg>;
 };
 
+interface ChoiceDescription<T> {
+  title: string,
+  value: T,
+  icon: string,
+}
+
+interface ChoicesProps<T extends number | string> {
+  signal: Signal.T<T>,
+  choices: ChoiceDescription<T>[],
+}
+
+function choices<T extends number | string>(
+  signal: Signal.T<T>,
+  choices: ChoiceDescription<T>[]
+): JSX.Element {
+  const isSelected = createSelector(Signal.getter(signal));
+  const setter = Signal.setter(signal);
+
+  return <fieldset>
+    <For each={choices}>{ ({title, value, icon}) =>
+      <label title={title}>
+        <input
+          type="radio"
+          autocomplete="off"
+          value={value}
+          checked={isSelected(value)}
+          onChange={[setter, value]} />
+        <Icon name={icon} />
+      </label>
+    }</For>
+  </fieldset>
+};
+
 const EditorToolbar: Component<{scriptDirty: boolean}> = (props) => {
-  createEffect(() => {
-    console.log("editor logging:", props.scriptDirty);
-  });
   return <div class="toolbar">
     <div class="spacer"></div>
     <div title="Compilation result unknown" class="indicator compilation-unknown"><svg><use href="/icons.svg#emoji-neutral" /></svg></div>
@@ -65,23 +95,13 @@ const EditorToolbar: Component<{scriptDirty: boolean}> = (props) => {
   </div>;
 };
 
-type RenderToolbarProps = {
+interface RenderToolbarProps {
   viewType: Signal.T<number>,
   rotation: Signal.T<{x: number, y: number}>,
   zoom: Signal.T<number>,
 };
 const RenderToolbar: Component<RenderToolbarProps> = (props) => {
   const isSelected = createSelector(Signal.getter(props.viewType));
-
-  const Choice: Component<{title: string, value: number, icon: string}> = (choiceProps) => {
-    return <label title={choiceProps.title}>
-      <input type="radio" autocomplete="off" name="view-type"
-        value={choiceProps.value}
-        checked={isSelected(choiceProps.value)}
-        onChange={[Signal.setter(props.viewType), choiceProps.value]} />
-      <Icon name={choiceProps.icon} />
-    </label>
-  };
 
   const resetCamera = () => {
     batch(() => {
@@ -94,30 +114,43 @@ const RenderToolbar: Component<RenderToolbarProps> = (props) => {
     <button title="Reset camera" onClick={resetCamera}><Icon name="box" /></button>
     {/*<button title="Toggle quad view" data-action="toggle-quad-view"><svg><use href="/icons.svg#grid" /></svg></button>*/}
     <div class="spacer"></div>
-    <fieldset>
-      <Choice value={0} icon="camera" title="Render normally" />
-      <Choice value={1} icon="magnet" title="Debug number of raymarching steps" />
-      <Choice value={2} icon="arrows-collapse" title="Debug surface distance" />
-    </fieldset>
+    {choices(props.viewType, [
+      { value: 0, icon: "camera", title: "Render normally" },
+      { value: 1, icon: "magnet", title: "Debug number of raymarching steps" },
+      { value: 2, icon: "arrows-collapse", title: "Debug surface distance" },
+    ])}
   </div>;
 };
 
-const AnimationToolbar = () => {
+const timestampInput = (signal: Signal.T<Seconds>): JSX.Element => {
+  return <input
+    inputmode="numeric"
+    value={Signal.get(signal).toFixed(2)}
+    autocomplete="off"
+    onChange={(e) => {
+      Signal.set(signal, parseInt(e.currentTarget.value, 10) as Seconds);
+    }} />
+}
+
+interface AnimationToolbarProps {
+  timer: Timer,
+};
+const AnimationToolbar: Component<AnimationToolbarProps> = (props) => {
   return <div class="toolbar">
     <button title="Play" data-action="play"><svg><use href="/icons.svg#play" /></svg></button>
     <button title="Pause" data-action="pause" class="hidden"><svg><use href="/icons.svg#pause" /></svg></button>
     <button title="Stop" data-action="stop"><svg><use href="/icons.svg#stop" /></svg></button>
-    <span title="Current timestamp" class="timestamp">0.00</span>
+    <span title="Current timestamp" class="timestamp">{Signal.get(props.timer.t).toFixed(2)}</span>
     <div class="spacer"></div>
     {/* <div class="scrubber"></div>*/}
-    <fieldset>
-      <label title="No loop"><input type="radio" autocomplete="off" name="loop-mode" value="no-loop" checked /><svg><use href="/icons.svg#arrow-bar-right" /></svg></label>
-      <label title="Loop"><input type="radio" autocomplete="off" name="loop-mode" value="wrap" /><svg><use href="/icons.svg#repeat" /></svg></label>
-      <label title="Loop back and forth"><input type="radio" autocomplete="off" name="loop-mode" value="reverse" /><svg><use href="/icons.svg#arrow-left-right" /></svg></label>
-    </fieldset>
-    <input name="loop-start" inputmode="numeric" value="0.00" autocomplete="off" />
+    {choices(props.timer.loopMode, [
+      { value: LoopMode.NoLoop, icon: "arrow-bar-right", title: "No loop" },
+      { value: LoopMode.Wrap, icon: "repeat", title: "Loop" },
+      { value: LoopMode.Reverse, icon: "arrow-left-right", title: "Loop back and forth" },
+    ])}
+    {timestampInput(props.timer.loopStart)}
     <span class="text">to</span>
-    <input name="loop-end" inputmode="numeric" value="6.28" autocomplete="off" />
+    {timestampInput(props.timer.loopEnd)}
   </div>;
 };
 
@@ -147,7 +180,11 @@ class RenderLoop {
   }
 }
 
-const Bauble = (props: { script: string }) => {
+interface BaubleProps {
+  initialScript: string,
+  hijackScroll: boolean,
+}
+const Bauble = (props: BaubleProps) => {
   let canvasContainer: HTMLDivElement;
   let editorContainer: HTMLDivElement;
   let canvas: HTMLCanvasElement;
@@ -156,17 +193,17 @@ const Bauble = (props: { script: string }) => {
   let isGesturing = false;
   let gestureEndedAt = 0;
 
-  let viewType = Signal.create(0);
-  let zoom = Signal.create(defaultCamera.zoom);
-  let rotation = Signal.create({x: defaultCamera.x, y: defaultCamera.y});
-  let scriptDirty = Signal.create(true);
-  let lastCompilationResult = Signal.create(EvaluationState.Unknown);
-  let isAnimation = Signal.create(false);
+  const viewType = Signal.create(0);
+  const zoom = Signal.create(defaultCamera.zoom);
+  const rotation = Signal.create({x: defaultCamera.x, y: defaultCamera.y});
+  const scriptDirty = Signal.create(true);
+  const lastCompilationResult = Signal.create(EvaluationState.Unknown);
+  const isAnimation = Signal.create(false);
 
   const timer = new Timer();
 
   onMount(() => {
-    editor = installCodeMirror(props.script, editorContainer, () => Signal.set(scriptDirty, true));
+    editor = installCodeMirror(props.initialScript, editorContainer, () => Signal.set(scriptDirty, true));
     const renderer = new Renderer(canvas, timer.t, viewType, rotation, zoom);
 
     const renderLoop = new RenderLoop((elapsed) => batch(() => {
@@ -192,10 +229,10 @@ const Bauble = (props: { script: string }) => {
         }
       }
       renderer.draw();
-      return isAnimation_;
+      return Signal.get(isAnimation);
     }));
 
-    Signal.onEffect([rotation, zoom, scriptDirty] as Signal.T<any>[], () => {
+    Signal.onEffect([rotation, zoom, scriptDirty, viewType] as Signal.T<any>[], () => {
       renderLoop.schedule();
     });
   });
@@ -275,7 +312,7 @@ const Bauble = (props: { script: string }) => {
       <div class="canvas-container" ref={canvasContainer!}>
         <RenderToolbar viewType={viewType} rotation={rotation} zoom={zoom} />
         <canvas ref={canvas!} class="render-target" width="1024" height="1024"
-          onWheel={onWheel}
+          onWheel={props.hijackScroll ? onWheel : undefined}
           onPointerDown={onPointerDown}
           onPointerUp={onPointerUp}
           onPointerMove={onPointerMove}
@@ -283,7 +320,7 @@ const Bauble = (props: { script: string }) => {
           onGestureChange={onGestureChange}
           onGestureEnd={onGestureEnd}
         />
-        <AnimationToolbar />
+        <AnimationToolbar timer={timer} />
       </div>
       <div class="code-container">
         <EditorToolbar scriptDirty={Signal.get(scriptDirty)} />

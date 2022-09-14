@@ -1,7 +1,7 @@
 import * as Storage from './storage';
 import installCodeMirror from './editor';
 import Renderer from './renderer';
-import {Timer, LoopMode, TimerState} from './timer'
+// import {Timer, LoopMode, TimerState} from './timer'
 import {mod, clamp, TAU} from './util'
 import {Emscripten} from './wasm'
 
@@ -95,7 +95,7 @@ function initialize(script: string) {
 
   const timestampSpan: HTMLInputElement = document.querySelector('.toolbar span.timestamp')!;
 
-  const timer = new Timer();
+  // const timer = new Timer();
   let drawScheduled = false;
   let recompileScheduled = false;
   let isAnimation = false;
@@ -113,17 +113,17 @@ function initialize(script: string) {
     requestAnimationFrame(tick);
     // timer.tick(now, isAnimation);
 
-    drawScheduled = timer.state === TimerState.Playing;
+    // drawScheduled = timer.state === TimerState.Playing;
     recompileScheduled = false;
 
-    if (timer.state === TimerState.Playing) {
-      playButton.classList.add('hidden');
-      pauseButton.classList.remove('hidden');
-    } else {
-      playButton.classList.remove('hidden');
-      pauseButton.classList.add('hidden');
-    }
-    timestampSpan.innerText = timer.t[0]().toFixed(2);
+    // if (timer.state === TimerState.Playing) {
+    //   playButton.classList.add('hidden');
+    //   pauseButton.classList.remove('hidden');
+    // } else {
+    //   playButton.classList.remove('hidden');
+    //   pauseButton.classList.add('hidden');
+    // }
+    // timestampSpan.innerText = timer.t[0]().toFixed(2);
     switch (compilationState) {
       case CompilationState.Success:
         compilationUnknownIndicator.classList.add('hidden');
@@ -149,13 +149,13 @@ function initialize(script: string) {
     draw(false);
   });
   playButton.addEventListener('click', (_e) => {
-    timer.state = TimerState.Playing;
+    // timer.state = TimerState.Playing;
   });
   pauseButton.addEventListener('click', (_e) => {
-    timer.state = TimerState.Paused;
+    // timer.state = TimerState.Paused;
   });
   stopButton.addEventListener('click', (_e) => {
-    timer.stop();
+    // timer.stop();
     draw(false);
   });
 
@@ -172,9 +172,9 @@ function initialize(script: string) {
       case 'loop-mode': {
         if (target.checked) {
           switch (target.value) {
-            case 'no-loop': timer.setLoopMode(LoopMode.NoLoop); break;
-            case 'wrap': timer.setLoopMode(LoopMode.Wrap); break;
-            case 'reverse': timer.setLoopMode(LoopMode.Reverse); break;
+            // case 'no-loop': timer.setLoopMode(LoopMode.NoLoop); break;
+            // case 'wrap': timer.setLoopMode(LoopMode.Wrap); break;
+            // case 'reverse': timer.setLoopMode(LoopMode.Reverse); break;
             default: throw new Error("invalid loop value " + target.value);
           }
         }
@@ -313,7 +313,7 @@ import Bauble from './bauble';
 import { render as renderSolid } from "solid-js/web";
 
 function makeBauble(script: string, placeholder: HTMLElement) {
-  renderSolid(() => <Bauble script={script} />, placeholder);
+  renderSolid(() => <Bauble initialScript={script} hijackScroll={false} />, placeholder);
 }
 
 if (true)
