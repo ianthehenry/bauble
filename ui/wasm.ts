@@ -9,6 +9,7 @@ export interface EvaluationResult {
 
 export interface Emscripten extends EmscriptenModule {
   evaluate_script: ((_: string) => EvaluationResult);
+  outputTarget?: HTMLElement;
 }
 
 declare global {

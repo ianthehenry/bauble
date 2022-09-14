@@ -30,17 +30,19 @@ function clearOutput() {
 }
 
 function print(text: string, isErr=false) {
-  if (isErr) {
-    console.error(text);
+  if (Module.outputTarget == null) {
+    if (isErr) {
+      console.error(text);
+    } else {
+      console.log(text);
+    }
   } else {
-    console.log(text);
+    const span = document.createElement('span');
+    span.classList.toggle('err', isErr);
+    span.appendChild(document.createTextNode(text));
+    span.appendChild(document.createTextNode('\n'));
+    Module.outputTarget.appendChild(span);
   }
-  const output = fakeGetByID('output-container');
-  const span = document.createElement('span');
-  span.classList.toggle('err', isErr);
-  span.appendChild(document.createTextNode(text));
-  span.appendChild(document.createTextNode('\n'));
-  output.appendChild(span);
 }
 
 let resolveReady: (_: undefined) => void;

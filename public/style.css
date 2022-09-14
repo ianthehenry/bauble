@@ -136,8 +136,10 @@ body.main-page .bauble {
     no-repeat center;
 }
 
-.bauble .output-container {
+.bauble .output-container:not(:empty) {
   padding: 8px;
+}
+.bauble .output-container {
   background-color: #ffc;
   overflow: auto;
 }

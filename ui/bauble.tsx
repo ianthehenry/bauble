@@ -180,9 +180,11 @@ class RenderLoop {
   }
 }
 
-const ResizableArea = () => {
+// TODO: what is the correct way to write this type?
+const ResizableArea = (props: {ref: any}) => {
   let outputContainer: HTMLPreElement;
   let handlePointerAt = [0, 0];
+  onMount(() => props.ref(outputContainer as HTMLElement));
   return <>
     <div class="output-resize-handle"
       title="double click to auto size"
@@ -221,6 +223,7 @@ const Bauble = (props: BaubleProps) => {
   let editorContainer: HTMLDivElement;
   let canvas: HTMLCanvasElement;
   let editor: EditorView;
+  let outputContainer: HTMLElement;
 
   let isGesturing = false;
   let gestureEndedAt = 0;
@@ -243,8 +246,10 @@ const Bauble = (props: BaubleProps) => {
       timer.tick(elapsed, isAnimation_);
 
       if (Signal.get(scriptDirty)) {
-        // TODO: should do something to set like the stdout/stderr target here...
+        outputContainer.innerHTML = '';
+        window.Module.outputTarget = outputContainer;
         const result = window.Module.evaluate_script!(editor.state.doc.toString());
+        window.Module.outputTarget = undefined;
         Signal.set(scriptDirty, false);
         if (result.isError) {
           Signal.set(lastCompilationResult, EvaluationState.EvaluationError);
@@ -359,7 +364,7 @@ const Bauble = (props: BaubleProps) => {
         <div class="editor-container" ref={editorContainer!} />
       </div>
     </div>
-    <ResizableArea />
+    <ResizableArea ref={outputContainer!} />
   </div>;
 };
 export default Bauble;
