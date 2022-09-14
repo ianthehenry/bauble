@@ -49,8 +49,7 @@ declare module 'solid-js' {
 }
 
 const Icon: Component<{name: string}> = (props) => {
-  const href = `/icons.svg#${props.name}`;
-  return <svg><use href={href} /></svg>;
+  return <svg><use href={`/icons.svg#${props.name}`} /></svg>;
 };
 
 interface ChoiceDescription<T> {
@@ -156,9 +155,12 @@ interface AnimationToolbarProps {
 };
 const AnimationToolbar: Component<AnimationToolbarProps> = (props) => {
   return <div class="toolbar">
-    <button title="Play" data-action="play"><svg><use href="/icons.svg#play" /></svg></button>
-    <button title="Pause" data-action="pause" class="hidden"><svg><use href="/icons.svg#pause" /></svg></button>
-    <button title="Stop" data-action="stop"><svg><use href="/icons.svg#stop" /></svg></button>
+    <button
+      title={Signal.get(props.timer.state) === TimerState.Playing ? "Pause" : "Play"}
+      onClick={() => props.timer.playPause()}>
+      <Icon name={Signal.get(props.timer.state) === TimerState.Playing ? "pause" : "play"} />
+    </button>
+    <button title="Stop" onClick={() => props.timer.stop()}><Icon name="stop" /></button>
     <span title="Current timestamp" class="timestamp">{Signal.get(props.timer.t).toFixed(2)}</span>
     <div class="spacer"></div>
     {/* <div class="scrubber"></div>*/}
@@ -285,10 +287,10 @@ const Bauble = (props: BaubleProps) => {
         }
       }
       renderer.draw();
-      return Signal.get(isAnimation);
+      return Signal.get(isAnimation) && Signal.get(timer.state) === TimerState.Playing;
     }));
 
-    Signal.onEffect([rotation, zoom, scriptDirty, viewType] as Signal.T<any>[], () => {
+    Signal.onEffect([rotation, zoom, scriptDirty, viewType, timer.state] as Signal.T<any>[], () => {
       renderLoop.schedule();
     });
   });

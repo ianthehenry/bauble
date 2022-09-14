@@ -52,17 +52,16 @@ export class Timer {
   loopStart = Signal.create(0 as Seconds);
   loopEnd = Signal.create(TAU as Seconds);
   loopMode = Signal.create(LoopMode.NoLoop);
-
-  private state = TimerState.Ambivalent;
+  state = Signal.create(TimerState.Ambivalent);
   private rate = 1;
 
   playPause() {
-    this.state = this.state === TimerState.Playing ? TimerState.Paused : TimerState.Playing;
+    Signal.update(this.state, (state) => state === TimerState.Playing ? TimerState.Paused : TimerState.Playing);
   }
 
   stop() {
     Signal.set(this.t, Signal.get(this.loopStart));
-    this.state = TimerState.Paused;
+    Signal.set(this.state, TimerState.Paused);
     this.rate = 1;
   }
 
@@ -83,8 +82,8 @@ export class Timer {
   }
 
   tick(delta: Seconds, isAnimation: boolean) {
-    if (isAnimation && this.state === TimerState.Ambivalent) {
-      this.state = TimerState.Playing;
+    if (isAnimation && Signal.get(this.state) === TimerState.Ambivalent) {
+      Signal.set(this.state, TimerState.Playing);
     }
 
     const [t, rate] = clampTime(
