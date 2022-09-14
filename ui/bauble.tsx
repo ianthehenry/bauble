@@ -1,5 +1,5 @@
 import type {Component, JSX} from 'solid-js';
-import {batch, on, createEffect, createSelector, onMount, For} from 'solid-js';
+import {batch, on, createEffect, createSelector, onMount, For, Switch, Match} from 'solid-js';
 import {Timer, LoopMode, TimerState} from './timer'
 import installCodeMirror from './editor';
 import {EditorView} from '@codemirror/view';
@@ -86,12 +86,31 @@ function choices<T extends number | string>(
   </fieldset>
 };
 
-const EditorToolbar: Component<{scriptDirty: boolean}> = (props) => {
+const EditorToolbar: Component<{state: EvaluationState}> = (props) => {
   return <div class="toolbar">
     <div class="spacer"></div>
-    <div title="Compilation result unknown" class="indicator compilation-unknown"><svg><use href="/icons.svg#emoji-neutral" /></svg></div>
-    <div title="Compilation success" class="indicator compilation-success hidden"><svg><use href="/icons.svg#emoji-smile" /></svg></div>
-    <div title="Compilation error" class="indicator compilation-error hidden"><svg><use href="/icons.svg#emoji-frown" /></svg></div>
+    <Switch>
+      <Match when={props.state === EvaluationState.Unknown}>
+        <div title="Compilation unknown" class="indicator compilation-unknown">
+          <Icon name="emoji-neutral" />
+        </div>
+      </Match>
+      <Match when={props.state === EvaluationState.Success}>
+        <div title="Compilation success" class="indicator compilation-success">
+          <Icon name="emoji-smile" />
+        </div>
+      </Match>
+      <Match when={props.state === EvaluationState.EvaluationError}>
+        <div title="Compilation error" class="indicator compilation-error">
+          <Icon name="emoji-frown" />
+        </div>
+      </Match>
+      <Match when={props.state === EvaluationState.ShaderCompilationError}>
+        <div title="Compilation error" class="indicator compilation-error">
+          <Icon name="emoji-angry" />
+        </div>
+      </Match>
+    </Switch>
   </div>;
 };
 
@@ -232,7 +251,7 @@ const Bauble = (props: BaubleProps) => {
   const zoom = Signal.create(defaultCamera.zoom);
   const rotation = Signal.create({x: defaultCamera.x, y: defaultCamera.y});
   const scriptDirty = Signal.create(true);
-  const lastCompilationResult = Signal.create(EvaluationState.Unknown);
+  const evaluationState = Signal.create(EvaluationState.Unknown);
   const isAnimation = Signal.create(false);
 
   const timer = new Timer();
@@ -252,15 +271,15 @@ const Bauble = (props: BaubleProps) => {
         window.Module.outputTarget = undefined;
         Signal.set(scriptDirty, false);
         if (result.isError) {
-          Signal.set(lastCompilationResult, EvaluationState.EvaluationError);
+          Signal.set(evaluationState, EvaluationState.EvaluationError);
           console.error(result.error);
         } else {
           try {
             renderer.recompileShader(result.shaderSource);
-            Signal.set(lastCompilationResult, EvaluationState.Success);
+            Signal.set(evaluationState, EvaluationState.Success);
             Signal.set(isAnimation, result.isAnimated);
           } catch (e) {
-            Signal.set(lastCompilationResult, EvaluationState.ShaderCompilationError);
+            Signal.set(evaluationState, EvaluationState.ShaderCompilationError);
             console.error(e);
           }
         }
@@ -344,7 +363,7 @@ const Bauble = (props: BaubleProps) => {
     gestureEndedAt = performance.now();
   };
 
-  return <div class="bauble standalone">
+  return <div class="bauble">
     <div class="code-and-preview">
       <div class="canvas-container" ref={canvasContainer!}>
         <RenderToolbar viewType={viewType} rotation={rotation} zoom={zoom} />
@@ -360,7 +379,7 @@ const Bauble = (props: BaubleProps) => {
         <AnimationToolbar timer={timer} />
       </div>
       <div class="code-container">
-        <EditorToolbar scriptDirty={Signal.get(scriptDirty)} />
+        <EditorToolbar state={Signal.get(evaluationState)} />
         <div class="editor-container" ref={editorContainer!} />
       </div>
     </div>

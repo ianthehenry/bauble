@@ -86,6 +86,10 @@ header .image-link {
   align-items: center;
 }
 
+.bauble-placeholder {
+  height: 500px;
+}
+
 body.main-page {
   display: flex;
   flex-direction: column;
@@ -99,6 +103,7 @@ body.main-page .bauble {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  height: 100%;
 }
 
 .bauble .code-and-preview {
@@ -303,8 +308,4 @@ canvas {
   .bauble .canvas-container { flex: 4; }
   .bauble .editor-container { flex: 1; }
   .bauble .output-container { height: 1.5em; }
-}
-
-.bauble.standalone {
-  height: 500px;
 }

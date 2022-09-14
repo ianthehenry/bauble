@@ -323,6 +323,9 @@ document.addEventListener("DOMContentLoaded", (_) => {
   wasmReady.then(() => {
     for (const el of document.querySelectorAll('.code-example')) {
       const placeholder = el.nextElementSibling! as HTMLElement;
+      if (placeholder.classList.contains('bauble-placeholder')) {
+        throw new Error("invalid DOM: code examples must be followed by a placeholder");
+      }
       makeBauble(el.textContent!, placeholder);
     }
   }).catch(console.error);
