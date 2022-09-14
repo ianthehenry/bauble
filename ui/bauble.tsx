@@ -238,6 +238,7 @@ const ResizableArea = (props: {ref: any}) => {
 interface BaubleProps {
   initialScript: string,
   hijackScroll: boolean,
+  canSave: boolean,
 }
 const Bauble = (props: BaubleProps) => {
   let canvasContainer: HTMLDivElement;
@@ -259,7 +260,12 @@ const Bauble = (props: BaubleProps) => {
   const timer = new Timer();
 
   onMount(() => {
-    editor = installCodeMirror(props.initialScript, editorContainer, () => Signal.set(scriptDirty, true));
+    editor = installCodeMirror({
+      initialScript: props.initialScript,
+      parent: editorContainer,
+      canSave: props.canSave,
+      onChange: () => Signal.set(scriptDirty, true)
+    });
     const renderer = new Renderer(canvas, timer.t, viewType, rotation, zoom);
 
     const renderLoop = new RenderLoop((elapsed) => batch(() => {

@@ -53,7 +53,7 @@ document.addEventListener("DOMContentLoaded", (_) => {
         for (const placeholder of document.querySelectorAll('.bauble-placeholder')) {
           const initialScript = placeholder.textContent ?? '';
           placeholder.innerHTML = '';
-          renderSolid(() => <Bauble initialScript={initialScript} hijackScroll={false} />, placeholder);
+          renderSolid(() => <Bauble initialScript={initialScript} hijackScroll={false} canSave={false} />, placeholder);
         }
       }).catch(console.error);
       break;
@@ -61,7 +61,7 @@ document.addEventListener("DOMContentLoaded", (_) => {
     case '/': {
       wasmReady.then(() => {
         const initialScript = Storage.getScript() ?? FS.readFile('intro.janet', {encoding: 'utf8'});
-        renderSolid(() => <Bauble initialScript={initialScript} hijackScroll={true} />, document.body);
+        renderSolid(() => <Bauble initialScript={initialScript} hijackScroll={true} canSave={true} />, document.body);
       }).catch(console.error);
       break;
     }

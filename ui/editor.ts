@@ -9,6 +9,7 @@ import Big from 'big.js';
 import * as Storage from './storage';
 
 function save({state}: StateCommandInput) {
+  console.log('saving...');
   const script = state.doc.toString();
   if (script.trim().length > 0) {
     Storage.saveScript(script);
@@ -63,24 +64,28 @@ function alterNumber({state, dispatch}: StateCommandInput, amount: Big) {
     },
     selection: EditorSelection.single(node.from, node.to + lengthDifference),
     scrollIntoView: true,
-    userEvent: 'increment',
+    userEvent: 'alterNumber',
   }));
   return true;
 }
 
-const incrementNumber = (editor: StateCommandInput) => alterNumber(editor, Big('1'));
-const decrementNumber = (editor: StateCommandInput) => alterNumber(editor, Big('-1'));
+interface EditorOptions {
+  initialScript: string,
+  parent: HTMLElement,
+  canSave: boolean,
+  onChange: (() => void),
+}
 
-export default function installCodeMirror(script: string, parent: HTMLElement, onChange: (() => void)): EditorView {
+export default function installCodeMirror({initialScript, parent, canSave, onChange}: EditorOptions): EditorView {
+  const keyBindings = [indentWithTab];
+  if (canSave) {
+    keyBindings.push({ key: "Mod-s", run: save });
+  }
   const editor = new EditorView({
     extensions: [
       basicSetup,
       janet(),
-      keymap.of([
-        indentWithTab,
-        { key: "Alt-h", run: incrementNumber, shift: decrementNumber },
-        { key: "Mod-s", run: save },
-      ]),
+      keymap.of(keyBindings),
       EditorView.updateListener.of(function(viewUpdate: ViewUpdate) {
         if (viewUpdate.docChanged) {
           onChange();
@@ -88,7 +93,7 @@ export default function installCodeMirror(script: string, parent: HTMLElement, o
       }),
     ],
     parent: parent,
-    doc: script,
+    doc: initialScript,
   });
 
   let ctrlClickedAt = 0;
@@ -123,30 +128,35 @@ export default function installCodeMirror(script: string, parent: HTMLElement, o
   //
   // So on Firefox you have to use an actual right-click.
   // It's very annoying. This is an *okay* workaround.
-
-  // TODO: What if we have multiple codemirror instances?
-  // should check if things are focused
   document.addEventListener('pointermove', (e) => {
+    if (!editor.hasFocus) {
+      return;
+    }
     if (e.shiftKey && e.metaKey) {
       alterNumber(editor, Big(e.movementX).times('1'));
     }
   });
 
-  document.addEventListener('pagehide', (_e) => {
-    save(editor);
-  });
-  let savedBefore = false;
-  // iOS Safari doesn't support beforeunload,
-  // but it does support unload.
-  window.addEventListener('beforeunload', (_e) => {
-    savedBefore = true;
-    save(editor);
-  });
-  window.addEventListener('unload', (_e) => {
-    if (!savedBefore) {
+  if (canSave) {
+    setInterval(function() {
       save(editor);
-    }
-  });
+    }, 30 * 1000);
+    document.addEventListener('pagehide', () => {
+      save(editor);
+    });
+    let savedBefore = false;
+    // iOS Safari doesn't support beforeunload,
+    // but it does support unload.
+    window.addEventListener('beforeunload', () => {
+      savedBefore = true;
+      save(editor);
+    });
+    window.addEventListener('unload', () => {
+      if (!savedBefore) {
+        save(editor);
+      }
+    });
+  }
 
   return editor;
 }
