@@ -17,13 +17,15 @@
 | rotate-pi :y t :z 0.05
 | move :x 50
 | mirror :r 10 :x
-| rotate-tau :y (/ t 20)
 | fresnel
 | slow 0.25)
 
 # Drag the viewport around with your
 # mouse, and scroll to move the camera
-# in and out.
+# in and out. If you get disoriented,
+# you can reset the camera by pressing
+# the button in the top-left corner of
+# the preview window.
 
 # This text field is a Janet program
 # that is re-evaluated every time you
@@ -164,19 +166,19 @@
 # regular functions, we can also use
 # pipe syntax to do math:
 
-# (x | + y) expands to (+ x y)
+# (sphere (30 | + 30)) # (x | + y) expands to (+ x y)
 
-# Remember that this is just a syntax
-# transform, so we can use the variadic
-# version of +:
+# Remember that this is just a syntactic
+# transformation, so we can still use
+# the variadic version of +:
 
-# (x | + y z) expands to (+ x y z)
+# (box (30 | + 10 20)) # (x | + y z) expands to (+ x y z)
 
 # But we can go even further. Babel will
 # rewrite "infix" uses of + - * / into
 # something very similar to this:
 
-# (x + y) becomes (+ x y)
+# (sphere (30 + 30)) # (x + y) expands to (+ x y)
 
 # However, this does *not* work with
 # variadic arguments. That's because if
@@ -184,8 +186,7 @@
 # right of a binary operator, they will
 # be wrapped in parens.
 
-# (x + sin t) becomes (+ x (sin t))
-# (x |+ sin t) becomes (+ x sin t)
+# (box (30 + abs -30)) # (x + f y) expands to (+ x (f y))
 
 # So there's still occasion to use pipe
 # with an operator.
@@ -197,11 +198,11 @@
 # to right in the order that you write
 # them. So:
 
-# (x + y * 10)
+# (sphere (5 + sin t * 10))
 
-# Will expand to:
+# Is the same as:
 
-# (* (+ x y) 10)
+# (sphere (* (+ 5 (sin t)) 10))
 
 # Because of this infix syntax macro,
 # it's no longer possible to pass the
@@ -212,14 +213,14 @@
 
 # For example, this would work in vanilla Janet:
 
-# (reduce + 0 [1 2 3])
+# (sphere (reduce + 0 [10 20 30]))
 
 # But in Bauble, that will expand to
-# (+ reduce (0 [1 2 3])), and you'll
+# (+ reduce (0 [10 20 30])), and you'll
 # get a confusing error message.
 # Instead, you have to write:
 
-# (reduce @+ 0 [1 2 3])
+# (sphere (reduce @+ 0 [10 20 30]))
 
 # Since you'll be doing math all the
 # time and very rarely invoking
