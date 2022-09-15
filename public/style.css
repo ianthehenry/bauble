@@ -110,25 +110,32 @@ body.main-page .bauble {
 }
 
 .bauble {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  --control-height: 40px;
+  --horizontal-grip: #eee url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 2 16 12' fill='currentColor'><path d='M2 8a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm0-3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm3 3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm0-3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm3 3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm0-3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm3 3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm0-3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm3 3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm0-3a1 1 0 1 1 0 2 1 1 0 0 1 0-2z'/></svg>")
+    no-repeat center;
+  --vertical-grip: #eee url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='2 0 12 16' fill='currentColor'><path d='M7 2a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zM7 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zM7 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm-3 3a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm-3 3a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0z'/></svg>")
+    no-repeat center;
+
   height: 100%;
-}
-
-.bauble .code-and-preview {
-  flex: 1;
   display: flex;
-  flex-direction: row-reverse;
   overflow: hidden;
+  flex-direction: row-reverse;
 }
 
-.bauble .code-container { flex: 4; overflow: hidden; }
-.bauble .canvas-container { flex: 3; max-width: 512px; overflow: hidden; }
+.bauble > * { overflow: hidden; }
 
 .bauble .code-container {
   display: flex;
   flex-direction: column;
+  flex: 1 1 512px;
+}
+
+.bauble .canvas-container {
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  flex-direction: column;
+  flex: 0 1 512px;
 }
 
 .bauble .editor-container {
@@ -143,12 +150,20 @@ body.main-page .bauble {
 }
 
 .bauble .output-resize-handle {
-  height: 12px;
   cursor: ns-resize;
   touch-action: none;
-  color: red;
-  background: #eee url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' fill='currentColor' viewBox='0 2 16 12'><path d='M2 8a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm0-3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm3 3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm0-3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm3 3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm0-3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm3 3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm0-3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm3 3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm0-3a1 1 0 1 1 0 2 1 1 0 0 1 0-2z'/></svg>")
-    no-repeat center;
+  background: var(--horizontal-grip);
+  flex: none;
+  flex-basis: 12px;
+}
+
+/* TODO: I don't like how fat these handles are. I have a mouse! */
+.bauble .canvas-resize-handle {
+  flex: none;
+  flex-basis: 12px;
+  cursor: ew-resize;
+  touch-action: none;
+  background: var(--vertical-grip);
 }
 
 .bauble .output-container:not(:empty) {
@@ -168,20 +183,6 @@ body.main-page .bauble {
   font-size: var(--monospace-size);
 }
 
-.bauble .code-and-preview {
-  --control-height: 40px;
-}
-
-.bauble .canvas-container {
-  grid-area: preview;
-  display: flex;
-  justify-content: top;
-  align-items: center;
-  max-width: 512px;
-  flex-direction: column;
-  /*background-color*/: #ff8;
-}
-
 .toolbar {
   width: 100%;
   height: var(--control-height);
@@ -190,6 +191,8 @@ body.main-page .bauble {
   display: flex;
   user-select: none;
   background-color: #eee;
+  flex: none;
+  overflow-x: auto;
 }
 
 .toolbar button:not(.hidden:first-child)+button, .toolbar label+label {
@@ -303,19 +306,16 @@ body.main-page .bauble {
   height: 20px;
 }
 
-canvas {
+.bauble canvas {
   max-width: calc(min(100%, 512px));
   max-height: calc(min(100% - 2 * var(--control-height), 512px));
-  flex: 0;
-  aspect-ratio: 1;
   touch-action: none;
 }
 
 @media all and (max-width: 512px) {
-  .bauble .code-and-preview {
+  .bauble {
     flex-direction: column;
   }
-  .bauble .canvas-container { flex: 4; }
-  .bauble .editor-container { flex: 1; }
+  .bauble .canvas-resize-handle { background: var(--horizontal-grip); cursor: ns-resize; }
   .bauble .output-container { height: 1.5em; }
 }

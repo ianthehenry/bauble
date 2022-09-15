@@ -206,14 +206,14 @@ class RenderLoop {
 // TODO: what is the correct way to write this type?
 const ResizableArea = (props: {ref: any}) => {
   let outputContainer: HTMLPreElement;
-  let handlePointerAt = [0, 0];
+  let handlePointerAt = 0;
   onMount(() => props.ref(outputContainer as HTMLElement));
   return <>
     <div class="output-resize-handle"
       title="double click to auto size"
       onPointerDown={(e) => {
         e.currentTarget.setPointerCapture(e.pointerId);
-        handlePointerAt = [e.screenX, e.screenY];
+        handlePointerAt = e.screenY;
       }}
       onDblClick={(e) => {
         outputContainer.style.flexBasis = 'auto';
@@ -227,8 +227,8 @@ const ResizableArea = (props: {ref: any}) => {
         const oldHeight = outputContainer.offsetHeight - verticalPadding;
         const oldScrollTop = outputContainer.scrollTop;
         const handlePointerWasAt = handlePointerAt;
-        handlePointerAt = [e.screenX, e.screenY];
-        const delta = handlePointerAt[1] - handlePointerWasAt[1];
+        handlePointerAt = e.screenY;
+        const delta = handlePointerAt - handlePointerWasAt;
         outputContainer.style.flexBasis = `${oldHeight - delta}px`;
         outputContainer.scrollTop = clamp(oldScrollTop + delta, 0, outputContainer.scrollHeight - outputContainer.offsetHeight);
       }}
@@ -376,27 +376,61 @@ const Bauble = (props: BaubleProps) => {
     gestureEndedAt = performance.now();
   };
 
+  let codeContainer: HTMLDivElement;
+  let handlePointerAt = [0, 0];
+  const onHandlePointerDown = (e: PointerEvent & {currentTarget: HTMLDivElement}) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    handlePointerAt = [e.screenX, e.screenY];
+  };
+  const onHandleDblClick = (e: MouseEvent & {currentTarget: HTMLDivElement}) => {
+    codeContainer.style.flexBasis = `512px`;
+    canvasContainer.style.flexBasis = '512px';
+  };
+  const onHandlePointerMove = (e: PointerEvent & {currentTarget: HTMLDivElement}) => {
+    if (!e.currentTarget.hasPointerCapture(e.pointerId)) {
+      return;
+    }
+    const isVertical = getComputedStyle(e.currentTarget.parentElement!).flexDirection === 'column';
+    const containerStyle = getComputedStyle(canvasContainer);
+
+    const padding = isVertical
+      ? parseFloat(containerStyle.paddingTop) + parseFloat(containerStyle.paddingBottom)
+      : parseFloat(containerStyle.paddingLeft) + parseFloat(containerStyle.paddingRight);
+    const oldSize = (isVertical ? canvasContainer.offsetHeight : canvasContainer.offsetWidth) - padding;
+
+    const handlePointerWasAt = handlePointerAt;
+    handlePointerAt = [e.screenX, e.screenY];
+    const delta = isVertical
+      ? handlePointerWasAt[1] - handlePointerAt[1]
+      : handlePointerAt[0] - handlePointerWasAt[0];
+    codeContainer.style.flexBasis = `0`;
+    canvasContainer.style.flexBasis = `${oldSize - delta}px`;
+  };
+
   return <div class="bauble">
-    <div class="code-and-preview">
-      <div class="canvas-container" ref={canvasContainer!}>
-        <RenderToolbar viewType={viewType} rotation={rotation} zoom={zoom} />
-        <canvas ref={canvas!} class="render-target" width="1024" height="1024"
-          onWheel={props.hijackScroll ? onWheel : undefined}
-          onPointerDown={onPointerDown}
-          onPointerUp={onPointerUp}
-          onPointerMove={onPointerMove}
-          onGestureStart={onGestureStart}
-          onGestureChange={onGestureChange}
-          onGestureEnd={onGestureEnd}
-        />
-        <AnimationToolbar timer={timer} />
-      </div>
-      <div class="code-container">
-        <EditorToolbar state={Signal.get(evaluationState)} />
-        <div class="editor-container" ref={editorContainer!} />
-      </div>
+    <div class="canvas-container" ref={canvasContainer!}>
+      <RenderToolbar viewType={viewType} rotation={rotation} zoom={zoom} />
+      <canvas ref={canvas!} class="render-target" width="1024" height="1024"
+        onWheel={props.hijackScroll ? onWheel : undefined}
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+        onPointerMove={onPointerMove}
+        onGestureStart={onGestureStart}
+        onGestureChange={onGestureChange}
+        onGestureEnd={onGestureEnd}
+      />
+      <AnimationToolbar timer={timer} />
     </div>
-    <ResizableArea ref={outputContainer!} />
+    <div class="canvas-resize-handle"
+      onPointerDown={onHandlePointerDown}
+      onPointerMove={onHandlePointerMove}
+      onDblClick={onHandleDblClick}
+    />
+    <div class="code-container" ref={codeContainer!}>
+      <EditorToolbar state={Signal.get(evaluationState)} />
+      <div class="editor-container" ref={editorContainer!} />
+      <ResizableArea ref={outputContainer!} />
+    </div>
   </div>;
 };
 export default Bauble;
