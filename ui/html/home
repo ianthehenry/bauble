@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd $(dirname "$0")
+
+printf '<!doctype html>
+<html>
+%s
+<body class="main-page">
+  %s
+</body>
+</html>
+' "$(./head "$@")" "$(./header)"

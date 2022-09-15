@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd $(dirname "$0")
+
+invocation=$1
+shift
+
+printf '<!doctype html>
+<html>
+%s
+<body>
+  %s
+  %s
+</body>
+</html>
+' "$(./head "$@")" "$(./header)" "$($invocation)"

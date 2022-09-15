@@ -6,6 +6,9 @@ prod_build=false
 build_js=true
 build_wasm=true
 
+rm -rf public/
+mkdir -p public/js
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --prod) prod_build=true ;;
@@ -25,7 +28,8 @@ if [[ "$prod_build" == "true" ]]; then
 fi
 
 if [[ "$build_wasm" == "true" ]]; then
-  rm -rf out/janet.{js,wasm,data}
+  rm -rf out/
+  mkdir -p out
 
   preload_args=""
   for file in src/*.janet; do
@@ -62,3 +66,28 @@ if [[ "$build_js" == "true" ]]; then
   )
 fi
 
+fingerprint() {
+  if [[ "$prod_build" == "true" ]]; then
+    checksum=$(sha256sum "$1" | cut -f1 -d' ')
+    printf "%s.%s" "${checksum:0:16}" "${file#*.}"
+  else
+    printf '%s' "$(basename "$1")"
+  fi
+}
+
+staticasset() {
+  file=$1
+  path=$2
+  dest="${path}$(fingerprint "$1")"
+  ln -f "$1" "public$dest"
+  printf "%s" "$dest"
+}
+
+css=$(staticasset ui/styles/main.css /)
+
+ln -f ui/assets/icons.svg public/icons.svg
+
+mkdir -p public/{about,help}
+ui/html/home "$css" > public/index.html
+ui/html/about "$css" > public/about/index.html
+ui/html/help "$css" > public/help/index.html
