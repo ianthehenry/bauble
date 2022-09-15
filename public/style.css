@@ -111,10 +111,8 @@ body.main-page .bauble {
 
 .bauble {
   --control-height: 40px;
-  --horizontal-grip: #eee url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 2 16 12' fill='currentColor'><path d='M2 8a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm0-3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm3 3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm0-3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm3 3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm0-3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm3 3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm0-3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm3 3a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm0-3a1 1 0 1 1 0 2 1 1 0 0 1 0-2z'/></svg>")
-    no-repeat center;
-  --vertical-grip: #eee url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='2 0 12 16' fill='currentColor'><path d='M7 2a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zM7 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zM7 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm-3 3a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm-3 3a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0z'/></svg>")
-    no-repeat center;
+  --horizontal-grip: linear-gradient(to bottom, #ddd, #eee, #ccc);
+  --vertical-grip: linear-gradient(to right, #ddd, #eee, #ccc);
 
   height: 100%;
   display: flex;
@@ -154,15 +152,17 @@ body.main-page .bauble {
   touch-action: none;
   background: var(--horizontal-grip);
   flex: none;
-  flex-basis: 12px;
+  flex-basis: 4px;
 }
 
-/* TODO: I don't like how fat these handles are. I have a mouse! */
-.bauble .canvas-resize-handle {
+.bauble .resize-handle {
   flex: none;
-  flex-basis: 12px;
-  cursor: ew-resize;
+  flex-basis: 4px;
   touch-action: none;
+}
+
+.bauble .canvas-resize-handle {
+  cursor: ew-resize;
   background: var(--vertical-grip);
 }
 
@@ -316,6 +316,7 @@ body.main-page .bauble {
   .bauble {
     flex-direction: column;
   }
+  .bauble .resize-handle { flex-basis: 12px; }
   .bauble .canvas-resize-handle { background: var(--horizontal-grip); cursor: ns-resize; }
   .bauble .output-container { height: 1.5em; }
 }

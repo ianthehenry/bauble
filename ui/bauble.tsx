@@ -209,7 +209,7 @@ const ResizableArea = (props: {ref: any}) => {
   let handlePointerAt = 0;
   onMount(() => props.ref(outputContainer as HTMLElement));
   return <>
-    <div class="output-resize-handle"
+    <div class="resize-handle output-resize-handle"
       title="double click to auto size"
       onPointerDown={(e) => {
         e.currentTarget.setPointerCapture(e.pointerId);
@@ -421,7 +421,8 @@ const Bauble = (props: BaubleProps) => {
       />
       <AnimationToolbar timer={timer} />
     </div>
-    <div class="canvas-resize-handle"
+    <div class="resize-handle canvas-resize-handle"
+      title="double click to auto size"
       onPointerDown={onHandlePointerDown}
       onPointerMove={onHandlePointerMove}
       onDblClick={onHandleDblClick}
