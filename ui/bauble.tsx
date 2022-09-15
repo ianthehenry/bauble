@@ -7,6 +7,8 @@ import Renderer from './renderer';
 import * as Signal from './signals';
 import {mod, clamp, TAU} from './util';
 import type {Seconds} from './types';
+import type {BaubleModule} from 'bauble-runtime';
+import OutputChannel from './output-channel';
 
 enum EvaluationState {
   Unknown,
@@ -239,8 +241,11 @@ interface BaubleProps {
   initialScript: string,
   hijackScroll: boolean,
   canSave: boolean,
+  runtime: BaubleModule,
+  outputChannel: OutputChannel,
 }
 const Bauble = (props: BaubleProps) => {
+  const {runtime, outputChannel} = props;
   let canvasContainer: HTMLDivElement;
   let editorContainer: HTMLDivElement;
   let canvas: HTMLCanvasElement;
@@ -274,9 +279,9 @@ const Bauble = (props: BaubleProps) => {
 
       if (Signal.get(scriptDirty)) {
         outputContainer.innerHTML = '';
-        window.Module.outputTarget = outputContainer;
-        const result = window.Module.evaluate_script!(editor.state.doc.toString());
-        window.Module.outputTarget = undefined;
+        outputChannel.target = outputContainer;
+        const result = runtime.evaluate_script!(editor.state.doc.toString());
+        outputChannel.target = null;
         Signal.set(scriptDirty, false);
         if (result.isError) {
           Signal.set(evaluationState, EvaluationState.EvaluationError);

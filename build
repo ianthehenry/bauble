@@ -17,7 +17,6 @@ while [[ $# -gt 0 ]]; do
   esac
   shift
 done
-
 rollup_args="--no-treeshake --no-indent"
 emcc_args="-O0"
 if [[ "$prod_build" == "true" ]]; then
@@ -25,17 +24,8 @@ if [[ "$prod_build" == "true" ]]; then
   emcc_args="-O3 --closure 1"
 fi
 
-if [[ "$build_js" == "true" ]]; then
-  rm -rf public/js/main.js
-
-  (
-    cd ui/
-    ./node_modules/.bin/rollup -c $rollup_args
-  )
-fi
-
 if [[ "$build_wasm" == "true" ]]; then
-  rm -rf public/js/janet.{js,wasm,data}
+  rm -rf out/janet.{js,wasm,data}
 
   preload_args=""
   for file in src/*.janet; do
@@ -47,13 +37,28 @@ if [[ "$build_wasm" == "true" ]]; then
 
   emcc \
     $emcc_args \
-    -o public/js/janet.js \
+    -o out/janet.js \
     -I janet \
     janet/janet.c \
     src/driver.cpp \
     -lembind \
     $preload_args \
     -s "EXPORTED_FUNCTIONS=['_main']" \
+    -s "EXPORTED_RUNTIME_METHODS=['FS']" \
     -s ALLOW_MEMORY_GROWTH=1 \
-    -s AGGRESSIVE_VARIABLE_ELIMINATION=1
+    -s AGGRESSIVE_VARIABLE_ELIMINATION=1 \
+    -s MODULARIZE \
+    -s EXPORT_ES6
+
+  cp out/janet.{data,wasm} public/js
 fi
+
+if [[ "$build_js" == "true" ]]; then
+  rm -rf public/js/main.js
+
+  (
+    cd ui/
+    ./node_modules/.bin/rollup -c $rollup_args
+  )
+fi
+
