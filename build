@@ -6,9 +6,6 @@ prod_build=false
 build_js=true
 build_wasm=true
 
-rm -rf public/
-mkdir -p public/js
-
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --prod) prod_build=true ;;
@@ -25,6 +22,11 @@ emcc_args="-O0"
 if [[ "$prod_build" == "true" ]]; then
   rollup_args="-p rollup-plugin-terser"
   emcc_args="-O3 --closure 1"
+fi
+
+if [[ "$prod_build" == "true" ]]; then
+  rm -rf public/
+  mkdir -p public/js
 fi
 
 if [[ "$build_wasm" == "true" ]]; then
@@ -54,7 +56,7 @@ if [[ "$build_wasm" == "true" ]]; then
     -s MODULARIZE \
     -s EXPORT_ES6
 
-  cp out/janet.{data,wasm} public/js
+  ln -f out/janet.{data,wasm} public/js
 fi
 
 if [[ "$build_js" == "true" ]]; then
