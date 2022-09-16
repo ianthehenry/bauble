@@ -6,9 +6,11 @@ import {EditorView} from '@codemirror/view';
 import Renderer from './renderer';
 import * as Signal from './signals';
 import {mod, clamp, TAU} from './util';
+import {vec2} from 'gl-matrix';
 import type {Seconds} from './types';
 import type {BaubleModule} from 'bauble-runtime';
 import OutputChannel from './output-channel';
+import RenderLoop from './render-loop';
 
 enum EvaluationState {
   Unknown,
@@ -18,8 +20,15 @@ enum EvaluationState {
 }
 
 const defaultCamera = {
-  x: -0.125,
-  y: 0.125,
+  origin: {
+    x: 0,
+    y: 0,
+    z: 0,
+  },
+  rotation: {
+    x: 0.125,
+    y: -0.125,
+  },
   zoom: 2.0,
 };
 
@@ -115,26 +124,42 @@ const EditorToolbar: Component<{state: EvaluationState}> = (props) => {
   </div>;
 };
 
-interface RenderToolbarProps {
-  viewType: Signal.T<number>,
+const resetCamera = (
   rotation: Signal.T<{x: number, y: number}>,
+  origin: Signal.T<{x: number, y: number, z: number}>,
+  zoom: Signal.T<number>,
+) => {
+  batch(() => {
+    Signal.set(rotation, defaultCamera.rotation);
+    Signal.set(origin, defaultCamera.origin);
+    Signal.set(zoom, defaultCamera.zoom);
+  });
+};
+
+interface RenderToolbarProps {
+  // TODO: render type should be an enum
+  renderType: Signal.T<number>,
+  quadView: Signal.T<boolean>,
+  rotation: Signal.T<{x: number, y: number}>,
+  origin: Signal.T<{x: number, y: number, z: number}>,
   zoom: Signal.T<number>,
 };
 const RenderToolbar: Component<RenderToolbarProps> = (props) => {
-  const isSelected = createSelector(Signal.getter(props.viewType));
+  const isSelected = createSelector(Signal.getter(props.renderType));
 
-  const resetCamera = () => {
-    batch(() => {
-      Signal.set(props.rotation, {x: defaultCamera.x, y: defaultCamera.y});
-      Signal.set(props.zoom, defaultCamera.zoom);
-    });
+  const toggleQuadView = () => {
+    Signal.update(props.quadView, (x) => !x);
   };
 
   return <div class="toolbar">
-    <button title="Reset camera" onClick={resetCamera}><Icon name="box" /></button>
-    {/*<button title="Toggle quad view" data-action="toggle-quad-view"><svg><use href="/icons.svg#grid" /></svg></button>*/}
+    <button title="Reset camera" onClick={() => resetCamera(props.rotation, props.origin, props.zoom)}>
+      <Icon name="box" />
+    </button>
+    <button title="Toggle quad view" onClick={toggleQuadView}>
+      <Icon name={Signal.get(props.quadView) ? "grid-fill" : "grid"} />
+    </button>
     <div class="spacer"></div>
-    {choices(props.viewType, [
+    {choices(props.renderType, [
       { value: 0, icon: "camera", title: "Render normally" },
       { value: 1, icon: "magnet", title: "Debug number of raymarching steps" },
       { value: 2, icon: "arrows-collapse", title: "Debug surface distance" },
@@ -177,32 +202,6 @@ const AnimationToolbar: Component<AnimationToolbarProps> = (props) => {
   </div>;
 };
 
-class RenderLoop {
-  private scheduled = false;
-  private then: Seconds | null = null;
-  private f: (_: Seconds) => boolean;
-  constructor(f: (_: Seconds) => boolean) {
-    this.f = f;
-  }
-  schedule() {
-    if (this.scheduled) {
-      return;
-    }
-    this.scheduled = true;
-    requestAnimationFrame((nowMS) => {
-      const nowSeconds = nowMS / 1000 as Seconds;
-      this.scheduled = false;
-      const elapsed = this.then == null ? 0 : nowSeconds - this.then;
-      if (this.f(elapsed as Seconds)) {
-        this.schedule();
-        this.then = nowSeconds;
-      } else {
-        this.then = null;
-      }
-    });
-  }
-}
-
 // TODO: what is the correct way to write this type?
 const ResizableArea = (props: {ref: any}) => {
   let outputContainer: HTMLPreElement;
@@ -237,6 +236,14 @@ const ResizableArea = (props: {ref: any}) => {
   </>
 }
 
+enum Interaction {
+  Rotate,
+  PanXY,
+  PanZY,
+  PanXZ,
+  ResizeSplit,
+}
+
 interface BaubleProps {
   initialScript: string,
   hijackScroll: boolean,
@@ -255,9 +262,12 @@ const Bauble = (props: BaubleProps) => {
   let isGesturing = false;
   let gestureEndedAt = 0;
 
-  const viewType = Signal.create(0);
+  const renderType = Signal.create(0);
+  const quadView = Signal.create(false);
+  const quadSplitPoint = Signal.create({x: 0.5, y: 0.5});
   const zoom = Signal.create(defaultCamera.zoom);
-  const rotation = Signal.create({x: defaultCamera.x, y: defaultCamera.y});
+  const rotation = Signal.create(defaultCamera.rotation);
+  const origin = Signal.create(defaultCamera.origin);
   const scriptDirty = Signal.create(true);
   const evaluationState = Signal.create(EvaluationState.Unknown);
   const isAnimation = Signal.create(false);
@@ -271,7 +281,17 @@ const Bauble = (props: BaubleProps) => {
       canSave: props.canSave,
       onChange: () => Signal.set(scriptDirty, true)
     });
-    const renderer = new Renderer(canvas, timer.t, viewType, rotation, zoom);
+    // TODO: these should really be named
+    const renderer = new Renderer(
+      canvas,
+      timer.t,
+      renderType,
+      rotation,
+      origin,
+      zoom,
+      quadView,
+      quadSplitPoint,
+    );
 
     const renderLoop = new RenderLoop((elapsed) => batch(() => {
       const isAnimation_ = Signal.get(isAnimation);
@@ -301,32 +321,116 @@ const Bauble = (props: BaubleProps) => {
       return Signal.get(isAnimation) && Signal.get(timer.state) === TimerState.Playing;
     }));
 
-    Signal.onEffect([rotation, zoom, scriptDirty, viewType, timer.state] as Signal.T<any>[], () => {
+    Signal.onEffect([
+      rotation,
+      origin,
+      zoom,
+      scriptDirty,
+      renderType,
+      timer.state,
+      quadView,
+      quadSplitPoint,
+    ] as Signal.T<any>[], () => {
       renderLoop.schedule();
     });
   });
 
   let canvasPointerAt = [0, 0];
-  let rotatePointerId: number | null = null;
+  let interactionPointer: number | null = null;
+  let interaction: Interaction | null = null;
+
+  const getRelativePoint = (e: MouseEvent) => ({
+    x: e.offsetX / canvas.offsetWidth,
+    y: e.offsetY / canvas.offsetHeight,
+  });
+  const isOnSplitPoint = (e: MouseEvent) => {
+    const splitPoint = Signal.get(quadSplitPoint);
+    const size = vec2.fromValues(canvas.offsetWidth, canvas.offsetHeight);
+    const splitPointPixels = vec2.fromValues(splitPoint.x, splitPoint.y)
+    vec2.mul(splitPointPixels, splitPointPixels, size);
+    return vec2.distance(splitPointPixels, [e.offsetX, e.offsetY]) < 10;
+  }
+
+  const setCursorStyle = (e: PointerEvent) => {
+    if (interaction == null) {
+      canvas.style.cursor = Signal.get(quadView) && isOnSplitPoint(e) ? 'move' : 'grab';
+    } else if (interaction === Interaction.ResizeSplit) {
+      canvas.style.cursor = 'move';
+    } else {
+      canvas.style.cursor = 'grabbing';
+    }
+  }
+
+  const getInteraction = (e: MouseEvent) => {
+    if (Signal.get(quadView)) {
+      if (isOnSplitPoint(e)) {
+        return Interaction.ResizeSplit;
+      } else {
+        const relativePoint = getRelativePoint(e);
+        const splitPoint = Signal.get(quadSplitPoint)
+        if (relativePoint.y < splitPoint.y) {
+          if (relativePoint.x < splitPoint.x) {
+            return Interaction.Rotate;
+          } else {
+            return Interaction.PanXZ;
+          }
+        } else {
+          if (relativePoint.x < splitPoint.x) {
+            return Interaction.PanXY;
+          } else {
+            return Interaction.PanZY;
+          }
+        }
+      }
+    } else {
+      return Interaction.Rotate;
+    }
+  };
 
   const onPointerDown = (e: PointerEvent) => {
-    if (rotatePointerId === null) {
-      e.preventDefault();
-      canvasPointerAt = [e.offsetX, e.offsetY];
-      canvas.setPointerCapture(e.pointerId);
-      rotatePointerId = e.pointerId;
+    if (interactionPointer != null) {
+      return;
     }
+    e.preventDefault();
+    canvasPointerAt = [e.offsetX, e.offsetY];
+    canvas.setPointerCapture(e.pointerId);
+    interactionPointer = e.pointerId;
+    interaction = getInteraction(e);
+    setCursorStyle(e);
   };
 
   const onPointerUp = (e: PointerEvent) => {
     e.preventDefault();
-    if (e.pointerId === rotatePointerId) {
-      rotatePointerId = null;
+    if (e.pointerId === interactionPointer) {
+      interactionPointer = null;
+      interaction = null;
+    }
+    setCursorStyle(e);
+  };
+
+  const onDblClick = (e: MouseEvent) => {
+    if (Signal.get(quadView)) {
+      switch (getInteraction(e)) {
+        case Interaction.Rotate:
+          batch(() => {
+            Signal.set(rotation, defaultCamera.rotation);
+            Signal.set(zoom, defaultCamera.zoom);
+          });
+          break;
+        case Interaction.PanXY: Signal.update(origin, ({x, y, z}) => ({x: defaultCamera.origin.x, y: defaultCamera.origin.y, z: z})); break;
+        case Interaction.PanZY: Signal.update(origin, ({x, y, z}) => ({x: x, y: defaultCamera.origin.y, z: defaultCamera.origin.z})); break;
+        case Interaction.PanXZ: Signal.update(origin, ({x, y, z}) => ({x: defaultCamera.origin.x, y: y, z: defaultCamera.origin.z})); break;
+        case Interaction.ResizeSplit: Signal.set(quadSplitPoint, {x: 0.5, y: 0.5}); break;
+      }
+    } else {
+      resetCamera(rotation, origin, zoom);
     }
   };
 
   const onPointerMove = (e: PointerEvent) => {
-    if (e.pointerId !== rotatePointerId) {
+    setCursorStyle(e);
+
+    if (e.pointerId !== interactionPointer) {
       return;
     }
     e.preventDefault();
@@ -341,17 +445,51 @@ const Bauble = (props: BaubleProps) => {
     // panning to continue
     if (performance.now() - gestureEndedAt < 100) { return; }
 
-    const movementX = canvasPointerAt[0] - pointerWasAt[0];
-    const movementY = canvasPointerAt[1] - pointerWasAt[1];
     // TODO: pixelScale shouldn't be hardcoded
     const pixelScale = 0.5;
-    const scaleAdjustmentX = pixelScale * canvas.width / canvas.clientWidth;
-    const scaleAdjustmentY = pixelScale * canvas.height / canvas.clientHeight;
-    // TODO: invert the meaning of camera.x/y so that this actually makes sense
-    Signal.update(rotation, ({x, y}) => ({
-      x: mod(x - scaleAdjustmentY * cameraRotateSpeed * movementY, 1.0),
-      y: mod(y - scaleAdjustmentX * cameraRotateSpeed * movementX, 1.0)
-    }));
+    const deltaX = (canvasPointerAt[0] - pointerWasAt[0]) * pixelScale * canvas.width / canvas.clientWidth;
+    const deltaY = (canvasPointerAt[1] - pointerWasAt[1]) * pixelScale * canvas.height / canvas.clientHeight;
+
+    switch (interaction!) {
+      case Interaction.Rotate: {
+        Signal.update(rotation, ({x, y}) => ({
+          x: mod(x - deltaX * cameraRotateSpeed, 1.0),
+          y: mod(y - deltaY * cameraRotateSpeed, 1.0)
+        }));
+        break;
+      }
+      case Interaction.PanXY: {
+        Signal.update(origin, ({x, y, z}) => ({
+          x: x - deltaX,
+          y: y + deltaY,
+          z: z,
+        }));
+        break;
+      }
+      case Interaction.PanZY: {
+        Signal.update(origin, ({x, y, z}) => ({
+          x: x,
+          y: y + deltaY,
+          z: z - deltaX,
+        }));
+        break;
+      }
+      case Interaction.PanXZ: {
+        Signal.update(origin, ({x, y, z}) => ({
+          x: x - deltaX,
+          y: y,
+          z: z - deltaY,
+        }));
+        break;
+      }
+      case Interaction.ResizeSplit: {
+        Signal.update(quadSplitPoint, ({x, y}) => ({
+          x: x + (deltaX / canvas.clientWidth),
+          y: y + (deltaY / canvas.clientHeight),
+        }));
+        break;
+      }
+    }
   };
 
   const onWheel = (e: WheelEvent) => {
@@ -409,9 +547,10 @@ const Bauble = (props: BaubleProps) => {
 
   return <div class="bauble">
     <div class="canvas-container" ref={canvasContainer!}>
-      <RenderToolbar viewType={viewType} rotation={rotation} zoom={zoom} />
+      <RenderToolbar renderType={renderType} quadView={quadView} rotation={rotation} origin={origin} zoom={zoom} />
       <canvas ref={canvas!} class="render-target" width="1024" height="1024"
         onWheel={props.hijackScroll ? onWheel : undefined}
+        onDblClick={onDblClick}
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
         onPointerMove={onPointerMove}

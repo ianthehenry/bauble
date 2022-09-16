@@ -9,9 +9,9 @@ function rotateXY(target: mat3, x: number, y: number) {
   const cy = Math.cos(y);
 
   mat3.set(target,
-    cy, 0.0, -sy,
-    sy * sx, cx, cy * sx,
-    sy * cx, -sx, cy * cx,
+    cx, 0.0, -sx,
+    sx * sy, cy, cx * sy,
+    sx * cy, -sy, cx * cy,
   );
 }
 
@@ -52,13 +52,28 @@ export default class Renderer {
   private cameraMatrix: mat3 = mat3.create();
   private cameraOrigin: vec3 = vec3.create();
 
+  // TODO: the perspective is actually calculated
+  // in the shader, not here, so this is actually a
+  // "perspective XY" view
+  private orthogonalXY: mat3 = mat3.create();
+  private orthogonalXZ: mat3 = mat3.create();
+  private orthogonalZY: mat3 = mat3.create();
+
   constructor(
     canvas: HTMLCanvasElement,
     private time: Signal.T<number>, // TODO: give this a unique type
-    private viewType: Signal.T<number>, // TODO: give this a type
+    private renderType: Signal.T<number>, // TODO: give this a type
     private rotation: Signal.T<{x: number, y: number}>,
+    private origin: Signal.T<{x: number, y: number, z: number}>,
     private zoom: Signal.T<number>, // TODO: give this a unique type
+    private quadView: Signal.T<boolean>,
+    private quadSplitPoint: Signal.T<{x: number, y: number}>,
     ) {
+
+    rotateXY(this.orthogonalXY, 0, 0);
+    rotateXY(this.orthogonalZY, -0.5 * Math.PI, 0);
+    rotateXY(this.orthogonalXZ, 0, -0.5 * Math.PI);
+
     const gl = canvas.getContext('webgl2', { antialias: false });
     if (!gl) {
       throw new Error("failed to create webgl2 context");
@@ -86,7 +101,7 @@ export default class Renderer {
     this.vertexBuffer = vertexBuffer;
     this.vertexData = vertexData;
 
-    Signal.onEffect([rotation, zoom] as Signal.T<any>[], () => {
+    Signal.onEffect([rotation, origin, zoom] as Signal.T<any>[], () => {
       this.cameraDirty = true;
     });
   }
@@ -104,37 +119,102 @@ export default class Renderer {
     rotateXY(this.cameraMatrix, x * TAU, y * TAU);
     vec3.set(this.cameraOrigin, 0, 0, 256 * Signal.get(this.zoom));
     vec3.transformMat3(this.cameraOrigin, this.cameraOrigin, this.cameraMatrix);
+    const target = Signal.get(this.origin);
+    vec3.add(this.cameraOrigin, this.cameraOrigin, [target.x, target.y, target.z]);
     this.cameraDirty = false;
   }
 
-  private setAllUniforms() {
+  private setViewport(left: number, bottom: number, width: number, height: number) {
+    const {gl, program} = this;
+    const uViewport = gl.getUniformLocation(program, "viewport");
+    gl.uniform4fv(uViewport, [left, bottom, width, height]);
+    gl.viewport(left, bottom, width, height);
+  }
+
+  private setSimpleUniforms() {
+    const {gl, program} = this;
+    const uT = gl.getUniformLocation(program, "t");
+    const uRenderType = gl.getUniformLocation(program, "render_type");
+
+    gl.uniform1f(uT, Signal.get(this.time));
+    gl.uniform1i(uRenderType, Signal.get(this.renderType));
+  }
+
+  private drawSingleView() {
     const {gl, program} = this;
     const uCameraMatrix = gl.getUniformLocation(program, "camera_matrix");
     const uCameraOrigin = gl.getUniformLocation(program, "camera_origin");
-    const uT = gl.getUniformLocation(program, "t");
-    const uViewType = gl.getUniformLocation(program, "view_type");
-
     if (this.cameraDirty) {
       this.calculateCameraMatrix();
     }
     gl.uniform3fv(uCameraOrigin, this.cameraOrigin);
     gl.uniformMatrix3fv(uCameraMatrix, false, this.cameraMatrix);
-    gl.uniform1f(uT, Signal.get(this.time));
-    gl.uniform1i(uViewType, Signal.get(this.viewType));
+    this.setViewport(0, 0, 1024, 1024);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+  }
+
+  private drawQuadView() {
+    const {gl, program} = this;
+    const uCameraMatrix = gl.getUniformLocation(program, "camera_matrix");
+    const uCameraOrigin = gl.getUniformLocation(program, "camera_origin");
+
+    const splitPoint = Signal.get(this.quadSplitPoint);
+    const resolution = [1024, 1024];
+    const freePaneSize = [
+      Math.round(splitPoint.x * resolution[0]),
+      Math.round(splitPoint.y * resolution[1]),
+    ];
+
+    const leftPaneWidth = freePaneSize[0];
+    const topPaneHeight = freePaneSize[1];
+    const rightPaneWidth = resolution[0] - freePaneSize[0];
+    const bottomPaneHeight = resolution[1] - freePaneSize[1];
+
+    const zoom = Signal.get(this.zoom);
+    const target = Signal.get(this.origin);
+    // bottom left: XY
+    gl.uniform3fv(uCameraOrigin, [target.x, target.y, target.z + 256 * zoom]);
+    gl.uniformMatrix3fv(uCameraMatrix, false, this.orthogonalXY);
+    this.setViewport(0, 0, leftPaneWidth, bottomPaneHeight);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    // bottom right: ZY
+    gl.uniform3fv(uCameraOrigin, [target.x - 256 * zoom, target.y, target.z]);
+    gl.uniformMatrix3fv(uCameraMatrix, false, this.orthogonalZY);
+    this.setViewport(leftPaneWidth, 0, rightPaneWidth, bottomPaneHeight);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    // top left: free camera
+    if (this.cameraDirty) {
+      this.calculateCameraMatrix();
+    }
+    gl.uniform3fv(uCameraOrigin, this.cameraOrigin);
+    gl.uniformMatrix3fv(uCameraMatrix, false, this.cameraMatrix);
+    this.setViewport(0, bottomPaneHeight, leftPaneWidth, topPaneHeight);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    // top right: top-down
+    gl.uniform3fv(uCameraOrigin, [target.x, target.y + 256 * zoom, target.z]);
+    gl.uniformMatrix3fv(uCameraMatrix, false, this.orthogonalXZ);
+    this.setViewport(leftPaneWidth, bottomPaneHeight, rightPaneWidth, topPaneHeight);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
 
   draw() {
     if (!this.currentFragmentShader) {
       return;
     }
-    this.setAllUniforms();
+    this.setSimpleUniforms();
     const {gl, vertexBuffer, vertexData, positionLocation} = this;
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, vertexData, gl.STATIC_DRAW);
     gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(positionLocation);
-    gl.viewport(0, 0, 1024, 1024);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    if (Signal.get(this.quadView)) {
+      this.drawQuadView();
+    } else {
+      this.drawSingleView();
+    }
   }
 
   recompileShader(fragmentShaderSource: string) {

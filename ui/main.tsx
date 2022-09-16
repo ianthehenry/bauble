@@ -9,22 +9,6 @@ import InitializeWasm from 'bauble-runtime';
 import type {BaubleModule} from 'bauble-runtime';
 import OutputChannel from './output-channel';
 
-// function print(text: string, isErr=false) {
-//   if (window.Module.outputTarget == null) {
-//     if (isErr) {
-//       console.error(text);
-//     } else {
-//       console.log(text);
-//     }
-//   } else {
-//     const span = document.createElement('span');
-//     span.classList.toggle('err', isErr);
-//     span.appendChild(document.createTextNode(text));
-//     span.appendChild(document.createTextNode('\n'));
-//     window.Module.outputTarget.appendChild(span);
-//   }
-// }
-
 document.addEventListener("DOMContentLoaded", (_) => {
   const outputChannel = new OutputChannel();
   const baubleOpts = {

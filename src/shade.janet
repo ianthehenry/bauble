@@ -80,7 +80,8 @@ precision highp float;
 uniform vec3 camera_origin;
 uniform mat3 camera_matrix;
 uniform float t;
-uniform int view_type;
+uniform int render_type;
+uniform vec4 viewport;
 
 out vec4 frag_color;
 
@@ -88,6 +89,8 @@ const int MAX_STEPS = 256;
 const float MINIMUM_HIT_DISTANCE = 0.1;
 const float NORMAL_OFFSET = 0.005;
 const float MAXIMUM_TRACE_DISTANCE = 64.0 * 1024.0;
+
+const float PI = 3.14159265359;
 
 struct Light {
   vec3 position;
@@ -219,23 +222,22 @@ vec3 nearest_color(vec3 p) {
   return `color-expression`;
 }
 
-const float PI = 3.14159265359;
 const float DEG_TO_RAD = PI / 180.0;
-
-vec3 ray_dir(float fov, vec2 size, vec2 pos) {
+vec3 perspective(float fov, vec2 size, vec2 pos) {
   vec2 xy = pos - size * 0.5;
 
   float cot_half_fov = tan((90.0 - fov * 0.5) * DEG_TO_RAD);
-  float z = size.y * 0.5 * cot_half_fov;
+  float z = min(size.x, size.y) * 0.5 * cot_half_fov;
 
   return normalize(vec3(xy, -z));
 }
 
 void main() {
   const float gamma = 2.2;
-  const vec2 resolution = vec2(1024.0, 1024.0);
 
-  vec3 dir = camera_matrix * ray_dir(45.0, resolution, gl_FragCoord.xy);
+  vec2 local_coord = gl_FragCoord.xy - viewport.xy;
+  vec2 resolution = viewport.zw;
+  vec3 dir = camera_matrix * perspective(45.0, resolution, local_coord);
 
   const vec3 fog_color = vec3(0.15);
 
@@ -243,11 +245,11 @@ void main() {
   vec3 hit = march(camera_origin, dir, steps);
 
   vec3 color;
-  switch (view_type) {
+  switch (render_type) {
     case 0: {
       float depth = distance(camera_origin, hit);
       if (depth >= MAXIMUM_TRACE_DISTANCE) {
-        color = vec3(mix(0.05, 0.15, gl_FragCoord.y / resolution.y));
+        color = vec3(mix(0.05, 0.15, (local_coord.x + local_coord.y) / (resolution.x + resolution.y)));
       } else {
         color = nearest_color(hit);
       }
