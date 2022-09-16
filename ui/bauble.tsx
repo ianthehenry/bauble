@@ -29,7 +29,7 @@ const defaultCamera = {
     x: 0.125,
     y: -0.125,
   },
-  zoom: 2.0,
+  zoom: 1.0,
 };
 
 const cameraRotateSpeed = 1 / 512;
@@ -449,6 +449,7 @@ const Bauble = (props: BaubleProps) => {
     const pixelScale = 0.5;
     const deltaX = (canvasPointerAt[0] - pointerWasAt[0]) * pixelScale * canvas.width / canvas.clientWidth;
     const deltaY = (canvasPointerAt[1] - pointerWasAt[1]) * pixelScale * canvas.height / canvas.clientHeight;
+    const panRate = Signal.get(zoom);
 
     switch (interaction!) {
       case Interaction.Rotate: {
@@ -460,8 +461,8 @@ const Bauble = (props: BaubleProps) => {
       }
       case Interaction.PanXY: {
         Signal.update(origin, ({x, y, z}) => ({
-          x: x - deltaX,
-          y: y + deltaY,
+          x: x - deltaX * panRate,
+          y: y + deltaY * panRate,
           z: z,
         }));
         break;
@@ -469,16 +470,16 @@ const Bauble = (props: BaubleProps) => {
       case Interaction.PanZY: {
         Signal.update(origin, ({x, y, z}) => ({
           x: x,
-          y: y + deltaY,
-          z: z - deltaX,
+          y: y + deltaY * panRate,
+          z: z - deltaX * panRate,
         }));
         break;
       }
       case Interaction.PanXZ: {
         Signal.update(origin, ({x, y, z}) => ({
-          x: x - deltaX,
+          x: x - deltaX * panRate,
           y: y,
-          z: z - deltaY,
+          z: z - deltaY * panRate,
         }));
         break;
       }

@@ -2,6 +2,8 @@ import {mat3, vec3} from 'gl-matrix';
 import * as Signal from './signals';
 import {TAU} from './util';
 
+const baseCameraDistance = 512;
+
 function rotateXY(target: mat3, x: number, y: number) {
   const sx = Math.sin(x);
   const sy = Math.sin(y);
@@ -117,7 +119,7 @@ export default class Renderer {
   private calculateCameraMatrix() {
     const {x, y} = Signal.get(this.rotation);
     rotateXY(this.cameraMatrix, x * TAU, y * TAU);
-    vec3.set(this.cameraOrigin, 0, 0, 256 * Signal.get(this.zoom));
+    vec3.set(this.cameraOrigin, 0, 0, baseCameraDistance * Signal.get(this.zoom));
     vec3.transformMat3(this.cameraOrigin, this.cameraOrigin, this.cameraMatrix);
     const target = Signal.get(this.origin);
     vec3.add(this.cameraOrigin, this.cameraOrigin, [target.x, target.y, target.z]);
@@ -173,13 +175,13 @@ export default class Renderer {
     const zoom = Signal.get(this.zoom);
     const target = Signal.get(this.origin);
     // bottom left: XY
-    gl.uniform3fv(uCameraOrigin, [target.x, target.y, target.z + 256 * zoom]);
+    gl.uniform3fv(uCameraOrigin, [target.x, target.y, target.z + baseCameraDistance * zoom]);
     gl.uniformMatrix3fv(uCameraMatrix, false, this.orthogonalXY);
     this.setViewport(0, 0, leftPaneWidth, bottomPaneHeight);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
     // bottom right: ZY
-    gl.uniform3fv(uCameraOrigin, [target.x - 256 * zoom, target.y, target.z]);
+    gl.uniform3fv(uCameraOrigin, [target.x - baseCameraDistance * zoom, target.y, target.z]);
     gl.uniformMatrix3fv(uCameraMatrix, false, this.orthogonalZY);
     this.setViewport(leftPaneWidth, 0, rightPaneWidth, bottomPaneHeight);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -194,7 +196,7 @@ export default class Renderer {
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
     // top right: top-down
-    gl.uniform3fv(uCameraOrigin, [target.x, target.y + 256 * zoom, target.z]);
+    gl.uniform3fv(uCameraOrigin, [target.x, target.y + baseCameraDistance * zoom, target.z]);
     gl.uniformMatrix3fv(uCameraMatrix, false, this.orthogonalXZ);
     this.setViewport(leftPaneWidth, bottomPaneHeight, rightPaneWidth, topPaneHeight);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
