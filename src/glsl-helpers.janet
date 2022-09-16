@@ -34,6 +34,10 @@
   return mix(a / b, vec3(0.0), equal(b, vec3(0.0)));
   `)
 
+(define type/float 'atan2 ["float y" "float x"] `
+  return x == 0.0 ? sign(y) * 0.5 * PI : atan(y, x);
+  `)
+
 (define type/vec3 'hsv ["float h" "float s" "float v"] `
   vec3 p = abs(fract(vec3(h, h, h) + vec3(1.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0);
   return v * mix(vec3(1.0), clamp(p - 1.0, 0.0, 1.0), s);

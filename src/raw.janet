@@ -513,7 +513,7 @@
       :x [:y :z]
       :y [:z :x]
       :z [:x :y]))
-  ~(atan (. ,globals/p ,(axes 0)) (. ,globals/p ,(axes 1))))
+  ~(atan2 (. ,globals/p ,(axes 0)) (. ,globals/p ,(axes 1))))
 
 (defn- radial-translation-axis [axis]
   (case axis :x :z :y :x :z :y))
