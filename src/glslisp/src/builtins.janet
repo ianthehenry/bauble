@@ -56,11 +56,8 @@
 
 (make-vec-1 normalize)
 
-# TODO: so this is a tricky one. this is overloaded
-# on the GPU to accept one or two arguments, so it
-# should work with one or two arguments. But... it
-# doesn't, yet.
-(make-generic-2 atan :f math/atan2)
+(make-generic-1 atan :f math/atan)
+(make-generic-2 atan2 :f math/atan2 :glf atan2)
 (make-generic-2 max)
 (make-generic-2 min)
 (make-generic-2 mod)
