@@ -1,6 +1,6 @@
 import {mat3, vec3} from 'gl-matrix';
 import * as Signal from './signals';
-import {TAU} from './util';
+import {clamp, TAU} from './util';
 
 const baseCameraDistance = 512;
 
@@ -162,9 +162,10 @@ export default class Renderer {
 
     const splitPoint = Signal.get(this.quadSplitPoint);
     const resolution = [1024, 1024];
+    const minPanelSize = 64;
     const freePaneSize = [
-      Math.round(splitPoint.x * resolution[0]),
-      Math.round(splitPoint.y * resolution[1]),
+      clamp(Math.round(splitPoint.x * resolution[0]), minPanelSize, resolution[0] - minPanelSize),
+      clamp(Math.round(splitPoint.y * resolution[1]), minPanelSize, resolution[1] - minPanelSize),
     ];
 
     const leftPaneWidth = freePaneSize[0];

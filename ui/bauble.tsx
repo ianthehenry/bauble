@@ -34,6 +34,7 @@ const defaultCamera = {
 
 const cameraRotateSpeed = 1 / 512;
 const cameraZoomSpeed = 0.01;
+const cameraPanSpeed = 1.5;
 
 interface GestureEvent extends TouchEvent {
   scale: number
@@ -449,7 +450,7 @@ const Bauble = (props: BaubleProps) => {
     const pixelScale = 0.5;
     const deltaX = (canvasPointerAt[0] - pointerWasAt[0]) * pixelScale * canvas.width / canvas.clientWidth;
     const deltaY = (canvasPointerAt[1] - pointerWasAt[1]) * pixelScale * canvas.height / canvas.clientHeight;
-    const panRate = Signal.get(zoom);
+    const panRate = Signal.get(zoom) * cameraPanSpeed;
 
     switch (interaction!) {
       case Interaction.Rotate: {
@@ -484,9 +485,11 @@ const Bauble = (props: BaubleProps) => {
         break;
       }
       case Interaction.ResizeSplit: {
+        const deltaX = (canvasPointerAt[0] - pointerWasAt[0]) / canvas.clientWidth;
+        const deltaY = (canvasPointerAt[1] - pointerWasAt[1]) / canvas.clientHeight;
         Signal.update(quadSplitPoint, ({x, y}) => ({
-          x: x + (deltaX / canvas.clientWidth),
-          y: y + (deltaY / canvas.clientHeight),
+          x: x + deltaX,
+          y: y + deltaY,
         }));
         break;
       }
