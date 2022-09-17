@@ -77,88 +77,76 @@ interface EditorOptions {
   onChange: (() => void),
 }
 
-const tomorrowNight = {
-  foreground: '#c5c8c6',
-  background: '#1d1f21',
-  selection: '#373b41',
-  line: '#282a2e',
-  comment: '#969896',
-  red: '#cc6666',
-  orange: '#de935f',
-  yellow: '#f0c674',
-  green: '#b5bd68',
-  aqua: '#8abeb7',
-  blue: '#81a2be',
-  purple: '#b294bb',
-  window: '#4d5057',
-};
+const highlightStyle = HighlightStyle.define([
+  {tag: tags.keyword, color: 'var(--purple)'},
+  {tag: tags.atom, color: 'var(--foreground)'},
+  {tag: tags.number, color: 'var(--blue)'},
+  {tag: tags.comment, color: 'var(--comment)'},
+  {tag: tags.null, color: 'var(--purple)'},
+  {tag: tags.bool, color: 'var(--purple)'},
+  {tag: tags.string, color: 'var(--green)'},
+]);
 
-const makeThemeAndHighlightStyle = (palette: typeof tomorrowNight): [Extension, HighlightStyle] => {
-  const highlightStyle = HighlightStyle.define([
-    {tag: tags.keyword, color: palette.purple},
-    {tag: tags.atom, color: palette.foreground},
-    {tag: tags.number, color: palette.blue},
-    {tag: tags.comment, color: palette.comment},
-    {tag: tags.null, color: palette.purple},
-    {tag: tags.bool, color: palette.purple},
-    {tag: tags.string, color: palette.green},
-  ]);
-
-  const theme = EditorView.theme({
-    "&": {
-      color: palette.foreground,
-      backgroundColor: palette.background,
-    },
-    ".cm-content": {
-      padding: '0',
-      caretColor: palette.foreground,
-    },
-    ".cm-cursor": {
-      borderLeftColor: palette.foreground,
-    },
-    ".cm-activeLine": {
-      backgroundColor: palette.line,
-    },
-    ".cm-activeLineGutter": {
-      backgroundColor: palette.background,
-    },
-    ".cm-selectionMatch": {
-      outline: 'solid 1px ' + palette.comment,
-      borderRadius: '2px',
-      backgroundColor: 'initial',
-    },
-    ".cm-foldPlaceholder": {
-      outline: 'solid 1px ' + palette.comment,
-      border: 'none',
-      width: '2ch',
-      display: 'inline-block',
-      margin: '0',
-      padding: '0',
-      textAlign: 'center',
-      borderRadius: '2px',
-      backgroundColor: palette.background,
-      color: palette.comment,
-    },
-    "&.cm-focused .cm-selectionBackground, ::selection": {
-      backgroundColor: palette.selection,
-    },
-    ".cm-gutters": {
-      backgroundColor: palette.line,
-      color: palette.comment,
-      border: "none"
-    }
-  }, {dark: true});
-
-  return [theme, highlightStyle];
-}
-
+const theme = EditorView.theme({
+  "&": {
+    color: 'var(--foreground)',
+    backgroundColor: 'var(--background)',
+  },
+  ".cm-content": {
+    padding: '0',
+    caretColor: 'var(--foreground)',
+  },
+  ".cm-cursor": {
+    borderLeftColor: 'var(--foreground)',
+  },
+  ".cm-activeLine": {
+    backgroundColor: 'var(--line)',
+  },
+  ".cm-activeLineGutter": {
+    backgroundColor: 'var(--background)',
+  },
+  ".cm-selectionMatch": {
+    outline: 'solid 1px var(--comment)',
+    borderRadius: '2px',
+    backgroundColor: 'initial',
+  },
+  "&.cm-focused .cm-matchingBracket": {
+    backgroundColor: 'var(--green)',
+    color: 'var(--background)',
+  },
+  // slightly subtler as you type; looks a little weird though
+  // "&.cm-focused .cm-activeLine .cm-matchingBracket" {
+  //   backgroundColor: 'initial',
+  //   color: 'var(--green)',
+  // },
+  ".cm-foldPlaceholder": {
+    outline: 'solid 1px var(--comment)',
+    border: 'none',
+    width: '2ch',
+    display: 'inline-block',
+    margin: '0',
+    padding: '0',
+    textAlign: 'center',
+    borderRadius: '2px',
+    backgroundColor: 'var(--background)',
+    color: 'var(--comment)',
+  },
+  "&.cm-focused .cm-selectionBackground, ::selection": {
+    backgroundColor: 'var(--selection)',
+  },
+  ".cm-gutters": {
+    backgroundColor: 'var(--line)',
+    color: 'var(--comment)',
+    border: "none"
+  }
+  // TODO: style the "find/replace" box
+});
 
 export default function installCodeMirror({initialScript, parent, canSave, onChange}: EditorOptions): EditorView {
   const keyBindings = [indentWithTab];
   if (canSave) {
     keyBindings.push({ key: "Mod-s", run: save });
   }
-  const [theme, highlightStyle] = makeThemeAndHighlightStyle(tomorrowNight);
 
   const editor = new EditorView({
     extensions: [
