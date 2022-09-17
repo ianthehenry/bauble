@@ -236,7 +236,7 @@ body.main-page .bauble {
   width: 6ch;
   color: var(--aqua);
   background-color: var(--window-dark);
-  box-shadow: inset 3px 0 3px -3px #000, inset -3px 0 3px -3px #000;
+  box-shadow: inset 3px 0 3px -3px rgba(0,0,0,0.5), inset -3px 0 3px -3px rgba(0,0,0,0.5);
 }
 
 .toolbar .text {
