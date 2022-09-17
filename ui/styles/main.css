@@ -70,8 +70,8 @@ header {
   --header-padding: 0.5em;
   --text-color: var(--bg);
   color: var(--text-color);
-  background-color: var(--purple);
-  /*background-image: linear-gradient(to right, #ffc6f9, var(--purple));*/
+  background-color: #ffc6f9;
+  background-image: linear-gradient(to right, #ffc6f9, #f0d49e);
   height: var(--header-height);
   line-height: var(--header-height);
   display: flex;
