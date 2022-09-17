@@ -249,7 +249,9 @@ void main() {
     case 0: {
       float depth = distance(camera_origin, hit);
       if (depth >= MAXIMUM_TRACE_DISTANCE) {
-        color = vec3(mix(0.05, 0.15, (local_coord.x + local_coord.y) / (resolution.x + resolution.y)));
+        const vec3 light = pow(vec3(69.0, 72.0, 79.0) / vec3(255.0), vec3(gamma));
+        const vec3 dark = pow(vec3(40.0, 42.0, 46.0) / vec3(255.0), vec3(gamma));
+        color = vec3(mix(dark, light, (local_coord.x + local_coord.y) / (resolution.x + resolution.y)));
       } else {
         color = nearest_color(hit);
       }
