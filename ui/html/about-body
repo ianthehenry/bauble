@@ -27,7 +27,6 @@ cat <<EOF
     <li>2D SDFs (and extrusion / revolution functions)</li>
     <li>Export images, gifs, and videos</li>
     <li>Change resolution</li>
-    <li>Quad view</li>
     <li>Dark mode</li>
   </ul>
   <p>And probably a hundred more things that I'm forgetting right now.</p>
