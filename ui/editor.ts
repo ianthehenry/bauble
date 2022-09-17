@@ -110,6 +110,7 @@ const makeThemeAndHighlightStyle = (palette: typeof tomorrowNight): [Extension, 
       backgroundColor: palette.background,
     },
     ".cm-content": {
+      padding: '0',
       caretColor: palette.foreground,
     },
     ".cm-cursor": {
