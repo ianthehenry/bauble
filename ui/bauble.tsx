@@ -216,7 +216,8 @@ const ResizableArea = (props: {ref: any}) => {
         handlePointerAt = e.screenY;
       }}
       onDblClick={(e) => {
-        outputContainer.style.flexBasis = 'auto';
+        outputContainer.style.flexBasis = null!;
+        outputContainer.style.maxHeight = null!;
       }}
       onPointerMove={(e) => {
         if (!e.currentTarget.hasPointerCapture(e.pointerId)) {
@@ -230,6 +231,7 @@ const ResizableArea = (props: {ref: any}) => {
         handlePointerAt = e.screenY;
         const delta = handlePointerAt - handlePointerWasAt;
         outputContainer.style.flexBasis = `${oldHeight - delta}px`;
+        outputContainer.style.maxHeight = '100%';
         outputContainer.scrollTop = clamp(oldScrollTop + delta, 0, outputContainer.scrollHeight - outputContainer.offsetHeight);
       }}
       />

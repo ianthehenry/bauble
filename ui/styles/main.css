@@ -172,6 +172,7 @@ body.main-page .bauble {
 .bauble .output-container {
   background-color: #ffc;
   overflow: auto;
+  max-height: 25%;
 }
 
 .bauble .output-container .err {
