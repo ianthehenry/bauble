@@ -218,6 +218,12 @@
 # But in Bauble, that will expand to
 # (+ reduce (0 [10 20 30])), and you'll
 # get a confusing error message.
+
+# (If you uncommented that line, make
+# sure to comment it back out!
+# Otherwise the rest of the tutorial
+# won't work because of the error.)
+
 # Instead, you have to write:
 
 # (sphere (reduce @+ 0 [10 20 30]))
@@ -308,7 +314,8 @@
 
 # normal is an approximation of the
 # surface normal at the point that
-# you're shading:
+# you're shading, in the global
+# coordinate space:
 
 # (box 50 :r 10 | rotate :x t | shade [1 (clamp normal.y 0 1) 0])
 
@@ -326,11 +333,11 @@
 # | shade-ao [0 1 1]
 # | union (half-space :-y -50 | shade-ao [1 1 1]))
 
-# Try changing (shade-ao) back to
-# (shade). Without ambient occlusion,
-# the areas in shadow appear completely
-# flat. With ambient occlusion, you get
-# a sense of depth.
+# Try changing the call to (shade-ao) to
+# just (shade). Without ambient
+# occlusion, the areas in shadow appear
+# completely flat. With ambient
+# occlusion, you get a sense of depth.
 
 # Just to review, the only magic
 # variables are:
@@ -358,7 +365,7 @@
 # (cone :y 100 (p.x / 5 | cos * 10 + 100))
 
 # What do you think? Neat? Horrifying? I
-# love it, but it's definitely an
+# like it, but it's definitely an
 # acquired taste.
 
 # Anyway, drag the camera around, and
@@ -418,7 +425,7 @@
 # of a limit to how distorted you can
 # make space. At least for now.
 
-# Let me draw your attention to the
+# Now let me draw your attention to the
 # upper-right hand corner. See those
 # buttons? There's a camera, a magnet,
 # and a... I dunno; it's hard to come
@@ -536,10 +543,10 @@
 
 # All of the arguments are optional, so
 # you can quickly apply it to a shape
-# and add a little depth. You can use a
-# lower exponent and a warmer color to
-# evoke a subsurface scattering
-# effect.
+# and add a little depth. You can also
+# use a lower exponent and a warmer
+# color to evoke a subsurface
+# scattering effect.
 
 # (fresnel (sphere 50 | shade [1 1 1]) [1 0.6 0.5] 0.25 :exponent 0.5)
 
