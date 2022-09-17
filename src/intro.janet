@@ -71,9 +71,9 @@
 # value 0.00 left to right.
 
 # (def r 0.00)
-# (-> (box 80)
-#   (rotate-pi :y r :z (* r 0.7) :x (* 0.5 r))
-#   (symmetry))
+# (box 80
+# | rotate-pi :y r :z (* r 0.7) :x (* 0.5 r)
+# | symmetry)
 
 # You can also hold down cmd-shift to
 # move your mouse without clicking
