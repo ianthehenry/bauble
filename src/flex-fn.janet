@@ -36,12 +36,12 @@
   (if (tuple? expected-type)
     (if (find |(= actual-type $) expected-type)
       value
-      (errorf "%s type mismatch: %p should be one of %s"
-        name value (string/join expected-type ", ")))
+      (errorf "%s type mismatch: %s %p should be one of %s"
+        name actual-type value (string/join expected-type ", ")))
     (if (= expected-type actual-type)
       value
-      (errorf "%s type mismatch: %p should be %s"
-        name value expected-type))))
+      (errorf "%s type mismatch: %s %p should be %s"
+        name actual-type value expected-type))))
 
 (defn- set? [value]
   (not= value unset))
