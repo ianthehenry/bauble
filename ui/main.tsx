@@ -14,13 +14,6 @@ document.addEventListener("DOMContentLoaded", (_) => {
     printErr: (x: string) => {
       outputChannel.print(x, true);
     },
-    locateFile: (path: string, prefix: string) => {
-      if (prefix === '') {
-        return '/js/' + path;
-      } else {
-        return prefix + path;
-      }
-    },
   };
 
   switch (window.location.pathname) {

@@ -3,11 +3,12 @@ set -euo pipefail
 cd $(dirname "$0")
 
 css=$1
+js=$2
 
 printf '<head>
   <meta name="viewport" content="initial-scale=1.0,maximum-scale=1.0">
   <title>Bauble</title>
   <link rel="stylesheet" href="%s">
-  <script type="text/javascript" src="/js/main.js"></script>
+  <script type="text/javascript" src="%s"></script>
 </head>
-' "$css"
+' "$css" "$js"

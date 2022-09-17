@@ -9,8 +9,7 @@ build_wasm=true
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --prod) prod_build=true ;;
-    --js) build_wasm=false ;;
-    --wasm) build_js=false ;;
+    --js-only) build_wasm=false ;;
     *)
       echo "unknown flag $1" >&2
       exit 1 ;;
@@ -33,12 +32,12 @@ if [[ "$build_wasm" == "true" ]]; then
   rm -rf out/
   mkdir -p out
 
-  preload_args=""
+  file_args=""
   for file in src/*.janet; do
-    preload_args="$preload_args --preload-file $file@$(basename $file)"
+    file_args="$file_args --embed-file $file@$(basename $file)"
   done
   for file in src/glslisp/src/*.janet; do
-    preload_args="$preload_args --preload-file $file@glslisp/src/$(basename $file)"
+    file_args="$file_args --embed-file $file@glslisp/src/$(basename $file)"
   done
 
   emcc \
@@ -48,25 +47,19 @@ if [[ "$build_wasm" == "true" ]]; then
     janet/janet.c \
     src/driver.cpp \
     -lembind \
-    $preload_args \
+    $file_args \
     -s "EXPORTED_FUNCTIONS=['_main']" \
     -s "EXPORTED_RUNTIME_METHODS=['FS']" \
     -s ALLOW_MEMORY_GROWTH=1 \
     -s AGGRESSIVE_VARIABLE_ELIMINATION=1 \
     -s MODULARIZE \
-    -s EXPORT_ES6
-
-  ln -f out/janet.{data,wasm} public/js
+    -s EXPORT_ES6 \
+    -s SINGLE_FILE
 fi
 
-if [[ "$build_js" == "true" ]]; then
-  rm -rf public/js/main.js
+rm -rf public/js/main.js
+(cd ui/ && ./node_modules/.bin/rollup -c $rollup_args)
 
-  (
-    cd ui/
-    ./node_modules/.bin/rollup -c $rollup_args
-  )
-fi
 
 fingerprint() {
   if [[ "$prod_build" == "true" ]]; then
@@ -86,10 +79,11 @@ staticasset() {
 }
 
 css=$(staticasset ui/styles/main.css /)
+js=$(staticasset out/all.js /)
 
 ln -f ui/assets/icons.svg public/icons.svg
 
 mkdir -p public/{about,help}
-ui/html/home "$css" > public/index.html
-ui/html/about "$css" > public/about/index.html
-ui/html/help "$css" > public/help/index.html
+ui/html/home "$css" "$js" > public/index.html
+ui/html/about "$css" "$js" > public/about/index.html
+ui/html/help "$css" "$js" > public/help/index.html
