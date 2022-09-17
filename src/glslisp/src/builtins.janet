@@ -18,6 +18,7 @@
 
 # Okay, this is confusing, but I think it's a good
 # compromise.
+(def @length length)
 (make-vec-1 length)
 (make-vec-1 vec-length :glf length)
 
