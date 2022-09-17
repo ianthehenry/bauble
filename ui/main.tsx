@@ -1,8 +1,4 @@
 import * as Storage from './storage';
-import installCodeMirror from './editor';
-import Renderer from './renderer';
-// import {Timer, LoopMode, TimerState} from './timer'
-import {mod, clamp, TAU} from './util'
 import Bauble from './bauble';
 import { render as renderSolid } from 'solid-js/web';
 import InitializeWasm from 'bauble-runtime';
@@ -13,10 +9,10 @@ document.addEventListener("DOMContentLoaded", (_) => {
   const outputChannel = new OutputChannel();
   const baubleOpts = {
     print: (x: string) => {
-      outputChannel.print(x, false)
+      outputChannel.print(x, false);
     },
     printErr: (x: string) => {
-      outputChannel.print(x, true)
+      outputChannel.print(x, true);
     },
     locateFile: (path: string, prefix: string) => {
       if (prefix === '') {
@@ -25,7 +21,7 @@ document.addEventListener("DOMContentLoaded", (_) => {
         return prefix + path;
       }
     },
-  }
+  };
 
   switch (window.location.pathname) {
     case '/help/': {

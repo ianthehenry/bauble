@@ -3,9 +3,9 @@ import {EditorView, keymap, ViewUpdate} from '@codemirror/view';
 import {indentWithTab} from '@codemirror/commands';
 import {syntaxTree, syntaxHighlighting, HighlightStyle} from '@codemirror/language';
 import {SyntaxNode} from '@lezer/common';
-import {tags} from "@lezer/highlight"
+import {tags} from '@lezer/highlight';
 import {janet} from 'codemirror-lang-janet';
-import {EditorState, EditorSelection, Transaction, Extension} from '@codemirror/state';
+import {EditorState, EditorSelection, Transaction} from '@codemirror/state';
 import Big from 'big.js';
 import * as Storage from './storage';
 
@@ -137,8 +137,8 @@ const theme = EditorView.theme({
   ".cm-gutters": {
     backgroundColor: 'var(--line)',
     color: 'var(--comment)',
-    border: "none"
-  }
+    border: "none",
+  },
   // TODO: style the "find/replace" box
 });
 

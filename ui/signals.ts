@@ -27,5 +27,5 @@ export function update<T>(signal: Signal<T>, update: (_: T) => T): T {
 }
 
 export function onEffect(signals: Signal<any>[], f: (() => void)) {
-  createEffect(on(() => { signals.forEach(get) }, f));
+  createEffect(on(() => { signals.forEach(get); }, f));
 }

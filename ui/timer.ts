@@ -1,6 +1,6 @@
-import {mod, clamp, TAU} from './util'
-import * as Signal from './signals'
-import {createEffect, untrack} from 'solid-js'
+import {TAU} from './util';
+import * as Signal from './signals';
+import {createEffect, untrack} from 'solid-js';
 import type {Seconds} from './types';
 
 export enum TimerState {

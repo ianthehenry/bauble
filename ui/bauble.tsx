@@ -1,11 +1,11 @@
 import type {Component, JSX} from 'solid-js';
-import {batch, on, createEffect, createSelector, onMount, For, Switch, Match} from 'solid-js';
-import {Timer, LoopMode, TimerState} from './timer'
+import {batch, createSelector, onMount, For, Switch, Match} from 'solid-js';
+import {Timer, LoopMode, TimerState} from './timer';
 import installCodeMirror from './editor';
 import {EditorView} from '@codemirror/view';
 import Renderer from './renderer';
 import * as Signal from './signals';
-import {mod, clamp, TAU} from './util';
+import {mod, clamp} from './util';
 import {vec2} from 'gl-matrix';
 import type {Seconds} from './types';
 import type {BaubleModule} from 'bauble-runtime';
@@ -70,11 +70,6 @@ interface ChoiceDescription<T> {
   icon: string,
 }
 
-interface ChoicesProps<T extends number | string> {
-  signal: Signal.T<T>,
-  choices: ChoiceDescription<T>[],
-}
-
 function choices<T extends number | string>(
   signal: Signal.T<T>,
   choices: ChoiceDescription<T>[]
@@ -94,8 +89,8 @@ function choices<T extends number | string>(
         <Icon name={icon} />
       </label>
     }</For>
-  </fieldset>
-};
+  </fieldset>;
+}
 
 const EditorToolbar: Component<{state: EvaluationState}> = (props) => {
   return <div class="toolbar">
@@ -144,10 +139,9 @@ interface RenderToolbarProps {
   rotation: Signal.T<{x: number, y: number}>,
   origin: Signal.T<{x: number, y: number, z: number}>,
   zoom: Signal.T<number>,
-};
-const RenderToolbar: Component<RenderToolbarProps> = (props) => {
-  const isSelected = createSelector(Signal.getter(props.renderType));
+}
 
+const RenderToolbar: Component<RenderToolbarProps> = (props) => {
   const toggleQuadView = () => {
     Signal.update(props.quadView, (x) => !x);
   };
@@ -175,12 +169,12 @@ const timestampInput = (signal: Signal.T<Seconds>): JSX.Element => {
     autocomplete="off"
     onChange={(e) => {
       Signal.set(signal, parseInt(e.currentTarget.value, 10) as Seconds);
-    }} />
-}
+    }} />;
+};
 
 interface AnimationToolbarProps {
   timer: Timer,
-};
+}
 const AnimationToolbar: Component<AnimationToolbarProps> = (props) => {
   return <div class="toolbar">
     <button
@@ -215,7 +209,7 @@ const ResizableArea = (props: {ref: any}) => {
         e.currentTarget.setPointerCapture(e.pointerId);
         handlePointerAt = e.screenY;
       }}
-      onDblClick={(e) => {
+      onDblClick={() => {
         outputContainer.style.flexBasis = null!;
         outputContainer.style.maxHeight = null!;
       }}
@@ -234,10 +228,10 @@ const ResizableArea = (props: {ref: any}) => {
         outputContainer.style.maxHeight = '100%';
         outputContainer.scrollTop = clamp(oldScrollTop + delta, 0, outputContainer.scrollHeight - outputContainer.offsetHeight);
       }}
-      />
+    />
     <pre class="output-container" ref={outputContainer!} />
-  </>
-}
+  </>;
+};
 
 enum Interaction {
   Rotate,
@@ -282,7 +276,7 @@ const Bauble = (props: BaubleProps) => {
       initialScript: props.initialScript,
       parent: editorContainer,
       canSave: props.canSave,
-      onChange: () => Signal.set(scriptDirty, true)
+      onChange: () => Signal.set(scriptDirty, true),
     });
     // TODO: these should really be named
     const renderer = new Renderer(
@@ -303,7 +297,7 @@ const Bauble = (props: BaubleProps) => {
       if (Signal.get(scriptDirty)) {
         outputContainer.innerHTML = '';
         outputChannel.target = outputContainer;
-        const result = runtime.evaluate_script!(editor.state.doc.toString());
+        const result = runtime.evaluate_script(editor.state.doc.toString());
         outputChannel.target = null;
         Signal.set(scriptDirty, false);
         if (result.isError) {
@@ -349,10 +343,10 @@ const Bauble = (props: BaubleProps) => {
   const isOnSplitPoint = (e: MouseEvent) => {
     const splitPoint = Signal.get(quadSplitPoint);
     const size = vec2.fromValues(canvas.offsetWidth, canvas.offsetHeight);
-    const splitPointPixels = vec2.fromValues(splitPoint.x, splitPoint.y)
+    const splitPointPixels = vec2.fromValues(splitPoint.x, splitPoint.y);
     vec2.mul(splitPointPixels, splitPointPixels, size);
     return vec2.distance(splitPointPixels, [e.offsetX, e.offsetY]) < 10;
-  }
+  };
 
   const setCursorStyle = (e: PointerEvent) => {
     if (interaction == null) {
@@ -362,7 +356,7 @@ const Bauble = (props: BaubleProps) => {
     } else {
       canvas.style.cursor = 'grabbing';
     }
-  }
+  };
 
   const getInteraction = (e: MouseEvent) => {
     if (Signal.get(quadView)) {
@@ -370,7 +364,7 @@ const Bauble = (props: BaubleProps) => {
         return Interaction.ResizeSplit;
       } else {
         const relativePoint = getRelativePoint(e);
-        const splitPoint = Signal.get(quadSplitPoint)
+        const splitPoint = Signal.get(quadSplitPoint);
         if (relativePoint.y < splitPoint.y) {
           if (relativePoint.x < splitPoint.x) {
             return Interaction.Rotate;
@@ -420,9 +414,9 @@ const Bauble = (props: BaubleProps) => {
             Signal.set(zoom, defaultCamera.zoom);
           });
           break;
-        case Interaction.PanXY: Signal.update(origin, ({x, y, z}) => ({x: defaultCamera.origin.x, y: defaultCamera.origin.y, z: z})); break;
-        case Interaction.PanZY: Signal.update(origin, ({x, y, z}) => ({x: x, y: defaultCamera.origin.y, z: defaultCamera.origin.z})); break;
-        case Interaction.PanXZ: Signal.update(origin, ({x, y, z}) => ({x: defaultCamera.origin.x, y: y, z: defaultCamera.origin.z})); break;
+        case Interaction.PanXY: Signal.update(origin, ({z}) => ({x: defaultCamera.origin.x, y: defaultCamera.origin.y, z: z})); break;
+        case Interaction.PanZY: Signal.update(origin, ({x}) => ({x: x, y: defaultCamera.origin.y, z: defaultCamera.origin.z})); break;
+        case Interaction.PanXZ: Signal.update(origin, ({y}) => ({x: defaultCamera.origin.x, y: y, z: defaultCamera.origin.z})); break;
         case Interaction.ResizeSplit: Signal.set(quadSplitPoint, {x: 0.5, y: 0.5}); break;
       }
     } else {
@@ -458,7 +452,7 @@ const Bauble = (props: BaubleProps) => {
       case Interaction.Rotate: {
         Signal.update(rotation, ({x, y}) => ({
           x: mod(x - deltaX * cameraRotateSpeed, 1.0),
-          y: mod(y - deltaY * cameraRotateSpeed, 1.0)
+          y: mod(y - deltaY * cameraRotateSpeed, 1.0),
         }));
         break;
       }
@@ -526,7 +520,7 @@ const Bauble = (props: BaubleProps) => {
     e.currentTarget.setPointerCapture(e.pointerId);
     handlePointerAt = [e.screenX, e.screenY];
   };
-  const onHandleDblClick = (e: MouseEvent & {currentTarget: HTMLDivElement}) => {
+  const onHandleDblClick = () => {
     codeContainer.style.flexBasis = `512px`;
     canvasContainer.style.flexBasis = '512px';
   };

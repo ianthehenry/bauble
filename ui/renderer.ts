@@ -70,7 +70,7 @@ export default class Renderer {
     private zoom: Signal.T<number>, // TODO: give this a unique type
     private quadView: Signal.T<boolean>,
     private quadSplitPoint: Signal.T<{x: number, y: number}>,
-    ) {
+  ) {
 
     rotateXY(this.orthogonalXY, 0, 0);
     rotateXY(this.orthogonalZY, -0.5 * Math.PI, 0);
