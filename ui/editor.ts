@@ -111,9 +111,15 @@ const theme = EditorView.theme({
     backgroundColor: 'initial',
   },
   "&.cm-focused .cm-matchingBracket": {
-    outline: 'solid 1px var(--orange)',
+    outline: 'solid 1px var(--green)',
     borderRadius: '2px',
-    color: 'var(--orange)',
+    color: 'var(--green)',
+    backgroundColor: 'initial',
+  },
+  "&.cm-focused .cm-nonmatchingBracket": {
+    outline: 'solid 1px var(--red)',
+    borderRadius: '2px',
+    color: 'var(--red)',
     backgroundColor: 'initial',
   },
   // slightly subtler as you type; i dunno
