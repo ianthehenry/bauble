@@ -1,3 +1,21 @@
+:root {
+  --fg: #c5c8c6;
+  --bg: #1d1f21;
+  --selection: #373b41;
+  --line: #282a2e;
+  --comment: #969896;
+  --red: #cc6666;
+  --orange: #de935f;
+  --yellow: #f0c674;
+  --green: #b5bd68;
+  --aqua: #8abeb7;
+  --blue: #81a2be;
+  --purple: #b294bb;
+  --window: #4d5057;
+  --window-dark: #45484f;
+  --window-dark: #45484f;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -12,10 +30,16 @@ body {
   height: 100%;
   font-family: system-ui;
   line-height: 1.5;
+  background-color: var(--bg);
+  color: var(--fg);
 
   --monospace-family: Menlo, monospace;
   --monospace-size: 13px;
 }
+
+a { color: var(--blue); }
+a:visited { color: var(--purple); }
+a:active { color: var(--red); }
 
 .cm-content {
   font-family: var(--monospace-family);
@@ -44,16 +68,13 @@ ul {
 header {
   --header-height: 40px;
   --header-padding: 0.5em;
-  --text-color: #4b0053;
-  background-color: #ffc6f9;
-  background-image: linear-gradient(to right, #ffc6f9, #ffffba);
+  --text-color: var(--bg);
+  color: var(--text-color);
+  background-color: var(--purple);
+  /*background-image: linear-gradient(to right, #ffc6f9, var(--purple));*/
   height: var(--header-height);
   line-height: var(--header-height);
   display: flex;
-}
-
-header .title {
-  color: #290099;
 }
 
 header .title, header .spacer {
@@ -87,7 +108,6 @@ header > :last-child {
 }
 header .image-link {
   display: flex;
-  /*background-color: #ff8;*/
   width: var(--header-height);
   height: var(--header-height);
   justify-content: center;
@@ -111,8 +131,8 @@ body.main-page .bauble {
 
 .bauble {
   --control-height: 40px;
-  --horizontal-grip: linear-gradient(to bottom, #ddd, #eee, #ccc);
-  --vertical-grip: linear-gradient(to right, #ddd, #eee, #ccc);
+  --horizontal-grip: linear-gradient(to bottom, var(--selection), var(--window), var(--line));
+  --vertical-grip: linear-gradient(to right, var(--selection), var(--window), var(--line));
 
   height: 100%;
   display: flex;
@@ -170,13 +190,12 @@ body.main-page .bauble {
   padding: 8px;
 }
 .bauble .output-container {
-  background-color: #ffc;
   overflow: auto;
   max-height: 25%;
 }
 
 .bauble .output-container .err {
-  color: #900;
+  color: var(--red);
 }
 
 .bauble .output-container, span.timestamp, .toolbar input[inputmode=numeric] {
@@ -188,12 +207,13 @@ body.main-page .bauble {
   width: 100%;
   height: var(--control-height);
   line-height: var(--control-height);
-  /*background-color: #f8f;*/
   display: flex;
   user-select: none;
-  background-color: #eee;
+  background-color: var(--window);
   flex: none;
   overflow-x: auto;
+  color: var(--aqua);
+  fill: var(--aqua);
 }
 
 .toolbar button:not(.hidden:first-child)+button, .toolbar label+label {
@@ -214,8 +234,9 @@ body.main-page .bauble {
   text-align: center;
   border: none;
   width: 6ch;
-  background-color: #eee;
-  box-shadow: inset 2px 0 2px -2px #000, inset -2px 0 2px -2px #000;
+  color: var(--aqua);
+  background-color: var(--window-dark);
+  box-shadow: inset 3px 0 3px -3px #000, inset -3px 0 3px -3px #000;
 }
 
 .toolbar .text {
@@ -226,13 +247,11 @@ body.main-page .bauble {
   display: inline;
   border: none;
   padding: none;
-  /*background-color: #88f;*/
   white-space: nowrap;
 }
 
 .toolbar button {
   min-width: var(--control-height);
-  /*background-color: #f8f;*/
   border: none;
   cursor: pointer;
   background-color: initial;
@@ -241,7 +260,6 @@ body.main-page .bauble {
 .toolbar fieldset label {
   display: inline-block;
   height: 100%;
-  /*background-color: #8ff;*/
   cursor: pointer;
   min-width: var(--control-height);
   text-align: center;
@@ -295,7 +313,8 @@ body.main-page .bauble {
   padding: 2px;
 }
 .toolbar .indicator.compilation-error svg {
-  background-color: #ff9ca1;
+  background-color: var(--red);
+  fill: var(--window);
 }
 .toolbar .hidden {
   display: none;

@@ -1,10 +1,11 @@
 import {basicSetup} from 'codemirror';
 import {EditorView, keymap, ViewUpdate} from '@codemirror/view';
 import {indentWithTab} from '@codemirror/commands';
-import {syntaxTree} from '@codemirror/language';
+import {syntaxTree, syntaxHighlighting, HighlightStyle} from '@codemirror/language';
 import {SyntaxNode} from '@lezer/common';
+import {tags} from "@lezer/highlight"
 import {janet} from 'codemirror-lang-janet';
-import {EditorState, EditorSelection, Transaction} from '@codemirror/state';
+import {EditorState, EditorSelection, Transaction, Extension} from '@codemirror/state';
 import Big from 'big.js';
 import * as Storage from './storage';
 
@@ -76,11 +77,88 @@ interface EditorOptions {
   onChange: (() => void),
 }
 
+const tomorrowNight = {
+  foreground: '#c5c8c6',
+  background: '#1d1f21',
+  selection: '#373b41',
+  line: '#282a2e',
+  comment: '#969896',
+  red: '#cc6666',
+  orange: '#de935f',
+  yellow: '#f0c674',
+  green: '#b5bd68',
+  aqua: '#8abeb7',
+  blue: '#81a2be',
+  purple: '#b294bb',
+  window: '#4d5057',
+};
+
+const makeThemeAndHighlightStyle = (palette: typeof tomorrowNight): [Extension, HighlightStyle] => {
+  const highlightStyle = HighlightStyle.define([
+    {tag: tags.keyword, color: palette.purple},
+    {tag: tags.atom, color: palette.foreground},
+    {tag: tags.number, color: palette.blue},
+    {tag: tags.comment, color: palette.comment},
+    {tag: tags.null, color: palette.purple},
+    {tag: tags.bool, color: palette.purple},
+    {tag: tags.string, color: palette.green},
+  ]);
+
+  const theme = EditorView.theme({
+    "&": {
+      color: palette.foreground,
+      backgroundColor: palette.background,
+    },
+    ".cm-content": {
+      caretColor: palette.foreground,
+    },
+    ".cm-cursor": {
+      borderLeftColor: palette.foreground,
+    },
+    ".cm-activeLine": {
+      backgroundColor: palette.line,
+    },
+    ".cm-activeLineGutter": {
+      backgroundColor: palette.background,
+    },
+    ".cm-selectionMatch": {
+      outline: 'solid 1px ' + palette.comment,
+      borderRadius: '2px',
+      backgroundColor: 'initial',
+    },
+    ".cm-foldPlaceholder": {
+      outline: 'solid 1px ' + palette.comment,
+      border: 'none',
+      width: '2ch',
+      display: 'inline-block',
+      margin: '0',
+      padding: '0',
+      textAlign: 'center',
+      borderRadius: '2px',
+      backgroundColor: palette.background,
+      color: palette.comment,
+    },
+    "&.cm-focused .cm-selectionBackground, ::selection": {
+      backgroundColor: palette.selection,
+    },
+    ".cm-gutters": {
+      backgroundColor: palette.line,
+      color: palette.comment,
+      border: "none"
+    }
+  }, {dark: true});
+
+  return [theme, highlightStyle];
+}
+
+
 export default function installCodeMirror({initialScript, parent, canSave, onChange}: EditorOptions): EditorView {
   const keyBindings = [indentWithTab];
   if (canSave) {
     keyBindings.push({ key: "Mod-s", run: save });
   }
+  const [theme, highlightStyle] = makeThemeAndHighlightStyle(tomorrowNight);
+
   const editor = new EditorView({
     extensions: [
       basicSetup,
@@ -91,6 +169,8 @@ export default function installCodeMirror({initialScript, parent, canSave, onCha
           onChange();
         }
       }),
+      theme,
+      syntaxHighlighting(highlightStyle),
     ],
     parent: parent,
     doc: initialScript,
