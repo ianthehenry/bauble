@@ -119,6 +119,25 @@
 (defn remap+ [x]
   (* 0.5 (+ x 1)))
 
+(def @hash hash)
+(defmacro makehash [name outcount]
+  (def hash1 (symbol "hash" outcount "1"))
+  (def hash2 (symbol "hash" outcount "2"))
+  (def hash3 (symbol "hash" outcount "3"))
+  (def hash4 (symbol "hash" outcount "4"))
+  ~(defn ,name [x]
+    (case (glslisp/typecheck x)
+      type/float ~(,',hash1 ,x)
+      type/vec2 ~(,',hash2 ,x)
+      type/vec3 ~(,',hash3 ,x)
+      type/vec4 ~(,',hash4 ,x)
+      type/unknown (errorf "cannot determine type of expression; please tell ian about this")
+      (errorf "hash requires a numeric argument"))))
+(makehash hash 1)
+(makehash hash2 2)
+(makehash hash3 3)
+(makehash hash4 4)
+
 (defn perlin [x]
   (case (glslisp/typecheck x)
     type/vec2 ~(perlin2 ,x)

@@ -143,6 +143,23 @@
     'max3 type/float
     'max4 type/float
 
+    'hash11 type/float
+    'hash12 type/float
+    'hash13 type/float
+    'hash14 type/float
+    'hash21 type/vec2
+    'hash22 type/vec2
+    'hash23 type/vec2
+    'hash24 type/vec2
+    'hash31 type/vec3
+    'hash32 type/vec3
+    'hash33 type/vec3
+    'hash34 type/vec3
+    'hash41 type/vec4
+    'hash42 type/vec4
+    'hash43 type/vec4
+    'hash44 type/vec4
+
     (typeof-generic-application args)))
 
 (defn- compile-function-application [state f args]
