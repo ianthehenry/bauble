@@ -111,13 +111,14 @@ const theme = EditorView.theme({
     backgroundColor: 'initial',
   },
   "&.cm-focused .cm-matchingBracket": {
-    backgroundColor: 'var(--green)',
-    color: 'var(--background)',
+    outline: 'solid 1px var(--orange)',
+    borderRadius: '2px',
+    color: 'var(--orange)',
+    backgroundColor: 'initial',
   },
-  // slightly subtler as you type; looks a little weird though
-  // "&.cm-focused .cm-activeLine .cm-matchingBracket" {
-  //   backgroundColor: 'initial',
-  //   color: 'var(--green)',
+  // slightly subtler as you type; i dunno
+  // "&.cm-focused .cm-activeLine .cm-matchingBracket": {
+  //   outline: 'none',
   // },
   ".cm-foldPlaceholder": {
     outline: 'solid 1px var(--comment)',
