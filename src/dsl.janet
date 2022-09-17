@@ -27,6 +27,27 @@
   {type/float |(set-param radius $)}
   (raw/sphere radius))
 
+# TODO: the 2D revolution ellipsoid looks horrible, but only at certain aspect ratios.
+# (def-flexible-fn ellipsoid [[size nil] [axis nil] [ellipse-size nil]]
+#   {type/vec3 |(set-param size $)
+#    type/vec2 |(set-param ellipse-size $)
+#    type/axis |(set-param axis $)}
+#   (if size
+#     (do
+#       (assert (nil? axis) "axis is only allowed for ellipsoid with two size parameters")
+#       (assert (nil? ellipse-size) "duplicate size parameters")
+#       (raw/ellipsoid size))
+#     (do
+#       (assert (not (nil? ellipse-size)) "missing size parameters")
+#       (assert (not (nil? axis)) "two parameter ellipsoid requires an axis")
+#       (assert (nil? size) "duplicate size parameters")
+#       # TODO: this should really just be a revolution of an ellipse
+#       (raw/ellipsoid2 axis ellipse-size))))
+
+(def-flexible-fn ellipsoid [size]
+  {type/vec3 |(set-param size $)}
+  (raw/ellipsoid size))
+
 # TODO: is it weird that the height is double the thing you pass it? it seems weird.
 # this is true of box as well, though.
 (def-flexible-fn cylinder [axis radius height [round 0]]
