@@ -100,10 +100,16 @@ const theme = EditorView.theme({
     borderLeftColor: 'var(--foreground)',
   },
   ".cm-activeLine": {
+    backgroundColor: 'initial',
+  },
+  "&.cm-focused .cm-activeLine": {
     backgroundColor: 'var(--line)',
   },
   ".cm-activeLineGutter": {
-    backgroundColor: 'var(--background)',
+    backgroundColor: 'initial',
+  },
+  "&.cm-focused .cm-activeLineGutter": {
+    backgroundColor: 'var(--selection)',
   },
   ".cm-selectionMatch": {
     outline: 'solid 1px var(--comment)',
