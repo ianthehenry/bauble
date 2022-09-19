@@ -72,7 +72,7 @@
   (let [[sign axis] (split-signed-axis axis)]
     (if (= offset 0)
       (raw/half-space axis sign)
-      (raw/translate
+      (raw/move
         (raw/half-space axis sign)
         (axis-vec axis offset)))))
 
@@ -181,15 +181,13 @@
    type/vec3 |(set-param expression $)}
   (raw/distort shape expression))
 
-(def-flexible-fn translate [shape (offset @[0 0 0])]
+(def-flexible-fn move [shape (offset @[0 0 0])]
   {type/3d |(set-param shape $)
    type/vec3 |(generic/+= offset $)
    :x |(generic/+= (offset 0) (typecheck :x type/float $))
    :y |(generic/+= (offset 1) (typecheck :y type/float $))
    :z |(generic/+= (offset 2) (typecheck :z type/float $))}
-  (raw/translate shape offset))
-
-(def move translate)
+  (raw/move shape offset))
 
 (def-flexible-fn rotate [shape (matrix mat3/identity) (scale 1) [pivot nil]]
   {type/3d |(set-param shape $)
@@ -201,15 +199,6 @@
    :z |(set matrix (generic/mat3/multiply matrix (generic/rotate-z-matrix (generic/* scale (typecheck :z type/float $)))))
    :pivot |(set-param pivot (typecheck :pivot type/vec3 $))}
   (pivoting (raw/transform shape matrix)))
-
-(defn rotate-tau [& args]
-  (rotate :tau ;args))
-
-(defn rotate-deg [& args]
-  (rotate :deg ;args))
-
-(defn rotate-pi [& args]
-  (rotate :pi ;args))
 
 (def-flexible-fn scale [shape (scale @[1 1 1]) [pivot nil]]
   {type/3d |(set-param shape $)
@@ -384,35 +373,3 @@
   (if (empty? body)
     ~(,raw/flat-color ,shape)
     ~(,map-color ,shape (fn [c] ,;body))))
-
-# TODO: are these useful?
-
-(defn red [& args]
-  (blinn-phong [0.9 0.1 0.1] ;args))
-
-(defn green [& args]
-  (blinn-phong [0.1 0.9 0.1] ;args))
-
-(defn blue [& args]
-  (blinn-phong [0.1 0.2 0.9] ;args))
-
-(defn cyan [& args]
-  (blinn-phong [0.1 0.9 0.9] ;args))
-
-(defn magenta [& args]
-  (blinn-phong [0.9 0.1 0.9] ;args))
-
-(defn yellow [& args]
-  (blinn-phong [0.9 0.9 0.1] ;args))
-
-(defn orange [& args]
-  (blinn-phong [1.0 0.3 0.1] ;args))
-
-(defn white [& args]
-  (blinn-phong [0.9 0.9 0.9] ;args))
-
-(defn gray [& args]
-  (blinn-phong [0.4 0.4 0.4] ;args))
-
-(defn black [& args]
-  (blinn-phong [0.05 0.05 0.05] ;args))

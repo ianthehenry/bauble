@@ -48,7 +48,7 @@
     {:compile (fn [self comp-state] (let [,(struct ;(arg-kvps args)) self] ,compile-body))
      :surface (fn [self comp-state] (let [,(struct ;(arg-kvps args)) self] ,surface-body))}))
 
-(def-input-operator translate [shape amount]
+(def-input-operator move [shape amount]
   ~(- ,globals/p ,amount))
 
 (def-operator offset [amount shape]
@@ -175,7 +175,7 @@
       (with ,$round ,round
         (with ,$tip-offset (* ,$round (/ ,$height ,$radius))
           ,(:compile (offset $round
-            (translate
+            (move
               (cone
                 axis
                 ~(- ,$radius ,$round)
@@ -697,7 +697,7 @@
 (def-complicated pivot [shape pivot-point f]
   (let [$pivot (:temp-var comp-state type/vec3 'pivot)]
     ~(with ,$pivot ,pivot-point
-      ,(:compile (translate (f (translate shape ~(- ,$pivot))) $pivot) comp-state)))
+      ,(:compile (move (f (move shape ~(- ,$pivot))) $pivot) comp-state)))
   (let [$pivot (:temp-var comp-state type/vec3 'pivot)]
     ~(with ,$pivot ,pivot-point
-      ,(:surface (translate (f (translate shape ~(- ,$pivot))) $pivot) comp-state))))
+      ,(:surface (move (f (move shape ~(- ,$pivot))) $pivot) comp-state))))

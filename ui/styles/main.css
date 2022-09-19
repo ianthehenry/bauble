@@ -42,6 +42,11 @@
   padding: 0;
 }
 
+code {
+  white-space: pre;
+  font-family: var(--monospace-family);
+}
+
 h1,h2,h3,h4,h5,h6 {
   font-weight: normal;
 }
@@ -82,7 +87,15 @@ ul {
   list-style-position: inside;
 }
 
-*+h1, *+p, *+ul {
+ul ul {
+  padding-left: 2em;
+}
+
+main > *+h1,
+main > *+h2,
+main > *+p,
+main > *+ul,
+main > *+div {
   margin-top: 1em;
 }
 
@@ -137,10 +150,12 @@ header .image-link {
 
 .bauble-placeholder {
   height: 256px;
-  font-family: var(--monospace-family);
-  font-size: var(--monospace-size);
   border-radius: 2px;
   overflow: hidden;
+}
+
+.bauble-placeholder > .script {
+  display: none;
 }
 
 .bauble-placeholder .canvas-container, .bauble-placeholder .code-container {
@@ -277,6 +292,7 @@ body.main-page .bauble {
   user-select: none;
   background-color: var(--window);
   flex: none;
+  overflow-y: hidden;
   overflow-x: auto;
   color: var(--toolbar-fg);
   fill: var(--toolbar-fg);

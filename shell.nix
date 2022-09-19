@@ -1,5 +1,5 @@
 with import <nixpkgs> {};
 
 mkShell {
-  nativeBuildInputs = [ emscripten yarn ];
+  nativeBuildInputs = [ emscripten yarn pandoc ];
 }

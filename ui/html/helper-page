@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-cd $(dirname "$0")
+root=$(dirname "$0")
 
 invocation=$1
 shift
@@ -10,7 +10,9 @@ printf '<!doctype html>
 %s
 <body>
   %s
-  %s
+  <main>
+    %s
+  </main>
 </body>
 </html>
-' "$(./head "$@")" "$(./header)" "$($invocation)"
+' "$($root/head "$@")" "$($root/header)" "$($invocation)"

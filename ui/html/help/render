@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd $(dirname "$0")
+
+pandoc --from markdown --to html <(cat preamble.md; echo; pandoc --from markdown --to markdown -s --toc content.md) \
+| sed -E -e 's#<pre><code>#<div class="bauble-placeholder"><div class="script">#g' -e 's#</code></pre>#</div></div>#g'
