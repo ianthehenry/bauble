@@ -42,6 +42,10 @@
   padding: 0;
 }
 
+*:focus {
+  outline: none;
+}
+
 code {
   white-space: pre;
   font-family: var(--monospace-family);

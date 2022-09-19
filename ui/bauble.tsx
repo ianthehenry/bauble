@@ -243,7 +243,7 @@ enum Interaction {
 
 interface BaubleProps {
   initialScript: string,
-  hijackScroll: boolean,
+  focusable: boolean,
   canSave: boolean,
   runtime: BaubleModule,
   outputChannel: OutputChannel,
@@ -389,6 +389,9 @@ const Bauble = (props: BaubleProps) => {
       return;
     }
     e.preventDefault();
+    if (props.focusable) {
+      canvas.focus();
+    }
     canvasPointerAt = [e.offsetX, e.offsetY];
     canvas.setPointerCapture(e.pointerId);
     interactionPointer = e.pointerId;
@@ -493,6 +496,9 @@ const Bauble = (props: BaubleProps) => {
   };
 
   const onWheel = (e: WheelEvent) => {
+    if (props.focusable && document.activeElement !== canvas) {
+      return;
+    }
     e.preventDefault();
     // Linux Firefox users who do not set MOZ_USE_XINPUT2
     // will report very large values of deltaY, resulting
@@ -549,7 +555,7 @@ const Bauble = (props: BaubleProps) => {
     <div class="canvas-container" ref={canvasContainer!}>
       <RenderToolbar renderType={renderType} quadView={quadView} rotation={rotation} origin={origin} zoom={zoom} />
       <canvas ref={canvas!} class="render-target" width="1024" height="1024"
-        onWheel={props.hijackScroll ? onWheel : undefined}
+        onWheel={onWheel}
         onDblClick={onDblClick}
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
