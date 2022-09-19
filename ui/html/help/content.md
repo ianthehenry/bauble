@@ -4,7 +4,7 @@ A quick list of all shape primitives:
 
 ```
 (defn grid [$ x z]
-  (move $ ([x 0 z] * 200)))
+  (move $ ([x 0 z] * 150)))
 (union
   (sphere 50 | grid 0 0)
   (box 50 | grid 1 0)
@@ -13,8 +13,9 @@ A quick list of all shape primitives:
   (ellipsoid [25 50 75] | grid 0 -1)
   (cylinder :y 50 50 | grid 1 -1)
   (line [-40 -40 40] [40 40 -40] 10 | grid -1 -1)
-  # (ground -50 | shade (vec3 0.25))
-| scale 0.5)
+  (ground -50 | shade white)
+| scale 0.75
+| move :x -30)
 ```
 
 ## `sphere`
@@ -23,17 +24,17 @@ A quick list of all shape primitives:
 
 ```
 (union
-  (sphere (4 + sin t * 10) | move :x 50)
-  (sphere (5 + sin (p.y / 4 + t) * 8) | move :x -50 | slow 0.6))
+  (sphere (8 + sin t * 10) | move :x 100)
+  (sphere (6 + sin (p.y / 4 + t) * 10) | move :x -100 | slow 0.6))
 ```
 
 ## `box`
 
-`box` is slightly more complicated. It can take a single dimension or a vector of three elements.
+`box` can take a single `float` dimension or a `vec3`.
 
 The dimensions you supply to `box` are twice the size that the box appears. Think of them like a radius: a box of "width 50" will range from `p.x = -50` to `p.x = 50`.
 
-There is one optional argument: `:r`, which rounds the corners.
+`:r` to round the edges.
 
 ```
 (union
@@ -44,8 +45,14 @@ There is one optional argument: `:r`, which rounds the corners.
 
 ## `cylinder`
 
+The second argument is twice the height of the cylinder, which is centered at the origin.
+
+`:r` to round the edges.
+
 ```
-(cylinder :y 50 100)
+(union
+  (cylinder :y 50 100 | move :x 60)
+  (cylinder :r 10 :y 50 100 | move :x -60))
 ```
 
 ## `ellipsoid`
@@ -57,6 +64,8 @@ Not an exact distance field! This is [an approximation](https://iquilezles.org/a
 ```
 
 ## `line`
+
+The two `vec3` arguments are the start and end points. An optional `float` argument is the radius of the line (default `0`).
 
 ```
 (line 10 [-50 -50 50] [50 50 -50])
@@ -82,10 +91,14 @@ The first argument is a signed axis, and the second optional argument is the pos
 
 ## `cone`
 
-Unlike most other shapes, which are centered at the origin, the cone rests at the origin, and the height you pass it is the cone's actual height, not one half of its height. It's still the extent of the cone in the single axis, like other shapes, but unlike most shapes the cone does not extend in either direction.
+Unlike most other shapes, which are centered at the origin, the cone rests at the origin, and the height you pass it is the cone's actual height, not one half of its height. It's still the extent of the cone in a single axis, like other shapes, but unlike most shapes the cone does not extend in both directions.
+
+`:r` to round the edges.
 
 ```
-(cone :y 500 100)
+(union
+  (cone :y 50 100 | move :x -50)
+  (cone :r 10 :y 50 100 | move :x 50))
 ```
 
 ## `ground`
@@ -100,7 +113,7 @@ It is not an actual distance field (the distance depends on the position of the 
   (box 50 :r 5))
 ```
 
-# Operations on shape
+# Spatial operations
 
 ## `move`
 
@@ -141,13 +154,17 @@ You can also optionally supply scale arguments, which will multiply the rotation
 
 Name will probably change.
 
+Good way to apply texture to a shape, although if your expression is expensive you should use [`bounded-offset`](#bounded-offset) instead.
+
 ```
-(box 50 | offset 10)
+(union
+  (box 50 | offset (sin+ t * 10) | move :x -100)
+  (box 50 | offset (perlin (p / 15) | pow 2 * 10) | move :x 100))
 ```
 
 ## `onion`
 
-The thickness argument is half of the thickness. The shape will be both inset and outset by this amount.
+`float` argument is half of the thickness. The shape will be both inset and outset by this amount.
 
 ```
 (onion 5 (box 50)
@@ -155,6 +172,17 @@ The thickness argument is half of the thickness. The shape will be both inset an
 ```
 
 ## `distort`
+
+This allows you to supply an arbitrary expression that will replace `p`. You can use this to deform space in ways that are not possible with any of the built-in operators.
+
+This is by its nature a bizarre operation that can be used to do anything, including implement any of the other spatial distortion operations, so examples are not very informative.
+
+```
+(distort (sphere 100)
+  [p.x (sin ((p.x - p.z) / 10) * 100) p.z]
+| slow 0.5)
+```
+
 ## `mirror`
 
 Interior distances will have discontinuities when a shape crosses the axis.
@@ -169,10 +197,22 @@ You can specify multiple axes to mirror along. The optional `:r` argument makes 
 
 ## `reflect`
 
-Like mirror but doesn't create a copy.
+Like mirror, but doesn't create a copy. Can take multiple axes.
+
+```
+(union
+  (cone :y 50 100 | move :x -50)
+  (reflect :y (cone :y 50 100 | move :x 50)))
+```
 
 ## `mirror-plane`
+
+TODO
+
 ## `mirror-space`
+
+TODO
+
 ## `symmetry`
 
 It's hard to describe this one. It mirrors space across every axis and also flips it across every axis of rotation. You end up with only a tiny sliver of useful space that you can put a shape in, so it's only really suitable for abstract things.
@@ -183,12 +223,65 @@ It's hard to describe this one. It mirrors space across every axis and also flip
 ```
 
 ## `flip`
+
+Rotates the shape 90° around a signed axis (so `:x` rotates counter-clockwise, `:-x` rotates clockwise). Faster than `rotate`.
+
+```
+(union
+  (cone :y 50 100 | move :x -50)
+  (flip :-x (cone :y 50 100 | move :x 50)))
+```
+
 ## `twist`
+
+`float` argument is the rate of rotation, in radians per unit distance.
+
+This is equivalent to a rotation around an axis that varies with `p.(axis)`, but it might be slightly more efficent.
+
+Does not produce a correct distance field.
+
+```
+(twist :y (tau/4 / 50 * sin t)
+  (box 50)
+| slow 0.5)
+```
+
 ## `swirl`
+
+`float` argument is the rate of rotation, in radians per unit distance.
+
+This is equivalent to a rotation around an axis that varies with `(length p.(other axes))`, but it might be slightly more efficent.
+
+Does not produce a correct distance field.
+
+```
+(swirl :y (tau/4 / 50 * sin t)
+  (box 50)
+| slow 0.5)
+```
+
 ## `bend`
+
+This operation is weird and hard to explain and I will probably get rid of it.
+
+Does not produce a correct distance field.
+
+```
+(bend :y :z (tau/4 / 200 * sin t)
+  (box 50)
+| slow 0.5)
+```
+
 ## `map-distance`
 
-# Operations on shape and color
+Apply a function to a shape's distance field. Can be used to do weird things. Many operations, like `offset` or `slow`, are simple transformations on the underlying distance field. For example, `offset`:
+
+```
+(map-distance (sphere 50) (fn [d]
+  (d + (sin (p.x / 2)))))
+```
+
+# Hybrid spatial/surface operations
 
 The boolean operations `union`, `intersect`, and `subtract` can all take an optional `:r` value, but note that this will make color calculations slower: *all* surfaces will be evaluated, even those that do not contribute at all to the final result. When used without `:r`, or with an `:r` value of `0` (as evaluated on the CPU -- any symbolic expression will cause Bauble to take the slow branch), only the one relevant surface will be evaluated.
 
