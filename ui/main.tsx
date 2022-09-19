@@ -19,18 +19,28 @@ document.addEventListener("DOMContentLoaded", (_) => {
   switch (window.location.pathname) {
     case '/help/': {
       InitializeWasm(baubleOpts).then((runtime: BaubleModule) => {
+        const intersectionObserver = new IntersectionObserver((entries) => {
+          for (const entry of entries) {
+            if (!entry.isIntersecting) {
+              continue;
+            }
+            const placeholder = entry.target;
+            intersectionObserver.unobserve(entry.target);
+            const initialScript = placeholder.textContent ?? '';
+            placeholder.innerHTML = '';
+            renderSolid(() =>
+              <Bauble
+                runtime={runtime}
+                outputChannel={outputChannel}
+                initialScript={initialScript}
+                focusable={true}
+                canSave={false}
+                size={{width: 256, height: 256}}
+              />, placeholder);
+          }
+        });
         for (const placeholder of document.querySelectorAll('.bauble-placeholder')) {
-          const initialScript = placeholder.textContent ?? '';
-          placeholder.innerHTML = '';
-          renderSolid(() =>
-            <Bauble
-              runtime={runtime}
-              outputChannel={outputChannel}
-              initialScript={initialScript}
-              focusable={true}
-              canSave={false}
-              size={{width: 256, height: 256}}
-            />, placeholder);
+          intersectionObserver.observe(placeholder);
         }
       }).catch(console.error);
       break;
