@@ -14,7 +14,7 @@
 
 (torus :z 60 30
 | twist :y 0.07
-| rotate-pi :y t :z 0.05
+| rotate :pi :y t :z 0.05
 | move :x 50
 | mirror :r 10 :x
 | fresnel
@@ -72,7 +72,7 @@
 
 # (def r 0.00)
 # (box 80
-# | rotate-pi :y r :z (* r 0.7) :x (* 0.5 r)
+# | rotate :pi :y r :z (* r 0.7) :x (* 0.5 r)
 # | symmetry)
 
 # You can also hold down cmd-shift to
