@@ -98,7 +98,7 @@ You can also optionally supply scale arguments, which will multiply the rotation
 ## `mirror-space`
 ## `symmetry`
 
-It's hard to describe this one. It mirrors space across every axis and also flips it across every across. You end up with only a tiny sliver of useful space that you can put a shape in, so it's only really suitable for abstract things.
+It's hard to describe this one. It mirrors space across every axis and also flips it across every axis of rotation. You end up with only a tiny sliver of useful space that you can put a shape in, so it's only really suitable for abstract things.
 
 ```
 (def r (+ 50 (sin+ t * 50)))
