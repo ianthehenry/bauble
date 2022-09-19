@@ -93,7 +93,8 @@
       type/vec2 (pow- a ~(vec2 ,b))
       type/vec3 (pow- a ~(vec3 ,b))
       type/vec4 (pow- a ~(vec4 ,b))
-      (pow- a b))))
+      (pow- a b))
+    (pow- a b)))
 
 (make-generic-1 neg :glf - :f |(- $))
 (make-generic-1 recip :expr ~(/ 1 ,a) :f |(/ $))
