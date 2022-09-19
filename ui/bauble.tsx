@@ -278,10 +278,18 @@ const Bauble = (props: BaubleProps) => {
   const scriptDirty = Signal.create(true);
   const evaluationState = Signal.create(EvaluationState.Unknown);
   const isAnimation = Signal.create(false);
+  const isVisible = Signal.create(false);
 
   const timer = new Timer();
 
+  const intersectionObserver = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      Signal.set(isVisible, entry.isIntersecting);
+    }
+  });
+
   onMount(() => {
+    intersectionObserver.observe(canvas);
     editor = installCodeMirror({
       initialScript: props.initialScript,
       parent: editorContainer,
@@ -326,10 +334,11 @@ const Bauble = (props: BaubleProps) => {
         }
       }
       renderer.draw();
-      return Signal.get(isAnimation) && Signal.get(timer.state) === TimerState.Playing;
+      return Signal.get(isVisible) && Signal.get(isAnimation) && Signal.get(timer.state) === TimerState.Playing;
     }));
 
     Signal.onEffect([
+      isVisible,
       rotation,
       origin,
       zoom,
