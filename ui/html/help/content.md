@@ -43,14 +43,62 @@ There is one optional argument: `:r`, which rounds the corners.
 ```
 
 ## `cylinder`
+
+```
+(cylinder :y 50 100)
+```
+
 ## `ellipsoid`
+
+Not an exact distance field! This is [an approximation](https://iquilezles.org/articles/ellipsoids/) that produces better results than scaling a sphere, but that is still only an approximation.
+
+```
+(ellipsoid [100 75 50])
+```
+
 ## `line`
+
+```
+(line 10 [-50 -50 50] [50 50 -50])
+```
+
 ## `torus`
+
+```
+(torus :z 100 25)
+```
+
 ## `half-space`
+
+This one is very hard to show with images, because it just looks like a flat-colored plane of infinite extent. Instead, it's easier to understand when used as an input to a boolean operation:
+
+```
+(intersect
+  (half-space :-y 10)
+  (sphere 50))
+```
+
+The first argument is a signed axis, and the second optional argument is the position along that axis axis.
+
 ## `cone`
+
+Unlike most other shapes, which are centered at the origin, the cone rests at the origin, and the height you pass it is the cone's actual height, not one half of its height. It's still the extent of the cone in the single axis, like other shapes, but unlike most shapes the cone does not extend in either direction.
+
+```
+(cone :y 500 100)
+```
+
 ## `ground`
 
-A weird hacky thing that I might get rid of. Not really a valid shape. A "half-space you can see through."
+`ground` should not be used in actual art, but it's useful for debugging. It's kind of a "`(half-space :-y)` that you can see through," so that you can add a ground to see shadows, and still move the camera around to view the underside of your shape.
+
+It is not an actual distance field (the distance depends on the position of the camera), so it will not work well with morphs, boolean operations, or ambient occlusion. It's really just for quickly looking at shadows.
+
+```
+(union
+  (ground -50 | shade [1 1 1])
+  (box 50 :r 5))
+```
 
 # Operations on shape
 
@@ -90,10 +138,39 @@ You can also optionally supply scale arguments, which will multiply the rotation
 ```
 
 ## `offset`
+
+Name will probably change.
+
+```
+(box 50 | offset 10)
+```
+
 ## `onion`
+
+The thickness argument is half of the thickness. The shape will be both inset and outset by this amount.
+
+```
+(onion 5 (box 50)
+| subtract (half-space :y))
+```
+
 ## `distort`
 ## `mirror`
+
+Interior distances will have discontinuities when a shape crosses the axis.
+
+You can specify multiple axes to mirror along. The optional `:r` argument makes this a smooth mirror.
+
+```
+(union
+  (mirror :x :y (box 50 | rotate :y t :z t | move :x 25) | move :z 100)
+  (mirror :x :y :r 10 (box 50 | rotate :y t :z t | move :x 25) | move :z -100))
+```
+
 ## `reflect`
+
+Like mirror but doesn't create a copy.
+
 ## `mirror-plane`
 ## `mirror-space`
 ## `symmetry`
