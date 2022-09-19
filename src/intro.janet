@@ -58,9 +58,9 @@
 #   ;(sphere-sequence 40 [[-67 -37 1] [-37 25 21] [-34 -17 14] [-4 0 34] [-18 8 16] [-17 22 -1]])))
 # (defn triple [shape] (shape | fork :r 2 (move :x -20) (move :x 20) (reflect :y | move :y 33) | move :z 75))
 # (def bottom-eyelid (intersect :r 2 (onion 1 (sphere 15)) (half-space :y 0) | rotate :x 2.15))
-# (def top-eyelid (intersect :r 2 (onion 1 (sphere 15)) (half-space :y 0) | rotate :x (- 0.75 (cos+ t | ss 0.99 1 | * 2))))
+# (def top-eyelid (intersect :r 2 (onion 1 (sphere 15)) (half-space :y 0) | rotate :x (- 0.75 (cos+ t | ss 0.99 1 * 2))))
 # (def eye (sphere 15 | shade (vec3 (+ 0.1 (step 0.81 (step p.z 12)))) :gloss 15 :shine 1 | fresnel :exponent 1 | fresnel
-#   | rotate :y (- (sin t | - 0.95 | ss 0.03) (sin (+ pi/2 t | * 0.87) | ss 0.03))))
+#   | rotate :y (- (sin t - 0.95 | ss 0.03) (sin (+ pi/2 t * 0.87) | ss 0.03))))
 # (def skin (shade [0 1 1] :ambient (mix 0.2 0.1 occlusion) :gloss 10 | fresnel :exponent 0.5 0.05 [0 1 0] | fresnel))
 # (def mouth (box :r (sin+ t) [25 (* 2 (sin+ t)) 20] | move [0 (+ -32 (* 0.005 p.x p.x)) 64] | color [0 0 0]))
 # (union :r 5 body (triple (union :r 2 top-eyelid bottom-eyelid)) | resurface skin | subtract :r 10 mouth | union (triple eye) | move :y -40)
@@ -744,23 +744,23 @@
 # much. But you can use it to produce
 # some very cool effects:
 
-# (sphere (+ 50 (p | * 0.05 | + t | perlin+ | * (* t 4 | sin+ | * 25)))
+# (sphere (p * 0.05 | vec4 (t * 3) | perlin+ * (t * 4 | sin+ * 25) + 50)
 # | slow 0.9)
 
 # You can use noise to compute complex
 # procedural textures:
 
-# (def spots (+ 0.15 (perlin+ (* 0.103 p))))
-# (def outline (step (abs (- 0.5 spots)) 0.016))
+# (def spots (p * 0.103 | perlin+ + 0.15))
+# (def outline (0.5 - spots | abs | step 0.016))
 # (def brown (hsv 0.01 0.63 0.5))
 # (def tan   (hsv 0.07 0.63 0.9))
-# (sphere 100 | shade (mix brown tan (round spots) | * (max outline 0.05)))
+# (sphere 100 | shade (mix brown tan (round spots) * (max outline 0.05)))
 
 # Just beautiful. Let's hold on to that
 # one; I have a feeling we're going to
 # do great things together:
 
-# (def leppard (shade (mix brown tan (round spots) | * (max outline 0.05))))
+# (def leppard (shade (mix brown tan (round spots) * (max outline 0.05))))
 # (def eye (sphere 5 | shade [1 1 1] | union (sphere 2 | move :z 4 | shade [0.1 0.1 0.1])))
 # (line [20 0 32] [50 -50 50] 5
 # | mirror :x :z
@@ -785,7 +785,7 @@
 #### Getting Help ####
 
 # Uhhh okay look you have just read
-# literally all of the documentation.
+# basically all of the documentation.
 
 # Sorry about that.
 
