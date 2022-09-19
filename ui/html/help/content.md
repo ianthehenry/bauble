@@ -150,6 +150,19 @@ You can also optionally supply scale arguments, which will multiply the rotation
   (rotate :y (sin t) :x (sin t) (box 50) | move :x -150))
 ```
 
+## `scale`
+
+Can take a single `float`, a `vec3`, or named `:x` `:y` `:z` parameters. Like [`move`](#move), you can mix and match these forms and the final product will be used as the scale factor for each axis.
+
+Produces an incorrect distance field when scaling by different amounts on different axes.
+
+```
+(union
+  (scale (sin+ t + 0.5) (box 50) | move :x -100 :z -50)
+  (scale :y (sin+ t + 1) (box 50) | move :x 100 :z -50)
+  (scale ([1 1 1] + ([-0.5 1 0] * (cos+ t))) (box 50) | move :z 100))
+```
+
 ## `offset`
 
 Name will probably change.
@@ -224,7 +237,7 @@ It's hard to describe this one. It mirrors space across every axis and also flip
 
 ## `flip`
 
-Rotates the shape 90° around a signed axis (so `:x` rotates counter-clockwise, `:-x` rotates clockwise). Faster than `rotate`.
+Rotates the shape 90° around a signed axis (so `:x` rotates counter-clockwise, `:-x` rotates clockwise). More efficient than `rotate`.
 
 ```
 (union
@@ -326,7 +339,7 @@ Produces incorrect distance fields when the amount is outside of the range `[0, 
 
 - `fork`
 - `spoon`
-- `remap+`
+- `remap+` (and `sin+`, `cos+`, `perlin+`)
 - `hsv`
 - `hsl`
 - `rgb`
@@ -337,7 +350,7 @@ Produces incorrect distance fields when the amount is outside of the range `[0, 
 - `tau*`, `pi*`, `tau/`, `pi/`
 - `ss`
 - `hash` functions
-- `perlin` functions (and `perlin+`)
+- `perlin`
 
 # GLSL functions ported to Janet
 
