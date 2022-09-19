@@ -290,7 +290,7 @@
    type/float |(set-param rate $)}
   (let [[sign1 axis] (split-signed-axis axis)
         [sign2 towards] (split-signed-axis towards)]
-    (raw/bend shape axis towards (* -1 rate sign1 sign2))))
+    (raw/bend shape axis towards (generic/* -1 rate sign1 sign2))))
 
 # --- surfacing ---
 
