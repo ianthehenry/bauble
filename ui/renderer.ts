@@ -1,5 +1,6 @@
 import {mat3, vec3} from 'gl-matrix';
 import * as Signal from './signals';
+import type {Accessor} from 'solid-js';
 import {clamp, TAU} from './util';
 
 const baseCameraDistance = 512;
@@ -70,6 +71,7 @@ export default class Renderer {
     private zoom: Signal.T<number>, // TODO: give this a unique type
     private quadView: Signal.T<boolean>,
     private quadSplitPoint: Signal.T<{x: number, y: number}>,
+    private resolution: Accessor<{width: number, height: number}>,
   ) {
 
     rotateXY(this.orthogonalXY, 0, 0);
@@ -151,7 +153,8 @@ export default class Renderer {
     }
     gl.uniform3fv(uCameraOrigin, this.cameraOrigin);
     gl.uniformMatrix3fv(uCameraMatrix, false, this.cameraMatrix);
-    this.setViewport(0, 0, 1024, 1024);
+    const resolution = this.resolution();
+    this.setViewport(0, 0, resolution.width, resolution.height);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
 
@@ -161,17 +164,17 @@ export default class Renderer {
     const uCameraOrigin = gl.getUniformLocation(program, "camera_origin");
 
     const splitPoint = Signal.get(this.quadSplitPoint);
-    const resolution = [1024, 1024];
+    const resolution = this.resolution();
     const minPanelSize = 64;
     const freePaneSize = [
-      clamp(Math.round(splitPoint.x * resolution[0]), minPanelSize, resolution[0] - minPanelSize),
-      clamp(Math.round(splitPoint.y * resolution[1]), minPanelSize, resolution[1] - minPanelSize),
+      clamp(Math.round(splitPoint.x * resolution.width), minPanelSize, resolution.width - minPanelSize),
+      clamp(Math.round(splitPoint.y * resolution.height), minPanelSize, resolution.height - minPanelSize),
     ];
 
     const leftPaneWidth = freePaneSize[0];
     const topPaneHeight = freePaneSize[1];
-    const rightPaneWidth = resolution[0] - freePaneSize[0];
-    const bottomPaneHeight = resolution[1] - freePaneSize[1];
+    const rightPaneWidth = resolution.width - freePaneSize[0];
+    const bottomPaneHeight = resolution.height - freePaneSize[1];
 
     const zoom = Signal.get(this.zoom);
     const target = Signal.get(this.origin);

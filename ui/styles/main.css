@@ -166,7 +166,7 @@ header .image-link {
   position: relative;
 }
 .bauble-placeholder .bauble canvas {
-  max-height: calc(min(100%, 512px));
+  max-height: calc(min(100%, var(--canvas-height)));
 }
 .bauble-placeholder .toolbar {
   background-color: initial;
@@ -228,7 +228,8 @@ body.main-page .bauble {
 .bauble .code-container {
   display: flex;
   flex-direction: column;
-  flex: 1 1 512px;
+  /* TODO: this should be width OR height depending on orientation */
+  flex: 1 1 var(--canvas-width);
 }
 
 .bauble .canvas-container {
@@ -236,7 +237,8 @@ body.main-page .bauble {
   justify-content: start;
   align-items: center;
   flex-direction: column;
-  flex: 0 1 512px;
+  /* TODO: this should be width OR height depending on orientation */
+  flex: 0 1 var(--canvas-width);
 }
 
 .bauble .editor-container {
@@ -428,8 +430,8 @@ body.main-page .bauble {
 }
 
 .bauble canvas {
-  max-width: calc(min(100%, 512px));
-  max-height: calc(min(100% - 2 * var(--control-height), 512px));
+  max-width: calc(min(100%, var(--canvas-width)));
+  max-height: calc(min(100% - 2 * var(--control-height), var(--canvas-height)));
   touch-action: none;
 }
 

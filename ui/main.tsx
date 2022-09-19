@@ -27,8 +27,9 @@ document.addEventListener("DOMContentLoaded", (_) => {
               runtime={runtime}
               outputChannel={outputChannel}
               initialScript={initialScript}
-              hijackScroll={false}
+              focusable={true}
               canSave={false}
+              size={{width: 256, height: 256}}
             />, placeholder);
         }
       }).catch(console.error);
@@ -41,8 +42,9 @@ document.addEventListener("DOMContentLoaded", (_) => {
           runtime={runtime}
           outputChannel={outputChannel}
           initialScript={initialScript}
-          hijackScroll={true}
+          focusable={false}
           canSave={true}
+          size={{width: 512, height: 512}}
         />, document.body);
       }).catch(console.error);
       break;

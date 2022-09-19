@@ -1,5 +1,5 @@
 import type {Component, JSX} from 'solid-js';
-import {batch, createSelector, onMount, For, Switch, Match} from 'solid-js';
+import {batch, createMemo, createSelector, onMount, For, Switch, Match} from 'solid-js';
 import {Timer, LoopMode, TimerState} from './timer';
 import installCodeMirror from './editor';
 import {EditorView} from '@codemirror/view';
@@ -11,6 +11,7 @@ import type {Seconds} from './types';
 import type {BaubleModule} from 'bauble-runtime';
 import OutputChannel from './output-channel';
 import RenderLoop from './render-loop';
+import type {Property} from 'csstype';
 
 enum EvaluationState {
   Unknown,
@@ -247,6 +248,7 @@ interface BaubleProps {
   canSave: boolean,
   runtime: BaubleModule,
   outputChannel: OutputChannel,
+  size: {width: number, height: number},
 }
 const Bauble = (props: BaubleProps) => {
   const {runtime, outputChannel} = props;
@@ -259,6 +261,14 @@ const Bauble = (props: BaubleProps) => {
   let isGesturing = false;
   let gestureEndedAt = 0;
 
+  const canvasSize = Signal.create(props.size);
+  const pixelRatio = Signal.create(window.devicePixelRatio);
+  const imageRendering: Signal.T<Property.ImageRendering> = Signal.create('auto');
+  const canvasResolution = createMemo(() => {
+    const dpr = Signal.get(pixelRatio);
+    const size = Signal.get(canvasSize);
+    return {width: dpr * size.width, height: dpr * size.height};
+  });
   const renderType = Signal.create(0);
   const quadView = Signal.create(false);
   const quadSplitPoint = Signal.create({x: 0.5, y: 0.5});
@@ -288,6 +298,7 @@ const Bauble = (props: BaubleProps) => {
       zoom,
       quadView,
       quadSplitPoint,
+      canvasResolution,
     );
 
     const renderLoop = new RenderLoop((elapsed) => batch(() => {
@@ -327,6 +338,7 @@ const Bauble = (props: BaubleProps) => {
       timer.state,
       quadView,
       quadSplitPoint,
+      canvasResolution,
     ] as Signal.T<any>[], () => {
       renderLoop.schedule();
     });
@@ -445,10 +457,9 @@ const Bauble = (props: BaubleProps) => {
     // panning to continue
     if (performance.now() - gestureEndedAt < 100) { return; }
 
-    // TODO: pixelScale shouldn't be hardcoded
-    const pixelScale = 0.5;
-    const deltaX = (canvasPointerAt[0] - pointerWasAt[0]) * pixelScale * canvas.width / canvas.clientWidth;
-    const deltaY = (canvasPointerAt[1] - pointerWasAt[1]) * pixelScale * canvas.height / canvas.clientHeight;
+    const size = Signal.get(canvasSize);
+    const deltaX = (canvasPointerAt[0] - pointerWasAt[0]) * (size.width / canvas.clientWidth);
+    const deltaY = (canvasPointerAt[1] - pointerWasAt[1]) * (size.height / canvas.clientHeight);
     const panRate = Signal.get(zoom) * cameraPanSpeed;
 
     switch (interaction!) {
@@ -527,8 +538,9 @@ const Bauble = (props: BaubleProps) => {
     handlePointerAt = [e.screenX, e.screenY];
   };
   const onHandleDblClick = () => {
-    codeContainer.style.flexBasis = `512px`;
-    canvasContainer.style.flexBasis = '512px';
+    // TODO: width or height!
+    codeContainer.style.flexBasis = `var(--canvas-width)`;
+    canvasContainer.style.flexBasis = 'var(--canvas-width)';
   };
   const onHandlePointerMove = (e: PointerEvent & {currentTarget: HTMLDivElement}) => {
     if (!e.currentTarget.hasPointerCapture(e.pointerId)) {
@@ -551,10 +563,19 @@ const Bauble = (props: BaubleProps) => {
     canvasContainer.style.flexBasis = `${oldSize - delta}px`;
   };
 
-  return <div class="bauble">
+  return <div class="bauble" style={{
+    '--canvas-width': `${Signal.get(canvasSize).width}px`,
+    '--canvas-height': `${Signal.get(canvasSize).height}px`
+  }}>
     <div class="canvas-container" ref={canvasContainer!}>
       <RenderToolbar renderType={renderType} quadView={quadView} rotation={rotation} origin={origin} zoom={zoom} />
-      <canvas ref={canvas!} class="render-target" width="1024" height="1024"
+      <canvas
+        ref={canvas!}
+        class="render-target"
+        style={{'image-rendering': Signal.get(imageRendering)}}
+        width={canvasResolution().width}
+        height={canvasResolution().height}
+        tabindex={props.focusable ? 0 : undefined}
         onWheel={onWheel}
         onDblClick={onDblClick}
         onPointerDown={onPointerDown}
