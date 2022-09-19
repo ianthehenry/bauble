@@ -498,7 +498,7 @@ const Bauble = (props: BaubleProps) => {
     // will report very large values of deltaY, resulting
     // in very choppy scrolling. I don't really know a good
     // way to fix this without explicit platform detection.
-    Signal.update(zoom, (x) => x + cameraZoomSpeed * e.deltaY);
+    Signal.update(zoom, (x) => Math.max(0, x + cameraZoomSpeed * e.deltaY));
   };
 
   let initialZoom = 1;
@@ -507,7 +507,7 @@ const Bauble = (props: BaubleProps) => {
     isGesturing = true;
   };
   const onGestureChange = (e: GestureEvent) => {
-    Signal.set(zoom, initialZoom / e.scale);
+    Signal.set(zoom, Math.max(0, initialZoom / e.scale));
   };
   const onGestureEnd = () => {
     isGesturing = false;
