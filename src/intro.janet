@@ -61,7 +61,7 @@
 # (def top-eyelid (intersect :r 2 (onion 1 (sphere 15)) (half-space :y 0) | rotate :x (- 0.75 (cos+ t | ss 0.99 1 * 2))))
 # (def eye (sphere 15 | shade (vec3 (+ 0.1 (step 0.81 (step p.z 12)))) :gloss 15 :shine 1 | fresnel :exponent 1 | fresnel
 #   | rotate :y (- (sin t - 0.95 | ss 0.03) (sin (+ pi/2 t * 0.87) | ss 0.03))))
-# (def skin (shade [0 1 1] :gloss 10 | fresnel :exponent 0.5 0.05 [0 1 0] | fresnel | ambient (mix -0.2 0.0 occlusion)))
+# (def skin (shade [0 1 1] :gloss 10 | fresnel :exponent 0.5 0.05 [0 1 0] | fresnel | ambient (mix -0.05 0.0 occlusion)))
 # (def mouth (box :r (sin+ t) [25 (* 2 (sin+ t)) 20] | move [0 (+ -32 (* 0.005 p.x p.x)) 64] | color [0 0 0]))
 # (union :r 5 body (triple (union :r 2 top-eyelid bottom-eyelid)) | resurface skin | subtract :r 10 mouth | union (triple eye) | move :y -40)
 
@@ -305,7 +305,7 @@
 
 # (box 50 :r 10
 # | tile [150 0 150]
-# | shade [1 (/ (distance camera P) 1000) 0])
+# | shade [1 (/ (distance camera P) 5000) 0])
 
 # When writing a color expression, you
 # have access to a couple other magic
@@ -326,8 +326,8 @@
 # you. It's commonly used to modulate
 # light:
 
-# (def lights [(ambient (mix 0.1 0.2 occlusion)) (light [512 512 256])])
-# # (def lights [(ambient 0.2) (light [512 512 256])])
+# (def lights [(ambient (mix 0 0.05 occlusion)) (light [512 512 256])])
+# # (def lights [(ambient 0.05) (light [512 512 256])])
 # (box 50 :r 10 | spoon (rotate :x tau/8 :y tau/4 :x tau/3 | scale 0.75 | move :y 70)
 # | shade [0 1 1]
 # | union (half-space :-y -50 | shade [1 1 1]))

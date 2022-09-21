@@ -19,8 +19,8 @@
     (if-let [binding (in env 'lights)
              value (if (in binding :private) nil (in binding :value))]
       value
-      [(light/point/new [512 512 256] [1 1 1] 1 nil)
-       (light/ambient/new [1 1 1] 0.2)]))
+      [(light/point/new ~(+ ,globals/P [1024 1024 512]) [1 1 1] 1 nil)
+       (light/ambient/new [1 1 1] 0.05)]))
 
   #(when debug?
   #  (pp (:compile expr (:new-scope comp-state)))

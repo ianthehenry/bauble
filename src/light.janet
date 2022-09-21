@@ -11,7 +11,7 @@
         (if radius
           (let [$position (:temp-var comp-state type/vec3 'position)]
             ~(with ,$position ,position
-              ,(get-expr $position ~(* ,brightness (clamp (/ (distance ,globals/P ,$position) ,radius) 0 1)))))
+              ,(get-expr $position ~(* ,brightness (clamp (- 1 (/ (distance ,globals/P ,$position) ,radius)) 0 1)))))
           (get-expr position brightness)))
 
       (wrap (fn [position brightness]
