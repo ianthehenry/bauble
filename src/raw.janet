@@ -2,7 +2,7 @@
 (use ./internal-helpers)
 (use ./axes)
 (import ./globals)
-(import ./glslisp/src/type :as type)
+(import ./glslisp/src/type)
 (import ./glslisp/src/util :as glslisp/util)
 
 (defn- arg-kvps [args]
@@ -590,7 +590,7 @@
 # use, but we should generate a separate version for every *unique signature*
 # -- that is, the only thing that actually varies here is the array length. Can we use
 # overloads to make this work?
-(def-surfacer blinn-phong [shape color shine gloss ambient]
+(def-surfacer blinn-phong [shape color shine gloss]
   (:generate-function comp-state "vec3" :blinn-phong "blinn_phong"
     [globals/P
      globals/camera
@@ -599,17 +599,21 @@
      globals/lights
      ["vec3 color" color]
      ["float shine" shine]
-     ["float gloss" gloss]
-     ["float ambient" ambient]]
+     ["float gloss" gloss]]
     `vec3 view_dir = normalize(camera_origin - P);
-     vec3 result = color * ambient;
+     vec3 result = vec3(0.0);
      for (int i = 0; i < lights.length(); i++) {
        vec3 light_color = lights[i].color;
        vec3 light_dir = lights[i].direction;
-       vec3 halfway_dir = normalize(light_dir + view_dir);
-       float specular_strength = shine * pow(max(dot(normal, halfway_dir), 0.0), gloss * gloss);
-       float diffuse = max(0.0, dot(normal, light_dir));
-       result += light_color * specular_strength;
+       float diffuse;
+       if (light_dir == vec3(0.0)) {
+        diffuse = 1.0;
+       } else {
+         vec3 halfway_dir = normalize(light_dir + view_dir);
+         float specular_strength = shine * pow(max(dot(normal, halfway_dir), 0.0), gloss * gloss);
+         result += light_color * specular_strength;
+         diffuse = max(0.0, dot(normal, light_dir));
+       }
        result += color * diffuse * light_color;
      }
      return result;
@@ -680,15 +684,5 @@
     ~(with ,$pivot ,pivot-point
       ,(:surface (move (f (move shape ~(- ,$pivot))) $pivot) comp-state))))
 
-(def-surfacer apply-light [shape {:position position :color color :brightness brightness :radius radius}]
-  (defn wrap [get-expr]
-    (if radius
-      (let [$position (:temp-var comp-state type/vec3 'position)]
-        ~(with ,$position ,position
-          ,(get-expr $position ~(* ,brightness (clamp (/ (distance ,globals/P ,$position) ,radius) 0 1)))))
-      (get-expr position brightness)))
-
-  (wrap (fn [position brightness]
-    ~(extend ,globals/lights
-      (cast_point_light ,globals/P ,globals/normal ,position ,color ,brightness)
-      ,(:surface shape comp-state)))))
+(def-surfacer apply-light [shape light]
+  (:apply light shape comp-state))

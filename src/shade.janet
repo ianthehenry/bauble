@@ -3,15 +3,24 @@
 (import ./glslisp/src/type)
 (import ./glsl-helpers)
 (import ./globals)
+(import ./raw)
+(import ./light)
 
 (def- debug? false)
 
 (defn- compile-function [{:name name :params params :body body :return-type return-type}]
   (string/format "%s %s(%s) {\n%s\n}" return-type name (string/join params ", ") body))
 
-(defn- compile-fragment-shader [expr]
+(defn- compile-fragment-shader [expr env]
   (var animated? false)
   (def comp-state (comp-state/new glsl-helpers/functions))
+
+  (def lights
+    (if-let [binding (in env 'lights)
+             value (if (in binding :private) nil (in binding :value))]
+      value
+      [(light/point/new [512 512 256] [1 1 1] 1 nil)
+       (light/ambient/new [1 1 1] 0.2)]))
 
   #(when debug?
   #  (pp (:compile expr (:new-scope comp-state)))
@@ -21,12 +30,10 @@
   # in distance expressions, because the type is unknown? probably.
   (def distance-scope (:new-scope comp-state))
   (def color-scope (:new-scope comp-state))
-  (:push-var-type color-scope globals/lights (type/array 1 "LightIncidence"))
+  (:push-var-type color-scope globals/lights (type/array 0 "LightIncidence"))
   (def [distance-statements distance-expression] (:compile-distance distance-scope expr))
-
-  # TODO: we actually need to wrap the color expression in the default lights. hmmmm. actually... hmm.
-
-  (def [color-statements color-expression] (:compile-color color-scope expr))
+  (def color-expr (reduce |(raw/apply-light $0 $1) expr lights))
+  (def [color-statements color-expression] (:compile-color color-scope color-expr))
 
   (def distance-prep-statements @[])
   (each free-variable (keys (distance-scope :free-variables))
@@ -38,10 +45,9 @@
       (errorf "cannot use %s in a distance expression" (:name free-variable))))
 
   (def color-prep-statements @[])
-  # this statement must come first so that the light intensity can see it
+  # this statement must come first so that the occlusion calculation can see it
   (if (or ((color-scope :free-variables) globals/normal)
-          ((color-scope :free-variables) globals/occlusion)
-          ((color-scope :free-variables) globals/lights))
+          ((color-scope :free-variables) globals/occlusion))
     (array/push color-prep-statements "vec3 normal = calculate_normal(p);"))
 
   (each free-variable (keys (color-scope :free-variables))
@@ -52,18 +58,8 @@
       globals/normal nil
       globals/P (array/push color-prep-statements "vec3 P = p;")
       globals/occlusion (array/push color-prep-statements "float occlusion = calculate_occlusion(p, normal);")
-      globals/lights (do
-        (:require-function comp-state 'cast_point_light [])
-        # Array initialization syntax doesn't work on the Google
-        # Pixel 6a, so we do this kinda dumb thing. Also a simple
-        # for loop doesn't work on my mac. So I dunno.
-        (array/push color-prep-statements "LightIncidence lights[1];")
-        # A for loop would be obvious, but it doesn't work for some reason.
-        (for i 0 1
-          (array/push color-prep-statements
-            (string `lights[`i`] = cast_point_light(p, normal, vec3(512.0, 512.0, 256.0), vec3(1.0), 1.0);`)))
-        )
-      (errorf "unexpected free variable %s" (:name free-variable))))
+      globals/lights nil
+      (errorf "unexpected free variable %s" (:intrinsic-name free-variable))))
 
   (def function-defs (string/join (map compile-function (comp-state :compiled-functions)) "\n"))
 
@@ -244,10 +240,10 @@ void main() {
   (and (struct? value)
        (not (nil? (value :compile)))))
 
-(defn compile-shape [expr]
+(defn compile-shape [expr env]
   (if (is-good-value? expr)
     (try
-      (compile-fragment-shader expr)
+      (compile-fragment-shader expr env)
       ([err fiber]
         (debug/stacktrace fiber err "")
         :error))

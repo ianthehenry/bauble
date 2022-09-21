@@ -190,26 +190,52 @@
   (:pop-var-name state variable)
   result)
 
-# TODO: support variadic extensions?
-# also, it's probably worth unrolling the assignment loop here, right?
+(defn- compact-extend [variable initial-value expr]
+  (var expr expr)
+  (def values @[initial-value])
+  (while (and (application? expr)
+              (= (expr 0) 'extend)
+              (= (expr 1) variable))
+    (array/push values (expr 2))
+    (set expr (expr 3)))
+  [values expr])
+
 (defn- compile-extend [state args]
   (assert (= (length args) 3) "wrong number of arguments to extend")
+
   (def [variable value expr] args)
+  # TODO: so we're doing this optimization "just in time," when
+  # it might be more appropriate to run a separate optimization pass
+  # over the structure. but whatever; this is a lot easier.
+  # we're also doing a *very* naive version of this; intervening
+  # instructions obviously won't show up. e.g.:
+  #
+  #   (def lights
+  #     [(light [76 100 0] :color [1 0 0])
+  #      (ambient [0 1 1] 0.02)])
+  #   (sphere 50
+  #   | shade [1 1 1]
+  #   | light [0 100 -135] :color [0 0 1]
+  #   | move :x 10)
+  #
+  # The mere presence of that move instruction means that this will
+  # generate less efficient code, even though it's equivalent.
+
+  (def [new-values expr] (compact-extend variable value expr))
+
   (def old-name (:get-var-name state variable))
   (def new-name (:new-name state variable))
   (def type (:get-var-type state variable))
   (assert type/is-array? type)
   (def underlying (type/array-underlying type))
   (def old-length (type/array-length type))
-  (def new-length (+ 1 old-length))
+  (def new-length (+ old-length (length new-values)))
   (def new-type (type/array new-length underlying))
   (:statement state (string underlying` `new-name`[`new-length`];`))
   (for i 0 old-length
     (:statement state (string new-name`[`i`] = `old-name`[`i`];`)))
-  #(:statement state (string `for (int i = 0; i < `old-length`; i++) {`))
-  #(:statement state (string new-name`[i] = `old-name`[i];`))
-  #(:statement state `}`)
-  (:statement state (string new-name`[`old-length`] = `(compile! state value)`;`))
+  (eachp [i value] new-values
+    (:statement state (string new-name`[`(+ old-length i)`] = `(compile! state value)`;`)))
   (:push-var-name state variable new-name)
   (:push-var-type state variable new-type)
   (def result (compile! state expr))

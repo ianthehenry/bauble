@@ -56,7 +56,7 @@
   # report multiple errors, although
   # this just reports the first one
   (if (empty? errors)
-    last-value
+    [last-value env]
     (if error-fiber
       (propagate (first errors) error-fiber)
       (error (first errors)))))

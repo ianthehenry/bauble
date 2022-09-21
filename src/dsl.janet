@@ -296,13 +296,12 @@
 # --- surfacing ---
 
 (def-flexible-fn blinn-phong
-  [[shape raw/r3] color [shine 0.25] [gloss 4] [ambient 0.2]]
+  [[shape raw/r3] color [shine 0.25] [gloss 4]]
   {type/vec3 |(set-param color $)
    type/3d |(set-param shape $)
    :shine |(set-param shine $ type/float)
-   :gloss |(set-param gloss $ type/float)
-   :ambient |(set-param ambient $ type/float)}
-  (raw/blinn-phong shape color shine gloss ambient))
+   :gloss |(set-param gloss $ type/float)}
+  (raw/blinn-phong shape color shine gloss))
 
 (def shade blinn-phong)
 
@@ -370,7 +369,16 @@
    :brightness |(set-param brightness (typecheck :brightness type/float $))
    :radius |(set-param radius (typecheck :radius type/float $))
    :color |(set-param color (typecheck :color type/vec3 $))}
-  (def light (light/new position color brightness radius))
+  (def light (light/point/new position color brightness radius))
+  (if (nil? shape)
+    light
+    (raw/apply-light shape light)))
+
+(def-flexible-fn ambient [[shape nil] [color [1 1 1]] [brightness 1]]
+  {type/3d |(set-param shape $)
+   type/vec3 |(set-param color $)
+   type/float |(set-param brightness $)}
+  (def light (light/ambient/new color brightness))
   (if (nil? shape)
     light
     (raw/apply-light shape light)))

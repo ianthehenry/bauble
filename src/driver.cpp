@@ -72,16 +72,17 @@ CompilationResult evaluate_script(string source) {
   }
 
   long long start_time = emscripten_get_now();
-  Janet *user_expression = call_fn(janetfn_bauble_evaluate, 1, (Janet[1]){ janet_cstringv(source.c_str()) });
-  if (!user_expression) {
+  Janet *evaluation_result = call_fn(janetfn_bauble_evaluate, 1, (Janet[1]){ janet_cstringv(source.c_str()) });
+  if (!evaluation_result) {
     return compilation_error("evaluation error");
   }
 
   long long done_evaluating = emscripten_get_now();
 
-  const Janet compile_shape_args[1] = { *user_expression };
-  Janet *response_ptr = call_fn(janetfn_compile_shape, 1, compile_shape_args);
-  free(user_expression);
+  const Janet *tuple = janet_unwrap_tuple(*evaluation_result);
+  const Janet compile_shape_args[2] = { tuple[0], tuple[1] };
+  Janet *response_ptr = call_fn(janetfn_compile_shape, 2, compile_shape_args);
+  free(evaluation_result);
 
   long long done_compiling_glsl = emscripten_get_now();
   bool is_animated;
