@@ -133,14 +133,14 @@
 # less typing. Let's take a look,
 # starting without any helpers:
 
-# (shade [1 0.1 0.1] (rotate :y pi/4 (box 50 :r 5)))
+# (shade red (rotate :y pi/4 (box 50 :r 5)))
 
 # First of all, the Bauble DSL is very
 # forgiving about named and positional
 # argument order. So that's actually the
 # same -- modulo color -- as:
 
-# (shade (rotate (box :r 5 50) :y pi/4) [0.1 1 0.1])
+# (shade (rotate (box :r 5 50) :y pi/4) green)
 
 # Janet provides a useful threading
 # macro that we can use to write this
@@ -148,12 +148,12 @@
 # transformations, so that the
 # expression is not as nested:
 
-# (-> (box 50 :r 5) (rotate :y pi/4) (shade [0.1 0.1 1]))
+# (-> (box 50 :r 5) (rotate :y pi/4) (shade blue))
 
 # Which is very useful. Bauble lets you
 # go a little bit further:
 
-# (box 50 :r 5 | rotate :y pi/4 | shade [1 1 0.1])
+# (box 50 :r 5 | rotate :y pi/4 | shade purple)
 
 # At first this might not look like Lisp
 # at all, but it's a pretty simple macro
@@ -330,7 +330,7 @@
 # # (def lights [(ambient 0.05) (light [512 512 256])])
 # (box 50 :r 10 | spoon (rotate :x tau/8 :y tau/4 :x tau/3 | scale 0.75 | move :y 70)
 # | shade [0 1 1]
-# | union (half-space :-y -50 | shade [1 1 1]))
+# | union (half-space :-y -50 | shade white))
 
 # Comment and uncomment that second
 # (def lights ...) line a few times to
@@ -488,7 +488,7 @@
 # (union
 #   (sphere 50 | move :z -70 | slow 0.25)
 #   (sphere 50 | move :z 70)
-#   (ground -50 | shade [1 1 1]))
+#   (ground -50 | shade white))
 
 #### Surfacing expressions ####
 
@@ -555,7 +555,7 @@
 # color to evoke a subsurface
 # scattering effect.
 
-# (fresnel (sphere 50 | shade [1 1 1]) [1 0.6 0.5] 0.25 :exponent 0.5)
+# (fresnel (sphere 50 | shade (vec3 0.8)) [1 0.7 0.6] 0.25 :exponent 0.5)
 
 #### Surfacing with boolean operations ####
 
@@ -563,8 +563,8 @@
 # also combine their surfaces. For
 # example, here are a couple shapes:
 
-# (def green-box (shade [0 1 0] (box 50 :r 5) :gloss 12 :shine 1))
-# (def red-sphere (shade [1 0 0] (sphere 60)))
+# (def green-box (shade green (box 50 :r 5) :gloss 12 :shine 1))
+# (def red-sphere (shade red (sphere 60)))
 
 # Now uncomment each of these one at a
 # time to see how the colors interact:
@@ -613,12 +613,12 @@
 # save a material to apply to multiple
 # shapes. Instead of this:
 
-# (shade [1 1 0] (sphere 50))
+# (shade hot-pink :gloss 10 :shine 0.7 (sphere 50))
 
 # You can write:
 
-# (def yellow (shade [1 1 0]))
-# (resurface (sphere 50) yellow)
+# (def shoes (shade hot-pink :gloss 10 :shine 0.7))
+# (resurface (sphere 50) shoes)
 
 # The way this works is that (shade) and
 # other material primitives, when not
@@ -767,7 +767,7 @@
 # do great things together:
 
 # (def leppard (shade (mix brown tan (round spots) * (max outline 0.05))))
-# (def eye (sphere 5 | shade [1 1 1] | union (sphere 2 | move :z 4 | shade [0.1 0.1 0.1])))
+# (def eye (sphere 5 | shade white | union (sphere 2 | move :z 4 | shade [0.1 0.1 0.1])))
 # (line [20 0 32] [50 -50 50] 5
 # | mirror :x :z
 # | union :r 10
