@@ -61,7 +61,7 @@
 # (def top-eyelid (intersect :r 2 (onion 1 (sphere 15)) (half-space :y 0) | rotate :x (- 0.75 (cos+ t | ss 0.99 1 * 2))))
 # (def eye (sphere 15 | shade (vec3 (+ 0.1 (step 0.81 (step p.z 12)))) :gloss 15 :shine 1 | fresnel :exponent 1 | fresnel
 #   | rotate :y (- (sin t - 0.95 | ss 0.03) (sin (+ pi/2 t * 0.87) | ss 0.03))))
-# (def skin (shade [0 1 1] :ambient (mix 0.2 0.1 occlusion) :gloss 10 | fresnel :exponent 0.5 0.05 [0 1 0] | fresnel))
+# (def skin (shade [0 1 1] :gloss 10 | fresnel :exponent 0.5 0.05 [0 1 0] | fresnel | ambient (mix -0.2 0.0 occlusion)))
 # (def mouth (box :r (sin+ t) [25 (* 2 (sin+ t)) 20] | move [0 (+ -32 (* 0.005 p.x p.x)) 64] | color [0 0 0]))
 # (union :r 5 body (triple (union :r 2 top-eyelid bottom-eyelid)) | resurface skin | subtract :r 10 mouth | union (triple eye) | move :y -40)
 
@@ -110,8 +110,7 @@
 #   (shade (box 50 :r 10)
 #     (hsv 0.00 1 1)
 #     :gloss 4
-#     :shine 0.5
-#     :ambient 0.2)
+#     :shine 0.5)
 #   (shade (ground -50)
 #     [0.9 0.9 0.9]))
 
@@ -327,17 +326,25 @@
 # you. It's commonly used to modulate
 # light:
 
-# (defn shade-ao [shape color]
-#   (shade shape color :ambient (mix 0.1 0.2 occlusion)))
+# (def lights [(ambient (mix 0.1 0.2 occlusion)) (light [512 512 256])])
+# # (def lights [(ambient 0.2) (light [512 512 256])])
 # (box 50 :r 10 | spoon (rotate :x tau/8 :y tau/4 :x tau/3 | scale 0.75 | move :y 70)
-# | shade-ao [0 1 1]
-# | union (half-space :-y -50 | shade-ao [1 1 1]))
+# | shade [0 1 1]
+# | union (half-space :-y -50 | shade [1 1 1]))
 
-# Try changing the call to (shade-ao) to
-# just (shade). Without ambient
-# occlusion, the areas in shadow appear
-# completely flat. With ambient
-# occlusion, you get a sense of depth.
+# Comment and uncomment that second
+# (def lights ...) line a few times to
+# get a feel for what ambient occlusion
+# brings to the table. It helps
+# maintain a sense of depth even when
+# shapes are in shadow.
+
+# If you're trying to make a realistic
+# scene, you'll probably want occlusion
+# to affect the brightness of all
+# lights except for the key light
+# (the main shadow-casting light) in
+# your scene.
 
 # Just to review, the only magic
 # variables are:
@@ -744,8 +751,7 @@
 # much. But you can use it to produce
 # some very cool effects:
 
-# (sphere (p * 0.05 | vec4 (t * 3) | perlin+ * (t * 4 | sin+ * 25) + 50)
-# | slow 0.9)
+# (sphere (p * 0.05 | vec4 (t * 3) | perlin+ * (t * 4 | sin+ * 25) + 50) | slow 0.9)
 
 # You can use noise to compute complex
 # procedural textures:
@@ -771,7 +777,8 @@
 # | resurface leppard
 # | union
 #   (eye | rotate :x 0.63 :y -0.47 | move [7 34 67])
-#   (eye | scale 0.95 | rotate :x -0.09 :y 0.52 | move [-7 33 67]))
+#   (eye | scale 0.95 | rotate :x -0.09 :y 0.52 | move [-7 33 67])
+#   (ground -55 | shade dark-gray))
 
 # We will never speak of this again.
 
