@@ -317,7 +317,6 @@ const Bauble = (props: BaubleProps) => {
         outputContainer.innerHTML = '';
         outputChannel.target = outputContainer;
         const result = runtime.evaluate_script(editor.state.doc.toString());
-        outputChannel.target = null;
         Signal.set(scriptDirty, false);
         if (result.isError) {
           Signal.set(evaluationState, EvaluationState.EvaluationError);
@@ -327,11 +326,15 @@ const Bauble = (props: BaubleProps) => {
             renderer.recompileShader(result.shaderSource);
             Signal.set(evaluationState, EvaluationState.Success);
             Signal.set(isAnimation, result.isAnimated);
-          } catch (e) {
+          } catch (e: any) {
             Signal.set(evaluationState, EvaluationState.ShaderCompilationError);
-            console.error(e);
+            outputChannel.print(e.toString(), true);
+            if (e.cause != null) {
+              outputChannel.print(e.cause, true);
+            }
           }
         }
+        outputChannel.target = null;
       }
       renderer.draw();
       return Signal.get(isVisible) && Signal.get(isAnimation) && Signal.get(timer.state) === TimerState.Playing;

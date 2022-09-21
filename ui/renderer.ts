@@ -25,6 +25,13 @@ void main() {
 }
 `;
 
+declare global {
+  interface ErrorConstructor {
+    new (message: string, info: {cause: any}): Error;
+    (message: string, info: {cause: any}): Error;
+  }
+}
+
 function compileShader(gl: WebGLRenderingContext, type: number, source: string) {
   const shader = gl.createShader(type)!;
   gl.shaderSource(shader, source);
@@ -33,10 +40,7 @@ function compileShader(gl: WebGLRenderingContext, type: number, source: string) 
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
     const info = gl.getShaderInfoLog(shader);
     gl.deleteShader(shader);
-    console.error(info);
-    // TODO: just don't throw here
-    throw new Error("failed to compile shader ugh typescript why");
-    // throw new Error("failed to compile shader", {cause: info});
+    throw new Error("failed to compile shader", {cause: info});
   }
 
   return shader;
@@ -243,9 +247,7 @@ export default class Renderer {
       this._positionLocation = null;
       if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
         const info = gl.getProgramInfoLog(program);
-        console.error(info);
-        throw new Error("failed to link shader program ugh typescript why");
-        // throw new Error("failed to link shader program", {cause: info});
+        throw new Error("failed to link shader program", {cause: info});
       }
       gl.useProgram(program);
       this.currentFragmentShader = fragmentShader;
@@ -254,11 +256,7 @@ export default class Renderer {
       console.log(`spent ${endTime - startTime}ms compiling shader`);
     } catch (e) {
       this.currentFragmentShader = null;
-      console.error(e);
-      // TODO:
-      // if (e instanceof Error) {
-      //   print(e.stack!, true);
-      // }
+      throw e;
     }
   }
 }
