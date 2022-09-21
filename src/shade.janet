@@ -1,5 +1,6 @@
-(import ./glslisp/src/comp-state :as comp-state)
 (import ./glslisp/src/index :as glslisp)
+(import ./glslisp/src/comp-state)
+(import ./glslisp/src/type)
 (import ./glsl-helpers)
 (import ./globals)
 
@@ -12,15 +13,20 @@
   (var animated? false)
   (def comp-state (comp-state/new glsl-helpers/functions))
 
-  (when debug?
-    (pp (:compile expr (:new-scope comp-state)))
-    (pp (:surface expr (:new-scope comp-state))))
+  #(when debug?
+  #  (pp (:compile expr (:new-scope comp-state)))
+  #  (pp (:surface expr (:new-scope comp-state))))
+
+  # TODO: are you going to get weird errors if you refer to lights
+  # in distance expressions, because the type is unknown? probably.
   (def distance-scope (:new-scope comp-state))
   (def color-scope (:new-scope comp-state))
+  (:push-var-type color-scope globals/lights (type/array 1 "LightIncidence"))
   (def [distance-statements distance-expression] (:compile-distance distance-scope expr))
 
+  # TODO: we actually need to wrap the color expression in the default lights. hmmmm. actually... hmm.
+
   (def [color-statements color-expression] (:compile-color color-scope expr))
-  (def function-defs (string/join (map compile-function (comp-state :functions)) "\n"))
 
   (def distance-prep-statements @[])
   (each free-variable (keys (distance-scope :free-variables))
@@ -29,14 +35,15 @@
       globals/t (set animated? true)
       globals/camera nil
       globals/P (array/push distance-prep-statements "vec3 P = p;")
-      (errorf "cannot use %s in a distance expression" (free-variable :name))))
+      (errorf "cannot use %s in a distance expression" (:name free-variable))))
 
   (def color-prep-statements @[])
   # this statement must come first so that the light intensity can see it
   (if (or ((color-scope :free-variables) globals/normal)
           ((color-scope :free-variables) globals/occlusion)
-          ((color-scope :free-variables) globals/light-intensities))
+          ((color-scope :free-variables) globals/lights))
     (array/push color-prep-statements "vec3 normal = calculate_normal(p);"))
+
   (each free-variable (keys (color-scope :free-variables))
     (case free-variable
       globals/p nil
@@ -45,19 +52,20 @@
       globals/normal nil
       globals/P (array/push color-prep-statements "vec3 P = p;")
       globals/occlusion (array/push color-prep-statements "float occlusion = calculate_occlusion(p, normal);")
-      globals/light-intensities (do
+      globals/lights (do
+        (:require-function comp-state 'cast_point_light [])
         # Array initialization syntax doesn't work on the Google
         # Pixel 6a, so we do this kinda dumb thing. Also a simple
         # for loop doesn't work on my mac. So I dunno.
-        (array/push color-prep-statements "float light_intensities[3];")
+        (array/push color-prep-statements "LightIncidence lights[1];")
         # A for loop would be obvious, but it doesn't work for some reason.
         (for i 0 1
           (array/push color-prep-statements
-            (string `light_intensities[`i`] = cast_light(p + 2.0 * MINIMUM_HIT_DISTANCE * normal, lights[`i`].position, lights[`i`].radius);`)))
-        (for i 1 3
-          (array/push color-prep-statements
-            (string `light_intensities[`i`] = 0.0;`))))
-      (errorf "unexpected free variable %s" (free-variable :name))))
+            (string `lights[`i`] = cast_point_light(p, normal, vec3(512.0, 512.0, 256.0), vec3(1.0), 1.0);`)))
+        )
+      (errorf "unexpected free variable %s" (:name free-variable))))
+
+  (def function-defs (string/join (map compile-function (comp-state :compiled-functions)) "\n"))
 
   (when debug?
     (print
@@ -92,20 +100,12 @@ const float MAXIMUM_TRACE_DISTANCE = 64.0 * 1024.0;
 
 const float PI = 3.14159265359;
 
-struct Light {
-  vec3 position;
+struct LightIncidence {
+  vec3 direction;
   vec3 color;
-  float radius;
 };
 
-// TODO: obviously these should be user-customizable,
-// but it's kind of a whole thing and I'm working on
-// it okay
-const Light lights[3] = Light[3](
-  Light(vec3(512.0, 512.0, 256.0), vec3(1.0), 2048.0),
-  Light(vec3(0.0, 0.0, -512.0), vec3(0.0), 2048.0),
-  Light(vec3(0.0, 0.0, 256.0), vec3(0.0), 2048.0)
-);
+float nearest_distance(vec3 p);
 
 `
 function-defs
@@ -148,47 +148,6 @@ float calculate_occlusion(vec3 p, vec3 normal) {
   }
   occlusion /= float(step_count);
   return clamp(occlusion, 0.0, 1.0);
-}
-
-float cast_light(vec3 p, vec3 light, float radius) {
-  vec3 direction = normalize(light - p);
-  float light_distance = distance(light, p);
-
-  float light_brightness = 1.0 - (light_distance / radius);
-  if (light_brightness <= 0.0) {
-    return 0.0;
-  }
-
-  float in_light = 1.0;
-  float sharpness = 16.0;
-
-  float last_distance = 1e20;
-  // TODO: It would make more sense to start at
-  // the light and cast towards the point, so that
-  // we don't have to worry about this nonsense.
-  float progress = MINIMUM_HIT_DISTANCE;
-  for (int i = 0; i < MAX_STEPS; i++) {
-    if (progress > light_distance) {
-      return in_light * light_brightness;
-    }
-
-    float distance = nearest_distance(p + progress * direction);
-
-    if (distance < MINIMUM_HIT_DISTANCE) {
-      // we hit something
-      return 0.0;
-    }
-
-    float intersect_offset = distance * distance / (2.0 * last_distance);
-    float intersect_distance = sqrt(distance * distance - intersect_offset * intersect_offset);
-    if (distance < last_distance) {
-      in_light = min(in_light, sharpness * intersect_distance / max(0.0, progress - intersect_offset));
-    }
-    progress += distance;
-    last_distance = distance;
-  }
-  // we never reached the light
-  return 0.0;
 }
 
 vec3 march(vec3 ray_origin, vec3 ray_direction, out int steps) {

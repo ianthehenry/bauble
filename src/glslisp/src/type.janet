@@ -9,4 +9,6 @@
 (defn array [len t] [:array len t])
 (def unknown :unknown)
 
-# (defn is-array? [t] (and (tuple? t) (= (length t) 3) (= (first t) :array)))
+(defn is-array? [t] (and (tuple? t) (= (length t) 3) (= (first t) :array)))
+(defn array-length [t] (t 1))
+(defn array-underlying [t] (t 2))

@@ -231,7 +231,7 @@ export default class Renderer {
     const { gl, program, currentFragmentShader, currentFragmentShaderSource } = this;
 
     if (fragmentShaderSource === currentFragmentShaderSource) {
-      console.log("skipping shader compilation");
+      console.info("skipping shader compilation");
       return;
     }
 

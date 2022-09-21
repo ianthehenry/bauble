@@ -3,6 +3,7 @@
 (use ./axes)
 (use ./flex-fn)
 (import ./raw)
+(import ./light)
 (import ./glslisp/src/builtins :as generic)
 
 (defmacro- pivoting [form]
@@ -174,7 +175,7 @@
    type/float |(set-first [count radius] $)}
   (if (and (nil? shape) (nil? f))
     (error "radial requires either a shape or a function to generate a shape"))
-  (raw/radial shape f (/ (* 2 math/pi) count) radius axis))
+  (raw/radial shape f (generic// (* 2 math/pi) count) radius axis))
 
 (def-flexible-fn distort [shape expression]
   {type/3d |(set-param shape $)
@@ -313,18 +314,6 @@
    :exponent |(set-param exponent $ type/float)}
   (raw/fresnel shape color strength exponent))
 
-# TODO: typecheck that steps is an integer?
-(def-flexible-fn cel
-  [[shape raw/r3] color [shine 1] [gloss 4] [ambient 0.5] [steps 1]]
-  {type/vec3 |(set-param color $)
-   type/3d |(set-param shape $)
-   type/float |(set-param steps $)
-   :steps |(set-param steps $ type/float)
-   :shine |(set-param shine $ type/float)
-   :gloss |(set-param gloss $ type/float)
-   :ambient |(set-param ambient $ type/float)}
-  (raw/cel shape color shine gloss ambient steps))
-
 # TODO: I don't love the name "resurface"
 (def-flexible-fn resurface [shape color]
   {type/3d |(set-first [shape color] $)
@@ -373,3 +362,20 @@
   (if (empty? body)
     ~(,raw/flat-color ,shape)
     ~(,map-color ,shape (fn [c] ,;body))))
+
+# TODO: i don't love "radius"... falloff? distance? i dunno. maybe there's a term for this.
+(def-flexible-fn light [[shape nil] position [color [1 1 1]] [brightness 1] [radius nil]]
+  {type/3d |(set-param shape $)
+   type/vec3 |(set-param position $)
+   :brightness |(set-param brightness (typecheck :brightness type/float $))
+   :radius |(set-param radius (typecheck :radius type/float $))
+   :color |(set-param color (typecheck :color type/vec3 $))}
+  (def light (light/new position color brightness radius))
+  (if (nil? shape)
+    light
+    (raw/apply-light shape light)))
+
+(def-flexible-fn illuminate [shape light]
+  {type/3d |(set-param shape $)
+   type/light |(set-param light $)}
+  (raw/apply-light shape light))

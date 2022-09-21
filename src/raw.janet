@@ -586,13 +586,17 @@
         color2 (:surface shape2 comp-state)]
     ~(mix ,color1 ,color2 ,weight)))
 
+# TODO: we generate a separate version of this function for every
+# use, but we should generate a separate version for every *unique signature*
+# -- that is, the only thing that actually varies here is the array length. Can we use
+# overloads to make this work?
 (def-surfacer blinn-phong [shape color shine gloss ambient]
   (:generate-function comp-state "vec3" :blinn-phong "blinn_phong"
     [globals/P
      globals/camera
      globals/normal
      globals/occlusion
-     globals/light-intensities
+     globals/lights
      ["vec3 color" color]
      ["float shine" shine]
      ["float gloss" gloss]
@@ -600,8 +604,8 @@
     `vec3 view_dir = normalize(camera_origin - P);
      vec3 result = color * ambient;
      for (int i = 0; i < lights.length(); i++) {
-       vec3 light_color = lights[i].color * light_intensities[i];
-       vec3 light_dir = normalize(lights[i].position - P);
+       vec3 light_color = lights[i].color;
+       vec3 light_dir = lights[i].direction;
        vec3 halfway_dir = normalize(light_dir + view_dir);
        float specular_strength = shine * pow(max(dot(normal, halfway_dir), 0.0), gloss * gloss);
        float diffuse = max(0.0, dot(normal, light_dir));
@@ -609,32 +613,6 @@
        result += color * diffuse * light_color;
      }
      return result;
-     `))
-
-(def-surfacer cel [shape color shine gloss ambient steps]
-  (:generate-function comp-state "vec3" :cel "cel"
-    [globals/P
-     globals/camera
-     globals/normal
-     globals/light-intensities
-     ["vec3 color" color]
-     ["float shine" shine]
-     ["float gloss" gloss]
-     ["float ambient" ambient]
-     ["float steps" steps]]
-    `vec3 view_dir = normalize(camera_origin - P);
-     vec3 light = vec3(0.0);
-
-     for (int i = 0; i < lights.length(); i++) {
-       vec3 light_color = lights[i].color * light_intensities[i];
-       vec3 light_dir = normalize(lights[i].position - P);
-       vec3 halfway_dir = normalize(light_dir + view_dir);
-
-       float specular_strength = shine * pow(max(dot(normal, halfway_dir), 0.0), gloss * gloss);
-       float diffuse = max(0.0, dot(normal, light_dir));
-       light += light_color * (diffuse + specular_strength);
-     }
-     return color * (ambient + (1.0 - ambient) * round(light * steps) / steps);
      `))
 
 (def-surfacer fresnel [shape color strength exponent]
@@ -701,3 +679,16 @@
   (let [$pivot (:temp-var comp-state type/vec3 'pivot)]
     ~(with ,$pivot ,pivot-point
       ,(:surface (move (f (move shape ~(- ,$pivot))) $pivot) comp-state))))
+
+(def-surfacer apply-light [shape {:position position :color color :brightness brightness :radius radius}]
+  (defn wrap [get-expr]
+    (if radius
+      (let [$position (:temp-var comp-state type/vec3 'position)]
+        ~(with ,$position ,position
+          ,(get-expr $position ~(* ,brightness (clamp (/ (distance ,globals/P ,$position) ,radius) 0 1)))))
+      (get-expr position brightness)))
+
+  (wrap (fn [position brightness]
+    ~(extend ,globals/lights
+      (cast_point_light ,globals/P ,globals/normal ,position ,color ,brightness)
+      ,(:surface shape comp-state)))))

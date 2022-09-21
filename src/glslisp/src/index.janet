@@ -1,4 +1,5 @@
 (import ./type)
+(import ./variable)
 (use ./util)
 
 (defn- glsl-float-string [n]
@@ -110,6 +111,9 @@
 (defn- typecheck-application [f args]
   (case f
     '. (typeof-access args)
+    'with (typecheck (args 2))
+    'extend (typecheck (args 2))
+
     'vec2 type/vec2
     'vec3 type/vec3
     'vec4 type/vec4
@@ -163,13 +167,12 @@
     (typeof-generic-application args)))
 
 (defn- compile-function-application [state f args]
-  (def args (map |(compile! state $) args))
   (cond
-    (and (unop? f) (= (length args) 1)) (unop-to-string f (args 0))
-    (binop? f) (binop f args)
+    (and (unop? f) (= (length args) 1)) (unop-to-string f (compile! state (args 0)))
+    (binop? f) (binop f (map |(compile! state $) args))
     (do
-      (:require-function state f)
-      (string f "(" (string/join args ", ") ")"))))
+      (def [f args] (:require-function state f args))
+      (string f "(" (string/join (map |(compile! state $) args) ", ") ")"))))
 
 (defn- compile-access [state args]
   (assert (= (length args) 2) "wrong number of arguments to .")
@@ -180,20 +183,45 @@
   (assert (= (length args) 3) "wrong number of arguments to with")
   (def [variable value expr] args)
   (def new-name (:new-name state variable))
-  (:statement state (string (variable :type)` `new-name` = `(compile! state value)`;`))
-  (:push-var state variable new-name)
-  # TODO: this optimization is not sound. breaks the tile operation, for one
-  #(:push-var state variable (fn []
-  #  (:statement state (string (variable :type)` `new-name` = `(compile! state value)`;`))
-  #  new-name))
+  (def type (:type variable))
+  (:statement state (string type` `new-name` = `(compile! state value)`;`))
+  (:push-var-name state variable new-name)
   (def result (compile! state expr))
-  (:pop-var state variable)
+  (:pop-var-name state variable)
+  result)
+
+# TODO: support variadic extensions?
+# also, it's probably worth unrolling the assignment loop here, right?
+(defn- compile-extend [state args]
+  (assert (= (length args) 3) "wrong number of arguments to extend")
+  (def [variable value expr] args)
+  (def old-name (:get-var-name state variable))
+  (def new-name (:new-name state variable))
+  (def type (:get-var-type state variable))
+  (assert type/is-array? type)
+  (def underlying (type/array-underlying type))
+  (def old-length (type/array-length type))
+  (def new-length (+ 1 old-length))
+  (def new-type (type/array new-length underlying))
+  (:statement state (string underlying` `new-name`[`new-length`];`))
+  (for i 0 old-length
+    (:statement state (string new-name`[`i`] = `old-name`[`i`];`)))
+  #(:statement state (string `for (int i = 0; i < `old-length`; i++) {`))
+  #(:statement state (string new-name`[i] = `old-name`[i];`))
+  #(:statement state `}`)
+  (:statement state (string new-name`[`old-length`] = `(compile! state value)`;`))
+  (:push-var-name state variable new-name)
+  (:push-var-type state variable new-type)
+  (def result (compile! state expr))
+  (:pop-var-name state variable)
+  (:pop-var-type state variable)
   result)
 
 (defn- compile-application [state f args]
   (case f
     '. (compile-access state args)
     'with (compile-with state args)
+    'extend (compile-extend state args)
     (compile-function-application state f args)))
 
 (defn- vec-constructor [tuple]
@@ -208,16 +236,11 @@
 (def- head first)
 (defn- tail [x] (drop 1 x))
 
-(defn variable [name type] @{:name name :type type})
-
 (set compile!
 (defn compile! [state expr]
   (cond
     (number? expr) (glsl-float-string expr)
-    # TODO: this is sort of a hack that shouldn't be here and i don't remember
-    # why it's necessary in the first place.
-    #(symbol? expr) (string expr)
-    (table? expr) (string (:get-var state expr))
+    (variable/instance? expr) (string (:get-var-name state expr))
     (application? expr) (compile-application state (head expr) (tail expr))
     (vec? expr) (compile-function-application state (vec-constructor expr) expr)
     (errorf "cannot compile %p" expr))))
@@ -226,7 +249,10 @@
 (defn typecheck [expr]
   (cond
     (number? expr) type/float
-    (table? expr) (expr :type)
+    # TODO: it's a little weird that variables of variable type don't
+    # get known types here but it doesn't matter in practice because
+    # lights are not really first-class entities
+    (variable/instance? expr) (or (:type expr) type/unknown)
     (application? expr) (typecheck-application (head expr) (tail expr))
     (vec? expr) (vec-type expr)
     type/unknown)))

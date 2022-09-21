@@ -1,17 +1,19 @@
 (use judge)
 (use /src/index)
 (import /src/type)
+(import /src/variable)
 (import /src/comp-state)
 
 (defn c&t [expr]
-  (def state (:new-scope (comp-state/new)))
+  (def state (:new-scope (comp-state/new {})))
   (def result (compile! state expr))
   [(typecheck expr)
    ;(state :statements)
    result
-   ;(map |[($ :type) ($ :name)] (keys (state :free-variables)))])
+   ;(map |[(:type $) (:name $)] (keys (state :free-variables)))])
 
-(def p (variable 'p type/vec3))
+(def p (variable/new 'p type/vec3))
+(def lights (variable/new 'lights (type/array 1 type/float)))
 
 (test something
   (expect (c&t 10) [:float "10.0"])
@@ -52,3 +54,6 @@
 
 (test "invalid types"
   (expect-error (c&t [1]) "there is no vec1"))
+
+(test "extending arrays"
+  (expect (c&t ~(extend ,lights 10 ,lights)) [[:array 1 :float] "float lights1[2];" "for (int i = 0; i < 1; i++) {" "lights1[i] = lights[i];" "}" "lights1[1] = 10.0;" "lights1"]))

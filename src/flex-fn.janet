@@ -1,4 +1,5 @@
 (import ./glslisp/src/index :as glslisp)
+(import ./light)
 
 (import ./glslisp/src/type :as type :export true)
 (def type/keyword :keyword)
@@ -6,6 +7,7 @@
 (def type/fn :fn)
 (def type/axis :axis)
 (def type/signed-axis :signed-axis)
+(def type/light :light)
 
 (def- unset (gensym))
 
@@ -29,7 +31,9 @@
     :keyword (get keyword-types value type/unknown)
     :struct type/3d # TODO: obviously this is wrong once I add 2D SDFs
     :function type/fn
-    (glslisp/typecheck value)))
+    (cond
+      (light/instance? value) type/light
+      (glslisp/typecheck value))))
 
 (defn typecheck [name expected-type value]
   (def actual-type (typeof value))
