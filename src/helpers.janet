@@ -70,12 +70,6 @@
 (defmacro spoon [& args]
   (fork-helper true args))
 
-# Because infix-syntax conflicts with these
-(def @+ +)
-(def @- -)
-(def @/ /)
-(def @* *)
-
 (use ./glslisp/src/glsl-ports)
 (def- sat 0.98)
 

@@ -104,6 +104,12 @@
 (make-variadic * identity)
 (make-variadic / recip)
 
+# Because infix-syntax conflicts with these
+(def @+ +)
+(def @- -)
+(def @/ /)
+(def @* *)
+
 (make-generic-3 smoothstep)
 (make-generic-3 clamp)
 (make-generic-3 mix)
