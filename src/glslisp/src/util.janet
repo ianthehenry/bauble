@@ -1,6 +1,8 @@
 (defn not- [f & args]
   (not (f ;args)))
 
+(defn non [f] (fn [& args] (not (f ;args))))
+
 (defn second [x] (x 1))
 
 (defn in? [x v]

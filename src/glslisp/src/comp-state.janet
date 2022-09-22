@@ -1,4 +1,5 @@
 (import ./index :as glslisp)
+(import ./type)
 (import ./variable)
 (use ./util)
 
@@ -8,6 +9,19 @@
 # then again, would that be *worse* because we'd end up
 # generating identical functions for surface operations
 # in some cases?
+
+(defn error-zero-length-array []
+  (errorf "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s"
+    "GLSL does not support zero-length arrays"
+    "You're probably seeing this error"
+    "because you used a function like"
+    "(shade) that requires lights as an"
+    "input, but you have not defined any"
+    "lights to pass to it. Yes, it should"
+    "just appear black, but special-casing"
+    "this is a lot more work than erroring"
+    "out. Add a light and this will all go"
+    "away."))
 
 (def- comp-state-proto @{
   :push-var-name (fn [self variable name]
@@ -62,14 +76,24 @@
     (def variable-args (take (length variable-params) args))
     (def constant-args (drop (length variable-params) args))
 
+    (defn empty-array? [variable]
+      (let [type (:get-var-type self variable)]
+        (and (type/is-array? type) (= (type/array-length type) 0))))
+
     (def new-scope (:new-scope self))
     (def body (get-body new-scope))
     (assert (empty? (new-scope :statements)) "function produced statements")
     (assert (empty? (new-scope :bindings)) "function produced bindings")
     # cheap way to depup
     (def free-var-set (new-scope :free-variables))
-    (each arg variable-args (put free-var-set arg true))
-    (def variable-args (keys free-var-set))
+    (each arg variable-args
+      # If a function explicitly needs lights and we don't have any, we
+      # want to error. But if a function *implicitly* needs lights and
+      # we don't have any, that's fine -- just don't pass them along.
+      (if (empty-array? arg) (error-zero-length-array))
+      (put free-var-set arg true))
+    (def variable-args (filter (non empty-array?) (keys free-var-set)))
+
     # TODO: We use the same name at the moment, and rely on the fact that
     # GLSL allows us to overload functions with differently typed arguments.
     # But we could generate a unique name here.
