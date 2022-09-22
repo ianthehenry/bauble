@@ -74,44 +74,75 @@
 
 ### Lighting stuff ###
 
-(define "LightIncidence" 'cast_point_light ["vec3 p" "vec3 normal" "vec3 position" "vec3 color" "float brightness"] `
-  p = p + 2.0 * MINIMUM_HIT_DISTANCE * normal;
-  vec3 direction = normalize(position - p);
-  // TODO: render unnecessary by rewriting this whole thing
-  float light_distance = distance(position, p);
-
-  if (brightness == 0.0) {
-    return LightIncidence(vec3(0.0), vec3(0.0));
+(define "LightIncidence" 'cast_light_no_shadow ["vec3 p" "vec3 normal" "vec3 light_position" "vec3 color" "float brightness"] `
+  vec3 target = p + MINIMUM_HIT_DISTANCE * normal;
+  float target_distance = distance(light_position, target);
+  if (target_distance == 0.0) {
+    return LightIncidence(vec3(0.0), color * brightness);
   }
+  vec3 to_light = (light_position - target) / target_distance;
+  return LightIncidence(to_light, brightness * color);`)
 
-  float in_light = 1.0;
-  float sharpness = 16.0;
-
-  float last_distance = 1e20;
-  // TODO: It would make more sense to start at
-  // the light and cast towards the point, so that
-  // we don't have to worry about this nonsense.
-  float progress = MINIMUM_HIT_DISTANCE;
+(define "LightIncidence" 'cast_light_hard_shadow ["vec3 p" "vec3 normal" "vec3 light_position" "vec3 color" "float brightness"] `
+  vec3 target = p + MINIMUM_HIT_DISTANCE * normal;
+  float target_distance = distance(light_position, target);
+  if (target_distance == 0.0) {
+    return LightIncidence(vec3(0.0), color * brightness);
+  }
+  vec3 to_light = (light_position - target) / target_distance;
+  if (brightness == 0.0) {
+    return LightIncidence(to_light, vec3(0.0));
+  }
+  float progress = 0.0;
   for (int i = 0; i < MAX_STEPS; i++) {
-    if (progress > light_distance) {
-      return LightIncidence(direction, in_light * brightness * color);
-    }
-
-    float distance = nearest_distance(p + progress * direction);
-
+    float distance = nearest_distance(light_position - to_light * progress);
     if (distance < MINIMUM_HIT_DISTANCE) {
-      return LightIncidence(direction, vec3(0.0));
+      if (progress + distance >= target_distance - MINIMUM_HIT_DISTANCE) {
+        return LightIncidence(to_light, brightness * color);
+      } else {
+        return LightIncidence(to_light, vec3(0.0));
+      }
+    }
+    progress += distance;
+  }
+  return LightIncidence(to_light, vec3(0.0));`)
+
+(define "LightIncidence" 'cast_light_soft_shadow ["vec3 p" "vec3 normal" "vec3 light_position" "vec3 color" "float brightness" "float softness"] `
+  if (softness == 0.0) {
+    cast_light_hard_shadow(p, normal, light_position, color, brightness);
+  }
+  vec3 target = p + MINIMUM_HIT_DISTANCE * normal;
+  float target_distance = distance(light_position, target);
+  if (target_distance == 0.0) {
+    return LightIncidence(vec3(0.0), color * brightness);
+  }
+  vec3 to_light = (light_position - target) / target_distance;
+  if (brightness == 0.0) {
+    return LightIncidence(to_light, vec3(0.0));
+  }
+  float in_light = 1.0;
+  float sharpness = 1.0 / (softness * softness);
+  float last_distance = 1e20;
+  float progress = 0.0;
+  for (int i = 0; i < MAX_STEPS; i++) {
+    float distance = nearest_distance(light_position - to_light * progress);
+    if (distance < MINIMUM_HIT_DISTANCE) {
+      if (progress + distance >= target_distance - MINIMUM_HIT_DISTANCE) {
+        return LightIncidence(to_light, in_light * brightness * color);
+      } else {
+        return LightIncidence(to_light, vec3(0.0));
+      }
     }
 
-    float intersect_offset = distance * distance / (2.0 * last_distance);
-    float intersect_distance = sqrt(distance * distance - intersect_offset * intersect_offset);
     if (distance < last_distance) {
-      in_light = min(in_light, sharpness * intersect_distance / max(0.0, progress - intersect_offset));
+      float intersect_offset = distance * distance / (2.0 * last_distance);
+      float intersect_distance = sqrt(distance * distance - intersect_offset * intersect_offset);
+      in_light = min(in_light, sharpness * intersect_distance / max(0.0, target_distance - progress - intersect_offset));
     }
     progress += distance;
     last_distance = distance;
   }
-  return LightIncidence(direction, vec3(0.0));`)
+  return LightIncidence(to_light, vec3(0.0));` 'cast_light_hard_shadow)
 
 ### Hash functions ###
 

@@ -275,6 +275,7 @@
 (defn typecheck [expr]
   (cond
     (number? expr) type/float
+    (boolean? expr) type/bool
     # TODO: it's a little weird that variables of variable type don't
     # get known types here but it doesn't matter in practice because
     # lights are not really first-class entities

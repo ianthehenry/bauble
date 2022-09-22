@@ -6,7 +6,7 @@
 (def- point-proto
   (table/setproto
     @{:apply (fn [self shape comp-state]
-      (def {:position position :color color :brightness brightness :radius radius} self)
+      (def {:position position :color color :brightness brightness :radius radius :shadow shadow} self)
       (defn wrap [get-expr]
         (if radius
           (let [$position (:temp-var comp-state type/vec3 'position)]
@@ -14,9 +14,15 @@
               ,(get-expr $position ~(* ,brightness (clamp (- 1 (/ (distance ,globals/P ,$position) ,radius)) 0 1)))))
           (get-expr position brightness)))
 
+      (def [function shadow-args] (if shadow
+        (if (or (= shadow 0) (= shadow true))
+          ['cast_light_hard_shadow []]
+          ['cast_light_soft_shadow [shadow]])
+        ['cast_light_no_shadow []]))
+
       (wrap (fn [position brightness]
         ~(extend ,globals/lights
-          (cast_point_light ,globals/P ,globals/normal ,position ,color ,brightness)
+          (,function ,globals/P ,globals/normal ,position ,color ,brightness ,;shadow-args)
           ,(:surface shape comp-state)))))}
     proto))
 
@@ -40,12 +46,13 @@
     (= (type x) :table)
     (has-proto x proto)))
 
-(defn point/new [position color brightness radius]
+(defn point/new [position color brightness radius shadow]
   (table/setproto
     @{:position position
       :color color
       :brightness brightness
-      :radius radius}
+      :radius radius
+      :shadow shadow}
     point-proto))
 
 (defn ambient/new [color brightness]

@@ -363,13 +363,14 @@
     ~(,map-color ,shape (fn [c] ,;body))))
 
 # TODO: i don't love "radius"... falloff? distance? i dunno. maybe there's a term for this.
-(def-flexible-fn light [[shape nil] position [color [1 1 1]] [brightness 1] [radius nil]]
+(def-flexible-fn light [[shape nil] position [color [1 1 1]] [brightness 1] [radius nil] [shadow nil]]
   {type/3d |(set-param shape $)
    type/vec3 |(set-param position $)
    :brightness |(set-param brightness (typecheck :brightness type/float $))
    :radius |(set-param radius (typecheck :radius type/float $))
-   :color |(set-param color (typecheck :color type/vec3 $))}
-  (def light (light/point/new position color brightness radius))
+   :color |(set-param color (typecheck :color type/vec3 $))
+   :shadow |(set-param shadow (typecheck :shadow [type/float type/bool] $))}
+  (def light (light/point/new position color brightness radius shadow))
   (if (nil? shape)
     light
     (raw/apply-light shape light)))
