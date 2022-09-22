@@ -287,11 +287,10 @@
 # in space local to the current shape
 # (so translated, rotated, etc), P is
 # the global position of the ray, which
-# is mostly useful for calculating
-# reflections or specular highlights
-# during surfacing. But here's a
-# contrived example just to show you
-# the difference:
+# is mostly useful for lighting and
+# surfacing, but here's a contrived
+# example just to show you the
+# difference:
 
 # (union
 #   (sphere 50 | shade [1 (abs (/ p.x 50)) 0] | move :y 50)
@@ -323,11 +322,156 @@
 # you're shading. 1 means there is
 # nothing around you, while 0 means
 # there is another shape right next to
-# you. It's commonly used to modulate
-# light:
+# you. We'll talk more about this in
+# the section on lighting.
 
-# (def lights [(ambient (mix 0 0.05 occlusion)) (light [512 512 256])])
-# # (def lights [(ambient 0.05) (light [512 512 256])])
+# Just to review, the only magic
+# variables are:
+
+# - t: time in seconds
+# - p: point in local coordinate system
+# - P: point in global coordinate
+#   system
+# - camera: camera position in global
+#   coordinate system
+# - normal: (color only) surface normal
+# - occlusion: (color only) an
+#   approximation of the concavity of
+#   the distance field near this point
+
+#### Lighting ####
+
+# By default Bauble has two lights: a
+# white directional light that casts
+# soft shadows, and a weak ambient
+# light. It looks like this:
+
+# (def lights
+#   [(ambient [1 1 1] 0.05)
+#    (light (P + [1024 1024 512]) :color [1 1 1] :brightness 1 :shadow 0.25)])
+# (union
+#   (box 50 :r 10 | shade purple)
+#   (shade (ground -50) gray))
+
+# There are only two kinds of primitive
+# lights in Bauble: ambient and point
+# lights. Ambient lights don't
+# contribute to specular highlights and
+# don't cast shadows, while point
+# lights do contribute specular
+# highlights, can *can* cast shadows
+# (but don't have to).
+
+# You can simulate many other types of
+# lights by writing an expression for
+# the position of a point light that
+# varies over space. P is the point in
+# global space that Bauble is currently
+# shading, so you can position a light
+# relative to P to get emulated
+# directional lights, area lights, or
+# linear lights. Take a look at these
+# examples (and you might want to zoom
+# out):
+
+# (tile [200 0 200] (box 50 :r 10 | shade white)
+# | union (ground -50 | shade gray))
+
+# (def lights [(light [0 200 0] :shadow 0.25)])
+
+# (def lights [(light [P.x 200 P.x] :shadow 0.25)])
+
+# (def lights
+#   [(light [P.x 200 P.z]
+#     :color (hsv ((sin (P.x / 200)) * (sin (P.z / 200))) 0.8 1)
+#     :shadow 0.25)])
+
+# (def lights
+#   [(light [0 200 0]
+#     :brightness (clamp (1 - (distance P [0 200 0] / 1000)) 0 1)
+#     :shadow 0.25)])
+
+# :brightness can be a number or it can
+# be a function. The function form
+# takes the (computed) position of the
+# light as its only argument. You can
+# use this to simplify the expression
+# for light falloff, so that you don't
+# have to repeat the position:
+
+# (def lights
+#   [(light [0 200 0]
+#     :brightness (fn [l] (clamp (1 - (distance P l / 1000)) 0 1))
+#     :shadow 0.25)])
+
+# This turns out to be a rather common
+# thing to do and a hairy expression to
+# write, so Bauble has a helper for
+# exactly this:
+
+# (def lights
+#   [(light [0 200 0]
+#     :brightness (falloff 1000)
+#     :shadow 0.25)])
+
+# With one argument, (falloff) returns a
+# function. With two arguments, it
+# computes the actual brightness, which
+# is useful if you want to compute
+# something other than pure linear
+# falloff. Here's inverse-square
+# falloff, for example:
+
+# (def lights
+#   [(light [0 200 0]
+#     :brightness (fn [l] (falloff l 1000 | pow 2))
+#     :shadow 0.25)])
+
+# By default a light will not cast any
+# shadows. You can pass `:shadow true`
+# to cast hard shadows, or `:shadow
+# softness` to cast approximated soft
+# shadows (`:shadow 0` is the same as
+# `:shadow true`).
+
+# (def lights
+#   [(light (* 500 [(sin t) 1 (cos t)])
+#      :brightness 1
+#      :shadow (sin+ (t * 3) * 0.25))])
+
+# You can also apply lights to
+# individual shapes, although this is a
+# more advanced technique, and a little
+# unintuitive. It causes the light to
+# only illuminate the subject, but
+# lighting will still take place in the
+# global coordinate system
+# (operations like move or rotate do
+# not affect lights). And if a light is
+# configured to cast shadows, *all*
+# objects in the scene will cast a
+# shadow on the shape, even if the
+# light does not illuminate those
+# objects.
+
+# (def lights [(ambient 0.1) (light [256 512 0] :shadow 0.25 :brightness (falloff 1000))])
+# (union
+#   (box 50 :r 10
+#   | shade white
+#   | light ([(sin t) 1 (cos t)] * 200) :color (hsv (P.x / 100) 1 1))
+#   (shade (ground -50) gray))
+
+# This technique is mostly useful for
+# applying additional ambient lights,
+# or applying *negative* ambient lights
+# to add some custom ambient occlusion.
+
+# Speaking of ambient occlusion, let's
+# talk about the built-in occlusion
+# magic variable:
+
+# (def lights [(ambient (mix 0 0.05 occlusion)) (light [0 512 0] :shadow 0.25)])
+# # (def lights [(ambient 0.05) (light [0 512 0] :shadow 0.25)])
 # (box 50 :r 10 | spoon (rotate :x tau/8 :y tau/4 :x tau/3 | scale 0.75 | move :y 70)
 # | shade [0 1 1]
 # | union (half-space :-y -50 | shade white))
@@ -346,19 +490,35 @@
 # (the main shadow-casting light) in
 # your scene.
 
-# Just to review, the only magic
-# variables are:
+# The occlusion variable is only a cheap
+# approximation of ambient occlusion,
+# so you might want to judiciously add
+# some negative-strength ambient lights
+# to certain objects that should appear
+# more occluded than the approximation
+# calculates.
 
-# - t: time in seconds
-# - p: point in local coordinate system
-# - P: point in global coordinate
-#   system
-# - camera: camera position in global
-#   coordinate system
-# - normal: (color only) surface normal
-# - occlusion: (color only) an
-#   approximation of the concavity of
-#   the distance field near this point
+# Remember that you can write an
+# expression for the brightness of an
+# ambient light too!
+
+# Lights are also first-class values,
+# and you can create them by invoking
+# (ambient) or (light) without passing
+# a shape:
+
+# (def ambient-light (ambient 0.05))
+# (def direction-light (light (P + [512 512 256]) :shadow 0.25))
+
+# You can then apply these lights to
+# shapes using the
+# (illuminate) function, or put them in
+# the list of global lights.
+
+# Before we continue, let's reset the
+# lights back to the default:
+
+# (def lights [ambient-light direction-light])
 
 #### Spatial artifacts ####
 

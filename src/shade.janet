@@ -15,16 +15,7 @@
   (var animated? false)
   (def comp-state (comp-state/new glsl-helpers/functions))
 
-  (def lights
-    (if-let [binding (in env 'lights)
-             value (if (in binding :private) nil (in binding :value))]
-      value
-      [(light/point/new ~(+ ,globals/P [1024 1024 512]) [1 1 1] 1 nil 0.25)
-       (light/ambient/new [1 1 1] 0.05)]))
-
-  #(when debug?
-  #  (pp (:compile expr (:new-scope comp-state)))
-  #  (pp (:surface expr (:new-scope comp-state))))
+  (def lights (in (in env 'lights) :value))
 
   # TODO: are you going to get weird errors if you refer to lights
   # in distance expressions, because the type is unknown? probably.

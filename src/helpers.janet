@@ -1,4 +1,6 @@
+(import ./glslisp/src/builtins :as generic)
 (import ./axes)
+(import ./globals)
 (def axis-vec axes/axis-vec)
 
 (defn id [x] x)
@@ -7,6 +9,13 @@
 (def tau/2 pi)
 (def tau (* 2 tau/2))
 (def tau/360 (/ pi 180))
+
+(defn falloff [l &opt r]
+  (if (nil? r)
+    (fn [l-] (falloff l- l))
+    (generic/clamp
+      (generic/- 1 (generic// (generic/distance globals/P l) r))
+      0 1)))
 
 (defn- make-ratio [x y]
   ~(def ,(symbol (string x "/" y)) (/ ,x ,y)))
