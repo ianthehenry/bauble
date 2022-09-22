@@ -235,18 +235,13 @@ void main() {
 }
 `)])
 
-# surely I can do better
-(defn- is-good-value? [value]
-  (and (struct? value)
-       (not (nil? (value :compile)))))
-
 (defn compile-shape [expr env]
-  (if (is-good-value? expr)
+  (if expr
     (try
       (compile-fragment-shader expr env)
       ([err fiber]
         (debug/stacktrace fiber err "")
         :error))
     (do
-      (eprintf "cannot compile %p" expr)
+      (eprintf "nothing to render!")
       :error)))

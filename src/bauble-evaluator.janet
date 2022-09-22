@@ -5,6 +5,10 @@
 (import ./infix-syntax)
 (import ./dot-syntax)
 
+(defn compilable? [value]
+  (and (struct? value)
+       (not (nil? (value :compile)))))
+
 (defn chunk-string [str]
   (var already-read false)
   (fn [buf _]
@@ -50,7 +54,8 @@
       (unless (= (fiber/status fiber) :dead)
         (array/push errors value)
         (set error-fiber fiber))
-      (set last-value value))
+      (if (compilable? value)
+        (set last-value value)))
     })
   # TODO: we can actually record and
   # report multiple errors, although
