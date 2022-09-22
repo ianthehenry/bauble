@@ -113,7 +113,7 @@ const EditorToolbar: Component<{state: EvaluationState}> = (props) => {
         </div>
       </Match>
       <Match when={props.state === EvaluationState.ShaderCompilationError}>
-        <div title="Compilation error" class="indicator compilation-error">
+        <div title="Shader compilation error" class="indicator compilation-error">
           <Icon name="emoji-angry" />
         </div>
       </Match>
