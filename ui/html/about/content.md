@@ -25,7 +25,6 @@ And of course Bauble would be a lot less fun without [Janet](https://janet-lang.
 There's a lot that I'd like to add to Bauble when I find the time. In rough order of priority:
 
 - Export to [Shadertoy](https://www.shadertoy.com)
-- User-defined lights
 - Documentation of any kind
 - 2D SDFs (and extrusion / revolution functions)
 - Export images, gifs, and videos
