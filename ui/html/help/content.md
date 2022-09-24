@@ -87,7 +87,7 @@ This one is very hard to show with images, because it just looks like a flat-col
   (sphere 50))
 ```
 
-The first argument is a signed axis, and the second optional argument is the position along that axis axis.
+The first argument is a signed axis, and the second optional argument is the position along that axis.
 
 ## `cone`
 
@@ -154,7 +154,7 @@ You can also optionally supply scale arguments, which will multiply the rotation
 
 Can take a single `float`, a `vec3`, or named `:x` `:y` `:z` parameters. Like [`move`](#move), you can mix and match these forms and the final product will be used as the scale factor for each axis.
 
-Produces an incorrect distance field when scaling by different amounts on different axes.
+If you scale by different amounts across different axes, the distance field produced will be an underestimate. This means that Bauble can still raymarch it accurately without the use of [`slow`](#slow), but soft shadows and boolean operations will be inaccurate.
 
 ```
 (union
@@ -301,8 +301,17 @@ The boolean operations `union`, `intersect`, and `subtract` can all take an opti
 Because of this, you should prefer to apply surfaces *after* smooth boolean operations, unless of course you are relying on the surface blending. Even if it's the same surface, Bauble will still evaluate it multiple times! (This is a fixable deficiency in Bauble but it is the way that it is right now.)
 
 ## `union`
+
+Union produces a correct distance field unless shapes overlap, in which case the interior distance field will be discontinuous.
+
 ## `intersect`
+
+Does not produce a correct distance field.
+
 ## `subtract`
+
+Does not produce a correct distance field.
+
 ## `morph`
 
 Produces incorrect distance fields when the amount is outside of the range `[0, 1]`.
@@ -316,7 +325,78 @@ Produces incorrect distance fields when the amount is outside of the range `[0, 
 # Repetition
 
 ## `tile`
+
+Tile divides space into rectangular regions.
+
+```
+(tile [100 0 150] (sphere 50))
+```
+
+The `vec3` argument determines the size of each tile, with `0` meaning that no repetition takes place in that direction. By default the shape will be repeatedly infinitely in every direction, but the optional argument `:limit` will clamp the repetition.
+
+```
+(tile [100 100 100]
+  :limit [4 3 2]
+  (sphere 50))
+```
+
+`:limit` must be a tuple of three positive integers; you cannot write a dynamic expression for `:limit`.
+
+If you provide a function argument instead of a shape, your function will be called with an expression for the current index of the tiling. This allows you to produce different objects at each instance of the tiling. The index will always be a `vec3`, even if you are not repeating in all three directions.
+
+```
+(tile [100 0 100]
+  (fn [i]
+    (sphere 50
+    | shade (hsv (i.x / 6) 1 1))))
+```
+
+Indexes are integers, so the index of the element at the origin is `[0 0 0]`, the index to the right of that is `[1 0 0]`, etc.
+
+You can also provide a shape *and* a function, in which case the shape will be passed as the first argument to your function. By appropriating a little bit of Janet convention, we call this argument `$`, for `$hape`. This is useful for fitting `tile` into a pipeline:
+
+```
+(sphere 50
+| tile [100 0 100]
+  (fn [$ i]
+    (shade $ (hsv (i.z / 6) 1 1))))
+```
+
+### Asymmetry
+
+The way `tile` works is that, for each step of the raymarch, it computes the current "slice" of space. Then it evaluates *only* that one slice, and returns the nearest distance.
+
+This means that, if the actual nearest shape is in a *different* tile than the current one, this will produce an invalid distance field.
+
+```
+(tile [150 0 150] (fn [i]
+  (box 50 :r 5
+  | rotate :x t :y (t + hash i)
+  | shade [1 1 1])))
+```
+
+Here you can see lots of artifacts around the edges of the boxes, where rays overshoot their targets. The solution to this problem, if you want to tile an asymmetric shape, is to first duplicate the shape a small number of times (with `union`) and then to tile that array of shapes with overlap.
+
+A future version of Bauble will have a helper to make this more convenient.
+
 ## `radial`
+
+Similar to `tile`, but repeats radially. Requires an axis and a count. Can optionally take a number that will determine how far to outset the shape before repeating it (default `0`).
+
+```
+(radial :y 12 (sin+ t * 100)
+  (cone :x 50 100))
+```
+
+Like `tile` you can supply a mapping function (with a shape) or a producing function (without a shape). The index will be an integer in the range `[0, count)`. As with `tile`, only a fraction of space is considered at once, so asymmetric shapes will produce invalid distance fields.
+
+```
+(cone :y 50 100
+| radial :y 12 (sin+ t * 100) (fn [$ i]
+  (rotate $ :tau :z (i / 12 + (t / 10))
+  | move [100 0 0]
+  | shade (hsv (i / 12) 1 1))))
+```
 
 # Operations on color
 
