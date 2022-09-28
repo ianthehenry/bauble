@@ -1,6 +1,6 @@
 import {TAU} from './util';
 import * as Signal from './signals';
-import {createEffect, untrack} from 'solid-js';
+import {createEffect, untrack, batch} from 'solid-js';
 import type {Seconds} from './types';
 
 export enum TimerState {
@@ -60,8 +60,10 @@ export class Timer {
   }
 
   stop() {
-    Signal.set(this.t, Signal.get(this.loopStart));
-    Signal.set(this.state, TimerState.Paused);
+    batch(() => {
+      Signal.set(this.t, Signal.get(this.loopStart));
+      Signal.set(this.state, TimerState.Paused);
+    });
     this.rate = 1;
   }
 

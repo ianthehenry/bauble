@@ -310,8 +310,23 @@ const Bauble = (props: BaubleProps) => {
     );
 
     const renderLoop = new RenderLoop((elapsed) => batch(() => {
+      if (!Signal.get(isVisible)) {
+        return;
+      }
       const isAnimation_ = Signal.get(isAnimation);
-      timer.tick(elapsed, isAnimation_);
+      const isTimeAdvancing = isAnimation_ && Signal.get(timer.state) !== TimerState.Paused;
+      if (isTimeAdvancing) {
+        // If you hit the stop button, we want to redraw at zero,
+        // but we don't want to advance time forward by 16ms.
+        timer.tick(elapsed, isAnimation_);
+        // Normally the advancing of time is sufficient
+        // to reschedule the loop, but if you're just
+        // resuming after a stop the initial elapsed time
+        // is 0.
+        if (elapsed === 0) {
+          renderLoop.schedule();
+        }
+      }
 
       if (Signal.get(scriptDirty)) {
         outputContainer.innerHTML = '';
@@ -337,7 +352,6 @@ const Bauble = (props: BaubleProps) => {
         outputChannel.target = null;
       }
       renderer.draw();
-      return Signal.get(isVisible) && Signal.get(isAnimation) && Signal.get(timer.state) === TimerState.Playing;
     }));
 
     Signal.onEffect([
@@ -348,6 +362,7 @@ const Bauble = (props: BaubleProps) => {
       scriptDirty,
       renderType,
       timer.state,
+      timer.t,
       quadView,
       quadSplitPoint,
       canvasResolution,
