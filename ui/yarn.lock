@@ -1577,6 +1577,11 @@ morgan@^1.9.1:
     on-finished "~2.3.0"
     on-headers "~1.0.2"
 
+mp4-wasm@^1.0.6:
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/mp4-wasm/-/mp4-wasm-1.0.6.tgz#8a9a3d58ab8ee41762fc14080a972a51b3f01846"
+  integrity sha512-iXVP+YK/aLDkdl9Iy+QQgAYL5/dxEDA1+uYEBW6heEYJkg6gkTGgD2Sz4hciryqr2kJoDCRGfPmgH0A1WHMULQ==
+
 ms@2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.0.0.tgz#5608aeadfc00be6c2901df5f9861788de0d597c8"

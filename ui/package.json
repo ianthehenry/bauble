@@ -6,6 +6,7 @@
     "codemirror": "^6.0.1",
     "codemirror-lang-janet": "^0.2.0",
     "gl-matrix": "^3.4.3",
+    "mp4-wasm": "^1.0.6",
     "solid-js": "^1.5.4"
   },
   "devDependencies": {
