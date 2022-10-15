@@ -942,13 +942,6 @@
 
 # We will never speak of this again.
 
-#### Light and shadow ####
-
-# Currently there's no way to customize
-# anything about the lighting used by
-# the built-in Blinn-Phong shader. But
-# it's coming soon!
-
 #### Getting Help ####
 
 # Uhhh okay look you have just read
