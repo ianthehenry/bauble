@@ -3,13 +3,15 @@
 set -euo pipefail
 
 prod_build=false
+build_html=true
 build_js=true
 build_wasm=true
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --prod) prod_build=true ;;
-    --js-only) build_wasm=false ;;
+    --wasm) build_js=false; build_html=false ;;
+    --js) build_wasm=false; build_html=false ;;
     --html) build_wasm=false; build_js=false ;;
     *)
       echo "unknown flag $1" >&2
@@ -17,6 +19,7 @@ while [[ $# -gt 0 ]]; do
   esac
   shift
 done
+
 rollup_args="--no-treeshake --no-indent"
 emcc_args="-O0"
 if [[ "$prod_build" == "true" ]]; then
@@ -24,13 +27,8 @@ if [[ "$prod_build" == "true" ]]; then
   emcc_args="-O3 --closure 1"
 fi
 
-if [[ "$prod_build" == "true" ]]; then
-  rm -rf public/
-  mkdir -p public/js
-fi
-
 if [[ "$build_wasm" == "true" ]]; then
-  rm -rf out/
+  rm -f out/janet.js
   mkdir -p out
 
   file_args=""
@@ -59,11 +57,10 @@ if [[ "$build_wasm" == "true" ]]; then
 fi
 
 if [[ "$build_js" == true ]]; then
-  rm -rf public/js/main.js
+  rm -f out/all.js
+  mkdir -p out
   (cd ui/ && ./node_modules/.bin/rollup -c $rollup_args)
 fi
-
-mkdir -p public/{about,help}
 
 exists() {
   type $1 &>/dev/null
@@ -92,11 +89,16 @@ staticasset() {
   printf "%s" "$dest"
 }
 
-css=$(staticasset ui/styles/main.css /)
-js=$(staticasset out/all.js /)
+if [[ "$build_html" == true ]]; then
+  rm -rf public/
+  mkdir -p public/{about,help}
 
-ln -f ui/assets/icons.svg public/icons.svg
+  css=$(staticasset ui/styles/main.css /)
+  js=$(staticasset out/all.js /)
 
-ui/html/home "$css" "$js" > public/index.html
-ui/html/about/index "$css" "$js" > public/about/index.html
-ui/html/help/index "$css" "$js" > public/help/index.html
+  ln -f ui/assets/icons.svg public/icons.svg
+
+  ui/html/home "$css" "$js" > public/index.html
+  ui/html/about/index "$css" "$js" > public/about/index.html
+  ui/html/help/index "$css" "$js" > public/help/index.html
+fi
