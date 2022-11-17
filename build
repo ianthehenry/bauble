@@ -63,6 +63,8 @@ if [[ "$build_js" == true ]]; then
   (cd ui/ && ./node_modules/.bin/rollup -c $rollup_args)
 fi
 
+mkdir -p public/{about,help}
+
 exists() {
   type $1 &>/dev/null
 }
@@ -95,7 +97,6 @@ js=$(staticasset out/all.js /)
 
 ln -f ui/assets/icons.svg public/icons.svg
 
-mkdir -p public/{about,help}
 ui/html/home "$css" "$js" > public/index.html
 ui/html/about/index "$css" "$js" > public/about/index.html
 ui/html/help/index "$css" "$js" > public/help/index.html
