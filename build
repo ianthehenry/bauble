@@ -63,6 +63,16 @@ if [[ "$build_js" == true ]]; then
   (cd ui/ && ./node_modules/.bin/rollup -c $rollup_args)
 fi
 
+exists() {
+  type $1 &>/dev/null
+}
+
+if ! exists sha256sum && exists shasum; then
+  sha256sum() {
+    shasum -a 256 "$@"
+  }
+fi
+
 fingerprint() {
   if [[ "$prod_build" == "true" ]]; then
     checksum=$(sha256sum "$1" | cut -f1 -d' ')
