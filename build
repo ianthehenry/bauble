@@ -13,6 +13,7 @@ while [[ $# -gt 0 ]]; do
     --wasm) build_js=false; build_html=false ;;
     --js) build_wasm=false; build_html=false ;;
     --html) build_wasm=false; build_js=false ;;
+    --clean) rm -rf out/ public/; exit ;;
     *)
       echo "unknown flag $1" >&2
       exit 1 ;;
