@@ -7,8 +7,8 @@ build_html=true
 build_js=true
 build_wasm=true
 
-while [[ $# -gt 0 ]]; do
-  case "$1" in
+for arg; do
+  case "$arg" in
     --prod) prod_build=true ;;
     --wasm) build_js=false; build_html=false ;;
     --js) build_wasm=false; build_html=false ;;
@@ -18,7 +18,6 @@ while [[ $# -gt 0 ]]; do
       echo "unknown flag $1" >&2
       exit 1 ;;
   esac
-  shift
 done
 
 rollup_args="--no-treeshake --no-indent"
