@@ -20,15 +20,22 @@ For more examples, I sometimes tweet videos of Bauble's development:
 
 # Dependencies
 
-Requires [`emscripten`](https://emscripten.org/). Janet is vendored, so it does not actually require that you have Janet installed right now.
+- [`emscripten`](https://emscripten.org/)
+- [`redo`](https://github.com/apenwarr/redo)
+- [`yarn`](https://yarnpkg.com/)
 
-Also requires [`yarn`](https://yarnpkg.com/), to install JavaScript dependencies.
+Afterwards, install JavaScript dependencies with:
+
+```
+$ yarn
+$ (cd ui && yarn)
+```
 
 `bauble` is being developed alongside [`codemirror-lang-janet`](https://github.com/ianthehenry/codemirror-lang-janet). If you want to make changes to the grammar, clone that repo and run [`yalc publish`](https://github.com/wclr/yalc) from the root of it. Then run `yalc link codemirror-lang-janet` in this repository, and you'll be able to see your changes locally.
 
 # Development
 
-Bauble uses a weird build system called [`redo`](https://github.com/apenwarr/redo). To build Bauble, all you have to do is run:
+To build Bauble, all you have to do is run:
 
 ```
 $ redo
@@ -46,7 +53,7 @@ Lint the JS with:
 (cd ui/; yarn eslint .)
 ```
 
-# Running
+You can serve a local Bauble like this:
 
 ```
 $ node_modules/.bin/alive-server public

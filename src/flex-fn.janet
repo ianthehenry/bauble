@@ -70,6 +70,9 @@
         ,;checks
         (errorf "unexpected argument %p" ,$value)))))
 
+(defn function/max-arity [f]
+  ((disasm f) :max-arity))
+
 (defn- handle-args [args spec]
   (var i 0)
   (var last-index (- (length args) 1))

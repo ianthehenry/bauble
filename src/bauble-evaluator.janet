@@ -1,24 +1,24 @@
 (import ./globals)
 (import ./light)
-(def bauble-env (make-env root-env))
+(def- bauble-env (make-env root-env))
 (each module ["./helpers" "./dsl" "./globals" "./glslisp/src/builtins"]
   (merge-module bauble-env (require module)))
 
 (import ./infix-syntax)
 (import ./dot-syntax)
 
-(defn compilable? [value]
+(defn- compilable? [value]
   (and (struct? value)
        (not (nil? (value :compile)))))
 
-(defn chunk-string [str]
+(defn- chunk-string [str]
   (var unread true)
   (fn [buf _]
     (when unread
       (set unread false)
       (buffer/blit buf str))))
 
-(def default-lights
+(def- default-lights
   [(light/point/new ~(+ ,globals/P [1024 1024 512]) [1 1 1] 1 0.25)
    (light/ambient/new [1 1 1] 0.05)])
 

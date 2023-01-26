@@ -1,30 +1,13 @@
 #include <emscripten.h>
 #include <emscripten/bind.h>
 #include <string>
+#include <stdio.h>
 #include "janet.h"
 
 using std::string;
 
 static JanetFunction *janetfn_bauble_evaluate = NULL;
 static JanetFunction *janetfn_compile_shape = NULL;
-
-JANET_FN(janet_function_arity, "(function/arity)", "") {
-  janet_fixarity(argc, 1);
-  const JanetFunction *function = janet_getfunction(argv, 0);
-  return janet_wrap_number(function->def->arity);
-}
-
-JANET_FN(janet_function_min_arity, "(function/min-arity)", "") {
-  janet_fixarity(argc, 1);
-  const JanetFunction *function = janet_getfunction(argv, 0);
-  return janet_wrap_number(function->def->min_arity);
-}
-
-JANET_FN(janet_function_max_arity, "(function/max-arity)", "") {
-  janet_fixarity(argc, 1);
-  const JanetFunction *function = janet_getfunction(argv, 0);
-  return janet_wrap_number(function->def->max_arity);
-}
 
 JanetFunction *extract_function(JanetTable *env, const char *name) {
   JanetTable *declaration = janet_unwrap_table(janet_table_get(env, janet_csymbolv(name)));
@@ -115,48 +98,54 @@ CompilationResult evaluate_script(string source) {
   };
 }
 
+unsigned char *read_file(const char *filename, size_t *length) {
+  // choosing deliberately to resize...
+  size_t capacity = 2 << 16;
+  unsigned char *src = (unsigned char *)malloc(capacity * sizeof(unsigned char));
+  assert(src);
+  size_t total_bytes_read = 0;
+  FILE *file = fopen(filename, "r");
+  assert(file);
+  while (true) {
+    size_t remaining_capacity = capacity - total_bytes_read;
+    if (remaining_capacity == 0) {
+      capacity <<= 1;
+      src = (unsigned char *)realloc(src, capacity * sizeof(unsigned char));
+      assert(src);
+      remaining_capacity = capacity - total_bytes_read;
+    }
+
+    size_t bytes_read = fread(&src[total_bytes_read], sizeof(unsigned char), remaining_capacity, file);
+    total_bytes_read += bytes_read;
+    if (bytes_read == 0) {
+      break;
+    }
+  }
+  fclose(file);
+  *length = total_bytes_read;
+  return src;
+}
+
 EMSCRIPTEN_KEEPALIVE
 int main() {
   janet_init();
-  JanetTable *env = janet_core_env(NULL);
+  JanetTable *core_env = janet_core_env(NULL);
+  // TODO: shouldn't this be load-image-dict?
+  JanetTable *lookup = janet_env_lookup(core_env);
 
-  const JanetRegExt regs[] = {
-    JANET_REG("function/arity", janet_function_arity),
-    JANET_REG("function/min-arity", janet_function_min_arity),
-    JANET_REG("function/max-arity", janet_function_max_arity),
-    JANET_REG_END
-  };
-  janet_cfuns_ext(env, NULL, regs);
+  size_t bauble_image_length;
+  unsigned char *bauble_image = read_file("bauble.jimage", &bauble_image_length);
 
-  JanetFunction *dofile = extract_function(env, "dofile");
-  Janet *result;
-  bool error = false;
-
-  result = call_fn(dofile, 1, (Janet[1]){ janet_cstringv("bauble-evaluator.janet") });
-  if (result) {
-    janetfn_bauble_evaluate = extract_function(janet_unwrap_table(*result), "evaluate");
-    janet_gcroot(janet_wrap_function(janetfn_bauble_evaluate));
-    free(result);
-  } else {
-    janet_eprintf("unable to extract compilation function\n");
-    error = true;
+  Janet bauble = janet_unmarshal(bauble_image, bauble_image_length, 0, lookup, NULL);
+  if (!janet_checktype(bauble, JANET_TABLE)) {
+    janet_panicf("invalid image %q", bauble);
   }
 
-  result = call_fn(dofile, 1, (Janet[1]){ janet_cstringv("shade.janet") });
-  if (result) {
-    janetfn_compile_shape = extract_function(janet_unwrap_table(*result), "compile-shape");
-    janet_gcroot(janet_wrap_function(janetfn_compile_shape));
-    free(result);
-  } else {
-    janet_eprintf("unable to extract compilation function\n");
-    error = true;
-  }
-
-  if (error) {
-    janet_deinit();
-  }
+  janetfn_bauble_evaluate = extract_function(janet_unwrap_table(bauble), "bauble-evaluator/evaluate");
+  janet_gcroot(janet_wrap_function(janetfn_bauble_evaluate));
+  janetfn_compile_shape = extract_function(janet_unwrap_table(bauble), "shade/compile-shape");
+  janet_gcroot(janet_wrap_function(janetfn_compile_shape));
 }
-
 
 EMSCRIPTEN_BINDINGS(module) {
   using namespace emscripten;

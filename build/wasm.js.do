@@ -5,15 +5,7 @@ actual_outpath_jfc=$PWD/$3
 cd ..
 
 redo-ifchange janet/janet.{c,h} src/driver.cpp
-
-janet_files=$(echo src/*.janet src/glslisp/src/*.janet)
-
-redo-ifchange $janet_files
-
-file_args=""
-for file in $janet_files; do
-  file_args="$file_args --embed-file $file@${file#src/}"
-done
+redo-ifchange build/bauble.jimage src/intro.janet
 
 extra_flags="-O0"
 if [[ $mode == "prod" ]]; then
@@ -26,7 +18,8 @@ emcc \
   -I janet \
   janet/janet.c \
   src/driver.cpp \
-  $file_args \
+  --embed-file build/bauble.jimage@bauble.jimage \
+  --embed-file src/intro.janet@intro.janet \
   -lembind \
   -s "EXPORTED_FUNCTIONS=['_main']" \
   -s "EXPORTED_RUNTIME_METHODS=['FS', 'UTF8ToString']" \
