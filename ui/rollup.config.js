@@ -5,7 +5,7 @@ import babel from "@rollup/plugin-babel";
 export default ({
   input: "main.tsx",
   output: {
-    file: "../out/all.js",
+    file: "../build/all.js",
     format: "iife",
   },
   plugins: [

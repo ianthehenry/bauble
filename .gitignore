@@ -1,3 +1,5 @@
 diary.md
 public/
-out/
+build/*
+!build/*.do
+.redo

@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "alive-server": "^1.2.9",
+    "autoprefixer": "^10.4.13",
+    "postcss": "^8.4.21",
+    "postcss-cli": "^10.1.0",
+    "postcss-minify": "^1.1.0",
+    "alive-server": "^1.2.9"
+  }
+}

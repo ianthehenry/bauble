@@ -26,9 +26,19 @@ Also requires [`yarn`](https://yarnpkg.com/), to install JavaScript dependencies
 
 `bauble` is being developed alongside [`codemirror-lang-janet`](https://github.com/ianthehenry/codemirror-lang-janet). If you want to make changes to the grammar, clone that repo and run [`yalc publish`](https://github.com/wclr/yalc) from the root of it. Then run `yalc link codemirror-lang-janet` in this repository, and you'll be able to see your changes locally.
 
-# Building
+# Development
 
-Run `./build` to compile Janet to wasm; run `./build --prod` for an optimized, minified build that will take much longer. Run `./build --js` to only rebuild the UI or `./build --wasm` to only rebuild the Janet/C components.
+Bauble uses a weird build system called [`redo`](https://github.com/apenwarr/redo). To build Bauble, all you have to do is run:
+
+```
+$ redo
+```
+
+To create a minified, optimized build, use:
+
+```
+$ BUILD_MODE=prod redo
+```
 
 Lint the JS with:
 
@@ -39,5 +49,5 @@ Lint the JS with:
 # Running
 
 ```
-$ ui/node_modules/.bin/alive-server public
+$ node_modules/.bin/alive-server public
 ```
