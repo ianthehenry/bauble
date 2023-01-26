@@ -169,11 +169,11 @@
 
 # Remember that this is just a syntactic
 # transformation, so we can still use
-# the variadic version of +:
+# + as a normal variadic function:
 
 # (box (30 | + 10 20)) # (x | + y z) expands to (+ x y z)
 
-# But we can go even further. Babel will
+# But we can go even further. Bauble will
 # rewrite "infix" uses of + - * / into
 # something very similar to this:
 
@@ -359,7 +359,7 @@
 # contribute to specular highlights and
 # don't cast shadows, while point
 # lights do contribute specular
-# highlights, can *can* cast shadows
+# highlights, and *can* cast shadows
 # (but don't have to).
 
 # You can simulate many other types of
@@ -593,15 +593,19 @@
 # make space. At least for now.
 
 # Now let me draw your attention to the
-# upper-right hand corner. See those
-# buttons? There's a camera, a magnet,
-# and a... I dunno; it's hard to come
-# up with icons for these things.
+# upper-right hand corner of the
+# preview window. See those buttons?
+# There's a camera, a magnet, and a...
+# I dunno; it's hard to come up with
+# icons for these things.
 
-# These views are useful for debugging
-# spatial distortions. The first one
-# shows the number of steps, as a
-# gradient from black to write. The
+# These are different rendering modes,
+# and they're useful for debugging
+# spatial distortions.
+
+# The first debug view shows the number
+# of steps that the raymarcher took, as
+# a gradient from black to write. The
 # darker the pixel, the fewer steps it
 # took to find an intersection with the
 # shape. Rays that didn't manage to
@@ -615,15 +619,17 @@
 # ray stopped a small positive distance
 # from the surface. Magenta values mean
 # the ray overshot, and landed inside
-# the shape. You can use these views to
-# help you select slow coefficients.
+# the shape. Black means that the ray
+# never hit anything at all.
 
-# Also note that slowing down the
-# raymarcher has other effects as well.
-# Functions that rely on the distance
-# field, like boolean operations, will
-# not be as accurate. For example, look
-# at this snowman:
+# You can tweak slow coefficients to
+# help mitigate overshooting, but note
+# that slowing down the raymarcher has
+# other effects as well. Functions that
+# rely on the distance field, like
+# boolean operations, will not be as
+# accurate. For example, look at this
+# snowman:
 
 # (sphere 50 | move :y -10 | union :r 10 (sphere 40 | move :y 45))
 
