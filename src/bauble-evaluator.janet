@@ -12,17 +12,11 @@
        (not (nil? (value :compile)))))
 
 (defn chunk-string [str]
-  (var already-read false)
+  (var unread true)
   (fn [buf _]
-    # TODO: i'm ignoring the "number of
-    # bytes" requested here, which is
-    # probably fine but might be bad.
-    # dofile hardcodes 4096
-    (if already-read
-      nil
-      (do
-        (set already-read true)
-        (buffer/blit buf str)))))
+    (when unread
+      (set unread false)
+      (buffer/blit buf str))))
 
 (def default-lights
   [(light/point/new ~(+ ,globals/P [1024 1024 512]) [1 1 1] 1 0.25)
