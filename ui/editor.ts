@@ -144,7 +144,7 @@ const theme = EditorView.theme({
     backgroundColor: 'var(--background)',
     color: 'var(--comment)',
   },
-  "&.cm-focused .cm-selectionBackground, ::selection": {
+  "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection": {
     backgroundColor: 'var(--selection)',
   },
   ".cm-gutters": {
