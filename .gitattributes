@@ -1,3 +1,4 @@
 public/js/* linguist-generated=true
 janet/* linguist-vendored=true
 yarn.lock linguist-generated=true
+*.do linguist-language=shell
