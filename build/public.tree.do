@@ -13,8 +13,8 @@ ln -f build/main.css public/$css
 ln -f build/all.js public/$js
 
 mkdir -p public/{about,help}
-ui/html/home "$css" "$js" > public/index.html
-ui/html/about/index "$css" "$js" > public/about/index.html
-ui/html/help/index "$css" "$js" > public/help/index.html
+ui/html/home "/$css" "/$js" > public/index.html
+ui/html/about/index "/$css" "/$js" > public/about/index.html
+ui/html/help/index "/$css" "/$js" > public/help/index.html
 
 tree public --noreport | tr ' ' ' '
