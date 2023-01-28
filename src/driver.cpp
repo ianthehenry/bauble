@@ -99,14 +99,14 @@ CompilationResult evaluate_script(string source) {
 }
 
 unsigned char *read_file(const char *filename, size_t *length) {
-  // choosing deliberately to resize...
-  size_t capacity = 2 << 16;
+  size_t capacity = 2 << 17;
   unsigned char *src = (unsigned char *)malloc(capacity * sizeof(unsigned char));
   assert(src);
   size_t total_bytes_read = 0;
   FILE *file = fopen(filename, "r");
   assert(file);
-  while (true) {
+  size_t bytes_read;
+  do {
     size_t remaining_capacity = capacity - total_bytes_read;
     if (remaining_capacity == 0) {
       capacity <<= 1;
@@ -115,12 +115,10 @@ unsigned char *read_file(const char *filename, size_t *length) {
       remaining_capacity = capacity - total_bytes_read;
     }
 
-    size_t bytes_read = fread(&src[total_bytes_read], sizeof(unsigned char), remaining_capacity, file);
+    bytes_read = fread(&src[total_bytes_read], sizeof(unsigned char), remaining_capacity, file);
     total_bytes_read += bytes_read;
-    if (bytes_read == 0) {
-      break;
-    }
-  }
+  } while (bytes_read > 0);
+
   fclose(file);
   *length = total_bytes_read;
   return src;
