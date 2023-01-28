@@ -18,17 +18,13 @@ JanetFunction *extract_function(JanetTable *env, const char *name) {
   return function;
 }
 
-Janet *call_fn(JanetFunction *fn, int argc, const Janet *argv) {
-  Janet *result = (Janet *)malloc(sizeof(Janet));
-  if (!result) {
-    return NULL;
-  }
+bool call_fn(JanetFunction *fn, int argc, const Janet *argv, Janet *out) {
   JanetFiber *fiber = NULL;
-  if (janet_pcall(fn, argc, argv, result, &fiber) == JANET_SIGNAL_OK) {
-    return result;
+  if (janet_pcall(fn, argc, argv, out, &fiber) == JANET_SIGNAL_OK) {
+    return true;
   } else {
-    janet_stacktrace(fiber, *result);
-    return NULL;
+    janet_stacktrace(fiber, *out);
+    return false;
   }
 }
 
@@ -55,33 +51,31 @@ CompilationResult evaluate_script(string source) {
   }
 
   long long start_time = emscripten_get_now();
-  Janet *evaluation_result = call_fn(janetfn_bauble_evaluate, 1, (Janet[1]){ janet_cstringv(source.c_str()) });
-  if (!evaluation_result) {
+  Janet evaluation_result;
+  const Janet args[1] = { janet_cstringv(source.c_str()) };
+  if (!call_fn(janetfn_bauble_evaluate, 1, args, &evaluation_result)) {
     return compilation_error("evaluation error");
   }
 
   long long done_evaluating = emscripten_get_now();
 
-  const Janet *tuple = janet_unwrap_tuple(*evaluation_result);
+  const Janet *tuple = janet_unwrap_tuple(evaluation_result);
   const Janet compile_shape_args[2] = { tuple[0], tuple[1] };
-  Janet *response_ptr = call_fn(janetfn_compile_shape, 2, compile_shape_args);
-  free(evaluation_result);
+  Janet compilation_result;
+  bool compilation_success = call_fn(janetfn_compile_shape, 2, compile_shape_args, &compilation_result);
 
   long long done_compiling_glsl = emscripten_get_now();
   bool is_animated;
   const uint8_t *shader_source;
-  if (response_ptr) {
-    Janet response = *response_ptr;
-    if (janet_checktype(response, JANET_TUPLE)) {
-      const Janet *tuple = janet_unwrap_tuple(response);
+  if (compilation_success) {
+    if (janet_checktype(compilation_result, JANET_TUPLE)) {
+      const Janet *tuple = janet_unwrap_tuple(compilation_result);
       is_animated = janet_unwrap_boolean(tuple[0]);
       shader_source = janet_unwrap_string(tuple[1]);
-    } else if (janet_checktype(response, JANET_KEYWORD)) {
-      free(response_ptr);
+    } else if (janet_checktype(compilation_result, JANET_KEYWORD)) {
       return compilation_error("invalid value");
     } else {
-      janet_eprintf("unexpected compilation result %p\n", response);
-      free(response_ptr);
+      janet_eprintf("unexpected compilation result %p\n", compilation_result);
       return compilation_error("internal error");
     }
   } else {
