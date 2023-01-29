@@ -693,10 +693,10 @@ chalk@^4.0.0:
     ansi-styles "^4.1.0"
     supports-color "^7.1.0"
 
-codemirror-lang-janet@^0.2.0:
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/codemirror-lang-janet/-/codemirror-lang-janet-0.2.0.tgz#c243f8f99faea041381e6bdd80536005825118bf"
-  integrity sha512-VKcoll585aE4uEPABej55c4bSO3dcH80FzB7ZM1CFz/JgEt8LQhr4hGL0jXCzuQhqIChqzhbjKFg9ph/fWbFUw==
+codemirror-lang-janet@^0.7.0:
+  version "0.7.1"
+  resolved "https://registry.yarnpkg.com/codemirror-lang-janet/-/codemirror-lang-janet-0.7.1.tgz#1ceb78066a66414498016311f9b0e57087b7d7ab"
+  integrity sha512-G/71VAk5E3JZKLGtipvu0o34PsRuhU9jSjSanLucJAhoh7fYsDCJaJoTEGHWitTVyvOmc/4AxKCmw6azvw/umQ==
   dependencies:
     "@codemirror/language" "^6.2.1"
     "@lezer/highlight" "^1.0.0"
