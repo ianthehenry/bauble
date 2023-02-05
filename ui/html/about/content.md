@@ -8,7 +8,7 @@ If you're having fun playing with it, please get in touch, and let me know what 
 
 - <a href="mailto:ianthehenry@gmail.com?subject=Let's talk about Bauble">Email</a>
 - [Twitter](https://twitter.com/ianthehenry)
-- [GitHub](https://github.com/ianthehenry/bauble/discussions)
+- [GitHub](https://github.com/ianthehenry/bauble.studio/discussions)
 
 # Acknowledgments
 

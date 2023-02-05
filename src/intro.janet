@@ -973,9 +973,9 @@
 # For more info... maybe check out the
 # source?
 
-# https://github.com/ianthehenry/bauble/blob/master/src/dsl.janet
-# https://github.com/ianthehenry/bauble/blob/master/src/glslisp/src/builtins.janet
-# https://github.com/ianthehenry/bauble/blob/master/src/helpers.janet
+# https://github.com/ianthehenry/bauble.studio/blob/master/src/dsl.janet
+# https://github.com/ianthehenry/bauble.studio/blob/master/src/glslisp/src/builtins.janet
+# https://github.com/ianthehenry/bauble.studio/blob/master/src/helpers.janet
 
 # Or try studying these examples:
 
@@ -1002,7 +1002,7 @@
 # (box 50 | swirl :y 0.040 | slow 0.5)
 
 # Comments? Questions? Requests?
-# https://github.com/ianthehenry/bauble/discussions
+# https://github.com/ianthehenry/bauble.studio/discussions
 
 # Found a bug? Let me know!
-# https://github.com/ianthehenry/bauble/issues
+# https://github.com/ianthehenry/bauble.studio/issues
