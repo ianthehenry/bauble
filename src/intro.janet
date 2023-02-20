@@ -262,7 +262,7 @@
 # on symbolic expressions. (+ 1 2)
 # produces 3, but (+ 1 p.x) produces
 # the Janet tuple ~(+ 1 (. ,p :x)), and
-# Bauble knows how to compiles that
+# Bauble knows how to compile that
 # into a string of GLSL code that will
 # execute on the GPU.
 
