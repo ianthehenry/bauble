@@ -58,3 +58,7 @@ You can serve a local Bauble like this:
 ```
 $ node_modules/.bin/alive-server public
 ```
+
+# Known bugs
+
+- [ ] Bauble will cast and calculate lights even for shaders that don't need lights, making it slower than it needs to be in the default RGB-normal shading view.
