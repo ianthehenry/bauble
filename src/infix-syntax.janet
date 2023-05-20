@@ -1,5 +1,3 @@
-(use ./walkies)
-
 (defn- invocation? [form]
   (and (= (type form) :tuple) (= (tuple/type form) :parens)))
 
