@@ -20,6 +20,8 @@ For more examples, I sometimes tweet videos of Bauble's development:
 
 # Dependencies
 
+Bauble requires at least Janet 1.28.0. It may work with newer versions of Janet, assuming that the image format is compatible, but it's better to [update the version of Janet that Bauble includes](build/janet/janet-version) to match your local version.
+
 - [`emscripten`](https://emscripten.org/)
 - [`redo`](https://github.com/apenwarr/redo)
 - [`yarn`](https://yarnpkg.com/)
