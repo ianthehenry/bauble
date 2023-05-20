@@ -2,5 +2,6 @@
   :name "bauble"
   :description "signed distance function playground"
   :dependencies [
-  "https://github.com/ianthehenry/judge.git"
+    {:url "https://github.com/ianthehenry/judge.git"
+     :tag "v2.5.0"}
   ])
