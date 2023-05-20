@@ -2,4 +2,7 @@ diary.md
 public/
 build/*
 !build/*.do
+!build/janet
+build/janet/janet.c
+build/janet/janet.h
 .redo

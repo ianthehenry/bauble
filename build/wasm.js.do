@@ -4,8 +4,7 @@ mode=$(cat mode)
 actual_outpath_jfc=$PWD/$3
 cd ..
 
-redo-ifchange janet/janet.{c,h} src/driver.cpp
-redo-ifchange build/bauble.jimage src/intro.janet
+redo-ifchange build/janet/janet.{c,h} src/driver.cpp build/bauble.jimage src/intro.janet
 
 extra_flags="-O0"
 if [[ $mode == "prod" ]]; then
@@ -15,8 +14,8 @@ fi
 emcc \
   $extra_flags \
   -o $actual_outpath_jfc \
-  -I janet \
-  janet/janet.c \
+  -I build/janet \
+  build/janet/janet.c \
   src/driver.cpp \
   --embed-file build/bauble.jimage@bauble.jimage \
   --embed-file src/intro.janet@intro.janet \
