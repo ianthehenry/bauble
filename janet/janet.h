@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2022 Calvin Rose
+* Copyright (c) 2023 Calvin Rose
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to
@@ -26,10 +26,10 @@
 #define JANETCONF_H
 
 #define JANET_VERSION_MAJOR 1
-#define JANET_VERSION_MINOR 24
+#define JANET_VERSION_MINOR 28
 #define JANET_VERSION_PATCH 0
 #define JANET_VERSION_EXTRA ""
-#define JANET_VERSION "1.24.0"
+#define JANET_VERSION "1.28.0"
 
 /* #define JANET_BUILD "local" */
 
@@ -55,6 +55,8 @@
 /* #define JANET_NO_SYMLINKS */
 /* #define JANET_NO_UMASK */
 /* #define JANET_NO_THREADS */
+/* #define JANET_NO_FFI */
+/* #define JANET_NO_FFI_JIT */
 
 /* Other settings */
 /* #define JANET_DEBUG */
@@ -131,6 +133,11 @@ extern "C" {
 #define JANET_LINUX 1
 #endif
 
+/* Check for Cygwin */
+#if defined(__CYGWIN__)
+#define JANET_CYGWIN 1
+#endif
+
 /* Check Unix */
 #if defined(_AIX) \
     || defined(__APPLE__) /* Darwin */ \
@@ -151,6 +158,16 @@ extern "C" {
 #define JANET_WINDOWS 1
 #endif
 
+/* Check if compiling with MSVC - else assume a GCC-like compiler by default */
+#ifdef _MSC_VER
+#define JANET_MSVC
+#endif
+
+/* Check Mingw 32-bit and 64-bit */
+#ifdef __MINGW32__
+#define JANET_MINGW
+#endif
+
 /* Check 64-bit vs 32-bit */
 #if ((defined(__x86_64__) || defined(_M_X64)) \
      && (defined(JANET_POSIX) || defined(JANET_WINDOWS))) \
@@ -160,7 +177,8 @@ extern "C" {
     || (defined(__sparc__) && defined(__arch64__) || defined (__sparcv9)) /* BE */ \
     || defined(__s390x__) /* S390 64-bit (BE) */ \
     || (defined(__ppc64__) || defined(__PPC64__)) \
-    || defined(__aarch64__) /* ARM 64-bit */
+    || defined(__aarch64__) /* ARM 64-bit */ \
+    || (defined(__riscv) && (__riscv_xlen == 64)) /* RISC-V 64-bit */
 #define JANET_64 1
 #else
 #define JANET_32 1
@@ -235,6 +253,13 @@ extern "C" {
 #endif
 #endif
 
+/* If FFI is enabled and FFI-JIT is not disabled... */
+#ifdef JANET_FFI
+#ifndef JANET_NO_FFI_JIT
+#define JANET_FFI_JIT
+#endif
+#endif
+
 /* Enable or disable the assembler. Enabled by default. */
 #ifndef JANET_NO_ASSEMBLER
 #define JANET_ASSEMBLER
@@ -300,7 +325,7 @@ extern "C" {
 /* Maximum depth to follow table prototypes before giving up and returning nil. */
 #define JANET_MAX_PROTO_DEPTH 200
 
-/* Maximum depth to follow table prototypes before giving up and returning nil. */
+/* Prevent macros to expand too deeply and error out. */
 #define JANET_MAX_MACRO_EXPAND 200
 
 /* Define default max stack size for stacks before raising a stack overflow error.
@@ -321,10 +346,11 @@ extern "C" {
 #ifndef JANET_NO_NANBOX
 #ifdef JANET_32
 #define JANET_NANBOX_32
-#elif defined(__x86_64__) || defined(_WIN64)
+#elif defined(__x86_64__) || defined(_WIN64) || defined(__riscv)
 /* We will only enable nanboxing by default on 64 bit systems
- * on x86. This is mainly because the approach is tied to the
- * implicit 47 bit address space. */
+ * for x64 and risc-v. This is mainly because the approach is tied to the
+ * implicit 47 bit address space. Many arches allow/require this, but not all,
+ * and it requires cooperation from the OS. ARM should also work in many configurations. */
 #define JANET_NANBOX_64
 #endif
 #endif
@@ -397,7 +423,7 @@ typedef struct JanetOSRWLock JanetOSRWLock;
 
 /* What to do when out of memory */
 #ifndef JANET_OUT_OF_MEMORY
-#define JANET_OUT_OF_MEMORY do { fprintf(stderr, "janet out of memory\n"); exit(1); } while (0)
+#define JANET_OUT_OF_MEMORY do { fprintf(stderr, "%s:%d - janet out of memory\n", __FILE__, __LINE__); exit(1); } while (0)
 #endif
 
 #ifdef JANET_BSD
@@ -489,6 +515,7 @@ typedef struct JanetReg JanetReg;
 typedef struct JanetRegExt JanetRegExt;
 typedef struct JanetMethod JanetMethod;
 typedef struct JanetSourceMapping JanetSourceMapping;
+typedef struct JanetSymbolMap JanetSymbolMap;
 typedef struct JanetView JanetView;
 typedef struct JanetByteView JanetByteView;
 typedef struct JanetDictView JanetDictView;
@@ -1044,6 +1071,7 @@ struct JanetAbstractHead {
 /* Some function definition flags */
 #define JANET_FUNCDEF_FLAG_VARARG 0x10000
 #define JANET_FUNCDEF_FLAG_NEEDSENV 0x20000
+#define JANET_FUNCDEF_FLAG_HASSYMBOLMAP 0x40000
 #define JANET_FUNCDEF_FLAG_HASNAME 0x80000
 #define JANET_FUNCDEF_FLAG_HASSOURCE 0x100000
 #define JANET_FUNCDEF_FLAG_HASDEFS 0x200000
@@ -1059,6 +1087,14 @@ struct JanetSourceMapping {
     int32_t column;
 };
 
+/* Symbol to slot mapping & lifetime structure. */
+struct JanetSymbolMap {
+    uint32_t birth_pc;
+    uint32_t death_pc;
+    uint32_t slot_index;
+    const uint8_t *symbol;
+};
+
 /* A function definition. Contains information needed to instantiate closures. */
 struct JanetFuncDef {
     JanetGCObject gc;
@@ -1072,6 +1108,7 @@ struct JanetFuncDef {
     JanetSourceMapping *sourcemap;
     JanetString source;
     JanetString name;
+    JanetSymbolMap *symbolmap;
 
     int32_t flags;
     int32_t slotcount; /* The amount of stack space required for the function */
@@ -1082,6 +1119,7 @@ struct JanetFuncDef {
     int32_t bytecode_length;
     int32_t environments_length;
     int32_t defs_length;
+    int32_t symbolmap_length;
 };
 
 /* A function environment */
@@ -1157,6 +1195,8 @@ struct JanetAbstractType {
     int32_t (*hash)(void *p, size_t len);
     Janet(*next)(void *p, Janet key);
     Janet(*call)(void *p, int32_t argc, Janet *argv);
+    size_t (*length)(void *p, size_t len);
+    JanetByteView(*bytes)(void *p, size_t len);
 };
 
 /* Some macros to let us add extra types to JanetAbstract types without
@@ -1174,7 +1214,9 @@ struct JanetAbstractType {
 #define JANET_ATEND_COMPARE     NULL,JANET_ATEND_HASH
 #define JANET_ATEND_HASH        NULL,JANET_ATEND_NEXT
 #define JANET_ATEND_NEXT        NULL,JANET_ATEND_CALL
-#define JANET_ATEND_CALL
+#define JANET_ATEND_CALL        NULL,JANET_ATEND_LENGTH
+#define JANET_ATEND_LENGTH      NULL,JANET_ATEND_BYTES
+#define JANET_ATEND_BYTES
 
 struct JanetReg {
     const char *name;
@@ -1609,8 +1651,10 @@ JANET_API Janet janet_array_pop(JanetArray *array);
 JANET_API Janet janet_array_peek(JanetArray *array);
 
 /* Buffer functions */
+#define JANET_BUFFER_FLAG_NO_REALLOC 0x10000
 JANET_API JanetBuffer *janet_buffer(int32_t capacity);
 JANET_API JanetBuffer *janet_buffer_init(JanetBuffer *buffer, int32_t capacity);
+JANET_API JanetBuffer *janet_pointer_buffer_unsafe(void *memory, int32_t capacity, int32_t count);
 JANET_API void janet_buffer_deinit(JanetBuffer *buffer);
 JANET_API void janet_buffer_ensure(JanetBuffer *buffer, int32_t capacity, int32_t growth);
 JANET_API void janet_buffer_setcount(JanetBuffer *buffer, int32_t count);
@@ -1709,6 +1753,7 @@ JANET_API void janet_table_clear(JanetTable *table);
 JANET_API JanetFiber *janet_fiber(JanetFunction *callee, int32_t capacity, int32_t argc, const Janet *argv);
 JANET_API JanetFiber *janet_fiber_reset(JanetFiber *fiber, JanetFunction *callee, int32_t argc, const Janet *argv);
 JANET_API JanetFiberStatus janet_fiber_status(JanetFiber *fiber);
+JANET_API int janet_fiber_can_resume(JanetFiber *fiber);
 JANET_API JanetFiber *janet_current_fiber(void);
 JANET_API JanetFiber *janet_root_fiber(void);
 
@@ -1735,6 +1780,7 @@ JANET_API JanetModule janet_native(const char *name, JanetString *error);
 
 /* Marshaling */
 #define JANET_MARSHAL_UNSAFE 0x20000
+#define JANET_MARSHAL_NO_CYCLES 0x40000
 
 JANET_API void janet_marshal(
     JanetBuffer *buf,
@@ -1822,6 +1868,24 @@ JANET_API Janet janet_mcall(const char *name, int32_t argc, Janet *argv);
 JANET_API void janet_stacktrace(JanetFiber *fiber, Janet err);
 JANET_API void janet_stacktrace_ext(JanetFiber *fiber, Janet err, const char *prefix);
 
+/* Sandboxing API */
+#define JANET_SANDBOX_SANDBOX 1
+#define JANET_SANDBOX_SUBPROCESS 2
+#define JANET_SANDBOX_NET_CONNECT 4
+#define JANET_SANDBOX_NET_LISTEN 8
+#define JANET_SANDBOX_FFI 16
+#define JANET_SANDBOX_FS_WRITE 32
+#define JANET_SANDBOX_FS_READ 64
+#define JANET_SANDBOX_HRTIME 128
+#define JANET_SANDBOX_ENV 256
+#define JANET_SANDBOX_DYNAMIC_MODULES 512
+#define JANET_SANDBOX_FS_TEMP 1024
+#define JANET_SANDBOX_FS (JANET_SANDBOX_FS_WRITE | JANET_SANDBOX_FS_READ | JANET_SANDBOX_FS_TEMP)
+#define JANET_SANDBOX_NET (JANET_SANDBOX_NET_CONNECT | JANET_SANDBOX_NET_LISTEN)
+#define JANET_SANDBOX_ALL (UINT32_MAX)
+JANET_API void janet_sandbox(uint32_t flags);
+JANET_API void janet_sandbox_assert(uint32_t forbidden_flags);
+
 /* Scratch Memory API */
 typedef void (*JanetScratchFinalizer)(void *);
 
@@ -1880,7 +1944,7 @@ JANET_API Janet janet_resolve_core(const char *name);
 /* sourcemaps only */
 #define JANET_REG_S(JNAME, CNAME) {JNAME, CNAME, NULL, __FILE__, CNAME##_sourceline_}
 #define JANET_FN_S(CNAME, USAGE, DOCSTRING) \
-    static int32_t CNAME##_sourceline_ = __LINE__; \
+    static const int32_t CNAME##_sourceline_ = __LINE__; \
     Janet CNAME (int32_t argc, Janet *argv)
 #define JANET_DEF_S(ENV, JNAME, VAL, DOC) \
     janet_def_sm(ENV, JNAME, VAL, NULL, __FILE__, __LINE__)
@@ -1896,7 +1960,7 @@ JANET_API Janet janet_resolve_core(const char *name);
 /* sourcemaps and docstrings */
 #define JANET_REG_SD(JNAME, CNAME) {JNAME, CNAME, CNAME##_docstring_, __FILE__, CNAME##_sourceline_}
 #define JANET_FN_SD(CNAME, USAGE, DOCSTRING) \
-    static int32_t CNAME##_sourceline_ = __LINE__; \
+    static const int32_t CNAME##_sourceline_ = __LINE__; \
     static const char CNAME##_docstring_[] = USAGE "\n\n" DOCSTRING; \
     Janet CNAME (int32_t argc, Janet *argv)
 #define JANET_DEF_SD(ENV, JNAME, VAL, DOC) \
@@ -1970,6 +2034,7 @@ JANET_API JanetTable *janet_gettable(const Janet *argv, int32_t n);
 JANET_API JanetStruct janet_getstruct(const Janet *argv, int32_t n);
 JANET_API JanetString janet_getstring(const Janet *argv, int32_t n);
 JANET_API const char *janet_getcstring(const Janet *argv, int32_t n);
+JANET_API const char *janet_getcbytes(const Janet *argv, int32_t n);
 JANET_API JanetSymbol janet_getsymbol(const Janet *argv, int32_t n);
 JANET_API JanetKeyword janet_getkeyword(const Janet *argv, int32_t n);
 JANET_API JanetBuffer *janet_getbuffer(const Janet *argv, int32_t n);
@@ -1999,6 +2064,7 @@ JANET_API JanetTuple janet_opttuple(const Janet *argv, int32_t argc, int32_t n, 
 JANET_API JanetStruct janet_optstruct(const Janet *argv, int32_t argc, int32_t n, JanetStruct dflt);
 JANET_API JanetString janet_optstring(const Janet *argv, int32_t argc, int32_t n, JanetString dflt);
 JANET_API const char *janet_optcstring(const Janet *argv, int32_t argc, int32_t n, const char *dflt);
+JANET_API const char *janet_optcbytes(const Janet *argv, int32_t argc, int32_t n, const char *dflt);
 JANET_API JanetSymbol janet_optsymbol(const Janet *argv, int32_t argc, int32_t n, JanetString dflt);
 JANET_API JanetKeyword janet_optkeyword(const Janet *argv, int32_t argc, int32_t n, JanetString dflt);
 JANET_API JanetFiber *janet_optfiber(const Janet *argv, int32_t argc, int32_t n, JanetFiber *dflt);
