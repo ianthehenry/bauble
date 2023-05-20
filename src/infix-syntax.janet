@@ -69,5 +69,4 @@
 (defn expand [form]
   (prewalk resolve-form form))
 
-(defmacro pipe-syntax [& forms]
-  ~(do ,;(map expand forms)))
+(defmacro pipe-syntax [form] (expand form))
