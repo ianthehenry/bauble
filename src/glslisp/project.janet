@@ -2,5 +2,6 @@
   :name "glslisp"
   :description "s-expression -> glsl compiler"
   :dependencies [
-  "https://github.com/ianthehenry/judge.git"
+    {:url "https://github.com/ianthehenry/judge.git"
+     :tag "v2.6.1"}
   ])
