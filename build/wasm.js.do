@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 redo-ifchange mode
 mode=$(cat mode)
 

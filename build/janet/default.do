@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 redo-ifchange janet-version
 
 version=$(cat janet-version)

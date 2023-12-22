@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 actual_outpath_jfc=$PWD/$3
 cd ..
 
