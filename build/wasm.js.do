@@ -13,6 +13,9 @@ if [[ $mode == "prod" ]]; then
   extra_flags="-O3 --closure 1"
 fi
 
+cache_dir=$HOME/.cache/emscripten
+mkdir -p $cache_dir
+
 emcc \
   $extra_flags \
   -o $actual_outpath_jfc \
@@ -22,6 +25,7 @@ emcc \
   --embed-file build/bauble.jimage@bauble.jimage \
   --embed-file src/intro.janet@intro.janet \
   -lembind \
+  --cache ~/.cache/emscripten \
   -s "EXPORTED_FUNCTIONS=['_main']" \
   -s "EXPORTED_RUNTIME_METHODS=['FS', 'UTF8ToString']" \
   -s ALLOW_MEMORY_GROWTH=1 \
