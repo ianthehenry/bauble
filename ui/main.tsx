@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", (_) => {
     }
     case '/': {
       InitializeWasm(baubleOpts).then((runtime: BaubleModule) => {
-        const initialScript = Storage.getScript() ?? runtime.FS.readFile('intro.janet', {encoding: 'utf8'});
+        const initialScript = Storage.getScript() ?? runtime.FS.readFile('examples/intro.janet', {encoding: 'utf8'});
         renderSolid(() => <Bauble
           runtime={runtime}
           outputChannel={outputChannel}

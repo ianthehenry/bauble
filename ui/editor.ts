@@ -2,12 +2,15 @@ import {basicSetup} from 'codemirror';
 import {EditorView, keymap, ViewUpdate} from '@codemirror/view';
 import {indentWithTab} from '@codemirror/commands';
 import {syntaxTree, syntaxHighlighting, HighlightStyle} from '@codemirror/language';
+import {autocompletion} from "@codemirror/autocomplete";
 import {SyntaxNode} from '@lezer/common';
 import {tags} from '@lezer/highlight';
 import {janet} from 'codemirror-lang-janet';
 import {EditorState, EditorSelection, Transaction} from '@codemirror/state';
+import type {DefinitionVector} from 'bauble-runtime';
 import Big from 'big.js';
 import * as Storage from './storage';
+import janetAutocomplete from "./autocomplete";
 
 function save({state}: StateCommandInput) {
   console.log('saving...');
@@ -38,8 +41,6 @@ function alterNumber({state, dispatch}: StateCommandInput, amount: Big) {
     return false;
   }
 
-  // TODO: we shouldn't be doing any floating point math; we should
-  // parse this as a decimal number and increment it as a decimal number
   const numberText = state.sliceDoc(node.from, node.to);
   let number;
   try {
@@ -75,6 +76,7 @@ interface EditorOptions {
   parent: HTMLElement,
   canSave: boolean,
   onChange: (() => void),
+  definitions: DefinitionVector,
 }
 
 const highlightStyle = HighlightStyle.define([
@@ -156,7 +158,7 @@ const theme = EditorView.theme({
   // TODO: style the "find/replace" box
 });
 
-export default function installCodeMirror({initialScript, parent, canSave, onChange}: EditorOptions): EditorView {
+export default function installCodeMirror({definitions, initialScript, parent, canSave, onChange}: EditorOptions): EditorView {
   const keyBindings = [indentWithTab];
   if (canSave) {
     keyBindings.push({ key: "Mod-s", run: save });
@@ -172,6 +174,19 @@ export default function installCodeMirror({initialScript, parent, canSave, onCha
           onChange();
         }
       }),
+      janetAutocomplete(definitions),
+      autocompletion(),
+      // tooltips({
+      //   parent: document.body,
+      //   tooltipSpace: (view: EditorView) => {
+      //     return {
+      //       left: 0,
+      //       right: window.innerWidth,
+      //       top: 100,
+      //       bottom: window.innerHeight - 20,
+      //     };
+      //   }
+      // }),
       theme,
       syntaxHighlighting(highlightStyle),
     ],

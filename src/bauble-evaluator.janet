@@ -1,6 +1,6 @@
 (import ./globals)
 (import ./light)
-(def- bauble-env (make-env root-env))
+(def bauble-env (make-env root-env))
 (each module ["./helpers" "./dsl" "./globals" "./glslisp/src/builtins"]
   (merge-module bauble-env (require module)))
 

@@ -1,4 +1,6 @@
-(defn axis-vec [axis &opt scale]
+(defn axis-vec
+  "Return a `vec3` that projects along the given axis with `0` for both other coordinates. `axis` can be signed, e.g. `:-x`. `scale` defaults to `1`."
+  [axis &opt scale]
   (default scale 1)
   (case axis
     :x [scale 0 0]

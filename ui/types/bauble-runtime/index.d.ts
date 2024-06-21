@@ -8,8 +8,22 @@ declare module 'bauble-runtime' {
     error: string,
   }
 
+  export interface Definition {
+    name: string,
+    args: string,
+    doc: string,
+    type: number,
+  }
+
+  export interface DefinitionVector {
+    get: (i: number) => Definition,
+    size: () => number,
+    delete: () => void,
+  }
+
   export interface BaubleModule extends EmscriptenModule {
-    evaluate_script: ((_: string) => EvaluationResult);
+    evaluateScript: (_: string) => EvaluationResult;
+    getDefinitions: () => DefinitionVector;
     // TODO, obviosly
     FS: WhyDoesTypescriptAllowGarbageHere;
   }

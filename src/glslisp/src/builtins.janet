@@ -105,10 +105,10 @@
 (make-variadic / recip)
 
 # Because infix-syntax conflicts with these
-(def @+ +)
-(def @- -)
-(def @/ /)
-(def @* *)
+(setdyn '@+ (dyn '+))
+(setdyn '@- (dyn '-))
+(setdyn '@/ (dyn '/))
+(setdyn '@* (dyn '*))
 
 (make-generic-3 smoothstep)
 (make-generic-3 clamp)

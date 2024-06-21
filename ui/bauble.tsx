@@ -12,6 +12,7 @@ import type {BaubleModule} from 'bauble-runtime';
 import OutputChannel from './output-channel';
 import RenderLoop from './render-loop';
 import type {Property} from 'csstype';
+import janetAutocomplete from './autocomplete';
 
 enum EvaluationState {
   Unknown,
@@ -295,6 +296,7 @@ const Bauble = (props: BaubleProps) => {
       parent: editorContainer,
       canSave: props.canSave,
       onChange: () => Signal.set(scriptDirty, true),
+      definitions: runtime.getDefinitions(),
     });
     // TODO: these should really be named
     const renderer = new Renderer(
@@ -331,7 +333,7 @@ const Bauble = (props: BaubleProps) => {
       if (Signal.get(scriptDirty)) {
         outputContainer.innerHTML = '';
         outputChannel.target = outputContainer;
-        const result = runtime.evaluate_script(editor.state.doc.toString());
+        const result = runtime.evaluateScript(editor.state.doc.toString());
         Signal.set(scriptDirty, false);
         if (result.isError) {
           Signal.set(evaluationState, EvaluationState.EvaluationError);

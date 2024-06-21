@@ -104,7 +104,11 @@
     (binding 0)
     binding))
 
-(defmacro def-flexible-fn [fn-name bindings spec & body]
+(defmacro def-flexible-fn [fn-name bindings spec arg-string doc-string & body]
+  (unless (string? arg-string)
+    (error "no argument string"))
+  (unless (string? doc-string)
+    (error "no doc string"))
   (def param-defs
     (swap map bindings (fn [binding]
       (def [name initial-value]
@@ -123,13 +127,15 @@
           ~(errorf "%s required" ',name)
           ~(set ,name ,default-value))))))
   (def $args (gensym))
-  ~(defn ,fn-name [& ,$args]
-    (try (do
-      ,;param-defs
-      (,handle-args ,$args ,spec)
-      ,;check-required-params
-      ,;body)
-    ([e]
-      (if (string? e)
-        (errorf "(%s) %s" ',fn-name e)
-        (error e))))))
+  ~(def ,fn-name
+    ,(string/format "(%s %s)\n\n%s" fn-name arg-string doc-string)
+    (fn [& ,$args]
+      (try (do
+        ,;param-defs
+        (,handle-args ,$args ,spec)
+        ,;check-required-params
+        ,;body)
+      ([e]
+        (if (string? e)
+          (errorf "(%s) %s" ',fn-name e)
+          (error e)))))))

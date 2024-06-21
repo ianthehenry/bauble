@@ -3,30 +3,14 @@
 #include <string>
 #include <stdio.h>
 #include "janet.h"
+#include "autocomplete.h"
+#include "util.h"
 
 using std::string;
 
 static JanetFunction *janetfn_bauble_evaluate = NULL;
 static JanetFunction *janetfn_compile_shape = NULL;
-
-JanetFunction *extract_function(JanetTable *env, const char *name) {
-  JanetTable *declaration = janet_unwrap_table(janet_table_get(env, janet_csymbolv(name)));
-  JanetFunction *function = janet_unwrap_function(janet_table_get(declaration, janet_ckeywordv("value")));
-  if (!function) {
-    fprintf(stderr, "failed to extract function %s\n", name);
-  }
-  return function;
-}
-
-bool call_fn(JanetFunction *fn, int argc, const Janet *argv, Janet *out) {
-  JanetFiber *fiber = NULL;
-  if (janet_pcall(fn, argc, argv, out, &fiber) == JANET_SIGNAL_OK) {
-    return true;
-  } else {
-    janet_stacktrace(fiber, *out);
-    return false;
-  }
-}
+static JanetFunction *janetfn_get_definitions = NULL;
 
 struct CompilationResult {
   bool is_error;
@@ -92,32 +76,6 @@ CompilationResult evaluate_script(string source) {
   };
 }
 
-unsigned char *read_file(const char *filename, size_t *length) {
-  size_t capacity = 2 << 17;
-  unsigned char *src = (unsigned char *)malloc(capacity * sizeof(unsigned char));
-  assert(src);
-  size_t total_bytes_read = 0;
-  FILE *file = fopen(filename, "r");
-  assert(file);
-  size_t bytes_read;
-  do {
-    size_t remaining_capacity = capacity - total_bytes_read;
-    if (remaining_capacity == 0) {
-      capacity <<= 1;
-      src = (unsigned char *)realloc(src, capacity * sizeof(unsigned char));
-      assert(src);
-      remaining_capacity = capacity - total_bytes_read;
-    }
-
-    bytes_read = fread(&src[total_bytes_read], sizeof(unsigned char), remaining_capacity, file);
-    total_bytes_read += bytes_read;
-  } while (bytes_read > 0);
-
-  fclose(file);
-  *length = total_bytes_read;
-  return src;
-}
-
 EMSCRIPTEN_KEEPALIVE
 int main() {
   janet_init();
@@ -128,15 +86,24 @@ int main() {
   size_t bauble_image_length;
   unsigned char *bauble_image = read_file("bauble.jimage", &bauble_image_length);
 
-  Janet bauble = janet_unmarshal(bauble_image, bauble_image_length, 0, lookup, NULL);
-  if (!janet_checktype(bauble, JANET_TABLE)) {
-    janet_panicf("invalid image %q", bauble);
+  Janet env = janet_unmarshal(bauble_image, bauble_image_length, 0, lookup, NULL);
+  if (!janet_checktype(env, JANET_TABLE)) {
+    janet_panicf("invalid image %q", env);
   }
+  JanetTable *bauble = janet_unwrap_table(env);
 
-  janetfn_bauble_evaluate = extract_function(janet_unwrap_table(bauble), "bauble-evaluator/evaluate");
+  janetfn_bauble_evaluate = env_lookup_function(bauble, "bauble-evaluator/evaluate");
   janet_gcroot(janet_wrap_function(janetfn_bauble_evaluate));
-  janetfn_compile_shape = extract_function(janet_unwrap_table(bauble), "shade/compile-shape");
+
+  janetfn_get_definitions = env_lookup_function(bauble, "completer/get-definitions");
+  janet_gcroot(janet_wrap_function(janetfn_get_definitions));
+
+  janetfn_compile_shape = env_lookup_function(bauble, "shade/compile-shape");
   janet_gcroot(janet_wrap_function(janetfn_compile_shape));
+}
+
+std::vector<Definition> get_definitions_aux() {
+  return get_definitions(janetfn_get_definitions);
 }
 
 EMSCRIPTEN_BINDINGS(module) {
@@ -147,6 +114,15 @@ EMSCRIPTEN_BINDINGS(module) {
     .field("isAnimated", &CompilationResult::is_animated)
     .field("error", &CompilationResult::error)
     ;
+  value_object<Definition>("Definition")
+    .field("name", &Definition::name)
+    .field("args", &Definition::args)
+    .field("doc", &Definition::doc)
+    .field("type", &Definition::type)
+    ;
 
-  function("evaluate_script", &evaluate_script, allow_raw_pointers());
+  register_vector<Definition>("DefinitionVector");
+
+  function("evaluateScript", &evaluate_script, allow_raw_pointers());
+  function("getDefinitions", &get_definitions_aux, allow_raw_pointers());
 };

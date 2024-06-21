@@ -444,3 +444,20 @@ body.main-page .bauble {
   .bauble .canvas-resize-handle { background: var(--horizontal-grip); cursor: ns-resize; }
   .bauble .output-container { height: 1.5em; }
 }
+
+/* for some reason you can't add these rules to the theme */
+.cm-tooltip-autocomplete .cm-completionIcon-function+.cm-completionLabel::before,
+.cm-tooltip-autocomplete .cm-completionIcon-text+.cm-completionLabel::before {
+  content: "(";
+}
+
+.cm-tooltip-autocomplete .cm-completionIcon-function+.cm-completionLabel:last-child::after,
+.cm-tooltip-autocomplete .cm-completionIcon-text+.cm-completionLabel:last-child::after {
+  content: ")";
+}
+
+.cm-tooltip-autocomplete .cm-completionIcon-function+.cm-completionLabel+.cm-completionDetail::after,
+.cm-tooltip-autocomplete .cm-completionIcon-text+.cm-completionLabel+.cm-completionDetail::after {
+  content: ")";
+  font-style: normal;
+}

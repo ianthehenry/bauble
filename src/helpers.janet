@@ -1,7 +1,7 @@
 (import ./glslisp/src/builtins :as generic)
 (import ./axes)
 (import ./globals)
-(def axis-vec axes/axis-vec)
+(setdyn 'axis-vec (dyn 'axis-vec))
 
 (defn id [x] x)
 
