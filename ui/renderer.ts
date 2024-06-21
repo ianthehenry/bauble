@@ -2,6 +2,7 @@ import {mat3, vec3} from 'gl-matrix';
 import * as Signal from './signals';
 import type {Accessor} from 'solid-js';
 import {clamp, TAU} from './util';
+import type {Seconds} from './types';
 
 const baseCameraDistance = 512;
 
@@ -68,7 +69,7 @@ export default class Renderer {
 
   constructor(
     canvas: HTMLCanvasElement,
-    private time: Signal.T<number>, // TODO: give this a unique type
+    private time: Signal.T<Seconds>,
     private renderType: Signal.T<number>, // TODO: give this a type
     private rotation: Signal.T<{x: number, y: number}>,
     private origin: Signal.T<{x: number, y: number, z: number}>,

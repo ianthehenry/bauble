@@ -263,7 +263,7 @@ const Bauble = (props: BaubleProps) => {
 
   const canvasSize = Signal.create(props.size);
   const pixelRatio = Signal.create(window.devicePixelRatio);
-  const imageRendering: Signal.T<Property.ImageRendering> = Signal.create('auto');
+  const imageRendering: Signal.T<Property.ImageRendering> = Signal.create('auto' as Property.ImageRendering);
   const canvasResolution = createMemo(() => {
     const dpr = Signal.get(pixelRatio);
     const size = Signal.get(canvasSize);

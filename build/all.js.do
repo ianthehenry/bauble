@@ -7,7 +7,7 @@ actual_outpath_jfc=$PWD/$3
 
 cd ../ui
 
-redo-ifchange *.ts *.tsx tsconfig.json rollup.config.js yarn.lock types/*/*.ts
+redo-ifchange *.ts *.tsx tsconfig.json rollup.config.mjs yarn.lock types/*/*.ts
 
 rollup_args="--no-treeshake --no-indent"
 if [[ $mode == "prod" ]]; then

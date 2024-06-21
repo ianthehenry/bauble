@@ -1,8 +1,9 @@
 import nodeResolve from '@rollup/plugin-node-resolve';
 import typescript from '@rollup/plugin-typescript';
-import babel from "@rollup/plugin-babel";
+import {babel} from "@rollup/plugin-babel";
 
 export default ({
+  strictDeprecations: true,
   input: "main.tsx",
   output: {
     file: "../build/all.js",
@@ -10,7 +11,7 @@ export default ({
   },
   plugins: [
     nodeResolve(),
-    typescript(),
+    typescript({include: '**/*.(ts|tsx|js)'}),
     babel({
       extensions: ["tsx"],
       babelHelpers: "bundled",
