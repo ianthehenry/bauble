@@ -4,6 +4,12 @@ import type {Definition, DefinitionVector} from 'bauble-runtime';
 import {JanetLanguage} from 'codemirror-lang-janet';
 import {syntaxTree} from '@codemirror/language';
 
+import {unified} from 'unified'
+import remarkParse from 'remark-parse'
+import remarkRehype from 'remark-rehype'
+import rehypeSanitize from 'rehype-sanitize'
+import rehypeStringify from 'rehype-stringify'
+
 const getCompletions = (values: Completion[]) => (context: CompletionContext) => {
   const node = syntaxTree(context.state).resolveInner(context.pos, -1);
   const word = context.state.sliceDoc(node.from, context.pos);
@@ -26,7 +32,13 @@ const getCompletions = (values: Completion[]) => (context: CompletionContext) =>
 
 const renderMarkdown = (markdown: string) => {
   const node = document.createElement('div');
-  node.innerText = markdown;
+  node.innerHTML = String(unified()
+    .use(remarkParse)
+    .use(remarkRehype)
+    .use(rehypeSanitize)
+    .use(rehypeStringify)
+    .processSync(markdown)
+    .value);
   return node;
 }
 
