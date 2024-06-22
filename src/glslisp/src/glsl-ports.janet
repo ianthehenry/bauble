@@ -31,7 +31,7 @@
   sum)
 
 (defn mix [x y a]
-  (+ (* x a) (* y (- 1 a))))
+  (+ (* x (- 1 a)) (* y a)))
 
 (defn vec-min [v] (apply min v))
 (defn vec-max [v] (apply max v))
