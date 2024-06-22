@@ -3,6 +3,7 @@ import {autocompletion, CompletionContext, Completion, completionStatus,
 import type {Definition, DefinitionVector} from 'bauble-runtime';
 import {JanetLanguage} from 'codemirror-lang-janet';
 import {syntaxTree} from '@codemirror/language';
+import type {SyntaxNode} from '@lezer/common';
 
 import {unified} from 'unified'
 import remarkParse from 'remark-parse'
@@ -10,16 +11,34 @@ import remarkRehype from 'remark-rehype'
 import rehypeSanitize from 'rehype-sanitize'
 import rehypeStringify from 'rehype-stringify'
 
-const getCompletions = (values: Completion[]) => (context: CompletionContext) => {
-  const node = syntaxTree(context.state).resolveInner(context.pos, -1);
-  const word = context.state.sliceDoc(node.from, context.pos);
-  const isHead =
-    node.name === 'Identifier' &&
-    node.prevSibling != null &&
-    node.prevSibling.name === '(';
+const isFormBoundaryChar = (char: string) => {
+  switch (char) {
+  case '(': return true;
+  case '|': return true;
+  case '+': return true;
+  case '-': return true;
+  case '*': return true;
+  case '/': return true;
+  }
+  return false;
+}
 
-  if (context.explicit || (isHead && word !== '')) {
-    const from = node.name === 'Identifier' ? node.from : context.pos;
+const getCompletions = (values: Completion[]) => (context: CompletionContext) => {
+  const cursor = syntaxTree(context.state).resolveInner(context.pos, -1).cursor();
+  cursor.childBefore(context.pos);
+  const node = cursor.node;
+
+  const nodeText = (node: SyntaxNode) => context.state.sliceDoc(node.from, node.to);
+
+  const isInitial = (node: SyntaxNode) => {
+    const prev = node.prevSibling;
+    return prev != null && isFormBoundaryChar(nodeText(prev));
+  };
+
+  const isIdentifier = (node: SyntaxNode) => node.name === 'Identifier';
+
+  if (context.explicit || isInitial(node) && isIdentifier(node)) {
+    const from = isIdentifier(node) ? node.from : context.pos;
     return {
       from: from,
       validFor: /^[a-zA-Z0-9!?$&*+\\./:<=>@^_-]*$/,
