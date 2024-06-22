@@ -10,27 +10,35 @@
     (> x hi) hi
     x))
 
-(defn step [edge x]
+(defn step
+  "`(if (< x edge) 0 1)`"
+  [edge x]
   (if (< x edge) 0 1))
 
 (defn smoothstep [lo hi x]
   (def t (clamp (/ (- x lo) (- hi lo)) 0 1))
   (* t t (- 3 (* t 2))))
 
-(defn distance [p1 p2]
+(defn distance
+  "Returns the distance between two vectors."
+  [vec1 vec2]
   (var sum 0)
-  (for i 0 (length p1)
-    (def x (- (p2 i) (p1 i)))
+  (for i 0 (length vec1)
+    (def x (- (vec2 i) (vec1 i)))
     (+= sum (* x x)))
   (math/sqrt sum))
 
-(defn dot [a b]
+(defn dot
+  "Dot product between two vectors, e.g. the sum of the elementwise-products."
+  [vec1 vec2]
   (var sum 0)
-  (for i 0 (length a)
-    (+= sum (* (a i) (b i))))
+  (for i 0 (length vec1)
+    (+= sum (* (vec1 i) (vec2 i))))
   sum)
 
-(defn mix [x y a]
+(defn mix
+  ```Linearly interploate between `x` and `y` based on `a`, where you can interpret `a` as "how much `y` contributes to the final result."```
+  [x y a]
   (+ (* x (- 1 a)) (* y a)))
 
 (defn vec-min [v] (apply min v))

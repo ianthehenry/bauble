@@ -64,13 +64,17 @@
 (make-generic-2 mod)
 
 (def- min- min)
-(defn min [a &opt b]
+(defn min
+  "With one argument, returns the minimum component of a vector. With two arguments, returns the (element-wise) minimum of its arguments."
+  [a &opt b]
   (if (nil? b)
     (vec-min a)
     (min- a b)))
 
 (def- max- max)
-(defn max [a &opt b]
+(defn max
+  "With one argument, returns the maximum component of a vector. With two arguments, returns the (element-wise) maximum of its arguments."
+  [a &opt b]
   (if (nil? b)
     (vec-max a)
     (max- a b)))
@@ -116,7 +120,9 @@
 (make-numeric-3 hsv)
 (make-numeric-3 hsl)
 
-(defn ss [x &opt from-lo from-hi to-lo to-hi]
+(defn ss
+  "A smooth cubic interpolation from one range to another range, mirroring the GLSL function `smoothstep`. There are many overloads:\n\n- `(ss x) = (ss x 0 1 0 1)`\n- `(ss x from-hi) = (ss x 0 from-hi 0 1)`\n- `(ss x from-lo from-hi) = (ss x from-lo from-hi 0 1)`\n- `(ss x from-lo from-hi to-hi) = (ss x from-lo from-hi 0 to-hi)`\n\nValues outside the input range are clamped. Unlike the native `smoothstep`, `hi` values can be smaller than `lo` values."
+  [x &opt from-lo from-hi to-lo to-hi]
   (cond
     (nil? from-lo) (smoothstep 0 1 x)
     (nil? from-hi) (smoothstep 0 from-lo x)
@@ -125,15 +131,18 @@
     (+ to-lo (* (smoothstep from-lo from-hi x) (- to-hi to-lo)))))
 
 (defn remap+ [x]
+  "Linearly transform a value in the range -1 to 1 into a value in the range 0 to 1."
   (* 0.5 (+ x 1)))
 
 (def @hash hash)
-(defmacro makehash [name outcount]
+(defmacro makehash [name return-type outcount]
   (def hash1 (symbol "hash" outcount "1"))
   (def hash2 (symbol "hash" outcount "2"))
   (def hash3 (symbol "hash" outcount "3"))
   (def hash4 (symbol "hash" outcount "4"))
-  ~(defn ,name [x]
+  ~(defn ,name
+    ,(string/format "Pseudorandom %s in the range 0 to 1. Input can be a number or vector." return-type)
+    [x]
     (case (glslisp/typecheck x)
       type/float ~(,',hash1 ,x)
       type/vec2 ~(,',hash2 ,x)
@@ -141,12 +150,14 @@
       type/vec4 ~(,',hash4 ,x)
       type/unknown (errorf "cannot determine type of expression; please tell ian about this")
       (errorf "hash requires a numeric argument"))))
-(makehash hash 1)
-(makehash hash2 2)
-(makehash hash3 3)
-(makehash hash4 4)
+(makehash hash "`float`" 1)
+(makehash hash2 "`vec2` with components" 2)
+(makehash hash3 "`vec3` with components" 3)
+(makehash hash4 "`vec4` with components" 4)
 
-(defn perlin [x]
+(defn perlin
+  "Perlin noise in the range -1 to 1. The input can be a `vec2`, `vec3`, or `vec4`."
+  [x]
   (case (glslisp/typecheck x)
     type/vec2 ~(perlin2 ,x)
     type/vec3 ~(perlin3 ,x)
@@ -154,7 +165,10 @@
     type/unknown (errorf "cannot determine type of expression; please tell ian about this")
     (errorf "noise requires a vector")))
 
-(defn perlin+ [x] (remap+ (perlin x)))
+(defn perlin+
+  "Perlin noise in the range 0 to 1. The input can be a `vec2`, `vec3`, or `vec4`."
+  [x]
+  (remap+ (perlin x)))
 
 # TODO...
 # (defn simplex [x]
@@ -177,26 +191,46 @@
 (defn vec3 [& args] ~(vec3 ,;args))
 (defn vec4 [& args] ~(vec4 ,;args))
 
-(defn . [x k] ~(. ,x ,k))
+(defn .
+  "Infix `p.x` notation desugars to `(. p 'x)`."
+  [x k]
+  ~(. ,x ,k))
 
 # Helpers
 
-(defn rgb [r g b] [(/ r 255) (/ g 255) (/ b 255)])
+(defn rgb
+  "Remap values from 0 to 255 into the range 0 to 1 that GLSL expects."
+  [r g b]
+  [(/ r 255) (/ g 255) (/ b 255)])
 
-(defn hsv-deg [h s v] (hsv (/ h 360) s v))
+(defn hsv-deg
+  "Like `hsv`, but the hue argument is in degrees."
+  [h s v]
+  (hsv (/ h 360) s v))
 
-(defn hsl-deg [h s l] (hsl (/ h 360) s l))
+(defn hsl-deg
+  "Like `hsl`, but the hue argument is in degrees."
+  [h s l]
+  (hsl (/ h 360) s l))
 
-(defn sin+ [x]
+(defn sin+
+  "Like `sin`, but returns value in the range 0 to 1."
+  [x]
   (remap+ (sin x)))
 
-(defn sin- [x]
+(defn sin-
+  "Like `sin`, but returns value in the range 0 to -1."
+  [x]
   (- 1 (sin+ x)))
 
-(defn cos+ [x]
+(defn cos+
+  "Like `cos`, but returns value in the range 0 to 1."
+  [x]
   (remap+ (cos x)))
 
-(defn cos- [x]
+(defn cos-
+  "Like `cos`, but returns value in the range 0 to -1."
+  [x]
   (- 1 (cos+ x)))
 
 # TODO: should probably fill out the rest of these
