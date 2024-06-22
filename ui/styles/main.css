@@ -1,6 +1,7 @@
 :root {
   --foreground: #4d4d4c;
   --background: #ffffff;
+  --popover-background: #ffffffa0;
   --selection: #d6d6d6;
   --line: #efefef;
   --comment: #8e908c;
@@ -18,6 +19,7 @@
   :root {
     --foreground: #c5c8c6;
     --background: #1d1f21;
+    --popover-background: #1d1f21a0;
     --selection: #373b41;
     --line: #282a2e;
     --comment: #969896;
@@ -35,6 +37,7 @@
 :root {
   --toolbar-fg: var(--blue);
   --toolbar-bg: var(--window);
+  --popover-backdrop: blur(5px);
 }
 
 * {

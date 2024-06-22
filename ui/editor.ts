@@ -155,6 +155,21 @@ const theme = EditorView.theme({
     color: 'var(--comment)',
     border: "none",
   },
+  ".cm-tooltip": {
+    backgroundColor: 'var(--popover-background)',
+    backdropFilter: 'var(--popover-backdrop)',
+    color: 'var(--foreground)',
+  },
+  ".cm-tooltip-autocomplete ul li[aria-selected]": {
+    backgroundColor: 'var(--selection)',
+    color: 'var(--foreground)',
+  },
+  ".cm-tooltip.cm-completionInfo": {
+    maxHeight: '10.5em',
+    overflowY: 'auto',
+    backgroundColor: 'var(--popover-background)',
+    backdropFilter: 'var(--popover-backdrop)',
+  },
   // TODO: style the "find/replace" box
 });
 
