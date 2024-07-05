@@ -6,17 +6,29 @@ import type {Seconds} from './types';
 
 const baseCameraDistance = 512;
 
-function rotateXY(target: mat3, x: number, y: number) {
-  const sx = Math.sin(x);
-  const sy = Math.sin(y);
-  const cx = Math.cos(x);
-  const cy = Math.cos(y);
+function rotateX(target: mat3, angle: number) {
+ const s = Math.sin(angle);
+ const c = Math.cos(angle);
+ mat3.set(target,
+   1.0, 0.0, 0.0,
+   0.0, c, -s,
+   0.0, s, c);
+}
 
-  mat3.set(target,
-    cx, 0.0, -sx,
-    sx * sy, cy, cx * sy,
-    sx * cy, -sy, cx * cy,
-  );
+function rotateY(target: mat3, angle: number) {
+ const s = Math.sin(angle);
+ const c = Math.cos(angle);
+ mat3.set(target,
+   c, 0.0, s,
+   0.0, 1.0, 0.0,
+   -s, 0.0, c);
+}
+
+function rotateXY(target: mat3, x: number, y: number) {
+ const tempY = mat3.create();
+ rotateX(target, x);
+ rotateY(tempY, y);
+ mat3.multiply(target, tempY, target);
 }
 
 const vertexSource = `#version 300 es
@@ -57,15 +69,15 @@ export default class Renderer {
   private vertexData: Float32Array;
 
   private cameraDirty = true;
-  private cameraMatrix: mat3 = mat3.create();
+  private cameraOrientation: vec3 = vec3.create();
   private cameraOrigin: vec3 = vec3.create();
 
   // TODO: the perspective is actually calculated
   // in the shader, not here, so this is actually a
   // "perspective XY" view
-  private orthogonalXY: mat3 = mat3.create();
-  private orthogonalXZ: mat3 = mat3.create();
-  private orthogonalZY: mat3 = mat3.create();
+  private orthogonalXY: vec3 = vec3.fromValues(0, 0, 0);
+  private orthogonalXZ: vec3 = vec3.fromValues(0.5 * Math.PI, 0, 0);
+  private orthogonalZY: vec3 = vec3.fromValues(0, 0.5 * Math.PI, 0);
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -78,11 +90,6 @@ export default class Renderer {
     private quadSplitPoint: Signal.T<{x: number, y: number}>,
     private resolution: Accessor<{width: number, height: number}>,
   ) {
-
-    rotateXY(this.orthogonalXY, 0, 0);
-    rotateXY(this.orthogonalZY, -0.5 * Math.PI, 0);
-    rotateXY(this.orthogonalXZ, 0, -0.5 * Math.PI);
-
     const gl = canvas.getContext('webgl2', { antialias: false });
     if (!gl) {
       throw new Error("failed to create webgl2 context");
@@ -125,9 +132,14 @@ export default class Renderer {
 
   private calculateCameraMatrix() {
     const {x, y} = Signal.get(this.rotation);
-    rotateXY(this.cameraMatrix, x * TAU, y * TAU);
+    // x and y here are in "screen" coordinates, where dragging left/right
+    // actually rotates around the Y axis, and dragging up/down rotates along
+    // the X axis. Hence the strange inversion here.
+    vec3.set(this.cameraOrientation, -y * TAU, -x * TAU, 0);
+    const cameraMatrix = mat3.create();
+    rotateXY(cameraMatrix, this.cameraOrientation[0], this.cameraOrientation[1]);
     vec3.set(this.cameraOrigin, 0, 0, baseCameraDistance * Signal.get(this.zoom));
-    vec3.transformMat3(this.cameraOrigin, this.cameraOrigin, this.cameraMatrix);
+    vec3.transformMat3(this.cameraOrigin, this.cameraOrigin, cameraMatrix);
     const target = Signal.get(this.origin);
     vec3.add(this.cameraOrigin, this.cameraOrigin, [target.x, target.y, target.z]);
     this.cameraDirty = false;
@@ -151,13 +163,13 @@ export default class Renderer {
 
   private drawSingleView() {
     const {gl, program} = this;
-    const uCameraMatrix = gl.getUniformLocation(program, "camera_matrix");
+    const uCameraOrientation = gl.getUniformLocation(program, "camera_orientation");
     const uCameraOrigin = gl.getUniformLocation(program, "camera_origin");
     if (this.cameraDirty) {
       this.calculateCameraMatrix();
     }
     gl.uniform3fv(uCameraOrigin, this.cameraOrigin);
-    gl.uniformMatrix3fv(uCameraMatrix, false, this.cameraMatrix);
+    gl.uniform3fv(uCameraOrientation, this.cameraOrientation);
     const resolution = this.resolution();
     this.setViewport(0, 0, resolution.width, resolution.height);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -165,7 +177,7 @@ export default class Renderer {
 
   private drawQuadView() {
     const {gl, program} = this;
-    const uCameraMatrix = gl.getUniformLocation(program, "camera_matrix");
+    const uCameraOrientation = gl.getUniformLocation(program, "camera_orientation");
     const uCameraOrigin = gl.getUniformLocation(program, "camera_origin");
 
     const splitPoint = Signal.get(this.quadSplitPoint);
@@ -185,13 +197,13 @@ export default class Renderer {
     const target = Signal.get(this.origin);
     // bottom left: XY
     gl.uniform3fv(uCameraOrigin, [target.x, target.y, target.z + baseCameraDistance * zoom]);
-    gl.uniformMatrix3fv(uCameraMatrix, false, this.orthogonalXY);
+    gl.uniform3fv(uCameraOrientation, this.orthogonalXY);
     this.setViewport(0, 0, leftPaneWidth, bottomPaneHeight);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
     // bottom right: ZY
     gl.uniform3fv(uCameraOrigin, [target.x - baseCameraDistance * zoom, target.y, target.z]);
-    gl.uniformMatrix3fv(uCameraMatrix, false, this.orthogonalZY);
+    gl.uniform3fv(uCameraOrientation, this.orthogonalZY);
     this.setViewport(leftPaneWidth, 0, rightPaneWidth, bottomPaneHeight);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
@@ -200,13 +212,13 @@ export default class Renderer {
       this.calculateCameraMatrix();
     }
     gl.uniform3fv(uCameraOrigin, this.cameraOrigin);
-    gl.uniformMatrix3fv(uCameraMatrix, false, this.cameraMatrix);
+    gl.uniform3fv(uCameraOrientation, this.cameraOrientation);
     this.setViewport(0, bottomPaneHeight, leftPaneWidth, topPaneHeight);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
     // top right: top-down
     gl.uniform3fv(uCameraOrigin, [target.x, target.y + baseCameraDistance * zoom, target.z]);
-    gl.uniformMatrix3fv(uCameraMatrix, false, this.orthogonalXZ);
+    gl.uniform3fv(uCameraOrientation, this.orthogonalXZ);
     this.setViewport(leftPaneWidth, bottomPaneHeight, rightPaneWidth, topPaneHeight);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }

@@ -52,6 +52,8 @@
       globals/lights nil
       (errorf "unexpected free variable %s" (:intrinsic-name free-variable))))
 
+  (each f ['rotate_x 'rotate_y 'rotate_z]
+    (:require-function comp-state f []))
   (def function-defs (string/join (map compile-function (comp-state :compiled-functions)) "\n"))
 
   (when debug?
@@ -73,7 +75,7 @@
 precision highp float;
 
 uniform vec3 camera_origin;
-uniform mat3 camera_matrix;
+uniform vec3 camera_orientation;
 uniform float t;
 uniform int render_type;
 uniform vec4 viewport;
@@ -178,12 +180,16 @@ vec3 perspective(float fov, vec2 size, vec2 pos) {
   return normalize(vec3(xy, -z));
 }
 
+mat3 rotation_matrix(vec3 rotation) {
+  return rotate_z(rotation.z) * rotate_y(rotation.y) * rotate_x(rotation.x);
+}
+
 void main() {
   const float gamma = 2.2;
 
   vec2 local_coord = gl_FragCoord.xy - viewport.xy;
   vec2 resolution = viewport.zw;
-  vec3 dir = camera_matrix * perspective(45.0, resolution, local_coord);
+  vec3 dir = rotation_matrix(camera_orientation) * perspective(45.0, resolution, local_coord);
 
   const vec3 fog_color = vec3(0.15);
 
