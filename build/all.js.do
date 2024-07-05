@@ -5,7 +5,7 @@ mode=$(cat mode)
 
 actual_outpath_jfc=$PWD/$3
 
-cd ../ui
+cd ../studio
 
 redo-ifchange *.ts *.tsx tsconfig.json rollup.config.mjs yarn.lock types/*/*.ts
 

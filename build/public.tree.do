@@ -10,13 +10,13 @@ cd ..
 rm -rf public
 mkdir -p public
 
-ln -f ui/assets/icons.svg public/icons.svg
+ln -f studio/assets/icons.svg public/icons.svg
 ln -f build/main.css public/$css
 ln -f build/all.js public/$js
 
 mkdir -p public/{about,help}
-ui/html/home "/$css" "/$js" > public/index.html
-ui/html/about/index "/$css" "/$js" > public/about/index.html
-ui/html/help/index "/$css" "/$js" > public/help/index.html
+studio/html/home "/$css" "/$js" > public/index.html
+studio/html/about/index "/$css" "/$js" > public/about/index.html
+studio/html/help/index "/$css" "/$js" > public/help/index.html
 
 tree public --noreport | tr ' ' ' '

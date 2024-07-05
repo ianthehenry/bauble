@@ -30,7 +30,7 @@ Afterwards, install JavaScript dependencies with:
 
 ```
 $ yarn
-$ (cd ui && yarn)
+$ (cd studio && yarn)
 ```
 
 `bauble` is being developed alongside [`codemirror-lang-janet`](https://github.com/ianthehenry/codemirror-lang-janet). If you want to make changes to the grammar, clone that repo and run [`yalc publish`](https://github.com/wclr/yalc) from the root of it. Then run `yalc link codemirror-lang-janet` in this repository, and you'll be able to see your changes locally.
@@ -52,7 +52,7 @@ $ BUILD_MODE=prod redo
 Lint the JS with:
 
 ```
-(cd ui/; yarn eslint .)
+(cd studio/; yarn eslint .)
 ```
 
 You can serve a local Bauble like this:
