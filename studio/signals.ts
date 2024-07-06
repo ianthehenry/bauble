@@ -27,6 +27,6 @@ export function update<T>(signal: Signal<T>, update: (_: T) => T): T {
 }
 
 // should take an array of signals or accessors
-export function onEffect(signals: any, f: (() => void)) {
-  createEffect(on(() => { signals.forEach((x: any) => typeof x === 'function' ? x() : get(x)); }, f));
+export function onEffect(signals: Array<T<any> | Accessor<any>>, f: (() => void)) {
+  createEffect(on(() => { signals.forEach((x) => typeof x === 'function' ? x() : get(x)); }, f));
 }

@@ -12,7 +12,6 @@ import type {BaubleModule} from 'bauble-runtime';
 import OutputChannel from './output-channel';
 import RenderLoop from './render-loop';
 import type {Property} from 'csstype';
-import janetAutocomplete from './autocomplete';
 
 enum EvaluationState {
   Unknown,
@@ -368,7 +367,7 @@ const Bauble = (props: BaubleProps) => {
       quadView,
       quadSplitPoint,
       canvasResolution,
-    ] as Signal.T<any>[], () => {
+    ], () => {
       renderLoop.schedule();
     });
   });
@@ -452,16 +451,16 @@ const Bauble = (props: BaubleProps) => {
   const onDblClick = (e: MouseEvent) => {
     if (Signal.get(quadView)) {
       switch (getInteraction(e)) {
-        case Interaction.Rotate:
-          batch(() => {
-            Signal.set(rotation, defaultCamera.rotation);
-            Signal.set(zoom, defaultCamera.zoom);
-          });
-          break;
-        case Interaction.PanXY: Signal.update(origin, ({z}) => ({x: defaultCamera.origin.x, y: defaultCamera.origin.y, z: z})); break;
-        case Interaction.PanZY: Signal.update(origin, ({x}) => ({x: x, y: defaultCamera.origin.y, z: defaultCamera.origin.z})); break;
-        case Interaction.PanXZ: Signal.update(origin, ({y}) => ({x: defaultCamera.origin.x, y: y, z: defaultCamera.origin.z})); break;
-        case Interaction.ResizeSplit: Signal.set(quadSplitPoint, {x: 0.5, y: 0.5}); break;
+      case Interaction.Rotate:
+        batch(() => {
+          Signal.set(rotation, defaultCamera.rotation);
+          Signal.set(zoom, defaultCamera.zoom);
+        });
+        break;
+      case Interaction.PanXY: Signal.update(origin, ({z}) => ({x: defaultCamera.origin.x, y: defaultCamera.origin.y, z: z})); break;
+      case Interaction.PanZY: Signal.update(origin, ({x}) => ({x: x, y: defaultCamera.origin.y, z: defaultCamera.origin.z})); break;
+      case Interaction.PanXZ: Signal.update(origin, ({y}) => ({x: defaultCamera.origin.x, y: y, z: defaultCamera.origin.z})); break;
+      case Interaction.ResizeSplit: Signal.set(quadSplitPoint, {x: 0.5, y: 0.5}); break;
       }
     } else {
       resetCamera(rotation, origin, zoom);
@@ -492,46 +491,46 @@ const Bauble = (props: BaubleProps) => {
     const panRate = Signal.get(zoom) * cameraPanSpeed;
 
     switch (interaction!) {
-      case Interaction.Rotate: {
-        Signal.update(rotation, ({x, y}) => ({
-          x: mod(x - deltaX * cameraRotateSpeed, 1.0),
-          y: mod(y - deltaY * cameraRotateSpeed, 1.0),
-        }));
-        break;
-      }
-      case Interaction.PanXY: {
-        Signal.update(origin, ({x, y, z}) => ({
-          x: x - deltaX * panRate,
-          y: y + deltaY * panRate,
-          z: z,
-        }));
-        break;
-      }
-      case Interaction.PanZY: {
-        Signal.update(origin, ({x, y, z}) => ({
-          x: x,
-          y: y + deltaY * panRate,
-          z: z - deltaX * panRate,
-        }));
-        break;
-      }
-      case Interaction.PanXZ: {
-        Signal.update(origin, ({x, y, z}) => ({
-          x: x - deltaX * panRate,
-          y: y,
-          z: z - deltaY * panRate,
-        }));
-        break;
-      }
-      case Interaction.ResizeSplit: {
-        const deltaX = (canvasPointerAt[0] - pointerWasAt[0]) / canvas.clientWidth;
-        const deltaY = (canvasPointerAt[1] - pointerWasAt[1]) / canvas.clientHeight;
-        Signal.update(quadSplitPoint, ({x, y}) => ({
-          x: x + deltaX,
-          y: y + deltaY,
-        }));
-        break;
-      }
+    case Interaction.Rotate: {
+      Signal.update(rotation, ({x, y}) => ({
+        x: mod(x - deltaX * cameraRotateSpeed, 1.0),
+        y: mod(y - deltaY * cameraRotateSpeed, 1.0),
+      }));
+      break;
+    }
+    case Interaction.PanXY: {
+      Signal.update(origin, ({x, y, z}) => ({
+        x: x - deltaX * panRate,
+        y: y + deltaY * panRate,
+        z: z,
+      }));
+      break;
+    }
+    case Interaction.PanZY: {
+      Signal.update(origin, ({x, y, z}) => ({
+        x: x,
+        y: y + deltaY * panRate,
+        z: z - deltaX * panRate,
+      }));
+      break;
+    }
+    case Interaction.PanXZ: {
+      Signal.update(origin, ({x, y, z}) => ({
+        x: x - deltaX * panRate,
+        y: y,
+        z: z - deltaY * panRate,
+      }));
+      break;
+    }
+    case Interaction.ResizeSplit: {
+      const deltaX = (canvasPointerAt[0] - pointerWasAt[0]) / canvas.clientWidth;
+      const deltaY = (canvasPointerAt[1] - pointerWasAt[1]) / canvas.clientHeight;
+      Signal.update(quadSplitPoint, ({x, y}) => ({
+        x: x + deltaX,
+        y: y + deltaY,
+      }));
+      break;
+    }
     }
   };
 
@@ -594,7 +593,7 @@ const Bauble = (props: BaubleProps) => {
 
   return <div class="bauble" style={{
     '--canvas-width': `${Signal.get(canvasSize).width}px`,
-    '--canvas-height': `${Signal.get(canvasSize).height}px`
+    '--canvas-height': `${Signal.get(canvasSize).height}px`,
   }}>
     <div class="canvas-container" ref={canvasContainer!}>
       <RenderToolbar renderType={renderType} quadView={quadView} rotation={rotation} origin={origin} zoom={zoom} />

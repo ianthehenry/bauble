@@ -1,15 +1,14 @@
-import {autocompletion, CompletionContext, Completion, completionStatus,
-        startCompletion, moveCompletionSelection} from "@codemirror/autocomplete";
+import {CompletionContext, Completion} from "@codemirror/autocomplete";
 import type {Definition, DefinitionVector} from 'bauble-runtime';
 import {JanetLanguage} from 'codemirror-lang-janet';
 import {syntaxTree} from '@codemirror/language';
 import type {SyntaxNode} from '@lezer/common';
 
-import {unified} from 'unified'
-import remarkParse from 'remark-parse'
-import remarkRehype from 'remark-rehype'
-import rehypeSanitize from 'rehype-sanitize'
-import rehypeStringify from 'rehype-stringify'
+import {unified} from 'unified';
+import remarkParse from 'remark-parse';
+import remarkRehype from 'remark-rehype';
+import rehypeSanitize from 'rehype-sanitize';
+import rehypeStringify from 'rehype-stringify';
 
 const isFormBoundaryChar = (char: string) => {
   switch (char) {
@@ -21,7 +20,7 @@ const isFormBoundaryChar = (char: string) => {
   case '/': return true;
   }
   return false;
-}
+};
 
 const getCompletions = (values: Completion[]) => (context: CompletionContext) => {
   const cursor = syntaxTree(context.state).resolveInner(context.pos, -1).cursor();
@@ -47,7 +46,7 @@ const getCompletions = (values: Completion[]) => (context: CompletionContext) =>
   } else {
     return null;
   }
-}
+};
 
 const renderMarkdown = (markdown: string) => {
   const node = document.createElement('div');
@@ -59,7 +58,7 @@ const renderMarkdown = (markdown: string) => {
     .processSync(markdown)
     .value);
   return node;
-}
+};
 
 function renderDefinition(def: Definition): Completion {
   return {
@@ -67,7 +66,7 @@ function renderDefinition(def: Definition): Completion {
     detail: def.args,
     type: def.type == 0 ? 'variable' : def.type == 1 ? 'function' : 'text',
     info: (_) => renderMarkdown(def.doc),
-  }
+  };
 }
 
 function renderDefinitions(defs: DefinitionVector) {
@@ -81,6 +80,6 @@ function renderDefinitions(defs: DefinitionVector) {
 
 export default function janetAutocomplete(definitions: DefinitionVector) {
   return JanetLanguage.data.of({
-    autocomplete: getCompletions(renderDefinitions(definitions))
+    autocomplete: getCompletions(renderDefinitions(definitions)),
   });
 }

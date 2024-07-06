@@ -22,26 +22,26 @@ function clampTime(t_: Seconds, loopStart_: Seconds, loopEnd_: Seconds, loopMode
   let rate = 0;
   if (t > loopEnd) {
     switch (loopMode) {
-      case LoopMode.NoLoop: break;
-      case LoopMode.Wrap:
-        t = loopStart + (t - loopEnd);
-        break;
-      case LoopMode.Reverse:
-        t = loopEnd - (t - loopEnd);
-        rate = -1;
-        break;
+    case LoopMode.NoLoop: break;
+    case LoopMode.Wrap:
+      t = loopStart + (t - loopEnd);
+      break;
+    case LoopMode.Reverse:
+      t = loopEnd - (t - loopEnd);
+      rate = -1;
+      break;
     }
   }
   if (t < loopStart) {
     switch (loopMode) {
-      case LoopMode.NoLoop: break;
-      case LoopMode.Wrap:
-        t = loopStart;
-        break;
-      case LoopMode.Reverse:
-        t = loopStart + (loopStart - t);
-        rate = 1;
-        break;
+    case LoopMode.NoLoop: break;
+    case LoopMode.Wrap:
+      t = loopStart;
+      break;
+    case LoopMode.Reverse:
+      t = loopStart + (loopStart - t);
+      rate = 1;
+      break;
     }
   }
   return [t as Seconds, rate];

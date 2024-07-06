@@ -4,7 +4,7 @@
 #include "autocomplete.h"
 #include "util.h"
 
-  using std::string;
+using std::string;
 
 Definition unsafe_parse_definition(const Janet *definition) {
   return (Definition) {

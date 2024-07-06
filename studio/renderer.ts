@@ -7,28 +7,28 @@ import type {Seconds} from './types';
 const baseCameraDistance = 512;
 
 function rotateX(target: mat3, angle: number) {
- const s = Math.sin(angle);
- const c = Math.cos(angle);
- mat3.set(target,
-   1.0, 0.0, 0.0,
-   0.0, c, -s,
-   0.0, s, c);
+  const s = Math.sin(angle);
+  const c = Math.cos(angle);
+  mat3.set(target,
+    1.0, 0.0, 0.0,
+    0.0, c, -s,
+    0.0, s, c);
 }
 
 function rotateY(target: mat3, angle: number) {
- const s = Math.sin(angle);
- const c = Math.cos(angle);
- mat3.set(target,
-   c, 0.0, s,
-   0.0, 1.0, 0.0,
-   -s, 0.0, c);
+  const s = Math.sin(angle);
+  const c = Math.cos(angle);
+  mat3.set(target,
+    c, 0.0, s,
+    0.0, 1.0, 0.0,
+    -s, 0.0, c);
 }
 
 function rotateXY(target: mat3, x: number, y: number) {
- const tempY = mat3.create();
- rotateX(target, x);
- rotateY(tempY, y);
- mat3.multiply(target, tempY, target);
+  const tempY = mat3.create();
+  rotateX(target, x);
+  rotateY(tempY, y);
+  mat3.multiply(target, tempY, target);
 }
 
 const vertexSource = `#version 300 es
@@ -117,7 +117,7 @@ export default class Renderer {
     this.vertexBuffer = vertexBuffer;
     this.vertexData = vertexData;
 
-    Signal.onEffect([rotation, origin, zoom] as Signal.T<any>[], () => {
+    Signal.onEffect([rotation, origin, zoom], () => {
       this.cameraDirty = true;
     });
   }
