@@ -3,23 +3,25 @@
 (import ./ray)
 (import ../src :as bauble)
 
-(defn to-shader [source]
+(defn compile-shader [source]
   (let [[expr env] (bauble/bauble-evaluator/evaluate source)
         [animated? shader-source] (bauble/shade/compile-shape expr env "330")]
     shader-source))
 
-(cmd/main (cmd/fn [outfile (required :file)]
+(def arg/resolution (cmd/peg "WxH" ~(/ (* (number :d+) "x" (number :d+) -1) ,|[$0 $1])))
+
+(cmd/defn render "render a bauble to a png"
+  [infile (required :file)
+   outfile (required :file)
+   --resolution (optional arg/resolution [512 512]) "default 512x512"]
+
+  (def shader-source (compile-shader (slurp infile)))
+
   (jaylib/set-trace-log-level :warning)
   (jaylib/set-config-flags :window-hidden)
   (jaylib/init-window 0 0 "Bauble")
 
-  (def resolution [512 512])
-
   (def frame-buffer (ray/make-fbo resolution :point))
-
-  (def shader-source (to-shader ```
-    (union :r 10 (sphere 50) (box 50))
-  ```))
 
   (def shader (jaylib/load-shader-from-memory nil shader-source))
 
@@ -38,4 +40,12 @@
   (ray/do-texture frame-buffer
     (ray/do-shader shader
       (jaylib/draw-rectangle-v [0 0] resolution :red)))
-  (ray/save-screenshot frame-buffer outfile)))
+  (ray/save-screenshot frame-buffer outfile))
+
+(cmd/defn print-source "print fragment shader source to stdout"
+  [infile (required :file)]
+  (print (compile-shader (slurp infile))))
+
+(cmd/main (cmd/group
+  render render
+  compile print-source))
