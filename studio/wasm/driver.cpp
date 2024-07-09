@@ -44,9 +44,9 @@ CompilationResult evaluate_script(string source) {
   long long done_evaluating = emscripten_get_now();
 
   const Janet *tuple = janet_unwrap_tuple(evaluation_result);
-  const Janet compile_shape_args[2] = { tuple[0], tuple[1] };
+  const Janet compile_shape_args[3] = { tuple[0], tuple[1], janet_cstringv("300 es") };
   Janet compilation_result;
-  bool compilation_success = call_fn(janetfn_compile_shape, 2, compile_shape_args, &compilation_result);
+  bool compilation_success = call_fn(janetfn_compile_shape, 3, compile_shape_args, &compilation_result);
 
   long long done_compiling_glsl = emscripten_get_now();
   bool is_animated;

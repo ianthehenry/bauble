@@ -11,7 +11,7 @@
 (defn- compile-function [{:name name :params params :body body :return-type return-type}]
   (string/format "%s %s(%s) {\n%s\n}" return-type name (string/join params ", ") body))
 
-(defn- compile-fragment-shader [expr env]
+(defn- compile-fragment-shader [expr env version]
   (var animated? false)
   (def comp-state (comp-state/new glsl-helpers/functions))
 
@@ -71,7 +71,7 @@
         "return "color-expression";\n}")))
 
   [animated? (string `
-#version 300 es
+#version `version"\n"`
 precision highp float;
 
 uniform vec3 camera_origin;
@@ -232,10 +232,10 @@ void main() {
 }
 `)])
 
-(defn compile-shape [expr env]
+(defn compile-shape [expr env version]
   (if expr
     (try
-      (compile-fragment-shader expr env)
+      (compile-fragment-shader expr env version)
       ([err fiber]
         (debug/stacktrace fiber err "")
         :error))
