@@ -3,9 +3,10 @@
 An s-expression syntax for GLSL. Still todo:
 
 - [x] `switch` statements
-- [ ] `while` loops
-- [ ] `for` loops
-- [ ] `+=` and friends
+- [x] `while` loops
+- [x] do-while loops
+- [x] `for` loops
+- [x] `+=` and friends
 - [x] `++` and `_++`, `--` and `_--`
 - [ ] conditional expressions
 - [ ] array indexing

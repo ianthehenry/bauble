@@ -149,9 +149,11 @@
     |number? (printer/prin p (to-float expression))
     ))
 
-(varfn render-statement [p statement &named newline-after-block?]
+(varfn render-statement [p statement &named newline-after-block? one-line? semicolon?]
   (default newline-after-block? true)
-  (var semi true)
+  (default semicolon? true)
+  (default one-line? false)
+  (var semicolon? semicolon?)
   (pat/match statement
     ['def type name value] (do
       (printer/prin p "const " type " " (identifier name) " = ")
@@ -182,14 +184,12 @@
         ))
       (printer/prin p (identifier name) " " op " ")
       (render-expression p expr))
-    # TODO: += etc
-    # TODO: regular function calls
     ['do & statements] (do
       (printer/bracket-body p "{" "}"
         (each statement statements
           (render-statement p statement)))
       (when newline-after-block? (printer/newline p))
-      (set semi false))
+      (set semicolon? false))
     ['if cond then & else] (do
       (assert (<= (length else) 1) "too many arguments to if")
       (printer/prin p "if (")
@@ -199,7 +199,7 @@
       (unless (empty? else)
         (printer/prin p " else ")
         (render-statement p (first else)))
-      (set semi false))
+      (set semicolon? false))
     ['case value & cases] (do
       (printer/prin p "switch (")
       (render-expression p value)
@@ -215,10 +215,33 @@
           (error "impossible")))
         (render-statement p body))
       (printer/print p "}")
-      (set semi false))
+      (set semicolon? false))
+    ['while cond & body] (do
+      (printer/prin p "while (")
+      (render-expression p cond)
+      (printer/prin p ") ")
+      (render-statement p ~(do ,;body))
+      (set semicolon? false))
+    ['do-while cond & body] (do
+      (printer/prin p "do ")
+      (render-statement p ~(do ,;body) :newline-after-block? false)
+      (printer/prin p " while (")
+      (render-expression p cond)
+      (printer/prin p ")"))
+    ['for init check advance & body] (do
+      (printer/prin p "for (")
+      (render-statement p init :one-line? true)
+      (printer/prin p " ")
+      (render-expression p check)
+      (printer/prin p "; ")
+      (render-statement p advance :semicolon? false)
+      (printer/prin p ") ")
+      (render-statement p ~(do ,;body))
+      (set semicolon? false))
     (render-expression p statement)
     )
-  (when semi (printer/print p ";")))
+  (when semicolon?
+    ((if one-line? printer/prin printer/print) p ";")))
 
 (defn format-args [args]
   (string ;(->
@@ -279,6 +302,26 @@
       i++;
       --i;
       i--;
+    }
+    
+  `))
+
+(deftest "loops"
+  (test-statements [
+    (while (> i 10) (-- i))
+    (do-while (> i 10) (-- i))
+    (for (var :int i 0) (< i 10) (++ i) (f))
+    ] `
+    void main() {
+      while (i > 10.0) {
+        --i;
+      }
+      do {
+        --i;
+      } while (i > 10.0);
+      for (int i = 0.0; i < 10.0; ++i) {
+        f();
+      }
     }
     
   `))
