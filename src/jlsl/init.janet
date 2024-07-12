@@ -138,6 +138,23 @@
           (render-expression p arg :needs-parens? true)
           (printer/prin p " " op " "))
         (printer/prin p ")")))
+    ['if cond then else] (do
+      (wrap-when needs-parens?
+        (printer/prin p "(")
+        (render-expression p cond :needs-parens? true)
+        (printer/prin p " ? ")
+        (render-expression p then :needs-parens? true)
+        (printer/prin p " : ")
+        (render-expression p else :needs-parens? true)
+        (printer/prin p ")")))
+    ['in expr key] (do
+      (render-expression p expr)
+      (printer/prin p "[")
+      (render-expression p key)
+      (printer/prin p "]"))
+    ['. expr key] (do
+      (render-expression p expr)
+      (printer/prin p "." (identifier key)))
     [f & args] (do
       (printer/prin p (identifier f) "(")
       (each-last arg args
@@ -146,6 +163,7 @@
       (printer/prin p ")"))
     |symbol? (printer/prin p (identifier expression))
     |keyword? (printer/prin p expression)
+    |boolean? (printer/prin p (string expression))
     |number? (printer/prin p (to-float expression))
     ))
 
@@ -163,8 +181,9 @@
     ['var type name value] (do
       (printer/prin p type " " (identifier name) " = ")
       (render-expression p value))
-    ['set name value] (do
-      (printer/prin p (identifier name) " = ")
+    ['set dest value] (do
+      (render-expression p dest)
+      (printer/prin p " = ")
       (render-expression p value))
     ['return value] (do
       (printer/prin p "return ")
@@ -174,15 +193,16 @@
     [(and op (or
       '+= '*= '/= '-= '%=
       'blshift= 'brshift=
-      'bxor= 'band= 'bor=)) name expr] (do
+      'bxor= 'band= 'bor=)) dest expr] (do
       (def op (case op
         'bxor= "^="
         'band= "&="
         'bor= "|="
         'brshift= ">>="
         'blshift= "<<="
-        ))
-      (printer/prin p (identifier name) " " op " ")
+        op))
+      (render-expression p dest)
+      (printer/prin p " " op " ")
       (render-expression p expr))
     ['do & statements] (do
       (printer/bracket-body p "{" "}"
@@ -253,6 +273,12 @@
 
 (defn render-toplevel [p toplevel]
   (pat/match toplevel
+    ['struct name & fields] (do
+      (printer/prin p "struct " (identifier name))
+      (printer/bracket-body p " {" "}"
+        (each field (partition 2 fields)
+          (render-statement p ~(var ,;field))))
+      (printer/newline p))
     ['defn type name args & body] (do
       (printer/prin p type " " (identifier name) "(" (format-args args) ")")
       (printer/bracket-body p " {" "}"
@@ -306,6 +332,50 @@
     
   `))
 
+(deftest "ternary conditional expressions"
+  (test-statements [
+    (def :float x (if (> y 10) 10 20))
+    (def :float x (if (> y 10) (+ 5 5) (+ 10 10)))
+    (def :float x (if (> y 10) (if (> y 20) 1 2) 3))
+    (def :float x (if (> y 10) 1 (if (> y 20) 2 3)))
+    (def :float x (if (if (> y 10) false true) (if (> y 20) 1 2) 3))
+    ] `
+    void main() {
+      const float x = (y > 10.0) ? 10.0 : 20.0;
+      const float x = (y > 10.0) ? (5.0 + 5.0) : (10.0 + 10.0);
+      const float x = (y > 10.0) ? ((y > 20.0) ? 1.0 : 2.0) : 3.0;
+      const float x = (y > 10.0) ? 1.0 : ((y > 20.0) ? 2.0 : 3.0);
+      const float x = ((y > 10.0) ? false : true) ? ((y > 20.0) ? 1.0 : 2.0) : 3.0;
+    }
+    
+  `))
+
+(deftest "array access"
+  (test-statements [
+    (def :float x (in lights :0))
+    (def :float x (in lights (+ i :1)))
+    ] `
+    void main() {
+      const float x = lights[0];
+      const float x = lights[i + 1];
+    }
+    
+  `))
+
+(deftest "field access"
+  (test-statements [
+    (def :float x (. foo xyz))
+    (def :float x (. (f) xyz))
+    (def :float x (. (. (in lights :0) incidence) brightness))
+    ] `
+    void main() {
+      const float x = foo.xyz;
+      const float x = f().xyz;
+      const float x = lights[0].incidence.brightness;
+    }
+    
+  `))
+
 (deftest "loops"
   (test-statements [
     (while (> i 10) (-- i))
@@ -322,6 +392,19 @@
       for (int i = 0.0; i < 10.0; ++i) {
         f();
       }
+    }
+    
+  `))
+
+(deftest "struct declaration"
+  (test-program [
+    (struct LightIncidence
+      :vec3 direction
+      :vec3 color)
+    ] `
+    struct LightIncidence {
+      vec3 direction;
+      vec3 color;
     }
     
   `))
@@ -386,6 +469,23 @@
     }
     
   `))
+
+(deftest "assignment to arbitrary expression"
+  (test-statements [
+    (set (. foo x) 10)
+    (set (in foo :0) 10)
+    (+= (in foo :0) 10)
+    (*= (f foo) 10)
+    ] `
+    void main() {
+      foo.x = 10.0;
+      foo[0] = 10.0;
+      foo[0] += 10.0;
+      f(foo) *= 10.0;
+    }
+    
+  `))
+
 
 (test-program [
   (precision highp float)
@@ -503,245 +603,3 @@
   }
   
 `)
-
-# #version 330
-# precision highp float;
-#
-# uniform vec3 camera_origin;
-# uniform vec3 camera_orientation;
-# uniform float t;
-# uniform int render_type;
-# uniform vec4 viewport;
-#
-# out vec4 frag_color;
-#
-# const int MAX_STEPS = 256;
-# const float MINIMUM_HIT_DISTANCE = 0.1;
-# const float NORMAL_OFFSET = 0.005;
-# const float MAXIMUM_TRACE_DISTANCE = 64.0 * 1024.0;
-#
-# const float PI = 3.14159265359;
-#
-# struct LightIncidence {
-#   vec3 direction;
-#   vec3 color;
-# };
-#
-# float nearest_distance(vec3 p);
-# float s3d_box(vec3 p, vec3 size) {
-# vec3 q = abs(p) - size;
-#  return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
-#
-# }
-# LightIncidence cast_light_hard_shadow(vec3 p, vec3 normal, vec3 light_position, vec3 color, float brightness) {
-#   vec3 target = p + MINIMUM_HIT_DISTANCE * normal;
-#   float target_distance = distance(light_position, target);
-#   if (target_distance == 0.0) {
-#     return LightIncidence(vec3(0.0), color * brightness);
-#   }
-#   vec3 to_light = (light_position - target) / target_distance;
-#   if (brightness == 0.0) {
-#     return LightIncidence(to_light, vec3(0.0));
-#   }
-#   float progress = 0.0;
-#   for (int i = 0; i < MAX_STEPS; i++) {
-#     float distance = nearest_distance(light_position - to_light * progress);
-#     if (distance < MINIMUM_HIT_DISTANCE) {
-#       if (progress + distance >= target_distance - MINIMUM_HIT_DISTANCE) {
-#         return LightIncidence(to_light, brightness * color);
-#       } else {
-#         return LightIncidence(to_light, vec3(0.0));
-#       }
-#     }
-#     progress += distance;
-#   }
-#   return LightIncidence(to_light, vec3(0.0));
-# }
-# LightIncidence cast_light_soft_shadow(vec3 p, vec3 normal, vec3 light_position, vec3 color, float brightness, float softness) {
-#   if (softness == 0.0) {
-#     cast_light_hard_shadow(p, normal, light_position, color, brightness);
-#   }
-#   vec3 target = p + MINIMUM_HIT_DISTANCE * normal;
-#   float target_distance = distance(light_position, target);
-#   if (target_distance == 0.0) {
-#     return LightIncidence(vec3(0.0), color * brightness);
-#   }
-#   vec3 to_light = (light_position - target) / target_distance;
-#   if (brightness == 0.0) {
-#     return LightIncidence(to_light, vec3(0.0));
-#   }
-#   float in_light = 1.0;
-#   float sharpness = 1.0 / (softness * softness);
-#   float last_distance = 1e20;
-#   float progress = 0.0;
-#   for (int i = 0; i < MAX_STEPS; i++) {
-#     float distance = nearest_distance(light_position - to_light * progress);
-#     if (distance < MINIMUM_HIT_DISTANCE) {
-#       if (progress + distance >= target_distance - MINIMUM_HIT_DISTANCE) {
-#         return LightIncidence(to_light, in_light * brightness * color);
-#       } else {
-#         return LightIncidence(to_light, vec3(0.0));
-#       }
-#     }
-#
-#     if (distance < last_distance) {
-#       float intersect_offset = distance * distance / (2.0 * last_distance);
-#       float intersect_distance = sqrt(distance * distance - intersect_offset * intersect_offset);
-#       in_light = min(in_light, sharpness * intersect_distance / max(0.0, target_distance - progress - intersect_offset));
-#     }
-#     progress += distance;
-#     last_distance = distance;
-#   }
-#   return LightIncidence(to_light, vec3(0.0));
-# }
-# mat3 rotate_x(float angle) {
-#   float s = sin(angle);
-#   float c = cos(angle);
-#   return mat3(
-#     1.0, 0.0, 0.0,
-#     0.0, c, -s,
-#     0.0, s, c);
-# }
-# mat3 rotate_y(float angle) {
-#   float s = sin(angle);
-#   float c = cos(angle);
-#   return mat3(
-#     c, 0.0, s,
-#     0.0, 1.0, 0.0,
-#     -s, 0.0, c);
-# }
-# mat3 rotate_z(float angle) {
-#   float s = sin(angle);
-#   float c = cos(angle);
-#   return mat3(
-#     c, -s, 0.0,
-#     s, c, 0.0,
-#     0.0, 0.0, 1.0);
-# }float nearest_distance(vec3 p) {
-#
-#   return mix(s3d_box(p, vec3(100.0, 100.0, 100.0)), (length(p) - 100.0), 0.500000);
-# }
-#
-# vec3 calculate_normal(vec3 p) {
-#   const vec3 step = vec3(NORMAL_OFFSET, 0.0, 0.0);
-#
-#   return normalize(vec3(
-#     nearest_distance(p + step.xyy) - nearest_distance(p - step.xyy),
-#     nearest_distance(p + step.yxy) - nearest_distance(p - step.yxy),
-#     nearest_distance(p + step.yyx) - nearest_distance(p - step.yyx)
-#   ));
-# }
-#
-# float calculate_occlusion(vec3 p, vec3 normal) {
-#   const int step_count = 10;
-#   const float max_distance = 10.0;
-#   const float step_size = max_distance / float(step_count);
-#   float baseline = nearest_distance(p);
-#   float occlusion = 0.0;
-#   // TODO: this does some good to reduce the problem where a "neck" will
-#   // have band of completely unoccluded space, but it introduces some
-#   // terrible banding artifacts on flat surfaces.
-#   // vec3 sine_noise = sin(p * 43758.5453);
-#   // vec3 rand = sign(sine_noise) * fract(sine_noise);
-#   // vec3 step = normalize(normal + rand) * step_size;
-#   vec3 step = normal * step_size;
-#   for (int i = 1; i <= step_count; i++) {
-#     float expected_distance = baseline + float(i) * step_size;
-#     float actual_distance = max(nearest_distance(p + float(i) * step), 0.0);
-#     occlusion += actual_distance / expected_distance;
-#   }
-#   occlusion /= float(step_count);
-#   return clamp(occlusion, 0.0, 1.0);
-# }
-#
-# vec3 march(vec3 ray_origin, vec3 ray_direction, out int steps) {
-#   float distance = 0.0;
-#
-#   for (steps = 0; steps < MAX_STEPS; steps++) {
-#     vec3 p = ray_origin + distance * ray_direction;
-#
-#     float nearest = nearest_distance(p);
-#
-#     // TODO: this attenuation only works when we're
-#     // using march to render from the camera's point
-#     // of view, so we can't use the march function
-#     // as-is to render reflections. I don't know if
-#     // it's worth having.
-#     // if (nearest < distance * MINIMUM_HIT_DISTANCE * 0.01) {
-#     if (nearest < MINIMUM_HIT_DISTANCE || distance > MAXIMUM_TRACE_DISTANCE) {
-#       return p + nearest * ray_direction;
-#     }
-#
-#     distance += nearest;
-#   }
-#   return ray_origin + distance * ray_direction;
-# }
-#
-# vec3 nearest_color(vec3 p) {
-#   vec3 normal = calculate_normal(p);
-#   vec3 P = p;
-#   LightIncidence lights1[2];
-#   lights1[0] = LightIncidence(vec3(0.0), (vec3(1.0, 1.0, 1.0) * 0.050000));
-#   lights1[1] = cast_light_soft_shadow(P, normal, (P + vec3(1024.0, 1024.0, 512.0)), vec3(1.0, 1.0, 1.0), 1.0, 0.250000);return mix((0.500000 * (1.0 + normal)), (0.500000 * (1.0 + normal)), 0.500000);
-# }
-#
-# const float DEG_TO_RAD = PI / 180.0;
-# vec3 perspective(float fov, vec2 size, vec2 pos) {
-#   vec2 xy = pos - size * 0.5;
-#
-#   float cot_half_fov = tan((90.0 - fov * 0.5) * DEG_TO_RAD);
-#   float z = min(size.x, size.y) * 0.5 * cot_half_fov;
-#
-#   return normalize(vec3(xy, -z));
-# }
-#
-# mat3 rotation_matrix(vec3 rotation) {
-#   return rotate_z(rotation.z) * rotate_y(rotation.y) * rotate_x(rotation.x);
-# }
-#
-# void main() {
-#   const float gamma = 2.2;
-#
-#   vec2 local_coord = gl_FragCoord.xy - viewport.xy;
-#   vec2 resolution = viewport.zw;
-#   vec3 dir = rotation_matrix(camera_orientation) * perspective(45.0, resolution, local_coord);
-#
-#   const vec3 fog_color = vec3(0.15);
-#
-#   int steps;
-#   vec3 hit = march(camera_origin, dir, steps);
-#
-#   vec3 color;
-#   switch (render_type) {
-#     case 0: {
-#       float depth = distance(camera_origin, hit);
-#       if (depth >= MAXIMUM_TRACE_DISTANCE) {
-#         const vec3 light = pow(vec3(69.0, 72.0, 79.0) / vec3(255.0), vec3(gamma));
-#         const vec3 dark = pow(vec3(40.0, 42.0, 46.0) / vec3(255.0), vec3(gamma));
-#         color = vec3(mix(dark, light, (local_coord.x + local_coord.y) / (resolution.x + resolution.y)));
-#       } else {
-#         color = nearest_color(hit);
-#       }
-#       break;
-#     }
-#     case 1: {
-#       // convergence debugging
-#       if (steps == MAX_STEPS) {
-#         color = vec3(1.0, 0.0, 1.0);
-#       } else {
-#         color = vec3(float(steps) / float(MAX_STEPS));
-#       }
-#       break;
-#     }
-#     case 2: {
-#       // overshoot debugging
-#       float distance = nearest_distance(hit);
-#       float overshoot = max(-distance, 0.0) / MINIMUM_HIT_DISTANCE;
-#       float undershoot = max(distance, 0.0) / MINIMUM_HIT_DISTANCE;
-#       color = vec3(overshoot, 1.0 - undershoot - overshoot, 1.0 - step(1.0, undershoot));
-#       break;
-#     }
-#   }
-#
-#   frag_color = vec4(pow(color, vec3(1.0 / gamma)), 1.0);
-# }
