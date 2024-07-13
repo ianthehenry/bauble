@@ -4,5 +4,5 @@
   :dependencies [
     "https://github.com/ianthehenry/judge.git"
     "https://github.com/ianthehenry/pat.git"
-    "file:///Users/ian/src/janet-module"
+    "https://github.com/ianthehenry/janet-module.git"
   ])
