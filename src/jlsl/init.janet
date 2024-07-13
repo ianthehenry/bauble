@@ -310,11 +310,11 @@
   (printer/to-string p)
   )
 
-(defmacro* test-program [program &opt _]
-  ~(test-stdout (print (,render-program ',program))))
+(defmacro* test-program [program & args]
+  ~(test-stdout (print (,render-program ',program)) ,;args))
 
-(defmacro* test-statements [statements &opt _]
-  ~(test-stdout (print (,render-program ['(defn :void main [] ,;statements)]))))
+(defmacro* test-statements [statements  & args]
+  ~(test-program [(defn :void main [] ,;statements)] ,;args))
 
 (deftest "if formats correctly with and without else"
   (test-statements [
