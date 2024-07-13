@@ -32,3 +32,19 @@
   result)
 
 (test (intercalate [1 2 3] ",") @[1 "," 2 "," 3])
+
+(defmacro wrap-when [bool before & rest]
+  (def after (last rest))
+  (def during (drop -1 rest))
+  (with-syms [$bool]
+    ~(let [,$bool ,bool]
+      (when ,$bool ,before)
+      ,;during
+      (when ,$bool ,after))))
+
+(test-stdout (wrap-when true (prin "(") (prin "body") (prin ")")) `
+  (body)
+`)
+(test-stdout (wrap-when false (prin "(") (prin "body") (prin ")")) `
+  body
+`)

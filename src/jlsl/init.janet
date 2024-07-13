@@ -3,7 +3,7 @@
 (import pat)
 (use ./util)
 
-(defmodule printer
+(defmodule- printer
   (defn new []
     @{:indent 0
       :indented false
@@ -42,8 +42,7 @@
     ~(do
       (,print ,t ,start)
       (,indent-body* ,t (fn [] ,;body))
-      (,prin ,t ,end)))
-  )
+      (,prin ,t ,end))))
 
 (deftest "printer works"
   (def p (printer/new))
@@ -79,22 +78,13 @@
     
   `))
 
-(defmacro- wrap-when [bool before & rest]
-  (def after (last rest))
-  (def during (drop -1 rest))
-  (with-syms [$bool]
-    ~(let [,$bool ,bool]
-      (when ,$bool ,before)
-      ,;during
-      (when ,$bool ,after))))
-
-(defn identifier [name]
+(defn- identifier [name]
   (string/replace "-" "_" name))
 
 (var render-statement nil)
 (var render-expression nil)
 
-(defn to-float [num]
+(defn- to-float [num]
   (def str (string num))
   (if (string/find "." str) str (string str ".0")))
 
@@ -164,8 +154,7 @@
     |symbol? (printer/prin p (identifier expression))
     |keyword? (printer/prin p expression)
     |boolean? (printer/prin p (string expression))
-    |number? (printer/prin p (to-float expression))
-    ))
+    |number? (printer/prin p (to-float expression))))
 
 (varfn render-statement [p statement &named newline-after-block? one-line? semicolon?]
   (default newline-after-block? true)
@@ -258,12 +247,11 @@
       (printer/prin p ") ")
       (render-statement p ~(do ,;body))
       (set semicolon? false))
-    (render-expression p statement)
-    )
+    (render-expression p statement))
   (when semicolon?
     ((if one-line? printer/prin printer/print) p ";")))
 
-(defn format-args [args]
+(defn- format-args [args]
   (string ;(->
     (seq [arg :in (partition 2 args)]
       (string/join arg " "))
@@ -290,8 +278,7 @@
       (render-expression p value)
       (printer/print p ";"))
     [(and (or 'uniform 'out) decl) type name] (printer/print p decl " " type " " (identifier name) ";")
-    ['precision & rest] (printer/print p "precision " ;(intercalate rest " ") ";")
-    ))
+    ['precision & rest] (printer/print p "precision " ;(intercalate rest " ") ";")))
 
 (defn render-program [program]
   (def p (printer/new))
@@ -307,13 +294,12 @@
     (render-toplevel p toplevel)
 
     (set last-head new-head))
-  (printer/to-string p)
-  )
+  (printer/to-string p))
 
-(defmacro* test-program [program & args]
+(defmacro*- test-program [program & args]
   ~(test-stdout (print (,render-program ',program)) ,;args))
 
-(defmacro* test-statements [statements  & args]
+(defmacro*- test-statements [statements & args]
   ~(test-program [(defn :void main [] ,;statements)] ,;args))
 
 (deftest "if formats correctly with and without else"
@@ -485,7 +471,6 @@
     }
     
   `))
-
 
 (test-program [
   (precision highp float)
