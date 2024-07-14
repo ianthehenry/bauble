@@ -79,7 +79,7 @@
   `))
 
 (defn- identifier [name]
-  (string/replace "-" "_" name))
+  (string/replace-all "-" "_" name))
 
 (var render-statement nil)
 (var render-expression nil)
