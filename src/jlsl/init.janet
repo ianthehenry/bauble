@@ -280,8 +280,10 @@
     [(and (or 'uniform 'out) decl) type name] (printer/print p decl " " type " " (identifier name) ";")
     ['precision & rest] (printer/print p "precision " ;(intercalate rest " ") ";")))
 
-(defn render-program [program]
+(defn render-program [program &opt version]
   (def p (printer/new))
+  (when version
+    (printer/print p "#version " version))
   (var last-head nil)
   (each toplevel program
     (def new-head (first toplevel))
