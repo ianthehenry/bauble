@@ -380,7 +380,7 @@
   (test-statements [
     (while (> i 10) (-- i))
     (do-while (> i 10) (-- i))
-    (for (var :int i 0) (< i 10) (++ i) (f))
+    (for (var :int i :0) (< i :10) (++ i) (f))
     ] `
     void main() {
       while (i > 10.0) {
@@ -389,7 +389,7 @@
       do {
         --i;
       } while (i > 10.0);
-      for (int i = 0.0; i < 10.0; ++i) {
+      for (int i = 0; i < 10; ++i) {
         f();
       }
     }
@@ -494,7 +494,7 @@
   (uniform vec4 viewport)
   (out vec4 frag_color)
 
-  (def :int MAX_STEPS 64)
+  (def :int MAX_STEPS :64)
   (def :float MINIMUM_HIT_DISTANCE 0.1)
   (def :float NORMAL_OFFSET 0.005)
   (def :float MAXIMUM_TRACE_DISTANCE (* 64 1024))
@@ -554,7 +554,7 @@
   
   out vec4 frag_color;
   
-  const int MAX_STEPS = 64.0;
+  const int MAX_STEPS = 64;
   const float MINIMUM_HIT_DISTANCE = 0.1;
   const float NORMAL_OFFSET = 0.005;
   const float MAXIMUM_TRACE_DISTANCE = 64.0 * 1024.0;
