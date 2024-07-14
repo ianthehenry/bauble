@@ -302,7 +302,7 @@
 (defmacro*- test-statements [statements & args]
   ~(test-program [(defn :void main [] ,;statements)] ,;args))
 
-(deftest "if formats correctly with and without else"
+(deftest "post- and pre-crements"
   (test-statements [
     (++ i)
     (_++ i)
