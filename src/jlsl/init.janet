@@ -143,7 +143,7 @@
       (render-expression p key)
       (printer/prin p "]"))
     ['. expr key] (do
-      (render-expression p expr)
+      (render-expression p expr :needs-parens? true)
       (printer/prin p "." (identifier key)))
     [f & args] (do
       (printer/prin p (identifier f) "(")
@@ -314,6 +314,18 @@
       i++;
       --i;
       i--;
+    }
+    
+  `))
+
+(deftest "dot syntax"
+  (test-statements [
+    (. foo xyy)
+    (. (+ (vec2 1 2) (vec2 3 4)) xyy)
+    ] `
+    void main() {
+      foo.xyy;
+      (vec2(1.0, 2.0) + vec2(3.0, 4.0)).xyy;
     }
     
   `))
