@@ -253,8 +253,8 @@
 
 (defn- format-args [args]
   (string ;(->
-    (seq [arg :in (partition 2 args)]
-      (string/join arg " "))
+    (seq [[type arg] :in (partition 2 args)]
+      (string type " " (identifier arg)))
     (intercalate ", "))))
 
 (test (format-args [:foo 'name :bar 'other]) "foo name, bar other")
