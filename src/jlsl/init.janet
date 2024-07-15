@@ -252,10 +252,10 @@
     ((if one-line? printer/prin printer/print) p ";")))
 
 (defn- format-args [args]
-  (string ;(->
+  (->
     (seq [[type arg] :in (partition 2 args)]
-      (string type " " (identifier arg)))
-    (intercalate ", "))))
+      (string/join [;(string/split ":" type) (identifier arg)] " "))
+    (string/join ", ")))
 
 (test (format-args [:foo 'name :bar 'other]) "foo name, bar other")
 
@@ -316,6 +316,17 @@
       i++;
       --i;
       i--;
+    }
+    
+  `))
+
+(deftest "out parameters"
+  (test-program [
+    (defn :void hello [out:float foo]
+      (set foo 10))
+    ] `
+    void hello(out float foo) {
+      foo = 10.0;
     }
     
   `))
