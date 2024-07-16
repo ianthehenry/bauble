@@ -78,7 +78,7 @@
     
   `))
 
-(defn- identifier [name]
+(defn identifier [name]
   (string/replace-all "-" "_" name))
 
 (var render-statement nil)
@@ -298,8 +298,18 @@
     (set last-head new-head))
   (printer/to-string p))
 
+(defn uniforms [program]
+  (def uniforms @{})
+  (each toplevel program
+    (match toplevel
+      ['uniform type name] (put uniforms (identifier name) type)))
+  uniforms)
+
 (defmacro*- test-program [program & args]
   ~(test-stdout (print (,render-program ',program)) ,;args))
+
+(defmacro*- test-program* [program & args]
+  ~(test-stdout (print (,render-program ,program)) ,;args))
 
 (defmacro*- test-statements [statements & args]
   ~(test-program [(defn :void main [] ,;statements)] ,;args))
@@ -497,7 +507,7 @@
     
   `))
 
-(test-program [
+(def example-program ~[
   (precision highp float)
   (uniform :vec3 camera-origin)
   (uniform :vec3 camera-rotation)
@@ -554,8 +564,15 @@
       (if (> r 0.47) (do
         (set alpha 0)))))
     (set frag-color (vec4 (pow color (vec3 (/ gamma))) alpha)))
+  ])
 
-  ] `
+(test (uniforms example-program)
+  @{"camera_origin" :vec3
+    "camera_rotation" :vec3
+    "t" float
+    "viewport" vec4})
+
+(test-program* example-program `
   precision highp float;
   
   uniform vec3 camera_origin;
