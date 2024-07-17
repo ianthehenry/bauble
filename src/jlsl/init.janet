@@ -277,7 +277,7 @@
       (printer/prin p "const " type " " (identifier name) " = ")
       (render-expression p value)
       (printer/print p ";"))
-    [(and (or 'uniform 'out) decl) type name] (printer/print p decl " " type " " (identifier name) ";")
+    [(and (or 'uniform 'out 'in) decl) type name] (printer/print p decl " " type " " (identifier name) ";")
     ['precision & rest] (printer/print p "precision " ;(intercalate rest " ") ";")))
 
 (defn render-program [program &opt version]
