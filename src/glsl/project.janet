@@ -1,5 +1,5 @@
 (declare-project
-  :name "jlsl"
+  :name "glsl"
   :description "s-expression -> glsl compiler"
   :dependencies [
     "https://github.com/ianthehenry/judge.git"

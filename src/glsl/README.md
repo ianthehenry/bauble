@@ -1,4 +1,4 @@
-# `jlsl`
+# `glsl`
 
 An s-expression syntax for GLSL.
 
