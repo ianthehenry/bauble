@@ -134,6 +134,10 @@
   "Linearly transform a value in the range -1 to 1 into a value in the range 0 to 1."
   (* 0.5 (+ x 1)))
 
+(defn remap- [x]
+  "Linearly transform a value in the range -1 to 1 into a value in the range 0 to -1."
+  (- (remap+ x)))
+
 (def @hash hash)
 (defmacro makehash [name return-type outcount]
   (def hash1 (symbol "hash" outcount "1"))
@@ -169,6 +173,11 @@
   "Perlin noise in the range 0 to 1. The input can be a `vec2`, `vec3`, or `vec4`."
   [x]
   (remap+ (perlin x)))
+
+(defn perlin-
+  "Perlin noise in the range 0 to -1. The input can be a `vec2`, `vec3`, or `vec4`."
+  [x]
+  (remap- (perlin x)))
 
 # TODO...
 # (defn simplex [x]
@@ -221,7 +230,7 @@
 (defn sin-
   "Like `sin`, but returns value in the range 0 to -1."
   [x]
-  (- 1 (sin+ x)))
+  (remap- (sin x)))
 
 (defn cos+
   "Like `cos`, but returns value in the range 0 to 1."
@@ -231,7 +240,7 @@
 (defn cos-
   "Like `cos`, but returns value in the range 0 to -1."
   [x]
-  (- 1 (cos+ x)))
+  (remap- (cos x)))
 
 # TODO: should probably fill out the rest of these
 (defmacro += [expr value]
