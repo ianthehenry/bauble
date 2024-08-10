@@ -154,18 +154,10 @@
         (map |(get-sample x y $) corner-offsets)
         vertices
         triangles))
-  (eprint "done marching")
+  (eprint "")
   (each [x y z] vertices
     (printf "v %f %f %f" x y z))
   (each [a b c] triangles
     (printf "f %d// %d// %d//" a b c))
 
-  (eprintf "%d vertices, %d faces" (length vertices) (length triangles))
-
-  #(each [x y z] vertices
-  #  (printf "v %f %f %f" x y z))
-  #(each [a b c] triangles
-  #  (printf "f %d// %d// %d//" (+ (length vertices) b) (+ (length vertices) a) (+ (length vertices) c)))
-
-  #(pp [(length vertices) (length triangles)])
-  )
+  (eprintf "%d vertices, %d faces" (length vertices) (length triangles)))
