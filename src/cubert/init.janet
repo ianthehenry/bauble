@@ -6,6 +6,13 @@
 (defn vec*s [[x1 y1 z1] s] [(* x1 s) (* y1 s) (* z1 s)])
 (defn vec/ [[x1 y1 z1] [x2 y2 z2]] [(/ x1 x2) (/ y1 y2) (/ z1 z2)])
 
+# like for, but unrolled at compile time
+(defmacro for! [sym start end & body]
+  (assert (and (number? start) (number? end)))
+  ['upscope
+    ;(catseq [i :range [start end]]
+      (prewalk |(if (= $ sym) i $) body))])
+
 (defmacro bor= [sym expr]
   ~(set ,sym (,bor ,sym ,expr)))
 
@@ -29,19 +36,20 @@
 # we basically need something like that for reusing samples anyway?
 (defn process-cube [sample vertices triangles]
   (var cube-index 0)
-  (for corner 0 8
+  (for! corner 0 8
     (when (>= ((sample corner) 1) 0)
-      (bor= cube-index (blshift 1 corner))))
+      (bor= cube-index (comptime (blshift 1 corner)))))
   (def triangle-table (in triangle-table cube-index))
   (when (empty? triangle-table) (break))
 
   (def edge-mask (in cube-table cube-index))
 
   (def edge-pos-sparse (array/new-filled 12 nil))
-  (loop [edge :range [0 12] :when (band edge-mask (blshift 1 edge))]
-    (def [start-corner end-corner] (in edge-to-corners edge))
-    (put edge-pos-sparse edge
-      (vertex-interpolate (sample start-corner) (sample end-corner))))
+  (for! edge 0 12
+    (when (band edge-mask (comptime (blshift 1 edge)))
+      (def [start-corner end-corner] (in edge-to-corners edge))
+      (put edge-pos-sparse edge
+        (vertex-interpolate (sample start-corner) (sample end-corner)))))
 
   (def edge-to-vertex-index (array/new-filled 12 nil))
 
