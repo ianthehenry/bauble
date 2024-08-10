@@ -1,10 +1,12 @@
 (use ./constants)
 
-(defn vec+ [[x1 y1 z1] [x2 y2 z2]] [(+ x1 x2) (+ y1 y2) (+ z1 z2)])
-(defn vec- [[x1 y1 z1] [x2 y2 z2]] [(- x1 x2) (- y1 y2) (- z1 z2)])
-(defn vec* [[x1 y1 z1] [x2 y2 z2]] [(* x1 x2) (* y1 y2) (* z1 z2)])
-(defn vec*s [[x1 y1 z1] s] [(* x1 s) (* y1 s) (* z1 s)])
-(defn vec/ [[x1 y1 z1] [x2 y2 z2]] [(/ x1 x2) (/ y1 y2) (/ z1 z2)])
+# it's faster to allocate an array than a tuple, and look, i'm not
+# happy about this either
+(defn vec+ [[x1 y1 z1] [x2 y2 z2]] @[(+ x1 x2) (+ y1 y2) (+ z1 z2)])
+(defn vec- [[x1 y1 z1] [x2 y2 z2]] @[(- x1 x2) (- y1 y2) (- z1 z2)])
+(defn vec* [[x1 y1 z1] [x2 y2 z2]] @[(* x1 x2) (* y1 y2) (* z1 z2)])
+(defn vec*s [[x1 y1 z1] s] @[(* x1 s) (* y1 s) (* z1 s)])
+(defn vec/ [[x1 y1 z1] [x2 y2 z2]] @[(/ x1 x2) (/ y1 y2) (/ z1 z2)])
 
 # like for, but unrolled at compile time
 (defmacro for! [sym start end & body]
@@ -12,6 +14,9 @@
   ['upscope
     ;(catseq [i :range [start end]]
       (prewalk |(if (= $ sym) i $) body))])
+
+(defmacro blshift! [x y]
+  ~(comptime (blshift ,x ,y)))
 
 (defmacro bor= [sym expr]
   ~(set ,sym (,bor ,sym ,expr)))
@@ -38,7 +43,7 @@
   (var cube-index 0)
   (for! corner 0 8
     (when (>= ((sample corner) 1) 0)
-      (bor= cube-index (comptime (blshift 1 corner)))))
+      (bor= cube-index (blshift! 1 corner))))
   (def triangle-table (in triangle-table cube-index))
   (when (empty? triangle-table) (break))
 
@@ -46,7 +51,7 @@
 
   (def edge-pos-sparse (array/new-filled 12 nil))
   (for! edge 0 12
-    (when (band edge-mask (comptime (blshift 1 edge)))
+    (when (band edge-mask (blshift! 1 edge))
       (def [start-corner end-corner] (in edge-to-corners edge))
       (put edge-pos-sparse edge
         (vertex-interpolate (sample start-corner) (sample end-corner)))))
@@ -57,8 +62,14 @@
     (array/push vertices (in edge-pos-sparse edge))
     (put edge-to-vertex-index edge (length vertices)))
 
-  (each triangle (partition 3 triangle-table)
-    (array/push triangles (map edge-to-vertex-index triangle)))
+  (def len (length triangle-table))
+  (var i 0)
+  (while (< i len)
+    (array/push triangles
+      @[(edge-to-vertex-index (triangle-table i))
+        (edge-to-vertex-index (triangle-table (+ i 1)))
+        (edge-to-vertex-index (triangle-table (+ i 2)))])
+    (+= i 3))
 )
 
 # the SDF for a sphere of radius 4 centered around the origin
