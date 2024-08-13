@@ -2,4 +2,11 @@
 set -euo pipefail
 cd $(dirname "$0")
 
-printf '%s' '<header><a class="title" href="/">Bauble</a><span class="spacer"></span><a class="text-link" href="/help">Help</a><a class="text-link" href="/about">About</a><a class="image-link" target="_blank" href="https://github.com/ianthehenry/bauble.studio"><svg><use xlink:href="/icons.svg#github"/></svg></a></header>'
+printf '%s' '<header>'
+printf '%s' '<a class="title" href="/">Bauble</a>'
+printf '%s' '<span class="spacer"></span>'
+printf '%s' '<a class="text-link" href="/help">Help</a>'
+printf '%s' '<a class="text-link" href="/about">About</a>'
+printf '%s' '<a class="image-link" target="_blank" href="https://github.com/ianthehenry/bauble.studio"><svg><use xlink:href="/icons.svg#github"/></svg></a>'
+printf '%s' '<a class="image-link" target="_blank" href="https://discord.gg/NzR375gJH6"><svg><use xlink:href="/icons.svg#discord"/></svg></a>'
+printf '%s' '</header>'
