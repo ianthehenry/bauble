@@ -15,7 +15,10 @@
    --resolution (optional arg/resolution [512 512]) "default 512x512"]
   (def shader-source (compile-shader (slurp infile)))
   (init-jaylib)
-  (def image (render-image shader-source :resolution resolution))
+  (def image (render-image shader-source
+    :resolution resolution
+    :camera-origin [256 362 256]
+    :camera-orientation [(* 0.125 math/pi 2) (* -0.125 math/pi 2) 0]))
   (jaylib/export-image image outfile))
 
 (cmd/defn print-source "print fragment shader source to stdout"

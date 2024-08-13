@@ -63,7 +63,7 @@
     (render ;args))
   )
 
-(defn render-image [shader-source &named resolution]
+(defn render-image [shader-source &named resolution camera-origin camera-orientation]
   (def frame-buffer (ray/make-fbo resolution :point))
   (def shader (jaylib/load-shader-from-memory nil shader-source))
 
@@ -72,8 +72,8 @@
   (defn set-uniform-matrix [name value]
     (jaylib/set-shader-value-matrix shader (jaylib/get-shader-location shader name) value))
 
-  (set-uniform "camera_origin" :vec3 [256 362 256])
-  (set-uniform "camera_orientation" :vec3 [(* 0.125 math/pi 2) (* -0.125 math/pi 2) 0])
+  (set-uniform "camera_origin" :vec3 camera-origin)
+  (set-uniform "camera_orientation" :vec3 camera-orientation)
 
   (set-uniform "t" :float 0)
   (set-uniform "viewport" :vec4 [0 0 ;resolution])
