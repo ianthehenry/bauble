@@ -11,7 +11,6 @@
 (defn- call [general-function args]
   (expr/call (multifunction/resolve-function general-function (tmap expr/type args)) args))
 
-# TODO: an IIFE that is just `return` can just be the expression being returned
 (defn iife [name return-type statements]
   (def trivial-expr-body
     (if (= (length statements) 1)
