@@ -52,17 +52,35 @@
         s c 0
         0 0 1)))
 
+    (defn :float s3d-sphere [:float r]
+      (return (- (length p) r)))
+
     (defn :float s3d-ellipsoid [:vec3 size]
       (var k0 (length (/ p size)))
       (var k1 (length (/ p (* size size))))
       (return (/ (* k0 (- k0 1)) k1)))
+
+    (defn :float s3d-box [:vec3 size]
+      (var q (- (abs p) size))
+      (return
+        (+ (length (max q 0)) (min (max (. q x) (max (. q y) (. q z))) 0))))
 
     (defn :float moved []
       (with [p (- p [50 0 -50])]
         (return (s3d-ellipsoid [50 50 100]))))
 
     (defn :float nearest-distance []
-      (return (min (moved) (s3d-ellipsoid [50 50 100]))))
+      (return
+        (min
+          (max
+            (s3d-sphere 120)
+            (s3d-box [100 100 100]))
+          (min
+            (s3d-ellipsoid [60 60 200])
+            (min
+              (s3d-ellipsoid [60 200 60])
+              (s3d-ellipsoid [200 60 60])))
+        )))
 
     (defn :vec3 march [:vec3 ray-origin :vec3 ray-direction]
       (var distance 0)
