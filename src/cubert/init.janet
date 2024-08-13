@@ -94,13 +94,26 @@
   (- (lerp torus-two torus-one h) (* r h (- 1 h)))
   )
 
+(defn sample [[x y z]]
+  (def s (/ 2 3))
+  (def sphere (- (math/sqrt (+ (* x x) (* y y) (* z z))) 14.5))
+  (def gyroid (let [x (* x s) y (* y s) z (* z s)]
+    (- (+ (* (math/cos x) (math/sin y)) (* (math/cos y) (math/sin z)) (* (math/cos z) (math/sin x))) -1)))
+
+  (def r 0.25)
+  (def h (max (min (- 0.5 (* (/ (- gyroid sphere) r) 0.5)) 1) 0))
+  (+ (lerp gyroid sphere h) (* r h (- 1 h)))
+  )
+
 (defn main [&]
   (def samples @[])
 
   # this is in the domain of the function
-  (def bounds [[-5 -5 -5] [8 5 5]])
-  (def slices 90)
-  (def slices [(* slices (/ 13 10)) slices slices])
+  #(def bounds [[-5 -5 -5] [8 5 5]])
+  (def bounds [[-15 -15 -15] [15 15 15]])
+  (def slices 120)
+  #(def slices [(* slices (/ 13 10)) slices slices])
+  (def slices [slices slices slices])
   (def size (vec- (bounds 1) (bounds 0)))
   # TODO: can step-size be non-rectangular?
   (def step-size (vec/ size slices))
