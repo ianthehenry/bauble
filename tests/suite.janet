@@ -168,6 +168,9 @@ div.test-case {
   (string/replace-all "<" "&lt;")
   (string/replace-all ">" "&gt;")))
 
+(def current-refs @{})
+(def previous-refs (os/dir "refs"))
+
 (var failing-tests 0)
 (each [name program] (sort (pairs test-cases) (fn [[name1 _] [name2 _]] (< name1 name2)))
   (def [[camera-origin camera-orientation] program]
@@ -196,7 +199,9 @@ div.test-case {
     (def hash (string/slice ($<_ shasum -ba 256 snapshots/tmp.png) 0 32))
     (def after-hash (os/time))
     (def final-file-name (string "snapshots/" hash ".png"))
-    (def symlink-name (string "refs/" (string/replace-all " " "-" name) ".png"))
+    (def ref-name (string (string/replace-all " " "-" name) ".png"))
+    (put current-refs ref-name true)
+    (def ref-path (string "refs/" ref-name))
     (if (os/stat final-file-name)
       (do
         (eprin ".")
@@ -205,10 +210,10 @@ div.test-case {
         (eprin ":")
         (os/rename temporary-file-name final-file-name)
         (set success false)))
-    ($ ln -fs (string "../" final-file-name) ,symlink-name)
+    ($ ln -fs (string "../" final-file-name) ,ref-path)
 
     (printf `<pre>%s</pre>` (html-escape shader-source))
-    (printf `<img src="%s" width="%d" height="%d" />` symlink-name (display-resolution 0) (display-resolution 1))
+    (printf `<img src="%s" width="%d" height="%d" />` ref-path (display-resolution 0) (display-resolution 1))
     # (os/time) returns an integer number of seconds, so...
     # (printf `<div class="stats">%.3f compile, %.3f render, %.3f export, %.3f hash</div>`
     #   (- after-compile-before-render before-compile)
@@ -239,6 +244,10 @@ div.test-case {
 (eprint)
 (when (> failing-tests 0)
   (eprintf "%d tests failed" failing-tests))
+
+(loop [ref-name :in previous-refs :unless (in current-refs ref-name)]
+  (eprintf "deleting symlink %s" ref-name)
+  (os/rm (string "refs/" ref-name)))
 
 (spit "summary.html" out-buffer)
 
