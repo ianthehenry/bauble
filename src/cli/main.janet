@@ -2,7 +2,7 @@
 (import cmd)
 (use module)
 (import ./ray)
-(import ../src/glsl)
+(import ../glsl)
 (use ./helpers)
 (use ./test-glsl)
 (use ./test-jlsl)

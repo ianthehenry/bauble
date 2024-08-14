@@ -2,8 +2,7 @@
 (import cmd)
 (use module)
 (import ./ray)
-(import ../src :as bauble)
-(import ../src/glsl)
+(import ../glsl)
 (use ./helpers)
 
 (cmd/defn test-glsl "testing" []

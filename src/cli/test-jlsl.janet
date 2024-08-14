@@ -1,8 +1,8 @@
 (import cmd)
-(import ../src/jlsl)
+(import ../jlsl)
 (import jaylib)
-(use ../src/jlsl/builtins)
-(use ../src/jlsl/flexins)
+(use ../jlsl/builtins)
+(use ../jlsl/flexins)
 (use ./helpers)
 
 (cmd/defn test-jlsl "testing" []

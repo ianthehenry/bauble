@@ -7,3 +7,4 @@ build/janet/janet.c
 build/janet/janet.h
 .redo
 tests/summary.html
+src/build

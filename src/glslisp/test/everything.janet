@@ -1,8 +1,8 @@
 (use judge)
-(use /src/index)
-(import /src/type)
-(import /src/variable)
-(import /src/comp-state)
+(use ../src/index)
+(import ../src/type)
+(import ../src/variable)
+(import ../src/comp-state)
 
 (defn c&t [expr]
   (def state (:new-scope (comp-state/new {})))

@@ -1,8 +1,8 @@
 (import jaylib)
 (use module)
-(import ../src/legacy :as bauble)
+(import ../legacy :as bauble)
 (import ./ray)
-(import ../src/glsl)
+(import ../glsl)
 
 (defdyn *verbose*)
 
