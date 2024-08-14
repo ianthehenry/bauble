@@ -1,6 +1,6 @@
 (import jaylib)
 (use module)
-(import ../src :as bauble)
+(import ../src/legacy :as bauble)
 (import ./ray)
 (import ../src/glsl)
 

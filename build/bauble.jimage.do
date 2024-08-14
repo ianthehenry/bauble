@@ -5,4 +5,4 @@ cd ..
 
 redo-ifchange $(find src -path '*/jpm_tree' -prune -o -name '*.janet')
 
-janet -c src/init.janet $actual_outpath_jfc
+janet -c src/legacy/init.janet $actual_outpath_jfc

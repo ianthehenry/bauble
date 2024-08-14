@@ -2,8 +2,8 @@
 (use ./internal-helpers)
 (use ./axes)
 (import ./globals)
-(import ./glslisp/src/type)
-(import ./glslisp/src/util :as glslisp/util)
+(import ../glslisp/src/type)
+(import ../glslisp/src/util :as glslisp/util)
 
 (defn- arg-kvps [args]
   (mapcat |[(keyword $) $] args))

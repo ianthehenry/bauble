@@ -4,7 +4,7 @@
 (use ./flex-fn)
 (import ./raw)
 (import ./light)
-(import ./glslisp/src/builtins :as generic)
+(import ../glslisp/src/builtins :as generic)
 
 (defmacro- pivoting [form]
   ~(if (nil? pivot)

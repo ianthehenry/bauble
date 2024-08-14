@@ -1,4 +1,4 @@
-(import ./glslisp/src/type)
+(import ../glslisp/src/type)
 (import ./globals)
 
 (def- proto @{})

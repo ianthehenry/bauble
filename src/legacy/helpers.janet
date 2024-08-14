@@ -1,4 +1,4 @@
-(import ./glslisp/src/builtins :as generic)
+(import ../glslisp/src/builtins :as generic)
 (import ./axes)
 (import ./globals)
 (setdyn 'axis-vec (dyn 'axis-vec))
@@ -79,7 +79,7 @@
 (defmacro spoon [& args]
   (fork-helper true args))
 
-(use ./glslisp/src/glsl-ports)
+(use ../glslisp/src/glsl-ports)
 (def- sat 0.98)
 
 (def red (hsv (/ 0 6) sat 1))

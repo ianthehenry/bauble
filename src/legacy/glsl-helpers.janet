@@ -1,4 +1,4 @@
-(import ./glslisp/src/type :as type)
+(import ../glslisp/src/type :as type)
 
 (def functions @{})
 

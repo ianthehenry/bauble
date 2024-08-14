@@ -974,7 +974,7 @@
 # source?
 
 # https://github.com/ianthehenry/bauble.studio/blob/master/src/dsl.janet
-# https://github.com/ianthehenry/bauble.studio/blob/master/src/glslisp/src/builtins.janet
+# https://github.com/ianthehenry/bauble.studio/blob/master/src/legacy/glslisp/src/builtins.janet
 # https://github.com/ianthehenry/bauble.studio/blob/master/src/helpers.janet
 
 # Or try studying these examples:

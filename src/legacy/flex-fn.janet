@@ -1,7 +1,7 @@
-(import ./glslisp/src/index :as glslisp)
+(import ../glslisp/src/index :as glslisp)
 (import ./light)
 
-(import ./glslisp/src/type :as type :export true)
+(import ../glslisp/src/type :as type :export true)
 (def type/keyword :keyword)
 (def type/3d :3d-sdf)
 (def type/fn :fn)
