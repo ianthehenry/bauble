@@ -14,4 +14,4 @@
 (test (expand '(a + b | - 1)) [- [+ a b] 1])
 (test (expand '(foo.x + foo.y * foo.z)) [* [+ [. foo x] [. foo y]] [. foo z]])
 (test (expand '(a + b | - 1 _)) [- 1 [+ a b]])
-(test (expand '(a + b | - 1 2 + _)) [- 1 2 + [+ a b]])
+(test (expand '(a + b | - 1 2 + _)) [+ [- 1 2] [+ a b]])

@@ -10,12 +10,11 @@
 (defn expand [ast]
   (prewalk (fn [ast]
     (when (ptuple? ast)
-      (def subject-length (find-index op-node? ast 0))
-      (unless (and subject-length (> subject-length 0)) (break ast))
+      (def subject-length (find-index op-node? ast 1))
+      (unless subject-length (break ast))
 
       (var subject
         (case subject-length
-          0 (error "form cannot begin with a pipe")
           1 (in ast 0)
           (keep-syntax! ast (tuple/slice ast 0 subject-length))))
 
@@ -36,27 +35,29 @@
 
 (test (expand '(a + b)) [+ a b])
 (test (expand '(a - 1)) [- a 1])
+(test (expand '(+ a b)) [+ a b])
+(test (expand '(+ a b + c)) [+ [+ a b] c])
 
 (deftest "expand preserves sourcemaps"
   (def form '(a + b))
 
   (test-stdout (prewalk (fn [ast] (when (tuple? ast) (pp (tuple/sourcemap ast))) ast) form) `
-    (41 14)
+    (42 14)
   `
     [a + b])
   (test-stdout (prewalk (fn [ast] (when (tuple? ast) (pp (tuple/sourcemap ast))) ast) (expand form)) `
-    (41 14)
+    (42 14)
   `
     [+ a b])
 
   (def form '(a b + c d))
 
   (test-stdout (prewalk (fn [ast] (when (tuple? ast) (pp (tuple/sourcemap ast))) ast) form) `
-    (52 14)
+    (53 14)
   `
     [a b + c d])
   (test-stdout (prewalk (fn [ast] (when (tuple? ast) (pp (tuple/sourcemap ast))) ast) (expand form)) `
-    (52 14)
-    (52 14)
+    (53 14)
+    (53 14)
   `
     [+ [a b] c d]))
