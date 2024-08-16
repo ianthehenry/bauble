@@ -80,6 +80,7 @@
     ['in expr index] [expr/in (expr/of-ast expr) (expr/of-ast index)]
     ['do & statements] [do-expr (statement/of-asts statements)]
     ['with bindings & body] [with-expr (statement/of-ast ast)]
+    ['unquote expr] expr
     [(and op (or '++ '-- '_++ '_--)) expr] [expr/crement ['quote op] (expr/of-ast expr)]
     # TODO
     # ['if cond then else]
@@ -107,6 +108,7 @@
     [(or 'def 'var) &] (errorf "illegal form %q" ast)
     ['set dest value] [statement/assign (expr/of-ast dest) (expr/of-ast value)]
     ['return value] [statement/return (expr/of-ast value)]
+    ['unquote expr] expr
     ['break] [statement/break]
     ['continue] [statement/continue]
     [(and op (or

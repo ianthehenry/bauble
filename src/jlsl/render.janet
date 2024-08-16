@@ -1201,3 +1201,15 @@
       (return []))
     "vec needs at least 1 arguments but you gave it 0")
   )
+
+(deftest "unquote"
+  (test-function
+    (jlsl/fn :float "foo" []
+      (return ,(coerce-expr [1 2 3]))
+      ,(statement/return (coerce-expr [1 2 3]))
+      ) `
+    float foo() {
+      return vec3(1.0, 2.0, 3.0);
+      return vec3(1.0, 2.0, 3.0);
+    }
+  `))
