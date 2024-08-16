@@ -1,5 +1,5 @@
 (use judge)
-(use ./util)
+(use ../util)
 
 (defn- op-node? [ast] (case ast
   '+ true

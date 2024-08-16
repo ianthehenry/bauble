@@ -1,5 +1,5 @@
 (use judge)
-(use ./util)
+(use ../util)
 
 (def- pipe (gensym))
 

@@ -1,14 +1,5 @@
 (use judge)
-
-(defn- string/find-last [str c]
-  (var i (dec (length str)))
-  (var result nil)
-  (while (>= i 0)
-    (when (= (in str i) c)
-      (set result i)
-      (break))
-    (-- i))
-  result)
+(use ../util)
 
 (def expand (partial prewalk (fn [ast]
   (when (and (symbol? ast))
