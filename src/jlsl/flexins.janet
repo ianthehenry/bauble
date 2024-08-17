@@ -13,12 +13,17 @@
 # however the janet versions are not overloaded, such that
 # e.g. (sin [1 2 3]) does not work
 
+(defn- simple-expr? [arg]
+  (or (expr? arg) (variable? arg)))
+
 (defn- expr-args? [args]
-  # TODO: this isn't really right. Consider
-  # (+ 1 [1 2 p.x]). The tuple isn't an expression,
-  # but it contains one. Similarly variables
-  # aren't expressions, but they could be.
-  (some expr? args))
+  (some |(or (simple-expr? $) (and (indexed? $) (some simple-expr? $))) args))
+
+(test (expr-args? [1 2 3]) nil)
+(test (expr-args? [[1 2 3]]) nil)
+(test (expr-args? [[[1 2 3]]]) nil)
+(test (expr-args? [[1 (expr/dot (variable/new "foo" type/float) 'x) 3]]) true)
+(test (expr-args? [[1 (variable/new "foo" type/float) 3]]) true)
 
 (defmacro- defflex [sym &opt alt]
   (default alt sym)
