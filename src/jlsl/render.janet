@@ -1238,3 +1238,45 @@
       return alias();
     }
   `))
+
+(deftest "named with expressions"
+  (test-function
+    (jlsl/fn :float "foo" []
+      (var x 10)
+      (return (with [x 10]
+        (var x 0)
+        (+ x 1)))
+      (return (with "alias" [x 10]
+        (var x 0)
+        (+ x 1)))) `
+    float with_inner() {
+      float x = 0.0;
+      return x + 1.0;
+    }
+    
+    float with_outer() {
+      {
+        float x = 10.0;
+        return with_inner();
+      }
+    }
+    
+    float alias_inner() {
+      float x = 0.0;
+      return x + 1.0;
+    }
+    
+    float alias_outer() {
+      {
+        float x = 10.0;
+        return alias_inner();
+      }
+    }
+    
+    float foo() {
+      float x = 10.0;
+      return with_outer();
+      return alias_outer();
+    }
+  `))
+

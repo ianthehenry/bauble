@@ -49,21 +49,21 @@
   (check-do-statements statements false false)
   (iife name (expr/type last-expr) [;statements (statement/return last-expr)]))
 
-(defn- with-expr [statement]
-  (statement/match statement
-    (with bindings statements) (do
-      (check-do-statements statements false false)
-      (assert (> (length statements) 0) "empty with expression")
-      (statement/match (last statements)
-        (expr last-expr)
-          (let [return-type (expr/type last-expr)]
-            (iife "with-outer" return-type [
-              (statement/with bindings [
-                (statement/return (iife "with-inner" return-type [;(drop -1 statements) (statement/return last-expr)]))
-                ])
-              ]))
-        (error "last statement in a with expression should be an expression")))
-    (error "BUG")))
+(defn- with-expr [bindings statements last-expr name]
+  (default name "with")
+  (check-do-statements statements false false)
+  (let [return-type (expr/type last-expr)]
+    (iife (string name "-outer") return-type [
+      (statement/with bindings [
+        (statement/return (iife (string name "-inner") return-type [;statements (statement/return last-expr)]))
+        ])
+      ])))
+
+(var expr/of-ast nil)
+
+(defn bindings-of-ast [ast]
+  [tuple ;(seq [[variable expr] :in (partition 2 ast)]
+    [tuple variable (expr/of-ast expr)])])
 
 (varfn expr/of-ast [ast]
   (pat/match ast
@@ -74,15 +74,19 @@
     |btuple? [call ~',builtins/vec (map expr/of-ast ast)]
     ['. expr field] [expr/dot (expr/of-ast expr) ['quote field]]
     ['in expr index] [expr/in (expr/of-ast expr) (expr/of-ast index)]
-    ['do & statements] (do
-      (def [statements name]
-        (if (string? (first statements))
-          [(slice statements 1)
-           (first statements)]
-          [statements nil]))
-      (assert (> (length statements) 0) "do expression cannot be empty")
-      [do-expr (statement/of-asts (drop -1 statements)) (expr/of-ast (last statements)) name])
-    ['with bindings & body] [with-expr (statement/of-ast ast)]
+    ['do & body] (do
+      (def [body name] (if (string? (first body))
+        [(slice body 1) (first body)]
+        [body nil]))
+      (assert (> (length body) 0) "do expression cannot be empty")
+      [do-expr (statement/of-asts (drop -1 body)) (expr/of-ast (last body)) name])
+    ['with bindings & body] (do
+      (def [name bindings body]
+        (if (string? bindings)
+          [bindings (first body) (slice body 1)]
+          [nil bindings body]))
+      (assert (> (length body) 0) "with expression cannot be empty")
+      [with-expr (bindings-of-ast bindings) (statement/of-asts (drop -1 body)) (expr/of-ast (last body)) name])
     ['unquote expr] expr
     [(and op (or '++ '-- '_++ '_--)) expr] [expr/crement ['quote op] (expr/of-ast expr)]
     # TODO
@@ -120,10 +124,7 @@
       'bxor= 'band= 'bor=)) dest expr]
       [statement/update ~',op (expr/of-ast dest) (expr/of-ast expr)]
     ['do & body] [statement/do (statement/of-asts body)]
-    ['with bindings & body] [statement/with
-      (tuple/brackets ;(seq [[variable expr] :in (partition 2 bindings)]
-        (tuple/brackets variable (expr/of-ast expr))))
-      (statement/of-asts body)]
+    ['with bindings & body] [statement/with (bindings-of-ast bindings) (statement/of-asts body)]
     ['if cond then & else] (do
       (assert (<= (length else) 1) "too many arguments to if")
       (def else (get else 0))
