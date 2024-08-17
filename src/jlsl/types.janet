@@ -19,6 +19,7 @@
     (call function _) (function/return-type function)
     (dot expr field) (type/field-type (expr/type expr) field)
     (in expr _) (type/element-type (expr/type expr))
+    (if cond then else) (expr/type then)
     (crement _ expr) (expr/type expr)))
 
 (defmodule param
@@ -76,10 +77,11 @@
     (expr/match expr
       (literal _ _) nil
       (identifier variable) variable
-      (call function args) nil
+      (call _ _) nil
       (dot expr _) (root-identifier expr)
       (in expr index) (root-identifier expr)
-      (crement _ expr) nil))
+      (if _ _ _) nil
+      (crement _ _) nil))
 
   # returns free variables and all referenced functions
   (defn- scan [name body params]
@@ -127,6 +129,7 @@
           (see-expr expr :read)
           (see-expr expr rw))
         (in expr index) (do (see-expr expr :read) (see-expr expr rw) (see-expr index :read))
+        (if cond then else) (do (see-expr cond :read) (see-expr then :read) (see-expr else :read))
         (crement _ expr) (do (see-expr expr :read) (see-expr expr :write))
         ))
 

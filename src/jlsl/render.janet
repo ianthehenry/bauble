@@ -70,6 +70,7 @@
         ;(map |(render/expr (expr/identifier (param/var $))) (function/implicit-params function))]
     (dot expr field) ['. (render/expr expr) field]
     (in expr index) ['in (render/expr expr) (render/expr index)]
+    (if cond then else) ['if (render/expr cond) (render/expr then) (render/expr else)]
     (crement op expr) [op (render/expr expr)]))
 
 (defn inherit-scope [] (bimap/new (dyn *glsl-identifier-map*)))
@@ -1280,3 +1281,55 @@
     }
   `))
 
+(deftest "if expressions"
+  (test-function
+    (jlsl/fn :float "foo" []
+      (var x 1)
+      (return (if (< x 0) x 0))
+      (return (do (if (< x 0) x 0)))
+      (return (do (var x 10) (if (< x 0) x 0)))
+      (return (with [x 10] (if (< x 0) x 0)))
+      (return (with [x 10] (var x 10) (if (< x 0) x 0)))
+      ) `
+    float do_() {
+      float x = 10.0;
+      return (x < 0.0) ? x : 0.0;
+    }
+    
+    float with_outer() {
+      {
+        float x = 10.0;
+        return (x < 0.0) ? x : 0.0;
+      }
+    }
+    
+    float with_inner() {
+      float x = 10.0;
+      return (x < 0.0) ? x : 0.0;
+    }
+    
+    float with_outer1() {
+      {
+        float x = 10.0;
+        return with_inner();
+      }
+    }
+    
+    float foo() {
+      float x = 1.0;
+      return (x < 0.0) ? x : 0.0;
+      return (x < 0.0) ? x : 0.0;
+      return do_();
+      return with_outer();
+      return with_outer1();
+    }
+  `))
+
+
+(deftest "if expression type mismatch"
+  (test-error
+    (jlsl/fn :float "foo" []
+      (var x 1)
+      (return (if (< x 0) x [1 2 3]))
+      )
+    "type error: if expressions must match, got :float and :vec3"))

@@ -59,6 +59,11 @@
         ])
       ])))
 
+(defn- if-expr [cond then else]
+  (assertf (= (expr/type then) (expr/type else))
+    "type error: if expressions must match, got %q and %q" (type/to-glsl (expr/type then)) (type/to-glsl (expr/type else)))
+  (expr/if cond then else))
+
 (var expr/of-ast nil)
 
 (defn bindings-of-ast [ast]
@@ -89,8 +94,7 @@
       [with-expr (bindings-of-ast bindings) (statement/of-asts (drop -1 body)) (expr/of-ast (last body)) name])
     ['unquote expr] expr
     [(and op (or '++ '-- '_++ '_--)) expr] [expr/crement ['quote op] (expr/of-ast expr)]
-    # TODO
-    # ['if cond then else]
+    ['if cond then else] [if-expr (expr/of-ast cond) (expr/of-ast then) (expr/of-ast else)]
     [f & args] [call f (map expr/of-ast args)]
     ))
 

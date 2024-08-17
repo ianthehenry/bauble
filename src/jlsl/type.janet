@@ -51,7 +51,8 @@
   (call function args)
   (crement op value)
   (dot expr field)
-  (in expr index))
+  (in expr index)
+  (if cond then else))
 
 (defadt statement
   (declaration const? variable expr)
