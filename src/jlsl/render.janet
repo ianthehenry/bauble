@@ -35,11 +35,12 @@
     (++ i))
   (bimap/put identifier-map variable identifier))
 
+# TODO: it's illegal to define a GLSL function with the same name
+# as a builtin function. we should detect that and generate something
+# else. In practice, though, this mostly matters for not generating
+# functions called do()
 (defn- collides-with-builtin? [name]
-  # TODO: it's illegal to define a GLSL function with the same name
-  # as a builtin function. we should detect that and generate something
-  # else
-  false)
+  (has-key? '{"do" true} name))
 
 (defn- allocate-glsl-function-name [function] # and *glsl-function-name-map*
   (def function-name-map (dyn *glsl-function-name-map*))
@@ -856,14 +857,14 @@
   (test-function
     (jlsl/defn :float main []
       (return (do (var x 10) (+= x 5) x))) `
-    float do() {
+    float do_() {
       float x = 10.0;
       x += 5.0;
       return x;
     }
     
     float main() {
-      return do();
+      return do_();
     }
   `)
 
@@ -871,14 +872,14 @@
     (jlsl/defn :float main []
       (var x 10)
       (return (do (+= x 5) x))) `
-    float do(inout float x) {
+    float do_(inout float x) {
       x += 5.0;
       return x;
     }
     
     float main() {
       float x = 10.0;
-      return do(x);
+      return do_(x);
     }
   `))
 
@@ -977,7 +978,7 @@
   (test-function
     (jlsl/defn :float main []
       (return (do (case 1 2 (break)) 1))) `
-    float do() {
+    float do_() {
       switch (2.0) {
       default: break;
       }
@@ -985,7 +986,7 @@
     }
     
     float main() {
-      return do();
+      return do_();
     }
   `)
   (test-error
@@ -995,7 +996,7 @@
   (test-function
     (jlsl/defn :float main []
       (return (do (while true (break)) 1))) `
-    float do() {
+    float do_() {
       while (true) {
         break;
       }
@@ -1003,13 +1004,13 @@
     }
     
     float main() {
-      return do();
+      return do_();
     }
   `)
   (test-function
     (jlsl/defn :float main []
       (return (do (do-while true (continue)) 1))) `
-    float do() {
+    float do_() {
       do {
         continue;
       } while (true);
@@ -1017,7 +1018,7 @@
     }
     
     float main() {
-      return do();
+      return do_();
     }
   `)
   )
@@ -1027,14 +1028,14 @@
     (jlsl/defn :float main []
       (var x 10)
       (return (do (+= x 1) x))) `
-    float do(inout float x) {
+    float do_(inout float x) {
       x += 1.0;
       return x;
     }
     
     float main() {
       float x = 10.0;
-      return do(x);
+      return do_(x);
     }
   `))
 
@@ -1211,5 +1212,30 @@
     float foo() {
       return vec3(1.0, 2.0, 3.0);
       return vec3(1.0, 2.0, 3.0);
+    }
+  `))
+
+(deftest "named do expressions"
+  (test-function
+    (jlsl/fn :float "foo" []
+      (return (do
+        (var x 0)
+        (+ x 1)))
+      (return (do "alias"
+        (var x 0)
+        (+ x 1)))) `
+    float do_() {
+      float x = 0.0;
+      return x + 1.0;
+    }
+    
+    float alias() {
+      float x = 0.0;
+      return x + 1.0;
+    }
+    
+    float foo() {
+      return do_();
+      return alias();
     }
   `))
