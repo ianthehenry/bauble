@@ -112,14 +112,17 @@
                     :unless (string/has-prefix? "mat" key)
                     :unless (string/has-prefix? "vec" key)]
     (if (or (has-key? (curenv) key)) key [key])))
-    @[[clamp]
+    @[[bool]
+      [clamp]
       [cross]
       [distance]
       [dot]
+      [double]
       [equal]
       [faceforward]
       [fma]
       [fract]
+      [int]
       [inversesqrt]
       [mix]
       [normalize]
@@ -130,6 +133,7 @@
       [sign]
       [smoothstep]
       [step]
+      [uint]
       [xor]]))
 
 (test (sin 0) 0)

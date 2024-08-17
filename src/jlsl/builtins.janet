@@ -78,6 +78,10 @@
     (float) (resolve-float-multiply arg-types)
     (resolve-generic -2 name arg-types)))
 
+(defn- typecast [return-type] (fn [name arg-types]
+  (check-arity name 1 arg-types)
+  (builtin name return-type arg-types)))
+
 (defmacro- defbuiltin [sym f &opt name]
   (default name (string sym))
   ~(def ,sym (,multifunction/new ,name (,partial ,f ,name))))
@@ -103,6 +107,11 @@
 (defbuiltin vec2 (partial resolve-vec-constructor 2))
 (defbuiltin vec3 (partial resolve-vec-constructor 3))
 (defbuiltin vec4 (partial resolve-vec-constructor 4))
+(defbuiltin float (typecast type/float))
+(defbuiltin int (typecast type/int))
+(defbuiltin uint (typecast type/uint))
+(defbuiltin bool (typecast type/bool))
+(defbuiltin double (typecast type/double))
 
 # this could be a lot more restrictive...
 (defbinop and -2)
@@ -210,6 +219,7 @@
 # TODO: maybe worth changing...
 (typecheck (sin [true false]) [:bvec2 -> :bvec2])
 
+(typecheck (float :1) [:int -> :float])
 (typecheck (vec3 1) [:float -> :vec3])
 (test-error (vec3 1 2) "vec3 expects 3 components, got 2")
 (typecheck (vec3 1 2 3) [:float :float :float -> :vec3])
