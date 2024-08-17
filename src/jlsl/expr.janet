@@ -44,13 +44,14 @@
       (check-do-statements body true true)
     (expr _) nil)))
 
-(defn- do-expr [statements]
+(defn- do-expr [statements &opt name]
+  (default name "do")
   (check-do-statements statements false false)
   (assert (> (length statements) 0) "empty do expression")
   (statement/match (last statements)
     (expr last-expr)
       (let [return-type (expr/type last-expr)]
-        (iife "do" return-type [;(drop -1 statements) (statement/return last-expr)]))
+        (iife name return-type [;(drop -1 statements) (statement/return last-expr)]))
     (error "last statement in a do expression should be an expression")))
 
 (defn- with-expr [statement]
@@ -78,7 +79,10 @@
     |btuple? [call ~',builtins/vec (map expr/of-ast ast)]
     ['. expr field] [expr/dot (expr/of-ast expr) ['quote field]]
     ['in expr index] [expr/in (expr/of-ast expr) (expr/of-ast index)]
-    ['do & statements] [do-expr (statement/of-asts statements)]
+    ['do & statements]
+      (if (string? (first statements))
+        [do-expr (statement/of-asts (slice statements 1)) (first statements)]
+        [do-expr (statement/of-asts statements)])
     ['with bindings & body] [with-expr (statement/of-ast ast)]
     ['unquote expr] expr
     [(and op (or '++ '-- '_++ '_--)) expr] [expr/crement ['quote op] (expr/of-ast expr)]
