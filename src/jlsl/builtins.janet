@@ -162,7 +162,7 @@
 (defbuiltin ceil (partial resolve-generic 1))
 (defbuiltin trunc (partial resolve-generic 1))
 (defbuiltin round (partial resolve-generic 1))
-(defbuiltin roundEven (partial resolve-generic 1))
+(defbuiltin round-even (partial resolve-generic 1) "roundEven")
 (defbuiltin fract (partial resolve-generic 1))
 (defbuiltin mod (partial resolve-generic 2))
 # TODO: modf? maybe?

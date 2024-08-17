@@ -121,7 +121,7 @@
       [not-equal]
       [reflect]
       [refract]
-      [roundEven]
+      [round-even]
       [sign]
       [smoothstep]
       [step]
