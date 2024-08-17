@@ -1,6 +1,6 @@
 (import jaylib)
 (use sh)
-(use ../cli/helpers)
+(use ../src/cli/helpers)
 
 (init-jaylib)
 
@@ -119,6 +119,9 @@
   "twist" `(box 80 | twist :y 0.010 | slow 0.5)`
   "bend" `(box [80 10 80] | bend :x :y 0.010 | slow 0.5)`
   "swirl" `(box 80 | swirl :y 0.040 | slow 0.5)`
+
+  "!default gradient" `(circle 100)`
+  "!circle with color field" `(circle 100 | color [1 1 0.5])`
 })
 
 (each filename (os/dir "./cases")
@@ -148,7 +151,7 @@ body {
 img {
   image-rendering: pixelated;
 }
-div.test-case {
+.test-case {
   display: grid;
   grid-template-columns: 1fr 1fr auto;
 }
@@ -158,6 +161,9 @@ div.test-case {
 }
 .test-case > h1, div.test-case > .stats {
   grid-column: span 3;
+}
+.shader-source, .error {
+  grid-column: 2;
 }
 </style>`)
 (print `</head>`)
@@ -171,21 +177,17 @@ div.test-case {
 (def current-refs @{})
 (def previous-refs (os/dir "refs"))
 
-(var failing-tests 0)
-(each [name program] (sort (pairs test-cases) (fn [[name1 _] [name2 _]] (< name1 name2)))
-  (def [[camera-origin camera-orientation] program]
-    (if (tuple? program) program [isometric program]))
+(import ../src/lib :as bauble)
+(defn compile-shader-new [source]
+  (let [env (bauble/evaluator/evaluate source)
+        [animated? shader-source] (bauble/renderer/render env "330")]
+    shader-source))
 
-  (def program (string/trim program))
-
-  (print `<div class="test-case">`)
-  (printf `<h1>%s</h1>` (html-escape name))
-  (printf `<pre>%s</pre>` (html-escape program))
-
+(defn render [name program camera-origin camera-orientation compile-function &opt suffix]
   (var success true)
   (try (do
     (def before-compile (os/time))
-    (def shader-source (compile-shader program))
+    (def shader-source (compile-function program))
     (def after-compile-before-render (os/time))
     (def image (render-image shader-source
       :resolution physical-resolution
@@ -199,7 +201,7 @@ div.test-case {
     (def hash (string/slice ($<_ shasum -ba 256 snapshots/tmp.png) 0 32))
     (def after-hash (os/time))
     (def final-file-name (string "snapshots/" hash ".png"))
-    (def ref-name (string (string/replace-all " " "-" name) ".png"))
+    (def ref-name (string (string/replace-all " " "-" name) suffix ".png"))
     (put current-refs ref-name true)
     (def ref-path (string "refs/" ref-name))
     (if (os/stat final-file-name)
@@ -212,8 +214,9 @@ div.test-case {
         (set success false)))
     ($ ln -fs (string "../" final-file-name) ,ref-path)
 
-    (printf `<pre>%s</pre>` (html-escape shader-source))
+    (printf `<pre class="shader-source">%s</pre>` (html-escape shader-source))
     (printf `<img src="%s" width="%d" height="%d" />` ref-path (display-resolution 0) (display-resolution 1))
+
     # (os/time) returns an integer number of seconds, so...
     # (printf `<div class="stats">%.3f compile, %.3f render, %.3f export, %.3f hash</div>`
     #   (- after-compile-before-render before-compile)
@@ -228,14 +231,26 @@ div.test-case {
       (def buf @"")
       (with-dyns [*err* buf]
         (debug/stacktrace fib e (string name ":")))
-      (printf `<pre>%s</pre>` (html-escape buf))
+      (printf `<pre class="error">%s</pre>` (html-escape buf))))
+  success)
 
-      ))
+(var failing-tests 0)
+(each [name program] (sort (pairs test-cases) (fn [[name1 _] [name2 _]] (< name1 name2)))
+  (def [[camera-origin camera-orientation] program]
+    (if (tuple? program) program [isometric program]))
 
-  (unless success (++ failing-tests))
+  (def program (string/trim program))
+
+  (print `<div class="test-case">`)
+  (printf `<h1>%s</h1>` (html-escape name))
+  (printf `<pre>%s</pre>` (html-escape program))
+  (def success (render name program camera-origin camera-orientation compile-shader))
+  (def success2
+    (if (string/has-prefix? "!" name)
+      (render name program camera-origin camera-orientation compile-shader-new "-new")
+      true))
+  (unless (and success success2) (++ failing-tests))
   (print `</div>`)
-
-
   )
 
 (print `</body>`)
