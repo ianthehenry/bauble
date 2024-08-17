@@ -245,8 +245,7 @@
      ;(render/function main root-variables)
     ]))
 
-(use ./builtins)
-(use ./flexins)
+(use ./prelude)
 
 (test-macro (program/new
   (uniform :float t)
