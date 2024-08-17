@@ -965,15 +965,15 @@
   (test-error
     (jlsl/defn :float main []
       (return (do (var x 10) (return 1) (+= x 5) x)))
-    "cannot return out of a do expression")
+    "cannot return in an expression context")
   (test-error
     (jlsl/defn :float main []
       (return (do (break) 1)))
-    "cannot break out of a do expression")
+    "cannot break in an expression context")
   (test-error
     (jlsl/defn :float main []
       (return (do (continue) 1)))
-    "cannot continue out of a do expression")
+    "cannot continue in an expression context")
   (test-function
     (jlsl/defn :float main []
       (return (do (case 1 2 (break)) 1))) `
@@ -991,7 +991,7 @@
   (test-error
     (jlsl/defn :float main []
       (return (do (case 1 2 (continue)) 1)))
-    "cannot continue out of a do expression")
+    "cannot continue in an expression context")
   (test-function
     (jlsl/defn :float main []
       (return (do (while true (break)) 1))) `

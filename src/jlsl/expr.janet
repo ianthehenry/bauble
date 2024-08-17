@@ -25,10 +25,10 @@
     (declaration _ _ _) nil
     (assign _ _) nil
     (update _ _ _) nil
-    (break) (assert can-break? "cannot break out of a do expression")
-    (continue) (assert can-continue? "cannot continue out of a do expression")
+    (break) (assert can-break? "cannot break in an expression context")
+    (continue) (assert can-continue? "cannot continue in an expression context")
     (discard) nil
-    (return _) (error "cannot return out of a do expression")
+    (return _) (error "cannot return in an expression context")
     (do body) (check-do-statements body can-break? can-continue?)
     (with _ body) (check-do-statements body can-break? can-continue?)
     (if _ then else) (check-do-statements [then ;(if else [else] [])] can-break? can-continue?)
