@@ -40,7 +40,9 @@
 # else. In practice, though, this mostly matters for not generating
 # functions called do()
 (defn- collides-with-builtin? [name]
-  (has-key? '{"do" true} name))
+  (has-key?
+    '{"do" true
+      "union" true} name))
 
 (defn- allocate-glsl-function-name [function] # and *glsl-function-name-map*
   (def function-name-map (dyn *glsl-function-name-map*))

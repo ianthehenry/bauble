@@ -120,6 +120,7 @@
   "bend" `(box [80 10 80] | bend :x :y 0.010 | slow 0.5)`
   "swirl" `(box 80 | swirl :y 0.040 | slow 0.5)`
 
+  "!union" `(union (circle 75 | move [-30 0]) (rect 60 | move [30 0]))`
   "!default gradient" `(circle 100)`
   "!move shape" `(circle 50 | move [50 0])`
   # this doesn't really demonstrate anything...

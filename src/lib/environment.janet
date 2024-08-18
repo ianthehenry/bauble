@@ -59,3 +59,19 @@
   "Behaves like `.` in GLSL, for accessing components of a vector or struct. Can be combined with swizzling."
   [expr field]
   [jlsl/expr/dot [jlsl/coerce-expr expr] ['quote field]])
+
+(defn union
+  "Join 'em up. Do it to it."
+  [& field-sets]
+  (def distances (seq [{:distance expr} :in field-sets :when expr] expr))
+  (def colors (seq [{:color expr} :in field-sets :when expr] expr))
+  (each d distances (assert (jlsl/expr? d)))
+  (field-set/distance-2d
+    (case (@length distances)
+      0 nil
+      1 (in distances 0)
+      (jlsl/do "union"
+        (var nearest ,(first distances))
+        ,;(seq [expr :in (drop 1 distances)]
+          (jlsl/statement (set nearest (min nearest ,expr))))
+        nearest))))

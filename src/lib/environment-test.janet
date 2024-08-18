@@ -108,6 +108,7 @@
     tanh @{}
     trunc @{}
     uint @{}
+    union @{:doc "(union & field-sets)\n\nJoin 'em up. Do it to it."}
     vec @{}
     vec2 @{}
     vec3 @{}
