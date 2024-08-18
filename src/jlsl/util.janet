@@ -14,7 +14,7 @@
   (put (curenv) (quote bar) (table/setproto @{:private false} (dyn (quote foo/bar)))))
 
 (defmacro assertf [x & args]
-  ~(assert ,x (string/format ,;args)))
+  ~(as-macro ,assert ,x (,string/format ,;args)))
 
 (defn get-unique [f ind on-error]
   (pat/match (distinct (map f ind))

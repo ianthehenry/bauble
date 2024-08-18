@@ -73,7 +73,7 @@
 
     (with-syms [$value]
       ~(let [,$value ,value]
-        (,assertf (as-macro ,and (,tuple? ,$value) (,= (,first ,$value) ',unique-type-tag)) "%q is not a %s" ,$value ',name)
+        (as-macro ,assertf (as-macro ,and (,tuple? ,$value) (,= (,first ,$value) ',unique-type-tag)) "%q is not a %s" ,$value ',name)
         (as-macro ,pat/match ,$value
           ,;pat-branches))))
 
@@ -142,6 +142,12 @@
     (ok x) (printf "ok %q" x)) `
   ok 123
 `)
+
+(test-error
+  (result/match 123
+    (error _) "oh no"
+    (ok x) (printf "ok %q" x))
+  "123 is not a result")
 
 (test-stdout
   (pat/match (result/ok 123)
