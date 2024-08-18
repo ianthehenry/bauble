@@ -56,31 +56,38 @@
           (with [q (- q (. step yx))] (nearest-distance)))
         ])))
 
-    (defn :void main []
-      (def gamma 2.2)
-
+    (defn :vec3 sample [:vec2 frag-coord]
       (var resolution (. viewport zw))
-
-      (var local-frag-coord (- (. gl_FragCoord xy) (. viewport xy)))
+      (var local-frag-coord (- frag-coord (. viewport xy)))
       (var relative-position (/ (- local-frag-coord (* resolution 0.5)) resolution))
-
       # TODO: 256 should vary by zoom amount
       (var local-coord (* relative-position 256))
 
-      # TODO: with expression?
-      (var color [0 0 0])
       (with [q local-coord
              Q q
              d (nearest-distance)
              gradient (calculate-gradient)]
-        (set color ,(if-let [color-expression (subject :color)]
+        (return ,(if-let [color-expression (subject :color)]
           # TODO: if expressions
           (jlsl/do "coloring"
-            (var result [0 0 0])
             (if (< d 0)
-              (set result ,color-expression))
-            result)
-          default-2d-color-expression)))
+              ,color-expression
+              [0 0 0]))
+          default-2d-color-expression))))
+
+    (defn :void main []
+      (def gamma 2.2)
+      (var color [0 0 0])
+      (def aa-samples :3)
+      (def aa-sample-width (/ (float (+ :1 aa-samples))))
+      (def pixel-origin [0.5 0.5])
+
+      (for (var y :1) (<= y aa-samples) (++ y)
+        (for (var x :1) (<= x aa-samples) (++ x)
+          (var sample-offset (- (* aa-sample-width [(float x) (float y)]) pixel-origin))
+          (+= color (sample (+ (. gl_FragCoord xy) sample-offset)))
+          ))
+      (/= color (float (* aa-samples aa-samples)))
 
       (set frag-color (vec4 (pow color (vec3 (/ gamma))) 1)))
     ))
@@ -175,20 +182,33 @@
     return mix(pow(vec3(gradient_color, inside), vec3(mix(1.0, 2.0, isoline))), vec3(1.0), boundary_line);
   }
   
-  void main() {
-    const float gamma = 2.2;
+  vec3 sample(vec2 frag_coord, vec4 viewport) {
     vec2 resolution = viewport.zw;
-    vec2 local_frag_coord = gl_FragCoord.xy - viewport.xy;
+    vec2 local_frag_coord = frag_coord - viewport.xy;
     vec2 relative_position = (local_frag_coord - (resolution * 0.5)) / resolution;
     vec2 local_coord = relative_position * 256.0;
-    vec3 color = vec3(0.0, 0.0, 0.0);
     {
       vec2 q = local_coord;
       vec2 Q = q;
       float d = nearest_distance(q);
       vec2 gradient = calculate_gradient(q);
-      color = default_2d_color(gradient, d);
+      return default_2d_color(gradient, d);
     }
+  }
+  
+  void main() {
+    const float gamma = 2.2;
+    vec3 color = vec3(0.0, 0.0, 0.0);
+    const int aa_samples = 3;
+    const float aa_sample_width = 1.0 / float(1 + aa_samples);
+    const vec2 pixel_origin = vec2(0.5, 0.5);
+    for (int y = 1; y <= aa_samples; ++y) {
+      for (int x = 1; x <= aa_samples; ++x) {
+        vec2 sample_offset = (aa_sample_width * vec2(float(x), float(y))) - pixel_origin;
+        color += sample(gl_FragCoord.xy + sample_offset, viewport);
+      }
+    }
+    color /= float(aa_samples * aa_samples);
     frag_color = vec4(pow(color, vec3(1.0 / gamma)), 1.0);
   }
   

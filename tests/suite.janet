@@ -220,7 +220,7 @@ img {
     ($ ln -fs (string "../" final-file-name) ,ref-path)
 
     (printf `<pre class="shader-source">%s</pre>` (html-escape shader-source))
-    (printf `<img src="%s" width="%d" height="%d" />` ref-path (display-resolution 0) (display-resolution 1))
+    (printf `<img src="%s" width="%d" height="%d" />` final-file-name (display-resolution 0) (display-resolution 1))
 
     # (os/time) returns an integer number of seconds, so...
     # (printf `<div class="stats">%.3f compile, %.3f render, %.3f export, %.3f hash</div>`
@@ -270,6 +270,3 @@ img {
   (os/rm (string "refs/" ref-name)))
 
 (spit "summary.html" out-buffer)
-
-# (when (> failing-tests 0)
-#   ($ open ./summary.html))
