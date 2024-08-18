@@ -63,6 +63,7 @@
   (discard)
   (return expr)
   (do body)
+  (upscope body)
   (with bindings body)
   (if cond then else)
   (case value cases)

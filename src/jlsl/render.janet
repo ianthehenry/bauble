@@ -98,6 +98,7 @@
     (continue) ['continue]
     (return expr) ['return (render/expr expr)]
     (do body) (subscope ['do ;(map render/statement body)])
+    (upscope body) ['upscope ;(map render/statement body)]
     (with bindings body) (subscope ['do
       ;(seq [[variable expr] :in bindings]
         (render/statement (statement/declaration false variable expr)))
@@ -1325,7 +1326,6 @@
     }
   `))
 
-
 (deftest "if expression type mismatch"
   (test-error
     (jlsl/fn :float "foo" []
@@ -1333,3 +1333,36 @@
       (return (if (< x 0) x [1 2 3]))
       )
     "type error: if expressions must match, got :float and :vec3"))
+
+(deftest "statement upscope"
+  (test-function
+    (jlsl/fn :float "foo" []
+      (upscope (var x 1))
+      (upscope
+        (+= x 1)
+        (+= x 2))
+      (return x)) `
+    float foo() {
+      float x = 1.0;
+      x += 1.0;
+      x += 2.0;
+      return x;
+    }
+  `))
+
+(defmacro jlsl/statement [& ast] (statement/of-ast ['upscope ;ast]))
+
+(deftest "dynamically constructed statements"
+  (test-function
+    (jlsl/fn :float "foo" []
+      (var x 0)
+      ,;(seq [i :range [0 3]] (jlsl/statement (+= x ,(coerce-expr i))))
+      (return x)) `
+    float foo() {
+      float x = 0.0;
+      x += 0.0;
+      x += 1.0;
+      x += 2.0;
+      return x;
+    }
+  `))

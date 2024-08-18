@@ -30,6 +30,7 @@
     (discard) nil
     (return _) (error "cannot return in an expression context")
     (do body) (check-do-statements body can-break? can-continue?)
+    (upscope body) (check-do-statements body can-break? can-continue?)
     (with _ body) (check-do-statements body can-break? can-continue?)
     (if _ then else) (check-do-statements [then ;(if else [else] [])] can-break? can-continue?)
     (case _ cases) (do
@@ -129,6 +130,7 @@
     [(or 'def 'var) &] (errorf "illegal form %q" ast)
     ['set dest value] [statement/assign (expr/of-ast dest) (expr/of-ast value)]
     ['return value] [statement/return (expr/of-ast value)]
+    ['unquote ['splice expr]] [statement/upscope expr]
     ['unquote expr] expr
     ['break] [statement/break]
     ['continue] [statement/continue]
@@ -138,6 +140,8 @@
       'bxor= 'band= 'bor=)) dest expr]
       [statement/update ~',op (expr/of-ast dest) (expr/of-ast expr)]
     ['do & body] [statement/do (statement/of-asts body)]
+    ['upscope single] (statement/of-ast single)
+    ['upscope & body] [statement/upscope (statement/of-asts body)]
     ['with bindings & body] [statement/with (bindings-of-ast bindings) (statement/of-asts body)]
     ['if cond then & else] (do
       (assert (<= (length else) 1) "too many arguments to if")

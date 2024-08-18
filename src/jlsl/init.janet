@@ -7,3 +7,4 @@
 
 (defmacro do [& ast] (expr/of-ast ['do ;ast]))
 (defmacro with [& ast] (expr/of-ast ['with ;ast]))
+(defmacro statement [& ast] (statement/of-ast ['upscope ;ast]))

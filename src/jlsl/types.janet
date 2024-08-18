@@ -166,6 +166,7 @@
         (discard) nil
         (return expr) (see-expr expr :read)
         (do body) (block body)
+        (upscope body) (each statement body (visit statement))
         (with bindings body)
           (block [
             ;(seq [[variable expr] :in bindings]
