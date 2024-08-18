@@ -1,6 +1,7 @@
 (use judge)
 (use ./util)
 (import ./syntax)
+(import ./fields)
 
 (def bauble-env (require "./environment"))
 
@@ -23,8 +24,7 @@
     (bad-compile msg nil where line col))
   [(string/slice buf 0 -2) macro-fiber])
 
-# TODO: this should only return true if given a fieldset
-(defn can-be-subject? [x] true)
+(defn can-be-subject? [x] (fields/is? x))
 
 # this returns the resulting environment
 (defn evaluate [script]
@@ -32,6 +32,7 @@
 
   (loop [[sym entry] :pairs bauble-env
          :when (and (symbol? sym) (table? entry))
+         :unless (entry :private)
          :let [ref (in entry :ref)]
          :when (and (array? ref) (= (length ref) 1))]
     (put env sym @{:doc (in entry :doc) :ref @[(in ref 0)]}))
@@ -69,24 +70,35 @@
 
 # now we want to invoke a function that's like "given this subject, give me a JLSL program to compile"
 
-(defn run [script]
+(import ../jlsl)
+(defn- make-presentable [value]
+  (if (fields/is? value)
+    (struct ;(kvs (fields/map value jlsl/expr/to-sexp))
+      :type (jlsl/show-type (fields/type value)))
+    value))
+
+(defn- run [script]
   (tabseq [[sym entry] :pairs (evaluate script) :when (symbol? sym)]
-    sym (or (in entry :value) (in (in entry :ref) 0))))
+    sym (make-presentable (or (in entry :value) (in (in entry :ref) 0)))))
 
 (deftest "subject defaults to the final result"
-  (test (run "(1 + 2)")
-    @{subject 3}))
+  (test (run "(circle 10)")
+    @{subject {:distance [- [length q] 10]
+               :tag <1>
+               :type :vec2}}))
 
 (deftest "if subject is set explicitly, the final result does not matter"
   (test (run `
     (set subject 1)
-    10
+    (circle 10)
     `)
     @{subject 1}))
 
 (deftest "view macro"
   (test (run `
-    (10 | view)
-    20
+    (circle 10 | view)
+    (circle 20)
     `)
-    @{subject 10}))
+    @{subject {:distance [- [length q] 10]
+               :tag <1>
+               :type :vec2}}))

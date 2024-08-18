@@ -12,10 +12,21 @@
 
 (import ../jlsl/type :as jlsl)
 
-(def fields @{
-  :type jlsl/type/vec3
-  :fields
-  :distance
-  :color
-  :normal
-  })
+(def- tag (gensym))
+
+(defn distance-2d [expr]
+  {:type jlsl/type/vec2
+   :tag tag
+   :distance expr})
+
+(defn type [t] (t :type))
+
+(defn- map-if [x f] (if x (f x)))
+
+(defn is? [x] (and (struct? x) (= (x :tag) tag)))
+
+(defn map [t f]
+  {:type (t :type)
+   :tag tag
+   :distance (map-if (t :distance) f)
+   :color (map-if (t :color) f)})

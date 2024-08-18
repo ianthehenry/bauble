@@ -98,6 +98,16 @@
     [f & args] [call f (map expr/of-ast args)]
     ))
 
+(defn expr/to-sexp [t]
+  (expr/match t
+    (literal _ value) value
+    (identifier variable) (symbol (variable/name variable))
+    (call function args) [(symbol (function/name function)) ;(map expr/to-sexp args)]
+    (dot expr field) ['. (expr/to-sexp expr) field]
+    (in expr index) ['in (expr/to-sexp expr) (expr/to-sexp index)]
+    (if cond then else) ['if (expr/to-sexp cond) (expr/to-sexp then) (expr/to-sexp else)]
+    (crement op expr) [op (expr/to-sexp expr)]))
+
 # takes a list of ASTs and returns code that you can evaluate
 # to return a list of statements
 (varfn statement/of-asts [asts]

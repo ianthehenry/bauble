@@ -41,3 +41,6 @@
 
 (defn ptuple? [x]
   (and (tuple? x) (= (tuple/type x) :parens)))
+
+(defmacro assertf [x & args]
+  ~(assert ,x (string/format ,;args)))

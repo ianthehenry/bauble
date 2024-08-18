@@ -21,6 +21,8 @@
     * @{}
     + @{}
     - @{}
+    . @{:doc "(. expr field)\n\nBehaves like `.` in GLSL, for accessing components of a vector or struct. Can be combined with swizzling."
+        :macro true}
     / @{}
     < @{}
     <= @{}
@@ -41,8 +43,9 @@
     asinh @{}
     atan @{}
     atanh @{}
+    bool @{}
     ceil @{}
-    circle @{:doc "(circle r)\n\n"}
+    circle @{:doc "(circle r)\n\nit a circle"}
     clamp @{}
     color @{:doc "(color fields color-expression)\n\n"}
     cos @{}
@@ -50,14 +53,17 @@
     cross @{}
     distance @{}
     dot @{}
+    double @{}
     equal @{}
     exp @{}
     exp2 @{}
     faceforward @{}
+    float @{}
     floor @{}
     fma @{}
     fract @{}
     in @{:doc "(in & args)\n\n"}
+    int @{}
     inversesqrt @{}
     length @{}
     log @{}
@@ -78,12 +84,14 @@
     min @{}
     mix @{}
     mod @{}
+    move @{:doc "(move fields offset)\n\ntranslate"}
     normalize @{}
     not @{}
     not-equal @{}
     not= @{}
     or @{}
     pow @{}
+    rect @{:doc "(rect size)\n\nit a box"}
     reflect @{}
     refract @{}
     round @{}
@@ -99,6 +107,7 @@
     tan @{}
     tanh @{}
     trunc @{}
+    uint @{}
     vec @{}
     vec2 @{}
     vec3 @{}

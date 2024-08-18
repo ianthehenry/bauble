@@ -2,31 +2,10 @@
 (use ./util)
 (import ../jlsl)
 (import ../glsl)
+(import ./fields)
 (use ./dynvars)
 
 (use ../jlsl/prelude)
-
-(defmacro jlsl/do [& ast]
-  (jlsl/expr/of-ast ['do ;ast]))
-
-(test-macro
-
-  (jlsl/do "default-2d-color"
-    (def line-every 10)
-    (def shadow-thickness 0.5)
-    (def boundary-thickness 2)
-
-    (var gradient-color (+ 0.5 (* 0.5 gradient)))
-
-    (var inside (step (sign d) 0))
-    (var isoline (smoothstep (- 1 shadow-thickness) 1 (/ (mod (abs d) line-every) line-every)))
-    (var boundary-line (- 1 (smoothstep 0 (* 0.5 boundary-thickness) (abs d))))
-
-    (mix
-      (pow (vec3 gradient-color inside) (vec3 (mix 1 2 isoline)))
-      (vec3 1)
-      boundary-line))
-  (@do-expr [(upscope (def <1> (@expr/literal (quote (<2> primitive (<3> float))) 10)) (def <4> (@expr/type <1>)) (def line-every (@new "line-every" <4>)) (@statement/declaration true line-every <1>)) (upscope (def <5> (@expr/literal (quote (<2> primitive (<3> float))) 0.5)) (def <6> (@expr/type <5>)) (def shadow-thickness (@new "shadow-thickness" <6>)) (@statement/declaration true shadow-thickness <5>)) (upscope (def <7> (@expr/literal (quote (<2> primitive (<3> float))) 2)) (def <8> (@expr/type <7>)) (def boundary-thickness (@new "boundary-thickness" <8>)) (@statement/declaration true boundary-thickness <7>)) (upscope (def <9> (@call + @[(@expr/literal (quote (<2> primitive (<3> float))) 0.5) (@call * @[(@expr/literal (quote (<2> primitive (<3> float))) 0.5) (@coerce-expr gradient)])])) (def <10> (@expr/type <9>)) (def gradient-color (@new "gradient-color" <10>)) (@statement/declaration false gradient-color <9>)) (upscope (def <11> (@call step @[(@call sign @[(@coerce-expr d)]) (@expr/literal (quote (<2> primitive (<3> float))) 0)])) (def <12> (@expr/type <11>)) (def inside (@new "inside" <12>)) (@statement/declaration false inside <11>)) (upscope (def <13> (@call smoothstep @[(@call - @[(@expr/literal (quote (<2> primitive (<3> float))) 1) (@coerce-expr shadow-thickness)]) (@expr/literal (quote (<2> primitive (<3> float))) 1) (@call / @[(@call mod @[(@call abs @[(@coerce-expr d)]) (@coerce-expr line-every)]) (@coerce-expr line-every)])])) (def <14> (@expr/type <13>)) (def isoline (@new "isoline" <14>)) (@statement/declaration false isoline <13>)) (upscope (def <15> (@call - @[(@expr/literal (quote (<2> primitive (<3> float))) 1) (@call smoothstep @[(@expr/literal (quote (<2> primitive (<3> float))) 0) (@call * @[(@expr/literal (quote (<2> primitive (<3> float))) 0.5) (@coerce-expr boundary-thickness)]) (@call abs @[(@coerce-expr d)])])])) (def <16> (@expr/type <15>)) (def boundary-line (@new "boundary-line" <16>)) (@statement/declaration false boundary-line <15>)) (@statement/expr (@call mix @[(@call pow @[(@call vec3 @[(@coerce-expr gradient-color) (@coerce-expr inside)]) (@call vec3 @[(@call mix @[(@expr/literal (quote (<2> primitive (<3> float))) 1) (@expr/literal (quote (<2> primitive (<3> float))) 2) (@coerce-expr isoline)])])]) (@call vec3 @[(@expr/literal (quote (<2> primitive (<3> float))) 1)]) (@coerce-expr boundary-line)]))] "default-2d-color"))
 
 (def default-2d-color-expression
   (jlsl/do "default-2d-color"
@@ -120,9 +99,10 @@
   # so our subject is either 2D or 3D
   (def glsl
     (jlsl/render/program
-      (if true #(two-d? subject)
-        (render-2d subject)
-        (render-3d subject))))
+      (case (fields/type subject)
+        jlsl/type/vec2 (render-2d subject)
+        jlsl/type/vec2 (render-3d subject)
+        (errorf "whoa whoa whoa, what the heck is %q" subject))))
 
   # TOOD: this is supposed to return whether or not t is a free variable,
   # which i don't really have a way to see...
@@ -148,7 +128,7 @@
   }
   
   float nearest_distance(vec2 q) {
-    return circle(30.0, q) || 0.0;
+    return circle(30.0, q);
   }
   
   float with_outer(vec2 q, vec2 step) {
