@@ -2,7 +2,7 @@
 (use ./util)
 (import ../jlsl)
 (import ../glsl)
-(import ./fields)
+(import ./field-set)
 (use ./dynvars)
 
 (use ../jlsl/prelude)
@@ -106,7 +106,7 @@
   # so our subject is either 2D or 3D
   (def glsl
     (jlsl/render/program
-      (case (fields/type subject)
+      (case (field-set/type subject)
         jlsl/type/vec2 (render-2d subject)
         jlsl/type/vec2 (render-3d subject)
         (errorf "whoa whoa whoa, what the heck is %q" subject))))

@@ -11,7 +11,7 @@
 (use ./dynvars)
 (use ./util)
 (import ./syntax)
-(import ./fields)
+(import ./field-set)
 (import ../jlsl/prelude :prefix "" :export true)
 
 (defn- typecheck [expr expected]
@@ -26,7 +26,7 @@
   ~(defn ,name ,docstring ,bindings
     ,;(seq [param :in bindings]
       ~(def ,param (,jlsl/coerce-expr ,param)))
-    (fields/distance-2d (jlsl/do
+    (field-set/distance-2d (jlsl/do
       ,;(syntax/expand body)))))
 
 (defmacro- deftransform [name bindings docstring & body]
@@ -45,15 +45,15 @@
   (var d (- (abs q) (vec2 ,size)))
   (+ (length (max d 0)) (min (max d.x d.y) 0)))
 
-# TODO: this should either modify p or q, depending on fields
-(deftransform move [fields offset]
+# TODO: this should either modify p or q, depending on the dimension of the field-set
+(deftransform move [field-set offset]
   "translate"
-  (typecheck offset (fields/type fields))
-  (fields/map fields (fn [expr]
+  (typecheck offset (field-set/type field-set))
+  (field-set/map field-set (fn [expr]
     (jlsl/with "move" [q (- q offset)] ,expr))))
 
-(defn color [fields color-expression]
-  (struct/with-proto fields :color (jlsl/coerce-expr color-expression)))
+(defn color [field-set color-expression]
+  (struct/with-proto field-set :color (jlsl/coerce-expr color-expression)))
 
 (defmacro .
   "Behaves like `.` in GLSL, for accessing components of a vector or struct. Can be combined with swizzling."

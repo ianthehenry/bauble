@@ -1,7 +1,7 @@
 (use judge)
 (use ./util)
 (import ./syntax)
-(import ./fields)
+(import ./field-set)
 
 (def bauble-env (require "./environment"))
 
@@ -24,7 +24,7 @@
     (bad-compile msg nil where line col))
   [(string/slice buf 0 -2) macro-fiber])
 
-(defn can-be-subject? [x] (fields/is? x))
+(defn can-be-subject? [x] (field-set/is? x))
 
 # this returns the resulting environment
 (defn evaluate [script]
@@ -72,9 +72,9 @@
 
 (import ../jlsl)
 (defn- make-presentable [value]
-  (if (fields/is? value)
-    (struct ;(kvs (fields/map value jlsl/expr/to-sexp))
-      :type (jlsl/show-type (fields/type value)))
+  (if (field-set/is? value)
+    (struct ;(kvs (field-set/map value jlsl/expr/to-sexp))
+      :type (jlsl/show-type (field-set/type value)))
     value))
 
 (defn- run [script]

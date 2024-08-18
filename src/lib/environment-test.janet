@@ -47,7 +47,7 @@
     ceil @{}
     circle @{:doc "(circle r)\n\nit a circle"}
     clamp @{}
-    color @{:doc "(color fields color-expression)\n\n"}
+    color @{:doc "(color field-set color-expression)\n\n"}
     cos @{}
     cosh @{}
     cross @{}
@@ -84,7 +84,7 @@
     min @{}
     mix @{}
     mod @{}
-    move @{:doc "(move fields offset)\n\ntranslate"}
+    move @{:doc "(move field-set offset)\n\ntranslate"}
     normalize @{}
     not @{}
     not-equal @{}
