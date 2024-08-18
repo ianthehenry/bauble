@@ -121,7 +121,12 @@
   "swirl" `(box 80 | swirl :y 0.040 | slow 0.5)`
 
   "!default gradient" `(circle 100)`
-  "!circle with color field" `(circle 100 | color [1 1 0.5])`
+  "!move shape" `(circle 50 | move [50 0])`
+  # this doesn't really demonstrate anything...
+  "!color field" `(circle 100 | color [(q.x / 100 * 0.5 + 0.5) 1 0.5])`
+  "!color before move" `(circle 100 | color [(q.x / 100 * 0.5 + 0.5) 1 0.5] | move [50 0])`
+  "!color after move" `(circle 100 | move [50 0] | color [(q.x / 100 * 0.5 + 0.5) 1 0.5])`
+  "!rect" `(rect 75)`
 })
 
 (each filename (os/dir "./cases")
