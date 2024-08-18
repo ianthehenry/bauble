@@ -20,7 +20,7 @@
   (or trivial-expr-body
     (call (multifunction/implement (multifunction/single name return-type []) return-type [] statements) [])))
 
-(defn- check-do-statements [statements can-break? can-continue?]
+(defn- check-statements [statements can-return? can-break? can-continue?]
   (each statement statements (statement/match statement
     (declaration _ _ _) nil
     (assign _ _) nil
@@ -28,31 +28,31 @@
     (break) (assert can-break? "cannot break in an expression context")
     (continue) (assert can-continue? "cannot continue in an expression context")
     (discard) nil
-    (return _) (error "cannot return in an expression context")
-    (do body) (check-do-statements body can-break? can-continue?)
-    (upscope body) (check-do-statements body can-break? can-continue?)
-    (with _ body) (check-do-statements body can-break? can-continue?)
-    (if _ then else) (check-do-statements [then ;(if else [else] [])] can-break? can-continue?)
+    (return _) (assert can-return? "cannot return in an expression context")
+    (do body) (check-statements body can-return? can-break? can-continue?)
+    (upscope body) (check-statements body can-return? can-break? can-continue?)
+    (with _ body) (check-statements body can-return? can-break? can-continue?)
+    (if _ then else) (check-statements [then ;(if else [else] [])] can-return? can-break? can-continue?)
     (case _ cases) (do
       (each case cases (pat/match case
-        [statement] (check-do-statements [statement] true can-continue?)
-        [value statement] (check-do-statements [statement] true can-continue?))))
+        [statement] (check-statements [statement] can-return? true can-continue?)
+        [value statement] (check-statements [statement] can-return? true can-continue?))))
     (while _ body)
-      (check-do-statements body true true)
+      (check-statements body can-return? true true)
     (do-while _ body)
-      (check-do-statements body true true)
+      (check-statements body can-return? true true)
     (for _ _ _ body)
-      (check-do-statements body true true)
+      (check-statements body can-return? true true)
     (expr _) nil)))
 
-(defn- do-expr [statements last-expr name]
+(defn- do-expr [statements last-expr can-return? name]
   (default name "do")
-  (check-do-statements statements false false)
+  (check-statements statements can-return? false false)
   (iife name (expr/type last-expr) [;statements (statement/return last-expr)]))
 
 (defn- with-expr [bindings statements last-expr name]
   (default name "with")
-  (check-do-statements statements false false)
+  (check-statements statements false false false)
   (let [return-type (expr/type last-expr)]
     (iife (string name "-outer") return-type [
       (statement/with bindings [
@@ -80,12 +80,12 @@
     |btuple? [call ~',builtins/vec (map expr/of-ast ast)]
     ['. expr field] [expr/dot (expr/of-ast expr) ['quote field]]
     ['in expr index] [expr/in (expr/of-ast expr) (expr/of-ast index)]
-    ['do & body] (do
+    [(and tag (or 'do 'iife)) & body] (do
       (def [body name] (if (string? (first body))
         [(slice body 1) (first body)]
         [body nil]))
-      (assert (> (length body) 0) "do expression cannot be empty")
-      [do-expr (statement/of-asts (drop -1 body)) (expr/of-ast (last body)) name])
+      (assertf (> (length body) 0) "%s expression cannot be empty" tag)
+      [do-expr (statement/of-asts (drop -1 body)) (expr/of-ast (last body)) (= tag 'iife) name])
     ['with bindings & body] (do
       (def [name bindings body]
         (if (string? bindings)

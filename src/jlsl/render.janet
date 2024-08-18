@@ -1026,6 +1026,30 @@
   `)
   )
 
+(deftest "iife expressions allow early return but otherwise restrict control flow"
+  (test-function
+    (jlsl/defn :float main []
+      (return (iife (var x 10) (return 1) (+= x 5) x))) `
+    float do_() {
+      float x = 10.0;
+      return 1.0;
+      x += 5.0;
+      return x;
+    }
+    
+    float main() {
+      return do_();
+    }
+  `)
+  (test-error
+    (jlsl/defn :float main []
+      (return (iife (break) 1)))
+    "cannot break in an expression context")
+  (test-error
+    (jlsl/defn :float main []
+      (return (iife (continue) 1)))
+    "cannot continue in an expression context"))
+
 (deftest "do expressions can set variables"
   (test-function
     (jlsl/defn :float main []
