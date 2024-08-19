@@ -178,7 +178,7 @@
     return mix(pow(vec3(gradient_color, inside), vec3(mix(1.0, 2.0, isoline))), vec3(1.0), boundary_line);
   }
   
-  vec3 sample(vec2 frag_coord, vec4 viewport) {
+  vec3 sample_(vec2 frag_coord, vec4 viewport) {
     vec2 resolution = viewport.zw;
     vec2 local_frag_coord = frag_coord - viewport.xy;
     vec2 relative_position = (local_frag_coord - (resolution * 0.5)) / resolution;
@@ -201,7 +201,7 @@
     for (int y = 1; y <= aa_samples; ++y) {
       for (int x = 1; x <= aa_samples; ++x) {
         vec2 sample_offset = (aa_sample_width * vec2(float(x), float(y))) - pixel_origin;
-        color += sample(gl_FragCoord.xy + sample_offset, viewport);
+        color += sample_(gl_FragCoord.xy + sample_offset, viewport);
       }
     }
     color /= float(aa_samples * aa_samples);
