@@ -3,6 +3,7 @@
 (import jaylib)
 (use ../jlsl/builtins)
 (use ../jlsl/flexins)
+(use ../jlsl/globals)
 (use ./helpers)
 
 (cmd/defn test-jlsl "testing" []
@@ -24,9 +25,6 @@
     (uniform :float t)
     (uniform :vec4 viewport)
     (out :vec4 frag-color)
-
-    # TODO: i think this should be available implicitly
-    (in :vec4 gl_FragCoord)
 
     (defn :mat3 rotate-x [:float angle]
       (var s (sin angle))
@@ -118,7 +116,7 @@
     (defn :void main []
       (def gamma 2.2)
 
-      (var local-coord (- (. gl_FragCoord xy) (. viewport xy)))
+      (var local-coord (- (. gl-frag-coord xy) (. viewport xy)))
       (var resolution (. viewport zw))
       (var dir (*
         (rotate-z (. camera-orientation z))

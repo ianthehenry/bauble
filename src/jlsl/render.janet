@@ -6,6 +6,7 @@
 (use ./expr)
 (use ./types)
 (use ./dsl)
+(import ./globals)
 
 (def- *glsl-identifier-map* (gensym))
 (def- *glsl-function-name-map* (gensym))
@@ -176,7 +177,7 @@
     results))
 
 (defn- validate-program [program]
-  (def {:main main :inputs inputs :outputs outputs :uniforms uniforms} program)
+  (def {:main main :inputs inputs :outputs outputs :uniforms uniforms :globals globals} program)
   (def return-type (function/return-type main))
   (def implicit-params (function/implicit-params main))
   (type/match return-type
@@ -185,14 +186,17 @@
 
   (each param implicit-params
     (var variable (param/var param))
+    # TODO: distinguish between global in and global out variables
     (match (param/access param)
-      :in (unless (or (has-value? inputs variable) (has-value? uniforms variable))
+      :in (unless (or (has-value? inputs variable) (has-value? uniforms variable) (has-value? globals variable))
         (errorf "main reads from a free variable %s which is not declared as an input or uniform. Did you forget to set a dynamic variable?" (variable/name variable)))
-      :out (unless (has-value? outputs variable)
+      :out (unless (or (has-value? outputs variable) (has-value? globals variable))
         (errorf "main writes to free variable %s which is not declared as an output" (variable/name variable)))
       :inout (errorf "main contains a free variable %s which is read and written to" (variable/name variable))
       x (errorf "BUG: illegal access type %q" x)))
   program)
+
+(def all-globals (seq [entry :in (require "./globals") :when (table? entry) :let [{:value value} entry] :when (variable? value)] value))
 
 (defmodule program
   (defmacro new [& body]
@@ -229,6 +233,7 @@
         {:uniforms ,$uniforms
          :inputs ,$inputs
          :outputs ,$outputs
+         :globals ',all-globals
          :precisions ,$precisions
          :main (,multifunction/resolve-function main [])}))))
 
@@ -237,11 +242,12 @@
   (with-syms [$var]
     ~(fn [,$var] [',thing (,type/to-glsl (,variable/type ,$var)) (,allocate-glsl-identifier ,$var)])))
 
-(defn render/program [{:precisions precisions :uniforms uniforms :inputs inputs :outputs outputs :main main}]
-  (def global-scope (bimap/new))
-  (def root-variables (array/concat @[] uniforms inputs outputs))
+(defn render/program [{:precisions precisions :uniforms uniforms :inputs inputs :outputs outputs :globals globals :main main}]
+  (def root-variables (array/concat @[] uniforms inputs outputs globals))
   (with-dyns [*glsl-identifier-map* (new-scope)
               *glsl-function-name-map* (bimap/new)]
+    (each global globals
+      (allocate-glsl-identifier global))
     [;precisions
      ;(map (declare in) inputs)
      ;(map (declare out) outputs)
@@ -262,7 +268,7 @@
     (def <4> @[])
     (@array/push <1> (def t (@new "t" (@type/primitive (quote (<5> float))))))
     (as-macro @jlsl/defn :void main [] (return 10))
-    (@validate-program {:inputs <2> :main (@resolve-function main []) :outputs <3> :precisions <4> :uniforms <1>})))
+    (@validate-program {:globals (quote @[(<6> lexical <7> "gl_FragDepth" (<8> primitive (<5> float))) (<6> lexical <9> "gl_PointCoord" (<8> vec (<5> float) 2)) (<6> lexical <10> "gl_FragCoord" (<8> vec (<5> float) 4)) (<6> lexical <11> "gl_FrontFacing" (<8> primitive (<5> bool)))]) :inputs <2> :main (@resolve-function main []) :outputs <3> :precisions <4> :uniforms <1>})))
 
 (deftest "various sorts of illegal programs"
   (test-error (program/new
@@ -367,6 +373,16 @@
     
     void main() {
       return t;
+    }
+  `))
+
+(deftest "you can reference globals in main without them counting as free variables"
+  (test-program [
+    (defn :void main []
+      (set gl-frag-depth (. gl-point-coord x)))
+    ] `
+    void main() {
+      gl_FragDepth = gl_PointCoord.x;
     }
   `))
 

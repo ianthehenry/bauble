@@ -39,8 +39,6 @@
     (uniform :vec4 viewport)
     (out :vec4 frag-color)
 
-    (in :vec4 gl_FragCoord)
-
     (defn :float nearest-distance []
       (return ,(@or (subject :distance) 0)))
 
@@ -85,7 +83,7 @@
       (for (var y :1) (<= y aa-samples) (++ y)
         (for (var x :1) (<= x aa-samples) (++ x)
           (var sample-offset (- (* aa-sample-width [(float x) (float y)]) pixel-origin))
-          (+= color (sample (+ (. gl_FragCoord xy) sample-offset)))
+          (+= color (sample (+ (. gl-frag-coord xy) sample-offset)))
           ))
       (/= color (float (* aa-samples aa-samples)))
 
@@ -120,8 +118,6 @@
   {:distance (circle 30)
     })))) `
   precision highp float;
-  
-  in vec4 gl_FragCoord;
   
   out vec4 frag_color;
   
