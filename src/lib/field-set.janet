@@ -14,6 +14,12 @@
 
 (def- tag (gensym))
 
+(defn new [type & kvs]
+  (struct
+    :type type
+    :tag tag
+    ;kvs))
+
 (defn distance-2d [expr]
   {:type jlsl/type/vec2
    :tag tag
@@ -30,3 +36,5 @@
    :tag tag
    :distance (map-if (t :distance) f)
    :color (map-if (t :color) f)})
+
+(defn with [t & new-kvs] (struct ;(kvs t) ;new-kvs))

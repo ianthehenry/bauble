@@ -63,18 +63,78 @@
   [expr field]
   [jlsl/expr/dot [jlsl/coerce-expr expr] ['quote field]])
 
-(defn union
-  "Join 'em up. Do it to it."
-  [& field-sets]
-  (def distances (seq [{:distance expr} :in field-sets :when expr] expr))
-  (def colors (seq [{:color expr} :in field-sets :when expr] expr))
-  (each d distances (assert (jlsl/expr? d)))
-  (field-set/distance-2d
-    (case (@length distances)
+(defn- sharp-union [& field-sets]
+  (def type (get-unique field-set/type field-sets (fn [types]
+    (if (empty? types)
+      (error "empty union expression")
+      (error "cannot union 2D and 3D shapes")))))
+  (def distances (seq [{:distance d} :in field-sets :when d] d))
+  (def colors (seq [{:color c :distance d} :in field-sets :when c] [c (@or d (jlsl/coerce-expr 0))]))
+
+  (field-set/new type
+    :distance (case (@length distances)
       0 nil
-      1 (in distances 0)
-      (jlsl/do "union"
+      1 (distances 0)
+      (jlsl/do "union-distance"
         (var nearest ,(first distances))
         ,;(seq [expr :in (drop 1 distances)]
           (jlsl/statement (set nearest (min nearest ,expr))))
-        nearest))))
+        nearest))
+
+    :color (case (@length colors)
+      0 nil
+      1 ((colors 0) 0)
+      (jlsl/iife "union-color"
+        ,;(seq [[c d] :in (reverse (drop 1 colors))]
+          (jlsl/statement
+            (if (< ,d 0)
+              (return ,c))))
+        ,((colors 0) 0)
+        ))
+    ))
+
+(defn smooth-union [r & field-sets]
+  (def type (get-unique field-set/type field-sets (fn [types]
+    (if (empty? types)
+      (error "empty union expression")
+      (error "cannot union 2D and 3D shapes")))))
+  (def r (typecheck (jlsl/coerce-expr r) jlsl/type/float))
+
+  (def distances (seq [{:distance d} :in field-sets :when d] d))
+  (def colors (seq [{:color c :distance d} :in field-sets :when c] [c (@or d (jlsl/coerce-expr 0))]))
+
+  (field-set/new type
+    :distance (case (@length distances)
+      0 nil
+      1 (distances 0)
+      (jlsl/do "smooth-union-distance"
+        (var nearest ,(first distances))
+        ,;(seq [expr :in (drop 1 distances)]
+          (jlsl/statement
+            (var dist ,expr)
+            (var h (clamp (+ 0.5 (/ (* 0.5 (- dist nearest)) r)) 0 1))
+            (set nearest (- (mix dist nearest h) (* r h (- 1 h))))))
+        nearest))
+
+    :color (case (@length colors)
+      0 nil
+      1 ((colors 0) 0)
+      (jlsl/do "smooth-union-color"
+        # TODO: this function is kind of silly because it always
+        # evaluates the first color field, even if it has zero
+        # contribution to the final result
+        (var color ,((first colors) 0))
+        ,;(seq [[color-expr dist-expr] :in (drop 1 colors)]
+          (jlsl/statement
+            (var contribution (- 1 (clamp (/ ,dist-expr r) 0 1)))
+            (if (> contribution 0)
+              (set color (mix color ,color-expr contribution)))
+          ))
+        color))
+    ))
+
+# TODO: this should have an optional radius argument
+(defn union
+  "Join 'em up. Do it to it."
+  [& field-sets]
+  (sharp-union ;field-sets))

@@ -121,6 +121,42 @@
   "swirl" `(box 80 | swirl :y 0.040 | slow 0.5)`
 
   "!union" `(union (circle 75 | move [-30 0]) (rect 60 | move [30 0]))`
+  "!union order is significant when combining color fields" `
+    (union
+      (union (circle 50 | color [1 1 0.5] | move [-30 0]) (circle 50 | color [1 0.5 1] | move [30 0])
+      | move [0 60])
+      (union (circle 50 | color [1 0.5 1] | move [30 0]) (circle 50 | color [1 1 0.5] | move [-30 0])
+      | move [0 -60])
+      )
+  `
+  "!union order is significant when combining color fields even with smooth union" `
+    (union
+      (smooth-union 10 (circle 50 | color [1 1 0.5] | move [-30 0]) (circle 50 | color [1 0.5 1] | move [30 0])
+      | move [0 60])
+      (smooth-union 10 (circle 50 | color [1 0.5 1] | move [30 0]) (circle 50 | color [1 1 0.5] | move [-30 0])
+      | move [0 -60])
+      )
+  `
+  "!union smooth can combine non-overlapping shapes" `
+    (smooth-union 10
+      (circle 40 | move [41 0] | color [0.5 1 1])
+      (circle 60 | move [-61 0] | color [1 1 0.5]))
+  `
+
+  "!union a shape with no color field inherits the other color field" `
+  (union
+    (union
+      (circle 40 | move [41 0])
+      (circle 60 | move [-61 0] | color [1 1 0.5])
+    | move [0 60])
+    (union
+      (circle 40 | move [41 0] | color [0.5 1 1])
+      (circle 60 | move [-61 0])
+    | move [0 -60])
+  )
+    
+  `
+
   "!default gradient" `(circle 100)`
   "!move shape" `(circle 50 | move [50 0])`
   # this doesn't really demonstrate anything...

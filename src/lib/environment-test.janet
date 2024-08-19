@@ -113,6 +113,7 @@
     sign @{}
     sin @{}
     sinh @{}
+    smooth-union @{:doc "(smooth-union r & field-sets)\n\n"}
     smoothstep @{}
     sqrt @{}
     step @{}
