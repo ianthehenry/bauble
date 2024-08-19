@@ -16,14 +16,32 @@
 (defn- simple-expr? [arg]
   (or (expr? arg) (variable? arg)))
 
+(defn- definitely-not-expr? [arg]
+  (or (string? arg) (symbol? arg)))
+
+(defn- none [f arg]
+  (not (some f arg)))
+
+(defn- vector-expr? [arg]
+  (and (indexed? arg)
+    (some simple-expr? arg)
+    (none definitely-not-expr? arg)))
+
 (defn- expr-args? [args]
-  (some |(or (simple-expr? $) (and (indexed? $) (some simple-expr? $))) args))
+  (and
+    (some |(or (simple-expr? $) (vector-expr? $)) args)
+    (none definitely-not-expr? args)))
 
 (test (expr-args? [1 2 3]) nil)
 (test (expr-args? [[1 2 3]]) nil)
 (test (expr-args? [[[1 2 3]]]) nil)
 (test (expr-args? [[1 (expr/dot (variable/new "foo" type/float) 'x) 3]]) true)
 (test (expr-args? [[1 (variable/new "foo" type/float) 3]]) true)
+(test (expr-args? (variable/new "foo" type/float)) nil)
+
+# the representation of an expression with a variable looks like a tuple
+# with an expression, if you're very naive
+(test (expr-args? (expr/dot (variable/new "foo" type/float) 'x)) false)
 
 (defmacro- defflex [sym &opt alt]
   (default alt sym)
