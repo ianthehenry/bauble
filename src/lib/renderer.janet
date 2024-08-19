@@ -24,9 +24,6 @@
       (vec3 1)
       boundary-line)))
 
-(jlsl/jlsl/defn :float circle [:float r]
-  (- (length q) r))
-
 (defn get-2d-program [subject]
   (def NORMAL_OFFSET 0.005)
 
@@ -66,7 +63,6 @@
              d (nearest-distance)
              gradient (calculate-gradient)]
         (return ,(if-let [color-expression (subject :color)]
-          # TODO: if expressions
           (jlsl/do "coloring"
             (if (< d 0)
               ,color-expression
@@ -113,6 +109,9 @@
   # which i don't really have a way to see...
   [false (glsl/render-program glsl glsl-version)]
   )
+
+(jlsl/jlsl/defn :float circle [:float r]
+  (- (length q) r))
 
 (test-stdout (print (glsl/render-program (jlsl/render/program (get-2d-program
   {:distance (circle 30)

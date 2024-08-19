@@ -19,7 +19,8 @@
   (assertf (= actual expected)
     "type mismatch: expected %q, got %q"
     (jlsl/show-type expected)
-    (jlsl/show-type actual)))
+    (jlsl/show-type actual))
+  expr)
 
 (defmacro- defshape [name bindings docstring & body]
   (assert (string? docstring))

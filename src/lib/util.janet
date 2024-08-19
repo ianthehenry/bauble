@@ -28,7 +28,6 @@
 (test (find-index odd? [1 2 3] 1) 2)
 (test (find-index odd? [2 2 2 2 2 3] 1 3) nil)
 
-
 (defn string/find-last [str c]
   (var i (dec (length str)))
   (var result nil)
@@ -43,4 +42,10 @@
   (and (tuple? x) (= (tuple/type x) :parens)))
 
 (defmacro assertf [x & args]
-  ~(assert ,x (string/format ,;args)))
+  ~(as-macro ,assert ,x (,string/format ,;args)))
+
+(defn get-unique [f ind on-error]
+  (def distincts (distinct (map f ind)))
+  (case (length distincts)
+    1 (in distincts 0)
+    (on-error distincts)))
