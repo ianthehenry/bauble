@@ -121,6 +121,7 @@
   "swirl" `(box 80 | swirl :y 0.040 | slow 0.5)`
 
   "!union" `(union (circle 75 | move [-30 0]) (rect 60 | move [30 0]))`
+  "!union smooth" `(smooth-union 10 (circle 75 | move [-30 0]) (rect 60 | move [30 0]))`
   "!union order is significant when combining color fields" `
     (union
       (union (circle 50 | color [1 1 0.5] | move [-30 0]) (circle 50 | color [1 0.5 1] | move [30 0])
@@ -138,9 +139,22 @@
       )
   `
   "!union smooth can combine non-overlapping shapes" `
-    (smooth-union 10
+    (smooth-union 20
       (circle 40 | move [41 0] | color [0.5 1 1])
       (circle 60 | move [-61 0] | color [1 1 0.5]))
+  `
+
+  "!smooth union more than two color fields" `
+    (def shapes
+      [(circle 25 | move [-15 15] | color [1 0.5 0.25])
+      (circle 25 | move [-15 -15] | color [0.5 1 0.25])
+      (circle 25 | move [15 -15] | color [0.5 0.25 1])
+      (circle 25 | move [15 15] | color [0.5 1 1])])
+    (var i 0)
+    (union
+      ;(seq [x :in [-50 50] y :in [-50 50] :let [offset [x y]] :after (++ i)]
+        (smooth-union 5 ;(drop i shapes) ;(take i shapes)
+        | move offset)))
   `
 
   "!union a shape with no color field inherits the other color field" `
