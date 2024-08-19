@@ -1,4 +1,5 @@
 (use judge)
+(import ../jlsl)
 
 (defn cleanse-environment-entry [t]
   (if (table? t) (do
@@ -7,6 +8,8 @@
     (put t :private nil)
     (when (function? (t :value))
       (put t :value nil))
+    (when (jlsl/variable? (t :value))
+      (put t :value [:var (jlsl/variable/name (t :value)) (jlsl/show-type (jlsl/variable/type (t :value)))]))
     (when (function? (get-in t [:ref 0]))
       (put t :ref nil))
     t)
@@ -35,6 +38,8 @@
     @length @{:doc "(length ds)\n\nReturns the length or count of a data structure in constant time as an integer. For structs and tables, returns the number of key-value pairs in the data structure."}
     @or @{:doc "(or & forms)\n\nEvaluates to the last argument if all preceding elements are falsey, otherwise\nevaluates to the first truthy element."
           :macro true}
+    P @{:value [:var "P" :vec3]}
+    Q @{:value [:var "Q" :vec2]}
     abs @{}
     acos @{}
     acosh @{}
@@ -47,10 +52,11 @@
     ceil @{}
     circle @{:doc "(circle r)\n\nit a circle"}
     clamp @{}
-    color @{:doc "(color field-set color-expression)\n\n"}
+    color @{:doc "(color field-set color-expression)\n\ncolor"}
     cos @{}
     cosh @{}
     cross @{}
+    d @{:value [:var "d" :float]}
     distance @{}
     dot @{}
     double @{}
@@ -62,6 +68,11 @@
     floor @{}
     fma @{}
     fract @{}
+    gl-frag-coord @{:value [:var "gl_FragCoord" :vec4]}
+    gl-frag-depth @{:value [:var "gl_FragDepth" :float]}
+    gl-front-facing @{:value [:var "gl_FrontFacing" :bool]}
+    gl-point-coord @{:value [:var "gl_PointCoord" :vec2]}
+    gradient @{:value [:var "gradient" :vec2]}
     in @{:doc "(in & args)\n\n"}
     int @{}
     inversesqrt @{}
@@ -85,12 +96,15 @@
     mix @{}
     mod @{}
     move @{:doc "(move field-set offset)\n\ntranslate"}
+    normal @{:value [:var "normal" :vec3]}
     normalize @{}
     not @{}
     not-equal @{}
     not= @{}
     or @{}
+    p @{:value [:var "p" :vec3]}
     pow @{}
+    q @{:value [:var "q" :vec2]}
     rect @{:doc "(rect size)\n\nit a box"}
     reflect @{}
     refract @{}

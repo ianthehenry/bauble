@@ -8,7 +8,7 @@
   nil)
 
 (import ../jlsl)
-(use ./dynvars)
+(import ./dynvars :prefix "" :export true)
 (use ./util)
 (import ./syntax)
 (import ./field-set)
@@ -52,8 +52,10 @@
   (field-set/map field-set (fn [expr]
     (jlsl/with "move" [q (- q offset)] ,expr))))
 
-(defn color [field-set color-expression]
-  (struct/with-proto field-set :color (jlsl/coerce-expr color-expression)))
+(deftransform color [field-set color-expression]
+  "color"
+  (typecheck color-expression jlsl/type/vec3)
+  (field-set/with field-set :color color-expression))
 
 (defmacro .
   "Behaves like `.` in GLSL, for accessing components of a vector or struct. Can be combined with swizzling."

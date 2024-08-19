@@ -3,7 +3,8 @@
 (import ./syntax)
 (import ./field-set)
 
-(def bauble-env (require "./environment"))
+# we create a copy here so that we don't import private bindings
+(def bauble-env (merge-module (make-env root-env) (require "./environment")))
 
 (defn- chunk-string [str]
   (var unread true)
@@ -32,7 +33,6 @@
 
   (loop [[sym entry] :pairs bauble-env
          :when (and (symbol? sym) (table? entry))
-         :unless (entry :private)
          :let [ref (in entry :ref)]
          :when (and (array? ref) (= (length ref) 1))]
     (put env sym @{:doc (in entry :doc) :ref @[(in ref 0)]}))
