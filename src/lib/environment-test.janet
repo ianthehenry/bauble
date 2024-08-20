@@ -24,7 +24,7 @@
     * @{}
     + @{}
     - @{}
-    . @{:doc "(. expr field)\n\nBehaves like `.` in GLSL, for accessing components of a vector or struct. Can be combined with swizzling."
+    . @{:doc "(. expr field)\n\nBehaves like `.` in GLSL, for accessing components of a vector or struct, e.g. `(. foo xy)`.\n\nBauble's dot syntax, `foo.xy`, expands to call this macro."
         :macro true}
     / @{}
     < @{}
@@ -95,7 +95,8 @@
     min @{}
     mix @{}
     mod @{}
-    move @{:doc "(move field-set offset)\n\ntranslate"}
+    move @{:doc "(move shape offset)\n\ntranslate"}
+    ndot @{}
     normal @{:value [:var "normal" :vec3]}
     normalize @{}
     not @{}
@@ -103,17 +104,20 @@
     not= @{}
     or @{}
     p @{:value [:var "p" :vec3]}
+    parallelogram @{:doc "(parallelogram width height skew)\n\nit a parallelogram"}
     pow @{}
     q @{:value [:var "q" :vec2]}
     rect @{:doc "(rect size)\n\nit a box"}
     reflect @{}
     refract @{}
+    remap-plus @{}
+    rhombus @{:doc "(rhombus size)\n\nit rhomb"}
     round @{}
     round-even @{}
     sign @{}
     sin @{}
     sinh @{}
-    smooth-union @{:doc "(smooth-union r & field-sets)\n\n"}
+    smooth-union @{:doc "(smooth-union r & shapes)\n\n"}
     smoothstep @{}
     sqrt @{}
     step @{}
@@ -123,7 +127,7 @@
     tanh @{}
     trunc @{}
     uint @{}
-    union @{:doc "(union & field-sets)\n\nJoin 'em up. Do it to it."}
+    union @{:doc "(union & shapes)\n\nJoin 'em up. Do it to it."}
     vec @{}
     vec2 @{}
     vec3 @{}

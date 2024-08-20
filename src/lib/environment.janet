@@ -22,6 +22,11 @@
     (jlsl/show-type actual))
   expr)
 
+# TODO: should really be private
+(defmacro- defhelper [return-type name bindings & body]
+  ~(jlsl/jlsl/defn ,return-type ,name ,bindings
+    ,;(syntax/expand body)))
+
 (defmacro- defshape [name bindings docstring & body]
   (assert (string? docstring))
   ~(defn ,name ,docstring ,bindings
@@ -46,12 +51,14 @@
   (var d (- (abs q) (vec2 ,size)))
   (+ (length (max d 0)) (min (max d.x d.y) 0)))
 
-# TODO: this should either modify p or q, depending on the dimension of the field-set
-(deftransform move [field-set offset]
+(deftransform move [shape offset]
   "translate"
-  (typecheck offset (field-set/type field-set))
-  (field-set/map field-set (fn [expr]
-    (jlsl/with "move" [q (- q offset)] ,expr))))
+  (typecheck offset (field-set/type shape))
+  (if (= (field-set/type shape) jlsl/type/vec2)
+    (field-set/map shape (fn [expr]
+      (jlsl/with "move" [q (- q offset)] ,expr)))
+    (field-set/map shape (fn [expr]
+      (jlsl/with "move" [p (- p offset)] ,expr)))))
 
 (deftransform color [field-set color-expression]
   "color"
@@ -59,7 +66,7 @@
   (field-set/with field-set :color color-expression))
 
 (defmacro .
-  "Behaves like `.` in GLSL, for accessing components of a vector or struct. Can be combined with swizzling."
+  "Behaves like `.` in GLSL, for accessing components of a vector or struct, e.g. `(. foo xy)`.\n\nBauble's dot syntax, `foo.xy`, expands to call this macro."
   [expr field]
   [jlsl/expr/dot [jlsl/coerce-expr expr] ['quote field]])
 
@@ -96,7 +103,7 @@
 # TODO: this should be called remap+ but JLSL doesn't
 # sanitize properly
 # remap -1 to +1 into 0 to 1
-(jlsl/jlsl/defn :float remap-plus [:float x]
+(defhelper :float remap-plus [:float x]
   (return (+ 0.5 (* 0.5 x))))
 
 # TODO: we should probably have a way to do this
