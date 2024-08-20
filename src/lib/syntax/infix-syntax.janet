@@ -22,11 +22,14 @@
       (forever
         (def expr-start (inc current-op-index))
         (def next-op-index (find-index op-node? ast expr-start))
+        (def this-length (- (or next-op-index (length ast)) expr-start))
         (set subject (keep-syntax! ast
           [(in ast current-op-index)
            subject
-           ;(tuple/slice ast expr-start next-op-index)]))
-
+           ;(case this-length
+            0 []
+            1 [(in ast expr-start)]
+            [(tuple/slice ast expr-start next-op-index)])]))
         (unless next-op-index (break))
         (set current-op-index next-op-index))
       (break subject))
@@ -34,6 +37,9 @@
     ast))
 
 (test (expand '(a + b)) [+ a b])
+(test (expand '(a + b c)) [+ a [b c]])
+(test (expand '(a + b c + d)) [+ [+ a [b c]] d])
+(test (expand '(a + b / + c)) [+ [/ [+ a b]] c])
 (test (expand '(a - 1)) [- a 1])
 (test (expand '(+ a b)) [+ a b])
 (test (expand '(+ a b + c)) [+ [+ a b] c])
@@ -42,22 +48,23 @@
   (def form '(a + b))
 
   (test-stdout (prewalk (fn [ast] (when (tuple? ast) (pp (tuple/sourcemap ast))) ast) form) `
-    (42 14)
+    (48 14)
   `
     [a + b])
   (test-stdout (prewalk (fn [ast] (when (tuple? ast) (pp (tuple/sourcemap ast))) ast) (expand form)) `
-    (42 14)
+    (48 14)
   `
     [+ a b])
 
   (def form '(a b + c d))
 
   (test-stdout (prewalk (fn [ast] (when (tuple? ast) (pp (tuple/sourcemap ast))) ast) form) `
-    (53 14)
+    (59 14)
   `
     [a b + c d])
   (test-stdout (prewalk (fn [ast] (when (tuple? ast) (pp (tuple/sourcemap ast))) ast) (expand form)) `
-    (53 14)
-    (53 14)
+    (59 14)
+    (59 14)
+    (-1 -1)
   `
-    [+ [a b] c d]))
+    [+ [a b] [c d]]))

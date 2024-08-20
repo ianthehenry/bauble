@@ -6,7 +6,7 @@
 (def expand (comp infix-syntax/expand pipe-syntax/expand dot-syntax/expand))
 
 (test (expand '(a + b | sin * 2)) [* [sin [+ a b]] 2])
-(test (expand '(a + b | sin * foo bar)) [* [sin [+ a b]] foo bar])
+(test (expand '(a + b | sin * foo bar)) [* [sin [+ a b]] [foo bar]])
 (test (expand '(a + b | + 1 2)) [+ [+ a b] 1 2])
 (test (expand '(a + b | sin + 10 | pow 2))
   [pow [+ [sin [+ a b]] 10] 2])
