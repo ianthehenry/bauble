@@ -97,11 +97,21 @@
     [(and op (or '_++ '_--)) expr] (do
       (render-expression p expr :needs-parens? true)
       (printer/prin p (string/slice op 1)))
-    [(and op (or '- 'not 'bnot)) expr] (do
+    ['- expr]
+      (wrap-when needs-parens?
+        (printer/prin p "(")
+        (if (number? expr)
+          # special case to avoid rendering --1
+          (render-expression p (- expr) :needs-parens? true)
+          (do
+            (printer/prin p "-")
+            (render-expression p expr :needs-parens? true)))
+        (printer/prin p ")"))
+    [(and op (or 'not 'bnot)) expr] (do
       (def op (case op
         'not "!"
         'bnot "~"
-        op))
+        (error "BUG")))
       (printer/prin p op)
       (render-expression p expr :needs-parens? true))
     ['/ expr] (render-expression p ~(/ 1 ,expr) :needs-parens? needs-parens?)
@@ -415,6 +425,36 @@
       const float x = foo.xyz;
       const float x = f().xyz;
       const float x = lights[0].incidence.brightness;
+    }
+    
+  `))
+
+(deftest "unary operators"
+  (test-statements [
+    (def :float x (- x))
+    (def :float x (- 1))
+    (def :float x (- -1))
+    (def :float x (- (- 1)))
+
+    (def :float x (- 0))
+    (def :float x (- -0))
+
+    (def :float x (not x))
+    (def :float x (not 1))
+    (def :float x (not -1))
+    (def :float x (not (not 1)))
+    ] `
+    void main() {
+      const float x = -x;
+      const float x = -1.0;
+      const float x = 1.0;
+      const float x = -(-1.0);
+      const float x = 0.0;
+      const float x = 0.0;
+      const float x = !x;
+      const float x = !1.0;
+      const float x = !-1.0;
+      const float x = !!1.0;
     }
     
   `))
