@@ -107,6 +107,7 @@
     parallelogram @{:doc "(parallelogram width height skew)\n\nit a parallelogram"}
     pow @{}
     q @{:value [:var "q" :vec2]}
+    quad-circle @{:doc "(quad-circle radius)\n\nit's like a circle"}
     rect @{:doc "(rect size)\n\nit a box"}
     reflect @{}
     refract @{}

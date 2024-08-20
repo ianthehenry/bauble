@@ -202,6 +202,29 @@
   (set d (min d [(dot v v) (width * height - abs s)]))
   (sqrt d.x * sign d.y * -1))
 
+(defshape quad-circle [radius]
+  "it's like a circle"
+  (var q (abs q / radius))
+  (if (> q.y q.x)
+    (set q q.yx))
+  (var a (q.x - q.y))
+  (var b (q.x + q.y))
+  (var c (2 * b - 1 / 3))
+  (var h (a * a + (c * c * c)))
+  # TODO: t should be uninitialized
+  (var t 0)
+  (if (>= h 0) (do
+    (set h (sqrt h))
+    (set t (sign (h - a) * pow (abs (h - a)) (1 / 3) - pow (h + a) (1 / 3)))
+    )
+  (do
+    (var z (sqrt (- c)))
+    (var v (acos (a / (c * z)) / 3))
+    (set t ((- z) * (cos v + (sin v * sqrt 3))))))
+  (*= t 0.5)
+  (var w ([(- t) t] + 0.75 - (t * t) - q))
+  (radius * length w * sign (a * a * 0.5 + b - 1.5)))
+
 # TODO: helpers like this should probably be private
 (defhelper :mat2 rotate-2d [:float angle]
   "hmm"
