@@ -102,7 +102,7 @@
     (jlsl/render/program
       (case (field-set/type subject)
         jlsl/type/vec2 (render-2d subject)
-        jlsl/type/vec2 (render-3d subject)
+        jlsl/type/vec3 (render-3d subject)
         (errorf "whoa whoa whoa, what the heck is %q" subject))))
 
   # TOOD: this is supposed to return whether or not t is a free variable,
