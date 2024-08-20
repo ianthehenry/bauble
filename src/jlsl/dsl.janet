@@ -10,8 +10,9 @@
   ~(,multifunction/single ,name ,(type/of-ast return-type) [,;(map param-sig/of-ast param-sigs)]))
 
 # declare returns a multifunction
-(defmacro jlsl/declare [return-type name param-sigs]
-  ['def name (call jlsl/stub return-type (string name) param-sigs)])
+(defmacro jlsl/declare [return-type name param-sigs &opt docstring]
+  (def docstring (if docstring [docstring] []))
+  ['def name ;docstring (call jlsl/stub return-type (string name) param-sigs)])
 
 # implement takes a multifunction and returns a single function
 (defmacro jlsl/implement [return-type name params & body]
@@ -43,8 +44,11 @@
 
 # defn defines a multifunction but returns a single function
 (defmacro jlsl/defn [return-type name params & body]
+  (def [docstring body] (if (string? (first body))
+    [(first body) (drop 1 body)]
+    [nil body]))
   ['upscope
-    (call jlsl/declare return-type name (map 0 (partition 2 params)))
+    (call jlsl/declare return-type name (map 0 (partition 2 params)) docstring)
     (call jlsl/implement return-type name params ;body)])
 
 (use ./builtins)
@@ -52,6 +56,9 @@
 
 (test-macro (jlsl/declare :float incr [:float])
   (def incr (@single "incr" (@type/primitive (quote (<1> float))) [(@new (@type/primitive (quote (<1> float))) :in)])))
+
+(test-macro (jlsl/declare :float incr [:float] "docstring")
+  (def incr "docstring" (@single "incr" (@type/primitive (quote (<1> float))) [(@new (@type/primitive (quote (<1> float))) :in)])))
 
 (test-macro (jlsl/implement :float incr [:float x] (return x))
   (do
@@ -71,10 +78,11 @@
       (@implement incr <2> <3> <5>))))
 
 (test-macro (jlsl/defn :void foo [:float x :float y]
+  "docstring"
   (var x 1)
   (return [x 2 3]))
   (upscope
-    (def foo (@single "foo" (quote (<1> void)) [(@new (@type/primitive (quote (<2> float))) :in) (@new (@type/primitive (quote (<2> float))) :in)]))
+    (def foo "docstring" (@single "foo" (quote (<1> void)) [(@new (@type/primitive (quote (<2> float))) :in) (@new (@type/primitive (quote (<2> float))) :in)]))
     (do
       (def <3> (quote (<1> void)))
       (def <4> [(upscope (def <5> (@new (@type/primitive (quote (<2> float))) :in)) (def x (@new "x" (@type <5>))) (@new x <5>)) (upscope (def <6> (@new (@type/primitive (quote (<2> float))) :in)) (def y (@new "y" (@type <6>))) (@new y <6>))])
