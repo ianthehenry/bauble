@@ -178,6 +178,7 @@
   "!color before move" `(circle 100 | color [(q.x / 100 * 0.5 + 0.5) 1 0.5] | move [50 0])`
   "!color after move" `(circle 100 | move [50 0] | color [(q.x / 100 * 0.5 + 0.5) 1 0.5])`
   "!rect" `(rect 75)`
+  "!rotation is counter-clockwise" `(rect 70 | rotate 0.1)`
 })
 
 (each filename (os/dir "./cases")

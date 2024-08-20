@@ -112,6 +112,12 @@
     refract @{}
     remap-plus @{}
     rhombus @{:doc "(rhombus size)\n\nit rhomb"}
+    rotate @{:doc "(rotate shape & args)\n\nrotate"}
+    rotate-2d @{:doc "hmm"}
+    rotate-x @{:doc "A rotation matrix about the X axis."}
+    rotate-y @{:doc "A rotation matrix about the Y axis."}
+    rotate-z @{:doc "A rotation matrix about the Z axis."}
+    rotate2d @{:doc "(rotate2d shape angle)\n\nTODO: this should be private"}
     round @{}
     round-even @{}
     sign @{}

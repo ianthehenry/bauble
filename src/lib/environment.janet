@@ -201,3 +201,53 @@
   (-= v (e * (dot v e / dot e e | clamp -1 1)))
   (set d (min d [(dot v v) (width * height - abs s)]))
   (sqrt d.x * sign d.y * -1))
+
+# TODO: helpers like this should probably be private
+(defhelper :mat2 rotate-2d [:float angle]
+  "hmm"
+  (var s (sin angle))
+  (var c (cos angle))
+  (return (mat2 c s (- s) c)))
+
+# TODO: these are the actually-correct rotation matrices, not
+# the weird transposed ones that I had been using. so probably
+# something needs to change as a result...
+(defhelper :mat3 rotate-x [:float angle]
+  "A rotation matrix about the X axis."
+  (var s (sin angle))
+  (var c (cos angle))
+  (return (mat3
+    1 0 0
+    0 c s
+    0 (- s) c)))
+
+(defhelper :mat3 rotate-y [:float angle]
+  "A rotation matrix about the Y axis."
+  (var s (sin angle))
+  (var c (cos angle))
+  (return (mat3
+    c 0 (- s)
+    0 1 0
+    s 0 c)))
+
+(defhelper :mat3 rotate-z [:float angle]
+  "A rotation matrix about the Z axis."
+  (var s (sin angle))
+  (var c (cos angle))
+  (return (mat3
+    c s 0
+    (- s) c 0
+    0 0 1)))
+
+(deftransform rotate2d [shape angle]
+  "TODO: this should be private"
+  (field-set/map shape (fn [expr]
+    (jlsl/with "rotate" [q (* (rotate-2d (- ,angle)) q)] ,expr))))
+
+# TODO: this should be overloaded to work with 2d shapes, 3d shapes, 2d vectors, or 3d vectors.
+(defn rotate
+  "rotate"
+  [shape & args]
+  (if (= (field-set/type shape) jlsl/type/vec2)
+    (rotate2d shape ;args)
+    (error "not supported")))
