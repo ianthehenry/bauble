@@ -29,7 +29,7 @@
   (def components (get-unique type/components arg-types |(errorf "%s: cannot mix argument lengths" name)))
   (builtin name (vec-or-prim (primitive-type/bool) components) arg-types))
 
-(defn- just [types] (fn [name arg-types]
+(defn- just [types] (fn just [name arg-types]
   (if-let [return-type (in types arg-types)]
     (builtin name return-type arg-types))))
 
@@ -78,7 +78,7 @@
     (float) (resolve-float-multiply arg-types)
     (resolve-generic -2 name arg-types)))
 
-(defn- typecast [return-type] (fn [name arg-types]
+(defn- typecast [return-type] (fn typecast [name arg-types]
   (check-arity name 1 arg-types)
   (builtin name return-type arg-types)))
 

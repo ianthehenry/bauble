@@ -45,7 +45,7 @@
 
 (defmacro- defflex [sym &opt alt]
   (default alt sym)
-  ~(def ,sym (multifunction/register-wrapper (fn [& args]
+  ~(def ,sym (multifunction/register-wrapper (fn ,(symbol "flex/" sym) [& args]
     # TODO: this isn't really right. Consider
     # (+ 1 [1 2 p.x]). The tuple isn't an expression,
     # but it contains one. Similarly variables
