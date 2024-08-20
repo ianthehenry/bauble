@@ -176,3 +176,28 @@
   "Join 'em up. Do it to it."
   [& shapes]
   (sharp-union ;shapes))
+
+# TODO: helpers like this should probably be private
+(defhelper :float ndot [:vec2 a :vec2 b]
+  (return ((* a.x b.x) - (* a.y b.y))))
+
+(defshape rhombus [size]
+  "it rhomb"
+  (var q (abs q))
+  (var h (size - (2 * q) | ndot size / (dot size size) | clamp -1 1))
+  (var d (q - (0.5 * size * [(1 - h) (1 + h)]) | length))
+  (d * (q.x * size.y + (q.y * size.x) - (size.x * size.y) | sign)))
+
+(defshape parallelogram [width height skew]
+  "it a parallelogram"
+  (var e [skew height])
+  (var q (if (< q.y 0) (- q) q))
+  (var w (q - e))
+  (-= w.x (clamp w.x (- width) width))
+  (var d [(dot w w) (- w.y)])
+  (var s (q.x * e.y - (q.y * e.x)))
+  (set q (if (< s 0) (- q) q))
+  (var v (q - [width 0]))
+  (-= v (e * (dot v e / dot e e | clamp -1 1)))
+  (set d (min d [(dot v v) (width * height - abs s)]))
+  (sqrt d.x * sign d.y * -1))
