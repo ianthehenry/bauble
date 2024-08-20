@@ -45,13 +45,8 @@
 
 (defmacro- defflex [sym &opt alt]
   (default alt sym)
-  ~(def ,sym (multifunction/register-wrapper (fn ,(symbol "flex/" sym) [& args]
-    # TODO: this isn't really right. Consider
-    # (+ 1 [1 2 p.x]). The tuple isn't an expression,
-    # but it contains one. Similarly variables
-    # aren't expressions, but they could be.
-    ((if (,expr-args? args) ,(symbol "builtins/" sym) ,alt) ;args))
-    ,(symbol "builtins/" sym))))
+  ~(def ,sym (fn ,(symbol "flex/" sym) [& args]
+    ((if (,expr-args? args) ,(symbol "builtins/" sym) ,alt) ;args))))
 
 (defn- vector-length [vec] (math/sqrt (reduce (fn [acc v] (+ acc (* v v))) 0 vec)))
 (defn- non-short-circuiting-or [& args]

@@ -301,18 +301,18 @@
         (errorf "Cannot coerce %q to a multifunction" t))))
 
   (defn register-wrapper [wrapper multifunction]
-    (put multifunction-registry wrapper (resolve-multifunction multifunction))
+    (assert (multifunction? multifunction) "register-wrapper needs a multifunction")
+    (put multifunction-registry wrapper multifunction)
     wrapper)
 
-  # t can be a jlsl function, a jlsl multifunction, or a janet function with an
-  # entry in the multifunction registry. It returns a function
+  # given a multifunction wrapper and a signature, returns a particular function
+  # in the mulifunction
+  # TODO: the only place we call this is in `main`. there's probably a better way...
   (defn resolve-function [t arg-types]
-    (if (function? t)
-      t
-      (resolve-overload (resolve-multifunction t) arg-types)))
+    (resolve-overload (resolve-multifunction t) arg-types))
 
   (defn resolve-impl [t arg-types]
-    (function/match (resolve-function (resolve-multifunction t) arg-types)
+    (function/match (resolve-overload (resolve-multifunction t) arg-types)
       (custom impl) impl
       (builtin name _ _) (errorf "cannot implement builtin %s" name)))
 
@@ -321,11 +321,10 @@
       return-type params body)))
 
   (defn- wrapper-function [multifunction]
+    (assert (multifunction? multifunction))
     (def wrapper (fn [& args]
       (def args (map coerce-expr args))
-      (expr/call
-        (resolve-function multifunction (tmap expr/type args))
-        args)))
+      (expr/call (resolve-overload multifunction (tmap expr/type args)) args)))
     (register-wrapper wrapper multifunction))
 
   (defn new [name overloads]

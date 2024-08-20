@@ -9,7 +9,13 @@
 (var statement/of-asts nil)
 
 (defn- call [general-function args]
-  (expr/call (multifunction/resolve-function general-function (tmap expr/type args)) args))
+  # when we use jlsl/fn or the iife
+  # construction below, we have a handle
+  # on a raw function. otherwise we expect
+  # that we're invoking a multifunction wrapper
+  (if (function? general-function)
+    (expr/call general-function args)
+    (general-function ;args)))
 
 (defn iife [name return-type statements]
   (def trivial-expr-body
