@@ -129,6 +129,7 @@
     step @{}
     subject @{:doc "A variable that determines what Bauble will render.\n\nYou can set this variable explicitly to change your focus, or use the `view` macro to change your focus. If you don't set a subject, Bauble will render the last expression in your script that it knows how to render."
               :ref @[nil]}
+    t @{:value [:var "t" :float]}
     tan @{}
     tanh @{}
     trunc @{}

@@ -32,7 +32,7 @@
     # just to be ignored...
     (uniform :vec3 camera-origin)
     (uniform :vec3 camera-orientation)
-    (uniform :float t)
+    (uniform ,t)
     (uniform :vec4 viewport)
     (out :vec4 frag-color)
 
@@ -98,17 +98,20 @@
     (error "nothing to render"))
 
   # so our subject is either 2D or 3D
-  (def glsl
-    (jlsl/render/program
-      (case (field-set/type subject)
-        jlsl/type/vec2 (render-2d subject)
-        jlsl/type/vec3 (render-3d subject)
-        (errorf "whoa whoa whoa, what the heck is %q" subject))))
+  (def program
+    (case (field-set/type subject)
+      jlsl/type/vec2 (render-2d subject)
+      jlsl/type/vec3 (render-3d subject)
+      (errorf "whoa whoa whoa, what the heck is %q" subject)))
 
-  # TOOD: this is supposed to return whether or not t is a free variable,
-  # which i don't really have a way to see...
-  [false (glsl/render-program glsl glsl-version)]
-  )
+  (def glsl (jlsl/render/program program))
+
+  # TODO: we should probably just have a helper for this;
+  # I don't like that this knows the representation of
+  # program
+  [(truthy? (some |(= t (jlsl/param/var $))
+    (jlsl/function/implicit-params (in program :main))))
+   (glsl/render-program glsl glsl-version)])
 
 (jlsl/jlsl/defn :float circle [:float r]
   (- (length q) r))

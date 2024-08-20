@@ -4,6 +4,8 @@
 
 # available in distance or color fields:
 
+(jlsl/defdyn t :float)
+
 (jlsl/defdyn p :vec3)
 (jlsl/defdyn P :vec3)
 (jlsl/defdyn q :vec2)

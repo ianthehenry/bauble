@@ -126,13 +126,13 @@
 (defn- render/param [param] # and *glsl-identifier-map*
   [(param-sig/to-glsl (param/sig param)) (allocate-glsl-identifier (param/var param))])
 
-(defn render/function [root-function &opt root-variables]
+(defn render/function [root-function root-variables]
   (assert (function? root-function) "render/function called with a non-function. did you forget to resolve a multifunction?")
-  (default root-variables [])
   (def forwards @{})
   (def results @[])
   (def in-progress @{})
   (def finished @{})
+  (def root-variable-set (tabseq [variable :in root-variables] variable true))
 
   (visit root-function (fn [node visiting? stack]
     (unless (function? node) (break))
@@ -146,11 +146,10 @@
 
     # We inherit in the root function so that it has uniforms, inputs, and outputs
     # in scope already. But for non-root functions, we're going to forward uniforms
-    # etc. as normal implicit arguments. We could revisit this at some points in
+    # etc. as normal implicit arguments. We could revisit this at some point in
     # the future, but I expect that GLSL compilers are smart enough that it doesn't
     # make a difference.
     (def function-scope (if (= node root-function) (inherit-scope) (new-scope)))
-    (def root-variable-set (tabseq [variable :in root-variables] variable true))
 
     (function/match node
       (builtin _ _ _) nil
@@ -215,6 +214,7 @@
           ['defn _ 'main &] (set defined-main? true)
           nil)
         (pat/match form
+          ['uniform ['unquote variable]] ~(,array/push ,$uniforms ,variable)
           ['uniform type name] ~(,array/push ,$uniforms (def ,name (,variable/new ,(string name) ,(type/of-ast type))))
           ['in type name] ~(,array/push ,$inputs (def ,name (,variable/new ,(string name) ,(type/of-ast type))))
           ['out type name] ~(,array/push ,$outputs (def ,name (,variable/new ,(string name) ,(type/of-ast type))))
@@ -255,7 +255,7 @@
      ;(map (declare out) outputs)
      ;(map (declare uniform) uniforms)
      ;(render/function main root-variables)
-    ]))
+     ]))
 
 (use ./prelude)
 
@@ -347,7 +347,7 @@
   ~(test-stdout (,prin (,glsl/render-program
     (as-macro ,with-dyns [',*glsl-identifier-map* (,new-scope)
                           ',*glsl-function-name-map* (,bimap/new)]
-      (,render/function ,expr)))) ,;results))
+      (,render/function ,expr [])))) ,;results))
 
 (defmacro*- test-program [expr & results]
   ~(test-stdout (,prin (,glsl/render-program (,render/program ,(call program/new ;expr)))) ,;results))
