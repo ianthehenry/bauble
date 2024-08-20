@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 actual_outpath_jfc=$PWD/$3
-cd ..
+cd ../src
 
-redo-ifchange $(find src -path '*/jpm_tree' -prune -o -name '*.janet')
+redo-ifchange $(find . -path '*/jpm_tree' -prune -o -name '*.janet')
 
-janet -c src/legacy/init.janet $actual_outpath_jfc
+jpm -l janet -c lib/init.janet $actual_outpath_jfc
