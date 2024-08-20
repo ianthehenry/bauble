@@ -3,6 +3,9 @@
 (import ./syntax)
 (import ./field-set)
 
+# TODO: only doing this because of the stupid weak table bug
+(import ../jlsl)
+
 # we create a copy here so that we don't import private bindings
 (def bauble-env (merge-module (make-env root-env) (require "./environment")))
 
@@ -29,6 +32,8 @@
 
 # this returns the resulting environment
 (defn evaluate [script]
+  # TODO: remove this once the bug is fixed
+  (jlsl/multifunction/fix-the-weak-table-bug)
   (def env (make-env bauble-env))
 
   (loop [[sym entry] :pairs bauble-env
@@ -66,6 +71,7 @@
 
   (when (nil? (get-var env 'subject))
     (set-var env 'subject last-value))
+
   env)
 
 # now we want to invoke a function that's like "given this subject, give me a JLSL program to compile"

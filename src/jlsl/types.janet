@@ -286,7 +286,22 @@
   # return an expression node. But we also want to be able to look up
   # the corresponding multifunction without invoking it, so that we
   # can implement it. This registry is how we do that.
-  (def- multifunction-registry (table/weak-keys 64))
+  #
+  # There is a bug in Janet that prevents you from unmarshaling
+  # weak structure, so at "runtime" we re-create this as an
+  # actually-weak table.
+  # https://github.com/janet-lang/janet/issues/1488
+  (var- multifunction-registry (table/weak-keys 64))
+  (var bug-fixed false)
+
+  (defn fix-the-weak-table-bug []
+    (when bug-fixed (break))
+    (eprintf "fixing the weak table bug")
+    (def new-registry (table/weak-keys 64))
+    (eachp [k v] multifunction-registry
+      (put new-registry k v))
+    (set multifunction-registry new-registry)
+    (set bug-fixed true))
 
   # multifunction -> function
   (defn resolve-overload [{:name name :overloads overloads} arg-types]
