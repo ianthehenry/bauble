@@ -166,7 +166,7 @@
     return normalize(vec2(with_outer(q, step) - with_outer1(q, step), with_outer2(q, step) - with_outer3(q, step)));
   }
   
-  vec3 default_2d_color(vec2 gradient, float d) {
+  vec3 default_2d_color(float d, vec2 gradient) {
     const float line_every = 10.0;
     const float shadow_thickness = 0.5;
     const float boundary_thickness = 2.0;
@@ -187,7 +187,7 @@
       vec2 Q = q;
       float d = nearest_distance(q);
       vec2 gradient = calculate_gradient(q);
-      return default_2d_color(gradient, d);
+      return default_2d_color(d, gradient);
     }
   }
   

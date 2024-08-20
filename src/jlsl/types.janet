@@ -27,6 +27,7 @@
     (assert (= (param-sig/type sig) (variable/type lexical-variable)) "BUG: parameter signature type mismatch")
     [lexical-variable sig])
   (defn var [t] (in t 0))
+  (defn name [t] (variable/name (in t 0)))
   (defn sig [t] (in t 1))
   (defn type [t] (param-sig/type (sig t)))
   (defn access [t] (param-sig/access (sig t))))
@@ -240,11 +241,19 @@
     (ref/set free-var-access-ref result)
     result))
 
+  (defn- sort-params [params]
+    (sort params (fn [param1 param2]
+      (cond
+        (= (param/access param1) (param/access param2))
+          (< (param/name param1) (param/name param2))
+        (< (param/access param1) (param/access param2))
+          true
+        false))))
+
   (defn implicit-params [t]
     (def {:implicit-params-ref implicit-params-ref} t)
     (ref/get-or-put implicit-params-ref
-      # TODO: this is not a very good sort because variables have a gensym'd component
-      (sort (seq [[variable [read? write?]] :pairs (free-var-accesses t)]
+      (sort-params (seq [[variable [read? write?]] :pairs (free-var-accesses t)]
         (param/new variable (param-sig/new (variable/type variable) (cond
           (and read? write?) :inout
           read? :in
