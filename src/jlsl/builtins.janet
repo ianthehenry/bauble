@@ -41,6 +41,16 @@
     (builtin name return-type param-sigs) (builtin name return-type [;param-sigs type/float])
     (error "BUG")))
 
+(defn- vec-size [t]
+  (type/match t
+    (vec _ elements) elements
+    (error "type error: both outer product arguments must be vectors")))
+(defn- resolve-outer-product [name arg-types]
+  (check-arity name 2 arg-types)
+  (def rows (vec-size (in arg-types 0)))
+  (def cols (vec-size (in arg-types 1)))
+  (builtin name (type/mat cols rows) arg-types))
+
 (defn- resolve-one-multiply [l r]
   (type/match l
     (primitive _) r
@@ -137,6 +147,7 @@
 (defbuiltin normalize (partial resolve-generic 1))
 (defbuiltin dot (partial numeric-vector-to-number 2))
 (defbuiltin cross (just {[type/vec3 type/vec3] type/vec3}))
+(defbuiltin outer-product resolve-outer-product "outerProduct")
 (defbuiltin faceforward (partial resolve-generic 3))
 (defbuiltin reflect (partial resolve-generic 2))
 (defbuiltin refract resolve-refract)
@@ -231,6 +242,7 @@
 (typecheck (mat2 [1 2] [3 4]) [:vec2 :vec2 -> :mat2])
 (typecheck (mat2x3 [1 2] [3 4] [5 6]) [:vec2 :vec2 :vec2 -> :mat2x3])
 (typecheck (mat3x2 [1 2 3] [4 5 6]) [:vec3 :vec3 -> :mat3x2])
+(typecheck (outer-product [1 2] [4 5 6]) [:vec2 :vec3 -> :mat3x2])
 
 (typecheck (length [1 2 3]) [:vec3 -> :float])
 (typecheck (distance [1 2 3] [1 2 3]) [:vec3 :vec3 -> :float])

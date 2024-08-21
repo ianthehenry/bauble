@@ -141,6 +141,7 @@
       [mix]
       [normalize]
       [not-equal]
+      [outer-product]
       [radians]
       [reflect]
       [refract]

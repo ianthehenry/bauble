@@ -105,6 +105,7 @@
     not-equal @{}
     not= @{}
     or @{}
+    outer-product @{}
     p @{:value [:var "p" :vec3]}
     parallelogram @{:doc "(parallelogram width height skew)\n\nit a parallelogram"}
     pow @{}
