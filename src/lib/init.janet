@@ -1,5 +1,5 @@
-(import ./evaluator)
-(import ./renderer)
+(import ./evaluator :export true)
+(import ./renderer :export true)
 (import ../legacy/completer :export true)
 
 # TODO: these are shims for compatibility with the old Bauble API;

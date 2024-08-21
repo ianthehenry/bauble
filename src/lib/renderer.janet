@@ -3,11 +3,16 @@
 (import ../jlsl)
 (import ../glsl)
 (import ./field-set)
+(import ./syntax)
 (use ./dynvars)
-
 (use ../jlsl/prelude)
 
-(def default-2d-color-expression
+(defmacro sugar [expr] (syntax/expand expr))
+
+(defmacro program/new [& body]
+  ~(jlsl/program/new ,;(syntax/expand body)))
+
+(def default-2d-color-expression (sugar
   (jlsl/do "default-2d-color"
     (def line-every 10)
     (def shadow-thickness 0.5)
@@ -16,18 +21,18 @@
     (var gradient-color (+ 0.5 (* 0.5 gradient)))
 
     (var inside (step (sign d) 0))
-    (var isoline (smoothstep (- 1 shadow-thickness) 1 (/ (mod (abs d) line-every) line-every)))
-    (var boundary-line (- 1 (smoothstep 0 (* 0.5 boundary-thickness) (abs d))))
+    (var isoline (smoothstep (1 - shadow-thickness) 1 (mod (abs d) line-every / line-every)))
+    (var boundary-line (1 - (smoothstep 0 (0.5 * boundary-thickness) (abs d))))
 
     (mix
       (pow (vec3 gradient-color inside) (vec3 (mix 1 2 isoline)))
       (vec3 1)
-      boundary-line)))
+      boundary-line))))
 
 (defn get-2d-program [subject]
   (def NORMAL_OFFSET 0.005)
 
-  (jlsl/program/new
+  (program/new
     (precision highp float)
     # just to be ignored...
     (uniform :vec3 camera-origin)
@@ -43,20 +48,20 @@
       (def step (vec2 NORMAL_OFFSET 0))
       (return (normalize [
         (-
-          (with [q (+ q (. step xy))] (nearest-distance))
-          (with [q (- q (. step xy))] (nearest-distance)))
+          (with [q (q + step.xy)] (nearest-distance))
+          (with [q (q - step.xy)] (nearest-distance)))
 
         (-
-          (with [q (+ q (. step yx))] (nearest-distance))
-          (with [q (- q (. step yx))] (nearest-distance)))
+          (with [q (q + step.yx)] (nearest-distance))
+          (with [q (q - step.yx)] (nearest-distance)))
         ])))
 
     (defn :vec3 sample [:vec2 frag-coord]
-      (var resolution (. viewport zw))
-      (var local-frag-coord (- frag-coord (. viewport xy)))
-      (var relative-position (/ (- local-frag-coord (* resolution 0.5)) resolution))
+      (var resolution viewport.zw)
+      (var local-frag-coord (frag-coord - viewport.xy))
+      (var relative-position (local-frag-coord - (resolution * 0.5) / resolution))
       # TODO: 256 should vary by zoom amount
-      (var local-coord (* relative-position 256))
+      (var local-coord (relative-position * 256))
 
       (with [q local-coord
              Q q
@@ -78,13 +83,12 @@
 
       (for (var y :1) (<= y aa-samples) (++ y)
         (for (var x :1) (<= x aa-samples) (++ x)
-          (var sample-offset (- (* aa-sample-width [(float x) (float y)]) pixel-origin))
-          (+= color (sample (+ (. gl-frag-coord xy) sample-offset)))
+          (var sample-offset (aa-sample-width * [(float x) (float y)] - pixel-origin))
+          (+= color (sample (gl-frag-coord.xy + sample-offset)))
           ))
-      (/= color (float (* aa-samples aa-samples)))
+      (/= color (float (aa-samples * aa-samples)))
 
-      (set frag-color (vec4 (pow color (vec3 (/ gamma))) 1)))
-    ))
+      (set frag-color [(pow color (vec3 (/ gamma))) 1]))))
 
 (defn render-2d [subject]
   (get-2d-program subject))
