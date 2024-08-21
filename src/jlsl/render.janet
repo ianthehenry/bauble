@@ -111,7 +111,7 @@
     (if cond then else)
       ['if (render/expr cond) (render/statement then) ;(if else [(render/statement else)] [])]
     (case value cases)
-      ['case ;(catseq [case :in cases]
+      ['case (render/expr value) ;(catseq [case :in cases]
         (pat/match case
           [statement] [(render/statement statement)]
           [value statement] [(render/expr value) (render/statement statement)]))]
@@ -977,8 +977,9 @@
         2 (return 1)
         (return 2))) `
     float main() {
-      switch (2.0) {
-      case return(1.0): return 2.0;
+      switch (1.0) {
+      case 2.0: return 1.0;
+      default: return 2.0;
       }
     }
   `))
@@ -1000,8 +1001,8 @@
     (jlsl/defn :float main []
       (return (do (case 1 2 (break)) 1))) `
     float do_() {
-      switch (2.0) {
-      default: break;
+      switch (1.0) {
+      case 2.0: break;
       }
       return 1.0;
     }
