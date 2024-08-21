@@ -25,6 +25,11 @@
    :tag tag
    :distance expr})
 
+(defn distance-3d [expr]
+  {:type jlsl/type/vec3
+   :tag tag
+   :distance expr})
+
 (defn type [t] (t :type))
 
 (defn- map-if [x f] (if x (f x)))

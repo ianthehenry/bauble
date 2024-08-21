@@ -27,12 +27,20 @@
   ~(jlsl/jlsl/defn ,return-type ,name ,bindings
     ,;(syntax/expand body)))
 
-(defmacro- defshape [name bindings docstring & body]
+(defmacro- defshape/2d [name bindings docstring & body]
   (assert (string? docstring))
   ~(defn ,name ,docstring ,bindings
     ,;(seq [param :in bindings]
       ~(def ,param (,jlsl/coerce-expr ,param)))
     (field-set/distance-2d (jlsl/do
+      ,;(syntax/expand body)))))
+
+(defmacro- defshape/3d [name bindings docstring & body]
+  (assert (string? docstring))
+  ~(defn ,name ,docstring ,bindings
+    ,;(seq [param :in bindings]
+      ~(def ,param (,jlsl/coerce-expr ,param)))
+    (field-set/distance-3d (jlsl/do
       ,;(syntax/expand body)))))
 
 (defmacro- deftransform [name bindings docstring & body]
@@ -42,14 +50,30 @@
       ~(def ,param (,jlsl/coerce-expr ,param)))
     ,;(syntax/expand body)))
 
-(defshape circle [r]
+(defmacro .
+  "Behaves like `.` in GLSL, for accessing components of a vector or struct, e.g. `(. foo xy)`.\n\nBauble's dot syntax, `foo.xy`, expands to call this macro."
+  [expr field]
+  [jlsl/expr/dot [jlsl/coerce-expr expr] ['quote field]])
+
+(defshape/2d circle [r]
   "it a circle"
   (- (length q) r))
 
-(defshape rect [size]
+(defshape/3d sphere [r]
+  "it a sphere"
+  (- (length p) r))
+
+(defshape/3d box [size]
   "it a box"
-  (var d (- (abs q) (vec2 ,size)))
-  (+ (length (max d 0)) (min (max d.x d.y) 0)))
+  (var d (abs p - vec3 ,size))
+  # TODO: i would like to add an overload such that this is just (max d)
+  (max d 0 | length + (min (max d.x (max d.y d.z)) 0)))
+
+(defshape/2d rect [size]
+  "it a box"
+  (var d (abs q - vec2 ,size))
+  # TODO: i would like to add an overload such that this is just (max d)
+  (max d 0 | length + (min (max d.x d.y) 0)))
 
 (deftransform move [shape offset]
   "translate"
@@ -64,11 +88,6 @@
   "color"
   (typecheck color-expression jlsl/type/vec3)
   (field-set/with field-set :color color-expression))
-
-(defmacro .
-  "Behaves like `.` in GLSL, for accessing components of a vector or struct, e.g. `(. foo xy)`.\n\nBauble's dot syntax, `foo.xy`, expands to call this macro."
-  [expr field]
-  [jlsl/expr/dot [jlsl/coerce-expr expr] ['quote field]])
 
 (defn- sharp-union [& shapes]
   (def type (get-unique field-set/type shapes (fn [types]
@@ -181,14 +200,14 @@
 (defhelper :float ndot [:vec2 a :vec2 b]
   (return ((* a.x b.x) - (* a.y b.y))))
 
-(defshape rhombus [size]
+(defshape/2d rhombus [size]
   "it rhomb"
   (var q (abs q))
   (var h (size - (2 * q) | ndot size / (dot size size) | clamp -1 1))
   (var d (q - (0.5 * size * [(1 - h) (1 + h)]) | length))
   (d * (q.x * size.y + (q.y * size.x) - (size.x * size.y) | sign)))
 
-(defshape parallelogram [width height skew]
+(defshape/2d parallelogram [width height skew]
   "it a parallelogram"
   (var e [skew height])
   (var q (if (< q.y 0) (- q) q))
@@ -202,7 +221,7 @@
   (set d (min d [(dot v v) (width * height - abs s)]))
   (sqrt d.x * sign d.y * -1))
 
-(defshape quad-circle [radius]
+(defshape/2d quad-circle [radius]
   "it's like a circle"
   (var q (abs q / radius))
   (if (> q.y q.x)
@@ -226,7 +245,7 @@
   (radius * length w * sign (a * a * 0.5 + b - 1.5)))
 
 # TODO: helpers like this should probably be private
-(defhelper :mat2 rotate-2d [:float angle]
+(defhelper :mat2 rotate/2d [:float angle]
   "hmm"
   (var s (sin angle))
   (var c (cos angle))
@@ -265,7 +284,7 @@
 (deftransform rotate2d [shape angle]
   "TODO: this should be private"
   (field-set/map shape (fn [expr]
-    (jlsl/with "rotate" [q (* (rotate-2d (- ,angle)) q)] ,expr))))
+    (jlsl/with "rotate" [q (* (rotate/2d (- ,angle)) q)] ,expr))))
 
 # TODO: this should be overloaded to work with 2d shapes, 3d shapes, 2d vectors, or 3d vectors.
 (defn rotate

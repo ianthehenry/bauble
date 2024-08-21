@@ -49,6 +49,7 @@
     atan @{}
     atanh @{}
     bool @{}
+    box @{:doc "(box size)\n\nit a box"}
     ceil @{}
     circle @{:doc "(circle r)\n\nit a circle"}
     clamp @{}
@@ -116,10 +117,10 @@
     remap-plus @{}
     rhombus @{:doc "(rhombus size)\n\nit rhomb"}
     rotate @{:doc "(rotate shape & args)\n\nrotate"}
-    rotate-2d @{:doc "hmm"}
     rotate-x @{:doc "A rotation matrix about the X axis."}
     rotate-y @{:doc "A rotation matrix about the Y axis."}
     rotate-z @{:doc "A rotation matrix about the Z axis."}
+    rotate/2d @{:doc "hmm"}
     rotate2d @{:doc "(rotate2d shape angle)\n\nTODO: this should be private"}
     round @{}
     round-even @{}
@@ -128,6 +129,7 @@
     sinh @{}
     smooth-union @{:doc "(smooth-union r & shapes)\n\n"}
     smoothstep @{}
+    sphere @{:doc "(sphere r)\n\nit a sphere"}
     sqrt @{}
     step @{}
     subject @{:doc "A variable that determines what Bauble will render.\n\nYou can set this variable explicitly to change your focus, or use the `view` macro to change your focus. If you don't set a subject, Bauble will render the last expression in your script that it knows how to render."
