@@ -154,6 +154,8 @@
 (defbuiltin asinh (partial resolve-generic 1))
 (defbuiltin acosh (partial resolve-generic 1))
 (defbuiltin atanh (partial resolve-generic 1))
+(defbuiltin degrees (partial resolve-generic 1))
+(defbuiltin radians (partial resolve-generic 1))
 
 # TODO: actually the second argument must be a float,
 # should overload this
