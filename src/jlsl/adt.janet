@@ -69,7 +69,7 @@
           (error "impossible"))))
 
     (unless (or allow-non-exhaustive-match? (= (div (length branches) 2) (length cases)))
-      (error "non-exhaustive match"))
+      (errorf "non-exhaustive match %q" branches))
 
     (with-syms [$value]
       ~(let [,$value ,value]
@@ -141,6 +141,13 @@
     (error _) "oh no"
     (ok x) (printf "ok %q" x)) `
   ok 123
+`)
+
+(test-stdout
+  (result/match (result/ok 123)
+    (error _) "oh no"
+    (printf "default")) `
+  default
 `)
 
 (test-error
