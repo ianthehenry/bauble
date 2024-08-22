@@ -55,6 +55,9 @@
       x (rotate-x angle)
       y (rotate-y angle)
       z (rotate-z angle)
+      -x (rotate-x (- angle))
+      -y (rotate-y (- angle))
+      -z (rotate-z (- angle))
       (rotate-around axis angle)))))
 
 (defn- show [x] (if (jlsl/expr? x) (jlsl/expr/to-sexp x) x))
