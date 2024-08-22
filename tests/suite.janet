@@ -179,6 +179,13 @@
   "!color after move" `(circle 100 | move [50 0] | color [(q.x / 100 * 0.5 + 0.5) 1 0.5])`
   "!rect" `(rect 75)`
   "!rotation is counter-clockwise" `(rect 70 | rotate 0.1)`
+
+  "!3d rotation" `
+  (union
+    (box 40 | rotate y 0.2 | move [-80 0 80])
+    (box 40 | rotate y 0.2 x 0.5 | move [80 0 -80])
+    (box 40 | rotate x 0.3 y 0.5 | move [80 0 80])
+    (box 40 | rotate (normalize [1 0 1]) 1 | move [-80 0 -80]))`
 })
 
 (each filename (os/dir "./cases")

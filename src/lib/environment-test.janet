@@ -23,7 +23,13 @@
   @{% @{}
     * @{}
     + @{}
+    +x @{:doc "`[1 0 0]`" :value [1 0 0]}
+    +y @{:doc "`[0 1 0]`" :value [0 1 0]}
+    +z @{:doc "`[0 0 1]`" :value [0 0 1]}
     - @{}
+    -x @{:doc "`[-1 0 0]`" :value [-1 0 0]}
+    -y @{:doc "`[0 -1 0]`" :value [0 -1 0]}
+    -z @{:doc "`[0 0 -1]`" :value [0 0 -1]}
     . @{:doc "(. expr field)\n\nBehaves like `.` in GLSL, for accessing components of a vector or struct, e.g. `(. foo xy)`.\n\nBauble's dot syntax, `foo.xy`, expands to call this macro."
         :macro true}
     / @{}
@@ -57,6 +63,7 @@
     cos @{}
     cosh @{}
     cross @{}
+    cross-matrix @{:doc "Returns the matrix such that `(* (cross-matrix vec1) vec2)` = `(cross vec1 vec2)`."}
     d @{:value [:var "d" :float]}
     degrees @{}
     distance @{}
@@ -98,7 +105,6 @@
     mix @{}
     mod @{}
     move @{:doc "(move shape offset)\n\ntranslate"}
-    ndot @{}
     normal @{:value [:var "normal" :vec3]}
     normalize @{}
     not @{}
@@ -117,12 +123,10 @@
     refract @{}
     remap-plus @{}
     rhombus @{:doc "(rhombus size)\n\nit rhomb"}
-    rotate @{:doc "(rotate shape & args)\n\nrotate"}
+    rotate @{:doc "(rotate & args)\n\nlook, there are a lot of overloads"}
     rotate-x @{:doc "A rotation matrix about the X axis."}
     rotate-y @{:doc "A rotation matrix about the Y axis."}
     rotate-z @{:doc "A rotation matrix about the Z axis."}
-    rotate/2d @{:doc "hmm"}
-    rotate2d @{:doc "(rotate2d shape angle)\n\nTODO: this should be private"}
     round @{}
     round-even @{}
     sign @{}
@@ -147,4 +151,18 @@
     vec4 @{}
     view @{:doc "(view subject)\n\nA shorthand for `(set subject _)` that fits nicely into pipe notation, e.g. `(sphere 50 | view)`."
            :macro true}
-    xor @{}})
+    x @{:doc "`[1 0 0]`" :value [1 0 0]}
+    xor @{}
+    y @{:doc "`[0 1 0]`" :value [0 1 0]}
+    z @{:doc "`[0 0 1]`" :value [0 0 1]}})
+
+(use ./environment)
+# just make sure valid use cases don't error
+(test (do (rotate (rect 10) 10) nil) nil)
+(test (do (rotate (box 10) x 20) nil) nil)
+(test (do (rotate (box 10) [1 2 3] 20) nil) nil)
+(test (do (rotate (box 10) x 1 y 2) nil) nil)
+(test-error (rotate (rect 10) x 10) "rotate-2d: no overload for arguments [:vec3]")
+(test-error (rotate (box 10) 10 20) "rotate-around: no overload for arguments [:float :float]")
+(test-error (rotate (box 10) 10) "angle required")
+(test-error (rotate (box 10) x 10 [1 2] 3) "rotate-around: no overload for arguments [:vec2 :float]")

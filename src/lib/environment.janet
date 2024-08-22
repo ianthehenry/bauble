@@ -7,10 +7,15 @@
   "A variable that determines what Bauble will render.\n\nYou can set this variable explicitly to change your focus, or use the `view` macro to change your focus. If you don't set a subject, Bauble will render the last expression in your script that it knows how to render."
   nil)
 
-# TODO: is there some way these could work in 2d and 3d?
-(def x "[1 0 0]" [1 0 0])
-(def y "[0 1 0]" [0 1 0])
-(def z "[0 0 1]" [0 0 1])
+(def x "`[1 0 0]`" [1 0 0])
+(def y "`[0 1 0]`" [0 1 0])
+(def z "`[0 0 1]`" [0 0 1])
+(def -x "`[-1 0 0]`" [-1 0 0])
+(def -y "`[0 -1 0]`" [0 -1 0])
+(def -z "`[0 0 -1]`" [0 0 -1])
+(def +x "`[1 0 0]`" [1 0 0])
+(def +y "`[0 1 0]`" [0 1 0])
+(def +z "`[0 0 1]`" [0 0 1])
 
 (import ../jlsl)
 (import ./dynvars :prefix "" :export true)
@@ -28,6 +33,9 @@
   expr)
 
 # TODO: should really be private
+(defmacro- defhelper- [return-type name bindings & body]
+  ~(jlsl/jlsl/defn- ,return-type ,name ,bindings
+    ,;(syntax/expand body)))
 (defmacro- defhelper [return-type name bindings & body]
   ~(jlsl/jlsl/defn ,return-type ,name ,bindings
     ,;(syntax/expand body)))
@@ -201,8 +209,7 @@
   [& shapes]
   (sharp-union ;shapes))
 
-# TODO: helpers like this should probably be private
-(defhelper :float ndot [:vec2 a :vec2 b]
+(defhelper- :float ndot [:vec2 a :vec2 b]
   (return ((* a.x b.x) - (* a.y b.y))))
 
 (defshape/2d rhombus [size]
@@ -249,13 +256,6 @@
   (var w ([(- t) t] + 0.75 - (t * t) - q))
   (radius * length w * sign (a * a * 0.5 + b - 1.5)))
 
-# TODO: helpers like this should probably be private
-(defhelper :mat2 rotate/2d [:float angle]
-  "hmm"
-  (var s (sin angle))
-  (var c (cos angle))
-  (return (mat2 c s (- s) c)))
-
 # TODO: these are the actually-correct rotation matrices, not
 # the weird transposed ones that I had been using. so probably
 # something needs to change as a result...
@@ -293,29 +293,60 @@
     (- vec.z) 0 vec.x
     vec.y (- vec.x) 0)))
 
-(defhelper :mat3 rotate-around [:vec3 axis :float angle]
-  "Returns a rotation matrix around an arbitrary axis."
+(defhelper- :mat3 rotate-around [:vec3 axis :float angle]
   (return (+
     (cos angle * mat3 1 0 0 0 1 0 0 0 1)
     (sin angle * cross-matrix axis)
     (1 - cos angle * outer-product axis axis))))
 
-(deftransform rotate2d [shape angle]
-  "TODO: this should be private"
-  (field-set/map shape (fn [expr]
-    (jlsl/with "rotate" [q (* (rotate/2d (- ,angle)) q)] ,expr))))
+(defmacro- transform [name variable new-position]
+  (with-syms [$expr]
+    ~(field-set/map shape (fn [,$expr]
+      (jlsl/with ,name [,variable ,new-position] (,'unquote ,$expr))))))
 
-# TODO: this should be overloaded to work with 2d shapes, 3d shapes, 2d vectors, or 3d vectors.
-(defn rotate
+(defn- coerce-expr-or-axis [value]
+  (case value
+    x value
+    y value
+    z value
+    (jlsl/coerce-expr value)))
+
+(defn- floaty? [x] (or (number? x) (and (jlsl/expr? x) (= (jlsl/expr/type x) jlsl/type/float))))
+
+(defhelper- :mat2 rotate-2d [:float angle]
+  (var s (sin angle))
+  (var c (cos angle))
+  (return (mat2 c s (- s) c)))
+
+(defn- rotation-matrix-3d [multiplier args]
+  (reduce2 * (seq [[axis angle] :in (partition 2 args)]
+    (assert angle "angle required")
+    (def angle (* multiplier angle))
+    (case axis
+      x (rotate-x angle)
+      y (rotate-y angle)
+      z (rotate-z angle)
+      (rotate-around axis angle)))))
+
+(defn- rotation-matrix-2d [multiplier args]
+  (reduce2 * (map (comp rotate-2d |(* multiplier $)) args)))
+
+(defn- rotation-matrix [args]
+  (if (floaty? (first args))
+    (rotation-matrix-2d 1 args)
+    (rotation-matrix-3d 1 args)))
+
+(defn- rotate-shape
   "rotate"
   [shape & args]
-  (if (= (field-set/type shape) jlsl/type/vec2)
-    (rotate2d shape ;args)
-    (error "not supported")))
+  (case (field-set/type shape)
+    jlsl/type/vec2 (transform "rotate" q (* ,(rotation-matrix-2d -1 args) q))
+    jlsl/type/vec3 (transform "rotate" p (* ,(rotation-matrix-3d -1 args) p))))
 
-(deftransform rotate-3d
-  [shape axis angle]
-  "rotate but with an axis"
-  (field-set/map shape (fn [expr]
-    (jlsl/with "rotate" [p (* (rotate-around ,axis (- ,angle)) p)] ,expr)
-    )))
+(defn rotate
+  "look, there are a lot of overloads"
+  [& args]
+  (assert (> (@length args) 0) "not enough arguments")
+  (if (field-set/is? (first args))
+    (rotate-shape ;args)
+    (rotation-matrix args)))
