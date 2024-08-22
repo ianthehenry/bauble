@@ -7,6 +7,11 @@
   "A variable that determines what Bauble will render.\n\nYou can set this variable explicitly to change your focus, or use the `view` macro to change your focus. If you don't set a subject, Bauble will render the last expression in your script that it knows how to render."
   nil)
 
+# TODO: is there some way these could work in 2d and 3d?
+(def x "[1 0 0]" [1 0 0])
+(def y "[0 1 0]" [0 1 0])
+(def z "[0 0 1]" [0 0 1])
+
 (import ../jlsl)
 (import ./dynvars :prefix "" :export true)
 (use ./util)
@@ -281,6 +286,20 @@
     (- s) c 0
     0 0 1)))
 
+(defhelper :mat3 cross-matrix [:vec3 vec]
+  "Returns the matrix such that `(* (cross-matrix vec1) vec2)` = `(cross vec1 vec2)`."
+  (return (mat3
+    0 vec.z (- vec.y)
+    (- vec.z) 0 vec.x
+    vec.y (- vec.x) 0)))
+
+(defhelper :mat3 rotate-around [:vec3 axis :float angle]
+  "Returns a rotation matrix around an arbitrary axis."
+  (return (+
+    (cos angle * mat3 1 0 0 0 1 0 0 0 1)
+    (sin angle * cross-matrix axis)
+    (1 - cos angle * outer-product axis axis))))
+
 (deftransform rotate2d [shape angle]
   "TODO: this should be private"
   (field-set/map shape (fn [expr]
@@ -293,3 +312,10 @@
   (if (= (field-set/type shape) jlsl/type/vec2)
     (rotate2d shape ;args)
     (error "not supported")))
+
+(deftransform rotate-3d
+  [shape axis angle]
+  "rotate but with an axis"
+  (field-set/map shape (fn [expr]
+    (jlsl/with "rotate" [p (* (rotate-around ,axis (- ,angle)) p)] ,expr)
+    )))
