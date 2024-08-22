@@ -47,8 +47,8 @@
       (var resolution viewport.zw)
       (var local-frag-coord (frag-coord - viewport.xy))
       (var relative-position (local-frag-coord - (resolution * 0.5) / resolution))
-      # TODO: 256 should vary by zoom amount
-      (var local-coord (relative-position * 256))
+      # TODO: should vary by zoom amount
+      (var local-coord (relative-position * 384))
 
       (with [q local-coord
              Q q

@@ -296,7 +296,7 @@
 
   (defn fix-the-weak-table-bug []
     (when bug-fixed (break))
-    (eprintf "fixing the weak table bug")
+    # (eprintf "fixing the weak table bug")
     (def new-registry (table/weak-keys 64))
     (eachp [k v] multifunction-registry
       (put new-registry k v))
