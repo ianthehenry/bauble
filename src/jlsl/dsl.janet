@@ -13,6 +13,9 @@
 (defmacro jlsl/declare [return-type name param-sigs &opt docstring]
   (def docstring (if docstring [docstring] []))
   ['def name ;docstring (call jlsl/stub return-type (string name) param-sigs)])
+(defmacro jlsl/declare- [return-type name param-sigs &opt docstring]
+  (def docstring (if docstring [docstring] []))
+  ['def- name ;docstring (call jlsl/stub return-type (string name) param-sigs)])
 
 # implement takes a multifunction and returns a single function
 (defmacro jlsl/implement [return-type name params & body]
@@ -49,6 +52,13 @@
     [nil body]))
   ['upscope
     (call jlsl/declare return-type name (map 0 (partition 2 params)) docstring)
+    (call jlsl/implement return-type name params ;body)])
+(defmacro jlsl/defn- [return-type name params & body]
+  (def [docstring body] (if (string? (first body))
+    [(first body) (drop 1 body)]
+    [nil body]))
+  ['upscope
+    (call jlsl/declare- return-type name (map 0 (partition 2 params)) docstring)
     (call jlsl/implement return-type name params ;body)])
 
 (use ./builtins)
