@@ -34,14 +34,55 @@
   # TODO: i would like to add an overload such that this is just (max d)
   (max d 0 | length + (min (max d.x d.y) 0)))
 
-(deftransform move [shape offset]
-  "translate"
-  (typecheck offset (field-set/type shape))
+# This is a minor convenience that lets us use the 3D vector
+# x/y/-x/-y vectors as arguments to move
+# TODO: should we just truncate the vector instead? That's... easier and maybe better?
+(defn- coerce-axis-vector [type vector]
+  (typecheck
+    (jlsl/coerce-expr
+      (if (= type jlsl/type/vec2)
+        (case vector
+          x [1 0]
+          y [0 1]
+          -x [-1 0]
+          -y [0 -1]
+          vector)
+        vector))
+    type))
+
+(defn sum-scaled-vectors [dimension args]
+  (reduce2 + (seq [[direction scale] :in (partition 2 args)]
+    (* (coerce-axis-vector dimension direction) (jlsl/coerce-expr (@or scale 1))))))
+
+(defn move
+  ````
+  Translate a shape. Usually you'd use this with a vector offset:
+
+  ```
+  (move (box 50) [0 100 0])
+  ```
+
+  But you can also provide a vector and a scalar:
+
+  ```
+  (move (box 50) y 100)
+  ```
+
+  Which is the same as `(move (box 50) (y * 100))`.
+
+  If you provide multiple vector-scalar pairs, their sum is the final offset:
+
+  ```
+  (move (box 50) x 100 y 100 -z 20)
+  ```
+
+  That is the same as `(move (box 50) (+ (x * 100) (y * 100) (-z * 100)))`.
+  ````
+  [shape & args]
+  (def offset (sum-scaled-vectors (field-set/type shape) args))
   (if (= (field-set/type shape) jlsl/type/vec2)
-    (field-set/map shape (fn [expr]
-      (jlsl/with "move" [q (- q offset)] ,expr)))
-    (field-set/map shape (fn [expr]
-      (jlsl/with "move" [p (- p offset)] ,expr)))))
+    (transform shape "move" q (- q offset))
+    (transform shape "move" p (- p offset))))
 
 (deftransform color [field-set color-expression]
   "color"

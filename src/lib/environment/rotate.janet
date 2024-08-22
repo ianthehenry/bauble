@@ -40,11 +40,6 @@
     (sin angle * cross-matrix axis)
     (1 - cos angle * outer-product axis axis))))
 
-(defmacro- transform [name variable new-position]
-  (with-syms [$expr]
-    ~(field-set/map shape (fn [,$expr]
-      (jlsl/with ,name [,variable ,new-position] (,'unquote ,$expr))))))
-
 (defn- floaty? [x] (= (jlsl/expr/type (jlsl/coerce-expr x)) jlsl/type/float))
 
 (defhelper- :mat2 rotate-2d [:float angle]
@@ -76,8 +71,8 @@
 
 (defn- rotate-shape [shape args]
   (case (field-set/type shape)
-    jlsl/type/vec2 (transform "rotate" q (* ,(rotation-matrix-2d -1 args) q))
-    jlsl/type/vec3 (transform "rotate" p (* ,(rotation-matrix-3d -1 args) p))))
+    jlsl/type/vec2 (transform shape "rotate" q (* ,(rotation-matrix-2d -1 args) q))
+    jlsl/type/vec3 (transform shape "rotate" p (* ,(rotation-matrix-3d -1 args) p))))
 
 (defn- rotate-vector [vector args]
   (def v (jlsl/coerce-expr vector))

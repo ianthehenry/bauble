@@ -173,6 +173,9 @@
 
   "!default gradient" `(circle 100)`
   "!move shape" `(circle 50 | move [50 0])`
+  "!move 3d" `(box 50 | move [50 0 0])`
+  "!move takes axis, scale pairs" `(box 50 | move x 100 y 100)`
+  "!you can pass 3d axis vectors to move 2d even though you shouldn't be able to" `(rect 50 | move x 50 -y 50)`
   # this doesn't really demonstrate anything...
   "!color field" `(circle 100 | color [(q.x / 100 * 0.5 + 0.5) 1 0.5])`
   "!color before move" `(circle 100 | color [(q.x / 100 * 0.5 + 0.5) 1 0.5] | move [50 0])`

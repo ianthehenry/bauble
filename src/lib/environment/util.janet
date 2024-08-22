@@ -48,3 +48,8 @@
     ,;(seq [param :in (drop 1 bindings)]
       ~(def ,param (,jlsl/coerce-expr ,param)))
     ,;(syntax/expand body)))
+
+(defmacro transform [shape name variable new-position]
+  (with-syms [$expr]
+    ~(field-set/map ,shape (fn [,$expr]
+      (jlsl/with ,name [,variable ,new-position] (,'unquote ,$expr))))))
