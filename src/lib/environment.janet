@@ -136,7 +136,7 @@
 # sanitize properly
 # remap -1 to +1 into 0 to 1
 (defhelper :float remap-plus [:float x]
-  "Remap a number in the range `[-1 1]` into the range `[0 1]`."
+  "(remap-plus x)\n\nRemap a number in the range `[-1 1]` into the range `[0 1]`."
   (return (+ 0.5 (* 0.5 x))))
 
 # TODO: we should probably have a way to do this
@@ -257,9 +257,6 @@
   (var w ([(- t) t] + 0.75 - (t * t) - q))
   (radius * length w * sign (a * a * 0.5 + b - 1.5)))
 
-# TODO: these are the actually-correct rotation matrices, not
-# the weird transposed ones that I had been using. so probably
-# something needs to change as a result...
 (defhelper :mat3 rotate-x [:float angle]
   "A rotation matrix about the X axis."
   (var s (sin angle))
@@ -330,24 +327,50 @@
       (rotate-around axis angle)))))
 
 (defn- rotation-matrix-2d [multiplier args]
-  (reduce2 * (map (comp rotate-2d |(* multiplier $)) args)))
+  (rotate-2d (reduce2 + (map |(* multiplier (jlsl/coerce-expr $)) args))))
 
-(defn- rotation-matrix [args]
+(defn rotation-matrix [args]
+  "Return a rotation matrix. Takes the same arguments as `rotate`, minus the initial thing to rotate."
   (if (floaty? (first args))
     (rotation-matrix-2d 1 args)
     (rotation-matrix-3d 1 args)))
 
-(defn- rotate-shape
-  "rotate"
-  [shape & args]
+(defn- rotate-shape [shape args]
   (case (field-set/type shape)
     jlsl/type/vec2 (transform "rotate" q (* ,(rotation-matrix-2d -1 args) q))
     jlsl/type/vec3 (transform "rotate" p (* ,(rotation-matrix-3d -1 args) p))))
 
+(defn- rotate-vector [vector args]
+  (def v (jlsl/coerce-expr vector))
+  (case (jlsl/expr/type v)
+    jlsl/type/vec2 (* (rotation-matrix-2d 1 args) v)
+    jlsl/type/vec3 (* (rotation-matrix-3d 1 args) v)
+    (errorf "I don't know how to rotate %q" (jlsl/expr/to-sexp v))))
+
 (defn rotate
-  "look, there are a lot of overloads"
-  [& args]
+  ````
+  Rotate a shape or a vector. Positive angles are counter-clockwise rotations.
+
+  In 3D, the arguments should be pairs of `axis angle`. For example:
+
+  ```
+  (rotate (box 50) x 0.1 y 0.2)
+  ```
+
+  All `axis` arguments must be unit vectors. There are built-in axis variables `x`/`+y`/`-z`
+  for the cardinal directions, and these produce optimized rotation matrices. But you can
+  rotate around an arbitrary axis:
+
+  ```
+  (rotate (box 50) (normalize [1 1 1]) t)
+  ```
+
+  The order of the arguments is significant, as rotations are not commutative.
+
+  In 2D, the arguments should just be angles; no axis is allowed.
+  ````
+  [target & args]
   (assert (> (@length args) 0) "not enough arguments")
-  (if (field-set/is? (first args))
-    (rotate-shape ;args)
-    (rotation-matrix args)))
+  (if (field-set/is? target)
+    (rotate-shape target args)
+    (rotate-vector target args)))

@@ -3,7 +3,7 @@
 
 (def- declaration-peg (peg/compile
   ~{:main (* "(" :identifier :usage ")" -1)
-    :usage (* (? " ") '(to ")"))
+    :usage (* (? " ") '(to (* ")" -1)))
     :identifier (some (+ (range "09" "AZ" "az") (set "!$%&*+-./:<?=>@^_")))}))
 
 (defn- parse-usage [usage]
@@ -15,6 +15,7 @@
 (test (parse-usage "(foo bar baz)") "bar baz")
 (test (parse-usage "(foo bar &opt baz)") "bar &opt baz")
 (test (parse-usage "(foo bar &opt baz)") "bar &opt baz")
+(test (parse-usage "(tuple/slice arrtup [,start=0 [,end=(length arrtup)]])") "arrtup [,start=0 [,end=(length arrtup)]]")
 
 (defn- parse-docstring [name docstring]
   (def ix (string/find "\n\n" docstring))

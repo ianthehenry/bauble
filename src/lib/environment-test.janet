@@ -63,7 +63,7 @@
     cos @{}
     cosh @{}
     cross @{}
-    cross-matrix @{:doc "Returns the matrix such that `(* (cross-matrix vec1) vec2)` = `(cross vec1 vec2)`."}
+    cross-matrix @{:doc "(cross-matrix vec)\n\nReturns the matrix such that `(* (cross-matrix vec1) vec2)` = `(cross vec1 vec2)`."}
     d @{:value [:var "d" :float]}
     degrees @{}
     distance @{}
@@ -121,12 +121,13 @@
     rect @{:doc "(rect size)\n\nit a box"}
     reflect @{}
     refract @{}
-    remap-plus @{:doc "Remap a number in the range `[-1 1]` into the range `[0 1]`."}
+    remap-plus @{:doc "(remap-plus x)\n\n(remap-plus x)\n\nRemap a number in the range `[-1 1]` into the range `[0 1]`."}
     rhombus @{:doc "(rhombus size)\n\nit rhomb"}
-    rotate @{:doc "(rotate & args)\n\nlook, there are a lot of overloads"}
-    rotate-x @{:doc "A rotation matrix about the X axis."}
-    rotate-y @{:doc "A rotation matrix about the Y axis."}
-    rotate-z @{:doc "A rotation matrix about the Z axis."}
+    rotate @{:doc "(rotate target & args)\n\nRotate a shape or a vector.\n\nThere are some overloads."}
+    rotate-x @{:doc "(rotate-x angle)\n\nA rotation matrix about the X axis."}
+    rotate-y @{:doc "(rotate-y angle)\n\nA rotation matrix about the Y axis."}
+    rotate-z @{:doc "(rotate-z angle)\n\nA rotation matrix about the Z axis."}
+    rotation-matrix @{:doc "(rotation-matrix args)\n\n"}
     round @{}
     round-even @{}
     sign @{}

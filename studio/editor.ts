@@ -180,6 +180,11 @@ const theme = EditorView.theme({
     backdropFilter: 'var(--popover-backdrop)',
     borderRadius: '2px',
   },
+  ".cm-tooltip.cm-completionInfo > div": {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5em',
+  },
   // TODO: style the "find/replace" box
 });
 
