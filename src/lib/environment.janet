@@ -136,6 +136,7 @@
 # sanitize properly
 # remap -1 to +1 into 0 to 1
 (defhelper :float remap-plus [:float x]
+  "Remap a number in the range `[-1 1]` into the range `[0 1]`."
   (return (+ 0.5 (* 0.5 x))))
 
 # TODO: we should probably have a way to do this
@@ -234,7 +235,7 @@
   (sqrt d.x * sign d.y * -1))
 
 (defshape/2d quad-circle [radius]
-  "it's like a circle"
+  "it's like a circle but quaddier."
   (var q (abs q / radius))
   (if (> q.y q.x)
     (set q q.yx))

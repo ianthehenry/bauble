@@ -116,12 +116,12 @@
     parallelogram @{:doc "(parallelogram width height skew)\n\nit a parallelogram"}
     pow @{}
     q @{:value [:var "q" :vec2]}
-    quad-circle @{:doc "(quad-circle radius)\n\nit's like a circle"}
+    quad-circle @{:doc "(quad-circle radius)\n\nit's like a circle but quaddier."}
     radians @{}
     rect @{:doc "(rect size)\n\nit a box"}
     reflect @{}
     refract @{}
-    remap-plus @{}
+    remap-plus @{:doc "Remap a number in the range `[-1 1]` into the range `[0 1]`."}
     rhombus @{:doc "(rhombus size)\n\nit rhomb"}
     rotate @{:doc "(rotate & args)\n\nlook, there are a lot of overloads"}
     rotate-x @{:doc "A rotation matrix about the X axis."}

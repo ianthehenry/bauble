@@ -48,7 +48,8 @@
       (var local-frag-coord (frag-coord - viewport.xy))
       (var relative-position (local-frag-coord - (resolution * 0.5) / resolution))
       # TODO: should vary by zoom amount
-      (var local-coord (relative-position * 384))
+      # 384 is a better approximation of a 45° fov at the default zoom level
+      (var local-coord (relative-position * 256))
 
       (with [q local-coord
              Q q
