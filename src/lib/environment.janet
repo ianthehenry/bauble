@@ -302,13 +302,6 @@
     ~(field-set/map shape (fn [,$expr]
       (jlsl/with ,name [,variable ,new-position] (,'unquote ,$expr))))))
 
-(defn- coerce-expr-or-axis [value]
-  (case value
-    x value
-    y value
-    z value
-    (jlsl/coerce-expr value)))
-
 (defn- floaty? [x] (or (number? x) (and (jlsl/expr? x) (= (jlsl/expr/type x) jlsl/type/float))))
 
 (defhelper- :mat2 rotate-2d [:float angle]
@@ -327,7 +320,7 @@
       (rotate-around axis angle)))))
 
 (defn- rotation-matrix-2d [multiplier args]
-  (rotate-2d (reduce2 + (map |(* multiplier (jlsl/coerce-expr $)) args))))
+  (rotate-2d (* multiplier (reduce2 + args))))
 
 (defn rotation-matrix [args]
   "Return a rotation matrix. Takes the same arguments as `rotate`, minus the initial thing to rotate."
