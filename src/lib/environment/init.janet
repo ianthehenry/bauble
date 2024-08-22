@@ -1,3 +1,10 @@
+(use ./import)
+
+(import ./prelude :prefix "" :export true)
+(import ./rotate :prefix "" :export true)
+(import ../dynvars :prefix "" :export true)
+(import ../../jlsl/prelude :prefix "" :export true)
+
 (defmacro view
   "A shorthand for `(set subject _)` that fits nicely into pipe notation, e.g. `(sphere 50 | view)`."
   [subject]
@@ -6,67 +13,6 @@
 (var subject
   "A variable that determines what Bauble will render.\n\nYou can set this variable explicitly to change your focus, or use the `view` macro to change your focus. If you don't set a subject, Bauble will render the last expression in your script that it knows how to render."
   nil)
-
-(def x "`[1 0 0]`" [1 0 0])
-(def y "`[0 1 0]`" [0 1 0])
-(def z "`[0 0 1]`" [0 0 1])
-(def -x "`[-1 0 0]`" [-1 0 0])
-(def -y "`[0 -1 0]`" [0 -1 0])
-(def -z "`[0 0 -1]`" [0 0 -1])
-(def +x "`[1 0 0]`" [1 0 0])
-(def +y "`[0 1 0]`" [0 1 0])
-(def +z "`[0 0 1]`" [0 0 1])
-
-(import ../jlsl)
-(import ./dynvars :prefix "" :export true)
-(use ./util)
-(import ./syntax)
-(import ./field-set)
-(import ../jlsl/prelude :prefix "" :export true)
-
-(defn- typecheck [expr expected]
-  (def actual (jlsl/expr/type expr))
-  (assertf (= actual expected)
-    "type mismatch: expected %q, got %q"
-    (jlsl/show-type expected)
-    (jlsl/show-type actual))
-  expr)
-
-# TODO: should really be private
-(defmacro- defhelper- [return-type name bindings & body]
-  ~(jlsl/jlsl/defn- ,return-type ,name ,bindings
-    ,;(syntax/expand body)))
-(defmacro- defhelper [return-type name bindings & body]
-  ~(jlsl/jlsl/defn ,return-type ,name ,bindings
-    ,;(syntax/expand body)))
-
-(defmacro- defshape/2d [name bindings docstring & body]
-  (assert (string? docstring))
-  ~(defn ,name ,docstring ,bindings
-    ,;(seq [param :in bindings]
-      ~(def ,param (,jlsl/coerce-expr ,param)))
-    (field-set/distance-2d (jlsl/do
-      ,;(syntax/expand body)))))
-
-(defmacro- defshape/3d [name bindings docstring & body]
-  (assert (string? docstring))
-  ~(defn ,name ,docstring ,bindings
-    ,;(seq [param :in bindings]
-      ~(def ,param (,jlsl/coerce-expr ,param)))
-    (field-set/distance-3d (jlsl/do
-      ,;(syntax/expand body)))))
-
-(defmacro- deftransform [name bindings docstring & body]
-  (assert (string? docstring))
-  ~(defn ,name ,docstring ,bindings
-    ,;(seq [param :in (drop 1 bindings)]
-      ~(def ,param (,jlsl/coerce-expr ,param)))
-    ,;(syntax/expand body)))
-
-(defmacro .
-  "Behaves like `.` in GLSL, for accessing components of a vector or struct, e.g. `(. foo xy)`.\n\nBauble's dot syntax, `foo.xy`, expands to call this macro."
-  [expr field]
-  [jlsl/expr/dot [jlsl/coerce-expr expr] ['quote field]])
 
 (defshape/2d circle [r]
   "it a circle"
@@ -256,114 +202,3 @@
   (*= t 0.5)
   (var w ([(- t) t] + 0.75 - (t * t) - q))
   (radius * length w * sign (a * a * 0.5 + b - 1.5)))
-
-(defhelper :mat3 rotate-x [:float angle]
-  "A rotation matrix about the X axis."
-  (var s (sin angle))
-  (var c (cos angle))
-  (return (mat3
-    1 0 0
-    0 c s
-    0 (- s) c)))
-
-(defhelper :mat3 rotate-y [:float angle]
-  "A rotation matrix about the Y axis."
-  (var s (sin angle))
-  (var c (cos angle))
-  (return (mat3
-    c 0 (- s)
-    0 1 0
-    s 0 c)))
-
-(defhelper :mat3 rotate-z [:float angle]
-  "A rotation matrix about the Z axis."
-  (var s (sin angle))
-  (var c (cos angle))
-  (return (mat3
-    c s 0
-    (- s) c 0
-    0 0 1)))
-
-(defhelper :mat3 cross-matrix [:vec3 vec]
-  "Returns the matrix such that `(* (cross-matrix vec1) vec2)` = `(cross vec1 vec2)`."
-  (return (mat3
-    0 vec.z (- vec.y)
-    (- vec.z) 0 vec.x
-    vec.y (- vec.x) 0)))
-
-(defhelper- :mat3 rotate-around [:vec3 axis :float angle]
-  (return (+
-    (cos angle * mat3 1 0 0 0 1 0 0 0 1)
-    (sin angle * cross-matrix axis)
-    (1 - cos angle * outer-product axis axis))))
-
-(defmacro- transform [name variable new-position]
-  (with-syms [$expr]
-    ~(field-set/map shape (fn [,$expr]
-      (jlsl/with ,name [,variable ,new-position] (,'unquote ,$expr))))))
-
-(defn- floaty? [x] (or (number? x) (and (jlsl/expr? x) (= (jlsl/expr/type x) jlsl/type/float))))
-
-(defhelper- :mat2 rotate-2d [:float angle]
-  (var s (sin angle))
-  (var c (cos angle))
-  (return (mat2 c s (- s) c)))
-
-(defn- rotation-matrix-3d [multiplier args]
-  (reduce2 * (seq [[axis angle] :in (partition 2 args)]
-    (assert angle "angle required")
-    (def angle (* multiplier angle))
-    (case axis
-      x (rotate-x angle)
-      y (rotate-y angle)
-      z (rotate-z angle)
-      (rotate-around axis angle)))))
-
-(defn- rotation-matrix-2d [multiplier args]
-  (rotate-2d (* multiplier (reduce2 + args))))
-
-(defn rotation-matrix [args]
-  "Return a rotation matrix. Takes the same arguments as `rotate`, minus the initial thing to rotate."
-  (if (floaty? (first args))
-    (rotation-matrix-2d 1 args)
-    (rotation-matrix-3d 1 args)))
-
-(defn- rotate-shape [shape args]
-  (case (field-set/type shape)
-    jlsl/type/vec2 (transform "rotate" q (* ,(rotation-matrix-2d -1 args) q))
-    jlsl/type/vec3 (transform "rotate" p (* ,(rotation-matrix-3d -1 args) p))))
-
-(defn- rotate-vector [vector args]
-  (def v (jlsl/coerce-expr vector))
-  (case (jlsl/expr/type v)
-    jlsl/type/vec2 (* (rotation-matrix-2d 1 args) v)
-    jlsl/type/vec3 (* (rotation-matrix-3d 1 args) v)
-    (errorf "I don't know how to rotate %q" (jlsl/expr/to-sexp v))))
-
-(defn rotate
-  ````
-  Rotate a shape or a vector. Positive angles are counter-clockwise rotations.
-
-  In 3D, the arguments should be pairs of `axis angle`. For example:
-
-  ```
-  (rotate (box 50) x 0.1 y 0.2)
-  ```
-
-  All `axis` arguments must be unit vectors. There are built-in axis variables `x`/`+y`/`-z`
-  for the cardinal directions, and these produce optimized rotation matrices. But you can
-  rotate around an arbitrary axis:
-
-  ```
-  (rotate (box 50) (normalize [1 1 1]) t)
-  ```
-
-  The order of the arguments is significant, as rotations are not commutative.
-
-  In 2D, the arguments should just be angles; no axis is allowed.
-  ````
-  [target & args]
-  (assert (> (@length args) 0) "not enough arguments")
-  (if (field-set/is? target)
-    (rotate-shape target args)
-    (rotate-vector target args)))

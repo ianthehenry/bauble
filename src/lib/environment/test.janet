@@ -1,5 +1,5 @@
 (use judge)
-(import ../jlsl)
+(import ../../jlsl)
 
 (defn cleanse-environment-entry [t]
   (if (table? t) (do
@@ -19,7 +19,7 @@
   (tabseq [[k v] :pairs t :when (symbol? k) :when (not (v :private))]
     k (cleanse-environment-entry v)))
 
-(test (cleanse-environment (require "./environment"))
+(test (cleanse-environment (require "."))
   @{% @{}
     * @{}
     + @{}
@@ -123,7 +123,7 @@
     refract @{}
     remap-plus @{:doc "(remap-plus x)\n\n(remap-plus x)\n\nRemap a number in the range `[-1 1]` into the range `[0 1]`."}
     rhombus @{:doc "(rhombus size)\n\nit rhomb"}
-    rotate @{:doc "(rotate target & args)\n\nRotate a shape or a vector.\n\nThere are some overloads."}
+    rotate @{:doc "(rotate target & args)\n\nRotate a shape or a vector. Positive angles are counter-clockwise rotations.\n\nIn 3D, the arguments should be pairs of `axis angle`. For example:\n\n```\n(rotate (box 50) x 0.1 y 0.2)\n```\n\nAll `axis` arguments must be unit vectors. There are built-in axis variables `x`/`+y`/`-z`\nfor the cardinal directions, and these produce optimized rotation matrices. But you can\nrotate around an arbitrary axis:\n\n```\n(rotate (box 50) (normalize [1 1 1]) t)\n```\n\nThe order of the arguments is significant, as rotations are not commutative.\n\nIn 2D, the arguments should just be angles; no axis is allowed."}
     rotate-x @{:doc "(rotate-x angle)\n\nA rotation matrix about the X axis."}
     rotate-y @{:doc "(rotate-y angle)\n\nA rotation matrix about the Y axis."}
     rotate-z @{:doc "(rotate-z angle)\n\nA rotation matrix about the Z axis."}
@@ -157,13 +157,13 @@
     y @{:doc "`[0 1 0]`" :value [0 1 0]}
     z @{:doc "`[0 0 1]`" :value [0 0 1]}})
 
-(use ./environment)
+(use .)
 # just make sure valid use cases don't error
 (test (do (rotate (rect 10) 10) nil) nil)
 (test (do (rotate (box 10) x 20) nil) nil)
 (test (do (rotate (box 10) [1 2 3] 20) nil) nil)
 (test (do (rotate (box 10) x 1 y 2) nil) nil)
-(test-error (rotate (rect 10) x 10) "rotate-2d: no overload for arguments [:vec3]")
+(test-error (rotate (rect 10) x 10) "expected angle, got (1 0 0)")
 (test-error (rotate (box 10) 10 20) "rotate-around: no overload for arguments [:float :float]")
 (test-error (rotate (box 10) 10) "angle required")
 (test-error (rotate (box 10) x 10 [1 2] 3) "rotate-around: no overload for arguments [:vec2 :float]")

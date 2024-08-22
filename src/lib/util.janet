@@ -40,12 +40,3 @@
 
 (defn ptuple? [x]
   (and (tuple? x) (= (tuple/type x) :parens)))
-
-(defmacro assertf [x & args]
-  ~(as-macro ,assert ,x (,string/format ,;args)))
-
-(defn get-unique [f ind on-error]
-  (def distincts (distinct (map f ind)))
-  (case (length distincts)
-    1 (in distincts 0)
-    (on-error distincts)))
