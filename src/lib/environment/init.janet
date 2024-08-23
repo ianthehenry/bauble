@@ -2,6 +2,7 @@
 
 (import ./prelude :prefix "" :export true)
 (import ./rotate :prefix "" :export true)
+(import ./noise :prefix "" :export true)
 (import ../dynvars :prefix "" :export true)
 (import ../../jlsl/prelude :prefix "" :export true)
 

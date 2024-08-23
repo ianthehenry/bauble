@@ -182,6 +182,9 @@
   "!color after move" `(circle 100 | move [50 0] | color [(q.x / 100 * 0.5 + 0.5) 1 0.5])`
   "!rect" `(rect 75)`
   "!rotation is counter-clockwise" `(rect 70 | rotate 0.1)`
+  "!perlin2" `(sphere 100 | color (vec3 (remap+ (perlin2 (p.xy / 10)))))`
+  "!perlin3" `(sphere 100 | color (vec3 (remap+ (perlin3 (p / 10)))))`
+  "!perlin4" `(sphere 100 | color (vec3 (remap+ (perlin4 [(p / 10) 0]))))`
 
   "!3d rotation" `
   (union
