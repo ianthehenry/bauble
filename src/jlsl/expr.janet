@@ -133,7 +133,6 @@
           (def ,$type (,expr/type ,$expr))
           (def ,name (,variable/new ,(string name) ,$type))
           (,statement/declaration ,const? ,name ,$expr)))
-    [(or 'def 'var) &] (errorf "illegal form %q" ast)
     ['set dest value] [statement/assign (expr/of-ast dest) (expr/of-ast value)]
     ['return value] [statement/return (expr/of-ast value)]
     ['unquote ['splice expr]] [statement/upscope expr]
@@ -171,5 +170,6 @@
             (expr/of-ast check)
             (statement/of-ast advance)
             (statement/of-asts body)]))
+    [(or 'def 'var 'set 'return) &] (errorf "illegal form %q" ast)
     other [statement/expr (expr/of-ast other)]
   ))
