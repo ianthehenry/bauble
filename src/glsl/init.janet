@@ -78,8 +78,22 @@
     
   `))
 
+# okay this is terrible but whatever
 (defn identifier [name]
-  (string/replace-all "-" "_" name))
+  (->> name
+    (peg/replace-all ~(* (column) (set "+*") (+ (/ (look 0 -1) true) (constant false))) (fn [char col eos]
+      (def bos (= col 1))
+      (if (and bos eos)
+        char
+        (string (if-not bos "_") ('{"+" "plus" "*" "star"} char) (if-not eos "_")))))
+    (string/replace-all "-" "_")
+    ))
+
+(test (identifier "foo-bar") "foo_bar")
+(test (identifier "foo+") "foo_plus")
+(test (identifier "+foo") "plus_foo")
+(test (identifier "foo*+") "foo_star__plus")
+(test (identifier "+") "+")
 
 (var render-statement nil)
 (var render-expression nil)
