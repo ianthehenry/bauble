@@ -114,9 +114,8 @@
     outer-product @{}
     p @{:value [:var "p" :vec3]}
     parallelogram @{:doc "(parallelogram size skew)\n\nReturns a 2D shape. `size.x` is the width of the top and bottom edges, and `size.y` is the height of the parellogram.\n\n`skew` is how far the pallorelogram leans in the `x` direction, so the total width of the prellogram is `(size.x + skew) * 2`.\nA `skew` of `0` gives the same shape as `rect`.\""}
-    perlin2 @{:doc "(perlin2 P)\n\nTODO"}
-    perlin3 @{:doc "(perlin3 P)\n\nTODO"}
-    perlin4 @{:doc "(perlin4 P)\n\nTODO"}
+    perlin @{:doc "(perlin P)\n\nReturns perlin noise from -1 to 1. The input is a vector of any dimension."}
+    perlin+ @{:doc "(perlin+ v)\n\nPerlin noise in the range 0 to 1."}
     pow @{}
     product @{:doc "(product v)\n\nMultiply the components of a vector."}
     q @{:value [:var "q" :vec2]}

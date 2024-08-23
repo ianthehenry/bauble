@@ -1,3 +1,4 @@
+(use ./util)
 (import ../../jlsl)
 
 (defmacro .
@@ -14,3 +15,9 @@
 (def +x "`[1 0 0]`" [1 0 0])
 (def +y "`[0 1 0]`" [0 1 0])
 (def +z "`[0 0 1]`" [0 0 1])
+
+(import ../../jlsl/prelude :prefix "" :export true)
+
+(defhelper :float remap+ [:float x]
+  "(remap+ x)\n\nRemap a number in the range `[-1 1]` into the range `[0 1]`."
+  (return (+ 0.5 (* 0.5 x))))

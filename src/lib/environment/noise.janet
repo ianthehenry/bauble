@@ -8,8 +8,8 @@
 (overload   :vec3 fade [:vec3 t] (return (* t t t (t * (t * 6 - 15) + 10))))
 (overload   :vec4 fade [:vec4 t] (return (* t t t (t * (t * 6 - 15) + 10))))
 
-(defhelper :float perlin2 [:vec2 P]
-  "TODO"
+(defhelper :float perlin [:vec2 P]
+  "Returns perlin noise from -1 to 1. The input is a vector of any dimension."
   (var Pi ((floor P.xyxy) + [0 0 1 1]))
   (var Pf ((fract P.xyxy) - [0 0 1 1]))
   (set Pi (mod289 Pi))
@@ -46,8 +46,7 @@
   (var n-xy (mix n-x.x n-x.y fade-xy.y))
   (return (2.3 * n-xy)))
 
-(defhelper :float perlin3 [:vec3 P]
-  "TODO"
+(overload :float perlin [:vec3 P]
   (var Pi0 (floor P))
   (var Pi1 (Pi0 + 1))
   (var Pi0 (mod289 Pi0))
@@ -114,8 +113,7 @@
   (var n-xyz (mix n-yz.x n-yz.y fade-xyz.x))
   (return (2.2 * n-xyz)))
 
-(defhelper :float perlin4 [:vec4 P]
-  "TODO"
+(overload :float perlin [:vec4 P]
   (var Pi0 (floor P))
   (var Pi1 (Pi0 + 1))
   (set Pi0 (mod289 Pi0))
@@ -247,3 +245,7 @@
   (var n-xyzw (mix n-yzw.x n-yzw.y fade-xyzw.x))
   (return (2.2 * n-xyzw)))
 
+(defn perlin+
+  "Perlin noise in the range 0 to 1."
+  [v]
+  (remap+ (perlin v)))

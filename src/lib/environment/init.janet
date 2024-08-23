@@ -131,13 +131,6 @@
         ))
     ))
 
-# TODO: this should be called remap+ but JLSL doesn't
-# sanitize properly
-# remap -1 to +1 into 0 to 1
-(defhelper :float remap+ [:float x]
-  "(remap+ x)\n\nRemap a number in the range `[-1 1]` into the range `[0 1]`."
-  (return (+ 0.5 (* 0.5 x))))
-
 # TODO: we should probably have a way to do this
 (defn- symmetric-color-union [r shapes]
   (def colors (seq [{:color c :distance d} :in shapes :when c] [c (@or d (jlsl/coerce-expr 0))]))
