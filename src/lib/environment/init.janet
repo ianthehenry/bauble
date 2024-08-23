@@ -11,25 +11,33 @@
   ~(set subject ,subject))
 
 (var subject
-  "A variable that determines what Bauble will render.\n\nYou can set this variable explicitly to change your focus, or use the `view` macro to change your focus. If you don't set a subject, Bauble will render the last expression in your script that it knows how to render."
+  "A variable that determines what Bauble will render.\n\nYou can set this variable explicitly to change your focus, or use the `view` macro to change your focus. If you don't set a subject, Bauble will render the last shape in your script."
   nil)
 
-(defshape/2d circle [r]
-  "it a circle"
-  (- (length q) r))
+(defshape/2d circle [radius]
+  "Returns a 2D shape."
+  (- (length q) radius))
 
-(defshape/3d sphere [r]
-  "it a sphere"
-  (- (length p) r))
+(defshape/3d sphere [radius]
+  "Returns a 3D shape."
+  (- (length p) radius))
 
 (defshape/3d box [size]
-  "it a box"
+  ```
+  Returns a 3D shape, a box with corners at `(- size)` and `size`. `size` will be coerced to a `vec3`.
+  
+  Think of `size` like the "radius" of the box: a box with `size.x = 50` will be `100` units wide.
+  ```
   (var d (abs p - vec3 ,size))
   # TODO: i would like to add an overload such that this is just (max d)
   (max d 0 | length + (min (max d.x (max d.y d.z)) 0)))
 
 (defshape/2d rect [size]
-  "it a box"
+  ```
+  Returns a 2D shape, a rectangle with corners at `(- size)` and `size`. `size` will be coerced to a `vec2`.
+
+  Think of `size` like the "radius" of the rect: a rect with `size.x = 50` will be `100` units wide.
+  ```
   (var d (abs q - vec2 ,size))
   # TODO: i would like to add an overload such that this is just (max d)
   (max d 0 | length + (min (max d.x d.y) 0)))
@@ -50,7 +58,10 @@
         vector))
     type))
 
-(defn sum-scaled-vectors [dimension args]
+# TODO: maybe this should be, like, a vector sum, but you peek forward
+# each time to see if the next argument is a scalar? would that be better?
+# it's a backwards-compatible change...
+(defn- sum-scaled-vectors [dimension args]
   (reduce2 + (seq [[direction scale] :in (partition 2 args)]
     (* (coerce-axis-vector dimension direction) (jlsl/coerce-expr (@or scale 1))))))
 
@@ -84,10 +95,10 @@
     (transform shape "move" q (- q offset))
     (transform shape "move" p (- p offset))))
 
-(deftransform color [field-set color-expression]
-  "color"
-  (typecheck color-expression jlsl/type/vec3)
-  (field-set/with field-set :color color-expression))
+(deftransform color [shape color]
+  "Set the color field of a shape."
+  (typecheck color jlsl/type/vec3)
+  (field-set/with shape :color color))
 
 (defn- sharp-union [& shapes]
   (def type (get-unique field-set/type shapes (fn [types]
@@ -122,8 +133,8 @@
 # TODO: this should be called remap+ but JLSL doesn't
 # sanitize properly
 # remap -1 to +1 into 0 to 1
-(defhelper :float remap-plus [:float x]
-  "(remap-plus x)\n\nRemap a number in the range `[-1 1]` into the range `[0 1]`."
+(defhelper :float remap+ [:float x]
+  "(remap+ x)\n\nRemap a number in the range `[-1 1]` into the range `[0 1]`."
   (return (+ 0.5 (* 0.5 x))))
 
 # TODO: we should probably have a way to do this
@@ -138,7 +149,7 @@
       ,;(seq [[color-expr dist-expr] :in colors]
         (jlsl/statement
           (var dist ,dist-expr)
-          (var contribution (remap-plus (clamp (/ (- nearest dist) r) -1 1)))
+          (var contribution (remap+ (clamp (/ (- nearest dist) r) -1 1)))
           (set nearest (- (mix nearest dist contribution) (* r contribution (- 1 contribution))))
           (if (> contribution 0) (set color (mix color ,color-expr contribution)))
         ))
@@ -156,8 +167,8 @@
         (jlsl/statement
           (var dist ,dist-expr)
           # TODO: wait, what, do we need h here, what is happening
-          (var contribution (- 1 (remap-plus (clamp (/ (min dist (- dist nearest)) r) -1 1))))
-          (var h (remap-plus (clamp (/ (- nearest dist) r) -1 1)))
+          (var contribution (- 1 (remap+ (clamp (/ (min dist (- dist nearest)) r) -1 1))))
+          (var h (remap+ (clamp (/ (- nearest dist) r) -1 1)))
           (set h contribution)
           (set nearest (- (mix nearest dist h) (* r h (- 1 h))))
           (if (> contribution 0) (set color (mix color ,color-expr contribution)))
@@ -182,7 +193,7 @@
         ,;(seq [expr :in (drop 1 distances)]
           (jlsl/statement
             (var dist ,expr)
-            (var h (remap-plus (clamp (/ (- nearest dist) r) -1 1)))
+            (var h (remap+ (clamp (/ (- nearest dist) r) -1 1)))
             (set nearest (- (mix nearest dist h) (* r h (- 1 h))))))
         nearest))
 
@@ -201,28 +212,37 @@
   (return ((* a.x b.x) - (* a.y b.y))))
 
 (defshape/2d rhombus [size]
-  "it rhomb"
+  "Returns a 2D shape. It rhombs with a kite."
   (var q (abs q))
   (var h (size - (2 * q) | ndot size / (dot size size) | clamp -1 1))
   (var d (q - (0.5 * size * [(1 - h) (1 + h)]) | length))
   (d * (q.x * size.y + (q.y * size.x) - (size.x * size.y) | sign)))
 
-(defshape/2d parallelogram [width height skew]
-  "it a parallelogram"
-  (var e [skew height])
+(defshape/2d parallelogram [size skew]
+  ```
+  Returns a 2D shape. `size.x` is the width of the top and bottom edges, and `size.y` is the height of the parellogram.
+  
+  `skew` is how far the pallorelogram leans in the `x` direction, so the total width of the prellogram is `(size.x + skew) * 2`.
+  A `skew` of `0` gives the same shape as `rect`."
+  ```
+  (var e [skew size.y])
   (var q (if (< q.y 0) (- q) q))
   (var w (q - e))
-  (-= w.x (clamp w.x (- width) width))
+  (-= w.x (clamp w.x (- size.x) size.x))
   (var d [(dot w w) (- w.y)])
   (var s (q.x * e.y - (q.y * e.x)))
   (set q (if (< s 0) (- q) q))
-  (var v (q - [width 0]))
+  (var v (q - [size.x 0]))
   (-= v (e * (dot v e / dot e e | clamp -1 1)))
-  (set d (min d [(dot v v) (width * height - abs s)]))
+  (set d (min d [(dot v v) (size.x * size.y - abs s)]))
   (sqrt d.x * sign d.y * -1))
 
 (defshape/2d quad-circle [radius]
-  "it's like a circle but quaddier."
+  ```
+  Returns a 2D shape, an approximation of a circle out of quadratic bezier curves.
+
+  It's like a circle, but quaddier.
+  ```
   (var q (abs q / radius))
   (if (> q.y q.x)
     (set q q.yx))
@@ -234,8 +254,7 @@
   (var t 0)
   (if (>= h 0) (do
     (set h (sqrt h))
-    (set t (sign (h - a) * pow (abs (h - a)) (1 / 3) - pow (h + a) (1 / 3)))
-    )
+    (set t (sign (h - a) * pow (abs (h - a)) (1 / 3) - pow (h + a) (1 / 3))))
   (do
     (var z (sqrt (- c)))
     (var v (acos (a / (c * z)) / 3))

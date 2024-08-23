@@ -55,11 +55,11 @@
     atan @{}
     atanh @{}
     bool @{}
-    box @{:doc "(box size)\n\nit a box"}
+    box @{:doc "(box size)\n\nReturns a 3D shape, a box with corners at `(- size)` and `size`. `size` will be coerced to a `vec3`.\n\nThink of `size` like the \"radius\" of the box: a box with `size.x = 50` will be `100` units wide."}
     ceil @{}
-    circle @{:doc "(circle r)\n\nit a circle"}
+    circle @{:doc "(circle radius)\n\nReturns a 2D shape."}
     clamp @{}
-    color @{:doc "(color field-set color-expression)\n\ncolor"}
+    color @{:doc "(color shape color)\n\nSet the color field of a shape."}
     cos @{}
     cosh @{}
     cross @{}
@@ -104,7 +104,7 @@
     min @{}
     mix @{}
     mod @{}
-    move @{:doc "(move shape offset)\n\ntranslate"}
+    move @{:doc "(move shape & args)\n\nTranslate a shape. Usually you'd use this with a vector offset:\n\n```\n(move (box 50) [0 100 0])\n```\n\nBut you can also provide a vector and a scalar:\n\n```\n(move (box 50) y 100)\n```\n\nWhich is the same as `(move (box 50) (y * 100))`.\n\nIf you provide multiple vector-scalar pairs, their sum is the final offset:\n\n```\n(move (box 50) x 100 y 100 -z 20)\n```\n\nThat is the same as `(move (box 50) (+ (x * 100) (y * 100) (-z * 100)))`."}
     normal @{:value [:var "normal" :vec3]}
     normalize @{}
     not @{}
@@ -113,16 +113,19 @@
     or @{}
     outer-product @{}
     p @{:value [:var "p" :vec3]}
-    parallelogram @{:doc "(parallelogram width height skew)\n\nit a parallelogram"}
+    parallelogram @{:doc "(parallelogram size skew)\n\nReturns a 2D shape. `size.x` is the width of the top and bottom edges, and `size.y` is the height of the parellogram.\n\n`skew` is how far the pallorelogram leans in the `x` direction, so the total width of the prellogram is `(size.x + skew) * 2`.\nA `skew` of `0` gives the same shape as `rect`.\""}
+    perlin2 @{:doc "(perlin2 P)\n\nTODO"}
+    perlin3 @{:doc "(perlin3 P)\n\nTODO"}
+    perlin4 @{:doc "(perlin4 P)\n\nTODO"}
     pow @{}
     q @{:value [:var "q" :vec2]}
-    quad-circle @{:doc "(quad-circle radius)\n\nit's like a circle but quaddier."}
+    quad-circle @{:doc "(quad-circle radius)\n\nReturns a 2D shape, an approximation of a circle out of quadratic bezier curves.\n\nIt's like a circle, but quaddier."}
     radians @{}
-    rect @{:doc "(rect size)\n\nit a box"}
+    rect @{:doc "(rect size)\n\nReturns a 2D shape, a rectangle with corners at `(- size)` and `size`. `size` will be coerced to a `vec2`.\n\nThink of `size` like the \"radius\" of the rect: a rect with `size.x = 50` will be `100` units wide."}
     reflect @{}
     refract @{}
-    remap-plus @{:doc "(remap-plus x)\n\n(remap-plus x)\n\nRemap a number in the range `[-1 1]` into the range `[0 1]`."}
-    rhombus @{:doc "(rhombus size)\n\nit rhomb"}
+    remap+ @{:doc "(remap+ x)\n\n(remap+ x)\n\nRemap a number in the range `[-1 1]` into the range `[0 1]`."}
+    rhombus @{:doc "(rhombus size)\n\nReturns a 2D shape. It rhombs with a kite."}
     rotate @{:doc "(rotate target & args)\n\nRotate a shape or a vector. Positive angles are counter-clockwise rotations.\n\nIn 3D, the arguments should be pairs of `axis angle`. For example:\n\n```\n(rotate (box 50) x 0.1 y 0.2)\n```\n\nAll `axis` arguments must be unit vectors. There are built-in axis variables `x`/`+y`/`-z`\nfor the cardinal directions, and these produce optimized rotation matrices. But you can\nrotate around an arbitrary axis:\n\n```\n(rotate (box 50) (normalize [1 1 1]) t)\n```\n\nThe order of the arguments is significant, as rotations are not commutative.\n\nIn 2D, the arguments should just be angles; no axis is allowed."}
     rotate-x @{:doc "(rotate-x angle)\n\nA rotation matrix about the X axis."}
     rotate-y @{:doc "(rotate-y angle)\n\nA rotation matrix about the Y axis."}
@@ -135,10 +138,10 @@
     sinh @{}
     smooth-union @{:doc "(smooth-union r & shapes)\n\n"}
     smoothstep @{}
-    sphere @{:doc "(sphere r)\n\nit a sphere"}
+    sphere @{:doc "(sphere radius)\n\nReturns a 3D shape."}
     sqrt @{}
     step @{}
-    subject @{:doc "A variable that determines what Bauble will render.\n\nYou can set this variable explicitly to change your focus, or use the `view` macro to change your focus. If you don't set a subject, Bauble will render the last expression in your script that it knows how to render."
+    subject @{:doc "A variable that determines what Bauble will render.\n\nYou can set this variable explicitly to change your focus, or use the `view` macro to change your focus. If you don't set a subject, Bauble will render the last shape in your script."
               :ref @[nil]}
     t @{:value [:var "t" :float]}
     tan @{}
