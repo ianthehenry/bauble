@@ -117,4 +117,4 @@
           (set color [overshoot (- 1 undershoot overshoot) (1 - (step 1 undershoot))])
           (break)))
 
-      (set frag-color [(pow color (vec3 (/ gamma))) 1]))))
+      (set frag-color [(pow color (/ gamma)) 1]))))

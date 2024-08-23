@@ -304,9 +304,10 @@
     (set bug-fixed true))
 
   # multifunction -> function
-  (defn resolve-overload [{:name name :overloads overloads} arg-types]
+  (defn resolve-overload [{:name name :overloads overloads :fallback fallback} arg-types]
     (assertf (tuple? arg-types) "arg-types must be a tuple, got %q" arg-types)
     (or (overloads arg-types)
+      (if fallback (fallback arg-types))
       (errorf "%s: no overload for arguments %q" name (tuple/brackets ;(map type/to-glsl arg-types)))))
 
   (defn- resolve-multifunction [t]
@@ -348,9 +349,22 @@
 
   (defn single [name return-type param-sigs]
     (new name
-      {(tmap param-sig/type param-sigs)
+      @{(tmap param-sig/type param-sigs)
         (function/custom
           (impl/new name return-type param-sigs))}))
+
+  (defn extend [t return-type param-sigs]
+    (def t (resolve-multifunction t))
+    (def overloads (in t :overloads))
+    (def types (tmap param-sig/type param-sigs))
+    (def new-function (function/custom (impl/new (in t :name) return-type param-sigs)))
+    (if (table? overloads)
+      (do
+        (assert (not (has-key? overloads types)) "duplicate overload!")
+        (put overloads types new-function))
+      (do
+        (put t :fallback overloads)
+        (put t :overloads @{types new-function}))))
 
   (defn param-sigs [t arg-types]
     (impl/param-sigs (resolve-overload t arg-types)))

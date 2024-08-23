@@ -45,6 +45,10 @@
     '{"do" true
       "union" true
       "sample" true
+      "pow" true
+      "min" true
+      "max" true
+      "dot" true
       } name))
 
 (defn- allocate-glsl-function-name [function] # and *glsl-function-name-map*
@@ -684,7 +688,7 @@
     (jlsl/defn :float foo [:float x]
       (return (+ (+ free1 free2) (+ free3 free4)))) `
     float foo(float x, float free, float free1, float x1, float y) {
-      return (free1 + free) + (x1 + y);
+      return (free + free1) + (x1 + y);
     }
   `))
 
@@ -1409,5 +1413,30 @@
       x += 1.0;
       x += 2.0;
       return x;
+    }
+  `))
+
+(deftest "extend multifunctions"
+  (test-function (do
+    (jlsl/declare :float sum [:vec2])
+    (jlsl/declare-overload :float sum [:vec3])
+
+    (jlsl/implement :float sum [:vec2 v]
+      (return (+ (. v x) (. v y))))
+    (jlsl/implement :float sum [:vec3 v]
+      (return (+ (. v x) (. v y) (. v z))))
+
+    (jlsl/fn :float "main" []
+      (return (+ (sum [1 2]) (sum [1 2 3]))))) `
+    float sum(vec2 v) {
+      return v.x + v.y;
+    }
+    
+    float sum1(vec3 v) {
+      return v.x + v.y + v.z;
+    }
+    
+    float main() {
+      return sum(vec2(1.0, 2.0)) + sum1(vec3(1.0, 2.0, 3.0));
     }
   `))

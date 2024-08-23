@@ -17,7 +17,7 @@
     (var boundary-line (1 - (smoothstep 0 (0.5 * boundary-thickness) (abs d))))
 
     (mix
-      (pow (vec3 gradient-color inside) (vec3 (mix 1 2 isoline)))
+      (pow [gradient-color inside] (mix 1 2 isoline))
       (vec3 1)
       boundary-line))))
 
@@ -76,4 +76,4 @@
           ))
       (/= color (float (aa-samples * aa-samples)))
 
-      (set frag-color [(pow color (vec3 (/ gamma))) 1]))))
+      (set frag-color [(pow color (/ gamma)) 1]))))

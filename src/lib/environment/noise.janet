@@ -1,37 +1,24 @@
 (use ./import)
 
-(defhelper- :vec3 mod289_3 [:vec3 x]
-  (return (x - (floor (x * (/ 289)) * 289))))
-
-(defhelper- :vec4 mod289_4 [:vec4 x]
-  (return (x - (floor (x * (/ 289)) * 289))))
-
-(defhelper- :vec4 permute4 [:vec4 x]
-  (return (x * 34 + 10 * x | mod289_4)))
-
-(defhelper- :vec4 taylor_inv_sqrt4 [:vec4 r]
-  (return (1.79284291400159 - (0.85373472095314 * r))))
-
-(defhelper- :vec2 fade2 [:vec2 t]
-  (return (* t t t (t * (t * 6 - 15) + 10))))
-
-(defhelper- :vec3 fade3 [:vec3 t]
-  (return (* t t t (t * (t * 6 - 15) + 10))))
-
-(defhelper- :vec4 fade4 [:vec4 t]
-  (return (* t t t (t * (t * 6 - 15) + 10))))
+(defhelper- :vec3 mod289 [:vec3 x] (return (x - (floor (x * (/ 289)) * 289))))
+(overload   :vec4 mod289 [:vec4 x] (return (x - (floor (x * (/ 289)) * 289))))
+(defhelper- :vec4 permute [:vec4 x] (return (x * 34 + 10 * x | mod289)))
+(defhelper- :vec4 taylor-inv-sqrt [:vec4 r] (return (1.79284291400159 - (0.85373472095314 * r))))
+(defhelper- :vec2 fade [:vec2 t] (return (* t t t (t * (t * 6 - 15) + 10))))
+(overload   :vec3 fade [:vec3 t] (return (* t t t (t * (t * 6 - 15) + 10))))
+(overload   :vec4 fade [:vec4 t] (return (* t t t (t * (t * 6 - 15) + 10))))
 
 (defhelper :float perlin2 [:vec2 P]
   "TODO"
   (var Pi ((floor P.xyxy) + [0 0 1 1]))
   (var Pf ((fract P.xyxy) - [0 0 1 1]))
-  (set Pi (mod289_4 Pi)) # To avoid truncation effects in permutation
+  (set Pi (mod289 Pi))
   (var ix Pi.xzxz)
   (var iy Pi.yyww)
   (var fx Pf.xzxz)
   (var fy Pf.yyww)
 
-  (var i (permute4 (permute4 ix + iy)))
+  (var i (permute (permute ix + iy)))
 
   (var gx ((fract (i * (/ 41))) * 2 - 1))
   (var gy (abs gx - 0.5))
@@ -43,7 +30,7 @@
   (var g01 [gx.z gy.z])
   (var g11 [gx.w gy.w])
 
-  (var norm (taylor_inv_sqrt4 [(dot g00 g00) (dot g01 g01) (dot g10 g10) (dot g11 g11)]))
+  (var norm (taylor-inv-sqrt [(dot g00 g00) (dot g01 g01) (dot g10 g10) (dot g11 g11)]))
   (*= g00 norm.x)
   (*= g01 norm.y)
   (*= g10 norm.z)
@@ -54,27 +41,27 @@
   (var n01 (dot g01 [fx.z fy.z]))
   (var n11 (dot g11 [fx.w fy.w]))
 
-  (var fade_xy (fade2 Pf.xy))
-  (var n_x (mix [n00 n01] [n10 n11] fade_xy.x))
-  (var n_xy (mix n_x.x n_x.y fade_xy.y))
-  (return (2.3 * n_xy)))
+  (var fade-xy (fade Pf.xy))
+  (var n-x (mix [n00 n01] [n10 n11] fade-xy.x))
+  (var n-xy (mix n-x.x n-x.y fade-xy.y))
+  (return (2.3 * n-xy)))
 
 (defhelper :float perlin3 [:vec3 P]
   "TODO"
-  (var Pi0 (floor P)) # Integer part for indexing
+  (var Pi0 (floor P))
   (var Pi1 (Pi0 + 1))
-  (var Pi0 (mod289_3 Pi0))
-  (var Pi1 (mod289_3 Pi1))
-  (var Pf0 (fract P)) # Fractional part for interpolation
+  (var Pi0 (mod289 Pi0))
+  (var Pi1 (mod289 Pi1))
+  (var Pf0 (fract P))
   (var Pf1 (Pf0 - 1))
   (var ix [Pi0.x Pi1.x Pi0.x Pi1.x])
   (var iy [Pi0.yy Pi1.yy])
   (var iz0 Pi0.zzzz)
   (var iz1 Pi1.zzzz)
 
-  (var ixy (permute4 ix + iy | permute4))
-  (var ixy0 (ixy + iz0 | permute4))
-  (var ixy1 (ixy + iz1 | permute4))
+  (var ixy (permute ix + iy | permute))
+  (var ixy0 (ixy + iz0 | permute))
+  (var ixy1 (ixy + iz1 | permute))
 
   (var gx0 (ixy0 * (/ 7)))
   (var gy0 (floor gx0 * (/ 7) | fract - 0.5))
@@ -101,12 +88,12 @@
   (var g011 [gx1.z gy1.z gz1.z])
   (var g111 [gx1.w gy1.w gz1.w])
 
-  (var norm0 (taylor_inv_sqrt4 [(dot g000 g000) (dot g010 g010) (dot g100 g100) (dot g110 g110)]))
+  (var norm0 (taylor-inv-sqrt [(dot g000 g000) (dot g010 g010) (dot g100 g100) (dot g110 g110)]))
   (*= g000 norm0.x)
   (*= g010 norm0.y)
   (*= g100 norm0.z)
   (*= g110 norm0.w)
-  (var norm1 (taylor_inv_sqrt4 [(dot g001 g001) (dot g011 g011) (dot g101 g101) (dot g111 g111)]))
+  (var norm1 (taylor-inv-sqrt [(dot g001 g001) (dot g011 g011) (dot g101 g101) (dot g111 g111)]))
   (*= g001 norm1.x)
   (*= g011 norm1.y)
   (*= g101 norm1.z)
@@ -121,18 +108,18 @@
   (var n011 (dot g011 [Pf0.x Pf1.yz]))
   (var n111 (dot g111 Pf1))
 
-  (var fade_xyz (fade3 Pf0))
-  (var n_z (mix [n000 n100 n010 n110] [n001 n101 n011 n111] fade_xyz.z))
-  (var n_yz (mix n_z.xy n_z.zw fade_xyz.y))
-  (var n_xyz (mix n_yz.x n_yz.y fade_xyz.x))
-  (return (2.2 * n_xyz)))
+  (var fade-xyz (fade Pf0))
+  (var n-z (mix [n000 n100 n010 n110] [n001 n101 n011 n111] fade-xyz.z))
+  (var n-yz (mix n-z.xy n-z.zw fade-xyz.y))
+  (var n-xyz (mix n-yz.x n-yz.y fade-xyz.x))
+  (return (2.2 * n-xyz)))
 
 (defhelper :float perlin4 [:vec4 P]
   "TODO"
   (var Pi0 (floor P))
   (var Pi1 (Pi0 + 1))
-  (set Pi0 (mod289_4 Pi0))
-  (set Pi1 (mod289_4 Pi1))
+  (set Pi0 (mod289 Pi0))
+  (set Pi1 (mod289 Pi1))
   (var Pf0 (fract P))
   (var Pf1 (Pf0 - 1))
   (var ix [Pi0.x Pi1.x Pi0.x Pi1.x])
@@ -142,13 +129,13 @@
   (var iw0 Pi0.wwww)
   (var iw1 Pi1.wwww)
 
-  (var ixy (permute4 ix + iy | permute4))
-  (var ixy0 (ixy + iz0 | permute4))
-  (var ixy1 (ixy + iz1 | permute4))
-  (var ixy00 (ixy0 + iw0 | permute4))
-  (var ixy01 (ixy0 + iw1 | permute4))
-  (var ixy10 (ixy1 + iw0 | permute4))
-  (var ixy11 (ixy1 + iw1 | permute4))
+  (var ixy (permute ix + iy | permute))
+  (var ixy0 (ixy + iz0 | permute))
+  (var ixy1 (ixy + iz1 | permute))
+  (var ixy00 (ixy0 + iw0 | permute))
+  (var ixy01 (ixy0 + iw1 | permute))
+  (var ixy10 (ixy1 + iw0 | permute))
+  (var ixy11 (ixy1 + iw1 | permute))
 
   (var gx00 (ixy00 * (/ 7)))
   (var gy00 (floor gx00 * (/ 7)))
@@ -211,25 +198,25 @@
   (var g0111 [gx11.z gy11.z gz11.z gw11.z])
   (var g1111 [gx11.w gy11.w gz11.w gw11.w])
 
-  (var norm00 (taylor_inv_sqrt4 [(dot g0000 g0000) (dot g0100 g0100) (dot g1000 g1000) (dot g1100 g1100)]))
+  (var norm00 (taylor-inv-sqrt [(dot g0000 g0000) (dot g0100 g0100) (dot g1000 g1000) (dot g1100 g1100)]))
   (*= g0000 norm00.x)
   (*= g0100 norm00.y)
   (*= g1000 norm00.z)
   (*= g1100 norm00.w)
 
-  (var norm01 (taylor_inv_sqrt4 [(dot g0001 g0001) (dot g0101 g0101) (dot g1001 g1001) (dot g1101 g1101)]))
+  (var norm01 (taylor-inv-sqrt [(dot g0001 g0001) (dot g0101 g0101) (dot g1001 g1001) (dot g1101 g1101)]))
   (*= g0001 norm01.x)
   (*= g0101 norm01.y)
   (*= g1001 norm01.z)
   (*= g1101 norm01.w)
 
-  (var norm10 (taylor_inv_sqrt4 [(dot g0010 g0010) (dot g0110 g0110) (dot g1010 g1010) (dot g1110 g1110)]))
+  (var norm10 (taylor-inv-sqrt [(dot g0010 g0010) (dot g0110 g0110) (dot g1010 g1010) (dot g1110 g1110)]))
   (*= g0010 norm10.x)
   (*= g0110 norm10.y)
   (*= g1010 norm10.z)
   (*= g1110 norm10.w)
 
-  (var norm11 (taylor_inv_sqrt4 [(dot g0011 g0011) (dot g0111 g0111) (dot g1011 g1011) (dot g1111 g1111)]))
+  (var norm11 (taylor-inv-sqrt [(dot g0011 g0011) (dot g0111 g0111) (dot g1011 g1011) (dot g1111 g1111)]))
   (*= g0011 norm11.x)
   (*= g0111 norm11.y)
   (*= g1011 norm11.z)
@@ -252,11 +239,11 @@
   (var n0111 (dot g0111 [Pf0.x Pf1.yzw]))
   (var n1111 (dot g1111 Pf1))
 
-  (var fade_xyzw (fade4 Pf0))
-  (var n_0w (mix [n0000 n1000 n0100 n1100] [n0001 n1001 n0101 n1101] fade_xyzw.w))
-  (var n_1w (mix [n0010 n1010 n0110 n1110] [n0011 n1011 n0111 n1111] fade_xyzw.w))
-  (var n_zw (mix n_0w n_1w fade_xyzw.z))
-  (var n_yzw (mix n_zw.xy n_zw.zw fade_xyzw.y))
-  (var n_xyzw (mix n_yzw.x n_yzw.y fade_xyzw.x))
-  (return (2.2 * n_xyzw)))
+  (var fade-xyzw (fade Pf0))
+  (var n-0w (mix [n0000 n1000 n0100 n1100] [n0001 n1001 n0101 n1101] fade-xyzw.w))
+  (var n-1w (mix [n0010 n1010 n0110 n1110] [n0011 n1011 n0111 n1111] fade-xyzw.w))
+  (var n-zw (mix n-0w n-1w fade-xyzw.z))
+  (var n-yzw (mix n-zw.xy n-zw.zw fade-xyzw.y))
+  (var n-xyzw (mix n-yzw.x n-yzw.y fade-xyzw.x))
+  (return (2.2 * n-xyzw)))
 

@@ -17,6 +17,9 @@
   (def docstring (if docstring [docstring] []))
   ['def- name ;docstring (call jlsl/stub return-type (string name) param-sigs)])
 
+(defmacro jlsl/declare-overload [return-type name param-sigs]
+  [multifunction/extend name (type/of-ast return-type) [tuple ;(map param-sig/of-ast param-sigs)]])
+
 # implement takes a multifunction and returns a single function
 (defmacro jlsl/implement [return-type name params & body]
   (def $return-type (gensym))
@@ -61,6 +64,10 @@
   (def [docstring body] (get-docstring name params body))
   ['upscope
     (call jlsl/declare- return-type name (map 0 (partition 2 params)) docstring)
+    (call jlsl/implement return-type name params ;body)])
+(defmacro jlsl/overload [return-type name params & body]
+  ['upscope
+    (call jlsl/declare-overload return-type name (map 0 (partition 2 params)))
     (call jlsl/implement return-type name params ;body)])
 
 (use ./builtins)

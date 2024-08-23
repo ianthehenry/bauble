@@ -25,6 +25,9 @@
 (defmacro defhelper [return-type name bindings & body]
   ~(jlsl/jlsl/defn ,return-type ,name ,bindings
     ,;(syntax/expand body)))
+(defmacro overload [return-type name bindings & body]
+  ~(jlsl/jlsl/overload ,return-type ,name ,bindings
+    ,;(syntax/expand body)))
 
 (defmacro defshape/2d [name bindings docstring & body]
   (assert (string? docstring))
