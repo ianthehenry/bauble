@@ -263,3 +263,17 @@
   (*= t 0.5)
   (var w ([(- t) t] + 0.75 - (t * t) - q))
   (radius * length w * sign (a * a * 0.5 + b - 1.5)))
+
+(defhelper :float sum [:vec2 v]
+  "Add the components of a vector."
+  (return (+ v.x v.y)))
+
+(overload :float sum [:vec3 v] (return (+ v.x v.y v.z)))
+(overload :float sum [:vec4 v] (return (+ v.x v.y v.z v.w)))
+
+(defhelper :float product [:vec2 v]
+  "Multiply the components of a vector."
+  (return (* v.x v.y)))
+
+(overload :float product [:vec3 v] (return (* v.x v.y v.z)))
+(overload :float product [:vec4 v] (return (* v.x v.y v.z v.w)))

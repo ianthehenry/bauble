@@ -118,6 +118,7 @@
     perlin3 @{:doc "(perlin3 P)\n\nTODO"}
     perlin4 @{:doc "(perlin4 P)\n\nTODO"}
     pow @{}
+    product @{:doc "(product v)\n\nMultiply the components of a vector."}
     q @{:value [:var "q" :vec2]}
     quad-circle @{:doc "(quad-circle radius)\n\nReturns a 2D shape, an approximation of a circle out of quadratic bezier curves.\n\nIt's like a circle, but quaddier."}
     radians @{}
@@ -143,6 +144,7 @@
     step @{}
     subject @{:doc "A variable that determines what Bauble will render.\n\nYou can set this variable explicitly to change your focus, or use the `view` macro to change your focus. If you don't set a subject, Bauble will render the last shape in your script."
               :ref @[nil]}
+    sum @{:doc "(sum v)\n\nAdd the components of a vector."}
     t @{:value [:var "t" :float]}
     tan @{}
     tanh @{}
