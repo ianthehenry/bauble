@@ -124,7 +124,7 @@
     rect @{:doc "(rect size)\n\nReturns a 2D shape, a rectangle with corners at `(- size)` and `size`. `size` will be coerced to a `vec2`.\n\nThink of `size` like the \"radius\" of the rect: a rect with `size.x = 50` will be `100` units wide."}
     reflect @{}
     refract @{}
-    remap+ @{:doc "(remap+ x)\n\n(remap+ x)\n\nRemap a number in the range `[-1 1]` into the range `[0 1]`."}
+    remap+ @{:doc "(remap+ x)\n\nRemap a number in the range `[-1 1]` into the range `[0 1]`."}
     rhombus @{:doc "(rhombus size)\n\nReturns a 2D shape. It rhombs with a kite."}
     rotate @{:doc "(rotate target & args)\n\nRotate a shape or a vector. Positive angles are counter-clockwise rotations.\n\nIn 3D, the arguments should be pairs of `axis angle`. For example:\n\n```\n(rotate (box 50) x 0.1 y 0.2)\n```\n\nAll `axis` arguments must be unit vectors. There are built-in axis variables `x`/`+y`/`-z`\nfor the cardinal directions, and these produce optimized rotation matrices. But you can\nrotate around an arbitrary axis:\n\n```\n(rotate (box 50) (normalize [1 1 1]) t)\n```\n\nThe order of the arguments is significant, as rotations are not commutative.\n\nIn 2D, the arguments should just be angles; no axis is allowed."}
     rotate-x @{:doc "(rotate-x angle)\n\nA rotation matrix about the X axis."}
@@ -156,6 +156,8 @@
     vec4 @{}
     view @{:doc "(view subject)\n\nA shorthand for `(set subject _)` that fits nicely into pipe notation, e.g. `(sphere 50 | view)`."
            :macro true}
+    worley @{:doc "(worley P)\n\n2D Worley noise, also called cellular noise or voronoi noise. Returns the nearest distance to points distributed randomly within the tiles of a square grid."}
+    worley2 @{:doc "(worley2 P)\n\nLike `worley`, but returns the nearest distance in `x` and the second-nearest distance in `y`."}
     x @{:doc "`[1 0 0]`" :value [1 0 0]}
     xor @{}
     y @{:doc "`[0 1 0]`" :value [0 1 0]}

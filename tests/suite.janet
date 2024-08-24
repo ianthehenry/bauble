@@ -186,6 +186,11 @@
   "!perlin3" `(sphere 100 | color (vec3 (perlin+ (p / 10))))`
   "!perlin4" `(sphere 100 | color (vec3 (perlin+ (vec4 (p / 10) 0))))`
 
+  "!worley-2d" `(sphere 100 | color (vec3 (worley (p.xy / 30))))`
+  "!worley2-2d" `(sphere 100 | color (vec3 0 (worley2 (p.xy / 30))))`
+  "!worley-3d" `(sphere 100 | color (vec3 (worley (p / 30))))`
+  "!worley2-3d" `(sphere 100 | color (vec3 0 (worley2 (p / 30))))`
+
   "!3d rotation" `
   (union
     (box 40 | rotate y 0.2 | move [-80 0 80])

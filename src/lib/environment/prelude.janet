@@ -18,6 +18,7 @@
 
 (import ../../jlsl/prelude :prefix "" :export true)
 
-(defhelper :float remap+ [:float x]
-  "(remap+ x)\n\nRemap a number in the range `[-1 1]` into the range `[0 1]`."
-  (return (+ 0.5 (* 0.5 x))))
+(defn remap+
+  "Remap a number in the range `[-1 1]` into the range `[0 1]`."
+  [x]
+  (+ 0.5 (* 0.5 x)))

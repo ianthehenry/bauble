@@ -1,12 +1,15 @@
 (use ./import)
 
-(defhelper- :vec3 mod289 [:vec3 x] (return (x - (floor (x * (/ 289)) * 289))))
+(defhelper- :vec2 mod289 [:vec2 x] (return (x - (floor (x * (/ 289)) * 289))))
+(overload   :vec3 mod289 [:vec3 x] (return (x - (floor (x * (/ 289)) * 289))))
 (overload   :vec4 mod289 [:vec4 x] (return (x - (floor (x * (/ 289)) * 289))))
-(defhelper- :vec4 permute [:vec4 x] (return (x * 34 + 10 * x | mod289)))
+(defhelper- :vec3 permute [:vec3 x] (return (x * 34 + 10 * x | mod289)))
+(overload   :vec4 permute [:vec4 x] (return (x * 34 + 10 * x | mod289)))
 (defhelper- :vec4 taylor-inv-sqrt [:vec4 r] (return (1.79284291400159 - (0.85373472095314 * r))))
 (defhelper- :vec2 fade [:vec2 t] (return (* t t t (t * (t * 6 - 15) + 10))))
 (overload   :vec3 fade [:vec3 t] (return (* t t t (t * (t * 6 - 15) + 10))))
 (overload   :vec4 fade [:vec4 t] (return (* t t t (t * (t * 6 - 15) + 10))))
+(defhelper- :vec3 mod7 [:vec3 x] (return (x - (floor (x * (/ 7)) * 7))))
 
 (defhelper :float perlin [:vec2 P]
   "Returns perlin noise from -1 to 1. The input is a vector of any dimension."
@@ -249,3 +252,212 @@
   "Perlin noise in the range 0 to 1."
   [v]
   (remap+ (perlin v)))
+
+(defmacro- define-worley2d [return-type name docstring & closing-statements]
+  ~(defhelper ,return-type ,name [:vec2 P]
+    ,docstring
+    (def K (1 / 7))
+    (def Ko (3 / 7))
+    (def jitter 1)
+    (var Pi (mod289 (floor P)))
+    (var Pf (fract P))
+    (var oi [-1 0 1])
+    (var of [-0.5 0.5 1.5])
+    (var px (permute (+ Pi.x oi)))
+    (var p (permute (+ px.x Pi.y oi)))
+    (var ox (fract (p * K) - Ko))
+    (var oy (mod7 (floor (p * K)) * K - Ko))
+    (var dx (Pf.x + 0.5 + (jitter * ox)))
+    (var dy (Pf.y - of + (jitter * oy)))
+    (var d1 (dx * dx + (dy * dy)))
+    (set p (permute (+ px.y Pi.y oi)))
+    (set ox (fract (p * K) - Ko))
+    (set oy (mod7 (floor (p * K)) * K - Ko))
+    (set dx (Pf.x - 0.5 + (jitter * ox)))
+    (set dy (Pf.y - of + (jitter * oy)))
+    (var d2 (dx * dx + (dy * dy)))
+    (set p (permute (+ px.z Pi.y oi)))
+    (set ox (fract (p * K) - Ko))
+    (set oy (mod7 (floor (p * K)) * K - Ko))
+    (set dx (Pf.x - 1.5 + (jitter * ox)))
+    (set dy (Pf.y - of + (jitter * oy)))
+    (var d3 (dx * dx + (dy * dy)))
+    ,;closing-statements))
+
+(define-worley2d :float worley
+  ```
+  2D Worley noise, also called cellular noise or voronoi noise. Returns the nearest distance to points distributed randomly within the tiles of a square grid.
+  ```
+  (return (sqrt (min (min (min d1 d2) d3)))))
+
+(define-worley2d :vec2 worley2
+  ```
+  Like `worley`, but returns the nearest distance in `x` and the second-nearest distance in `y`.
+  ```
+  (var d1a (min d1 d2))
+  (set d2 (max d1 d2))
+  (set d2 (min d2 d3))
+  (set d1 (min d1a d2))
+  (set d2 (max d1a d2))
+  (set d1.xy (if (< d1.x d1.y) d1.xy d1.yx))
+  (set d1.xz (if (< d1.x d1.z) d1.xz d1.zx))
+  (set d1.yz (min d1.yz d2.yz))
+  (set d1.y (min d1.y d1.z))
+  (set d1.y (min d1.y d2.x))
+  (return (sqrt d1.xy)))
+
+# This is a very gross "copy and paste" macro that exists to generate
+# similar but different versions of worley noise.
+(defmacro- overload-worley3d [return-type name & closing-statements]
+  ~(overload ,return-type ,name [:vec3 P]
+    (def K (1 / 7))
+    (def Ko (0.5 * (1 - K)))
+    (def K2 (1 / 49))
+    (def Kz (1 / 6))
+    (def Kzo (0.5 - (1 / 12)))
+    (def jitter 1.0)
+
+    (var Pi (mod289 (floor P)))
+    (var Pf (fract P - 0.5))
+
+    (var Pfx (Pf.x + [1 0 -1]))
+    (var Pfy (Pf.y + [1 0 -1]))
+    (var Pfz (Pf.z + [1 0 -1]))
+
+    (var p (permute (Pi.x + [-1 0 1])))
+    (var p1 (permute (p + Pi.y - 1.0)))
+    (var p2 (permute (p + Pi.y)))
+    (var p3 (permute (p + Pi.y + 1.0)))
+
+    (var p11 (permute (p1 + Pi.z - 1.0)))
+    (var p12 (permute (p1 + Pi.z)))
+    (var p13 (permute (p1 + Pi.z + 1.0)))
+
+    (var p21 (permute (p2 + Pi.z - 1.0)))
+    (var p22 (permute (p2 + Pi.z)))
+    (var p23 (permute (p2 + Pi.z + 1.0)))
+
+    (var p31 (permute (p3 + Pi.z - 1.0)))
+    (var p32 (permute (p3 + Pi.z)))
+    (var p33 (permute (p3 + Pi.z + 1.0)))
+
+    (var ox11 (fract (p11 * K) - Ko))
+    (var oy11 (mod7 (floor (p11 * K)) * K - Ko))
+    (var oz11 (floor (p11 * K2) * Kz - Kzo))
+
+    (var ox12 (fract (p12 * K) - Ko))
+    (var oy12 (mod7 (floor (p12 * K)) * K - Ko))
+    (var oz12 (floor (p12 * K2) * Kz - Kzo))
+
+    (var ox13 (fract (p13 * K) - Ko))
+    (var oy13 (mod7 (floor (p13 * K)) * K - Ko))
+    (var oz13 (floor (p13 * K2) * Kz - Kzo))
+
+    (var ox21 (fract (p21 * K) - Ko))
+    (var oy21 (mod7 (floor (p21 * K)) * K - Ko))
+    (var oz21 (floor (p21 * K2) * Kz - Kzo))
+
+    (var ox22 (fract (p22 * K) - Ko))
+    (var oy22 (mod7 (floor (p22 * K)) * K - Ko))
+    (var oz22 (floor (p22 * K2) * Kz - Kzo))
+
+    (var ox23 (fract (p23 * K) - Ko))
+    (var oy23 (mod7 (floor (p23 * K)) * K - Ko))
+    (var oz23 (floor (p23 * K2) * Kz - Kzo))
+
+    (var ox31 (fract (p31 * K) - Ko))
+    (var oy31 (mod7 (floor (p31 * K)) * K - Ko))
+    (var oz31 (floor (p31 * K2) * Kz - Kzo))
+
+    (var ox32 (fract (p32 * K) - Ko))
+    (var oy32 (mod7 (floor (p32 * K)) * K - Ko))
+    (var oz32 (floor (p32 * K2) * Kz - Kzo))
+
+    (var ox33 (fract (p33 * K) - Ko))
+    (var oy33 (mod7 (floor (p33 * K)) * K - Ko))
+    (var oz33 (floor (p33 * K2) * Kz - Kzo))
+
+    (var dx11 (Pfx + (jitter * ox11)))
+    (var dy11 (Pfy.x + (jitter * oy11)))
+    (var dz11 (Pfz.x + (jitter * oz11)))
+
+    (var dx12 (Pfx + (jitter * ox12)))
+    (var dy12 (Pfy.x + (jitter * oy12)))
+    (var dz12 (Pfz.y + (jitter * oz12)))
+
+    (var dx13 (Pfx + (jitter * ox13)))
+    (var dy13 (Pfy.x + (jitter * oy13)))
+    (var dz13 (Pfz.z + (jitter * oz13)))
+
+    (var dx21 (Pfx + (jitter * ox21)))
+    (var dy21 (Pfy.y + (jitter * oy21)))
+    (var dz21 (Pfz.x + (jitter * oz21)))
+
+    (var dx22 (Pfx + (jitter * ox22)))
+    (var dy22 (Pfy.y + (jitter * oy22)))
+    (var dz22 (Pfz.y + (jitter * oz22)))
+
+    (var dx23 (Pfx + (jitter * ox23)))
+    (var dy23 (Pfy.y + (jitter * oy23)))
+    (var dz23 (Pfz.z + (jitter * oz23)))
+
+    (var dx31 (Pfx + (jitter * ox31)))
+    (var dy31 (Pfy.z + (jitter * oy31)))
+    (var dz31 (Pfz.x + (jitter * oz31)))
+
+    (var dx32 (Pfx + (jitter * ox32)))
+    (var dy32 (Pfy.z + (jitter * oy32)))
+    (var dz32 (Pfz.y + (jitter * oz32)))
+
+    (var dx33 (Pfx + (jitter * ox33)))
+    (var dy33 (Pfy.z + (jitter * oy33)))
+    (var dz33 (Pfz.z + (jitter * oz33)))
+
+    (var d11 (+ (dx11 * dx11) (dy11 * dy11) (dz11 * dz11)))
+    (var d12 (+ (dx12 * dx12) (dy12 * dy12) (dz12 * dz12)))
+    (var d13 (+ (dx13 * dx13) (dy13 * dy13) (dz13 * dz13)))
+    (var d21 (+ (dx21 * dx21) (dy21 * dy21) (dz21 * dz21)))
+    (var d22 (+ (dx22 * dx22) (dy22 * dy22) (dz22 * dz22)))
+    (var d23 (+ (dx23 * dx23) (dy23 * dy23) (dz23 * dz23)))
+    (var d31 (+ (dx31 * dx31) (dy31 * dy31) (dz31 * dz31)))
+    (var d32 (+ (dx32 * dx32) (dy32 * dy32) (dz32 * dz32)))
+    (var d33 (+ (dx33 * dx33) (dy33 * dy33) (dz33 * dz33)))
+    ,;closing-statements))
+
+(overload-worley3d :float worley
+  (var d1 (min (min d11 d12) d13))
+  (var d2 (min (min d21 d22) d23))
+  (var d3 (min (min d31 d32) d33))
+  (var d (min (min d1 d2) d3))
+  (return (sqrt (min d))))
+
+(overload-worley3d :vec2 worley2
+  (var d1a (min d11 d12))
+  (set d12 (max d11 d12))
+  (set d11 (min d1a d13))
+  (set d13 (max d1a d13))
+  (set d12 (min d12 d13))
+  (var d2a (min d21 d22))
+  (set d22 (max d21 d22))
+  (set d21 (min d2a d23))
+  (set d23 (max d2a d23))
+  (set d22 (min d22 d23))
+  (var d3a (min d31 d32))
+  (set d32 (max d31 d32))
+  (set d31 (min d3a d33))
+  (set d33 (max d3a d33))
+  (set d32 (min d32 d33))
+  (var da (min d11 d21))
+  (set d21 (max d11 d21))
+  (set d11 (min da d31))
+  (set d31 (max da d31))
+  (set d11.xy (if (< d11.x d11.y) d11.xy d11.yx))
+  (set d11.xz (if (< d11.x d11.z) d11.xz d11.zx))
+  (set d12 (min d12 d21))
+  (set d12 (min d12 d22))
+  (set d12 (min d12 d31))
+  (set d12 (min d12 d32))
+  (set d11.yz (min d11.yz d12.xy))
+  (set d11.y (min d11.y d12.z))
+  (set d11.y (min d11.y d11.z))
+  (return (sqrt d11.xy)))
