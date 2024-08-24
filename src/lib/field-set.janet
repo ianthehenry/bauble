@@ -36,10 +36,16 @@
 
 (defn is? [x] (and (struct? x) (= (x :tag) tag)))
 
-(defn map [t f]
-  {:type (t :type)
+(defn map [t f &opt type]
+  {:type (or type (t :type))
    :tag tag
    :distance (map-if (t :distance) f)
    :color (map-if (t :color) f)})
 
 (defn with [t & new-kvs] (struct ;(kvs t) ;new-kvs))
+
+(defn map-distance [t f]
+  {:type (t :type)
+   :tag tag
+   :distance (map-if (t :distance) f)
+   :color (t :color)})

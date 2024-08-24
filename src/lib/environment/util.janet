@@ -56,3 +56,5 @@
   (with-syms [$expr]
     ~(field-set/map ,shape (fn [,$expr]
       (jlsl/with ,name [,variable ,new-position] (,'unquote ,$expr))))))
+
+(defmacro sugar [expr] (syntax/expand expr))

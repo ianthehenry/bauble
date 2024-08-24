@@ -72,6 +72,7 @@
     equal @{}
     exp @{}
     exp2 @{}
+    extrude @{:doc "(extrude shape axis &opt distance)\n\nExtrude a 2D shape into 3D along the given `axis`.\n\n`distance` defaults to `0` and determines the width, length, or height of the final shape.\nYou can also pass `inf` to get an infinite extrusion (which is slightly cheaper to compute)."}
     faceforward @{}
     float @{}
     floor @{}
@@ -83,6 +84,8 @@
     gl-point-coord @{:value [:var "gl_PointCoord" :vec2]}
     gradient @{:value [:var "gradient" :vec2]}
     in @{:doc "(in & args)\n\n"}
+    inf @{:doc "The number representing positive infinity"
+          :value 9e999}
     int @{}
     inversesqrt @{}
     length @{}
@@ -125,6 +128,7 @@
     reflect @{}
     refract @{}
     remap+ @{:doc "(remap+ x)\n\nRemap a number in the range `[-1 1]` into the range `[0 1]`."}
+    revolve @{:doc "(revolve shape axis &opt offset)\n\nRevolve a 2D shape around the given `axis` to return a 3D shape.\n\nYou can optionally supply an `offset` to move the shape away from the origin first (the default is `0`)."}
     rhombus @{:doc "(rhombus size)\n\nReturns a 2D shape. It rhombs with a kite."}
     rotate @{:doc "(rotate target & args)\n\nRotate a shape or a vector. Positive angles are counter-clockwise rotations.\n\nIn 3D, the arguments should be pairs of `axis angle`. For example:\n\n```\n(rotate (box 50) x 0.1 y 0.2)\n```\n\nAll `axis` arguments must be unit vectors. There are built-in axis variables `x`/`+y`/`-z`\nfor the cardinal directions, and these produce optimized rotation matrices. But you can\nrotate around an arbitrary axis:\n\n```\n(rotate (box 50) (normalize [1 1 1]) t)\n```\n\nThe order of the arguments is significant, as rotations are not commutative.\n\nIn 2D, the arguments should just be angles; no axis is allowed."}
     rotate-x @{:doc "(rotate-x angle)\n\nA rotation matrix about the X axis."}
@@ -136,6 +140,7 @@
     sign @{}
     sin @{}
     sinh @{}
+    slice @{:doc "(slice shape axis &opt position)\n\nTake a 2D slice of a 3D shape at a given `position` along the supplied `axis`.\n\n`position` defaults to `0`."}
     smooth-union @{:doc "(smooth-union r & shapes)\n\n"}
     smoothstep @{}
     sphere @{:doc "(sphere radius)\n\nReturns a 3D shape."}

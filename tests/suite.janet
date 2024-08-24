@@ -191,6 +191,16 @@
   "!worley-3d" `(sphere 100 | color (vec3 (worley (p / 30))))`
   "!worley2-3d" `(sphere 100 | color (vec3 0 (worley2 (p / 30))))`
 
+  "!extrude" `(rect 30 | union (circle 30 | move x 30) | extrude x 100)`
+  "!extrude defaults to zero" `(rect 30 | union (circle 30 | move x 30) | extrude z)`
+  "!extrude inf" `(rect 30 | union (circle 30 | move x 30) | extrude y inf)`
+
+  "!revolve" `(rect 30 | union (circle 30 | move x 30) | revolve x 100)`
+  "!revolve defaults to zero" `(rect 30 | union (circle 30 | move x 30) | revolve z)`
+
+  "!slice" `(box 50 | rotate (normalize [1 1 1]) 1 | slice z)`
+  "!slice with offset" `(box 50 | rotate (normalize [1 1 1]) 1 | slice y 10)`
+
   "!3d rotation" `
   (union
     (box 40 | rotate y 0.2 | move [-80 0 80])

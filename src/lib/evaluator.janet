@@ -79,8 +79,7 @@
 (import ../jlsl)
 (defn- make-presentable [value]
   (if (field-set/is? value)
-    (struct ;(kvs (field-set/map value jlsl/expr/to-sexp))
-      :type (jlsl/show-type (field-set/type value)))
+    (tabseq [[k v] :pairs value] k (jlsl/show v))
     value))
 
 (defn- run [script]
@@ -89,9 +88,9 @@
 
 (deftest "subject defaults to the final result"
   (test (run "(circle 10)")
-    @{subject {:distance [- [length q] 10]
-               :tag <1>
-               :type :vec2}}))
+    @{subject @{:distance [- [length q] 10]
+                :tag <1>
+                :type :vec2}}))
 
 (deftest "if subject is set explicitly, the final result does not matter"
   (test (run `
@@ -105,6 +104,6 @@
     (circle 10 | view)
     (circle 20)
     `)
-    @{subject {:distance [- [length q] 10]
-               :tag <1>
-               :type :vec2}}))
+    @{subject @{:distance [- [length q] 10]
+                :tag <1>
+                :type :vec2}}))
