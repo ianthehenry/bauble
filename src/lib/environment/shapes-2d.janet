@@ -1,30 +1,29 @@
 (use ./import)
 
-(defshape/2d circle [radius]
+(defshape/2d circle [:float radius]
   "Returns a 2D shape."
-  (- (length q) radius))
+  (return (length q - radius)))
 
-(defshape/2d rect [size]
+(defshape/2d rect [:vec2 size]
   ```
   Returns a 2D shape, a rectangle with corners at `(- size)` and `size`. `size` will be coerced to a `vec2`.
 
   Think of `size` like the "radius" of the rect: a rect with `size.x = 50` will be `100` units wide.
   ```
-  (var d (abs q - vec2 ,size))
-  # TODO: i would like to add an overload such that this is just (max d)
-  (max d 0 | length + (min (max d.x d.y) 0)))
+  (var d (abs q - size))
+  (return (max d 0 | length + min (max d) 0)))
 
 (defhelper- :float ndot [:vec2 a :vec2 b]
   (return ((* a.x b.x) - (* a.y b.y))))
 
-(defshape/2d rhombus [size]
+(defshape/2d rhombus [:vec2 size]
   "Returns a 2D shape. It rhombs with a kite."
   (var q (abs q))
   (var h (size - (2 * q) | ndot size / (dot size size) | clamp -1 1))
   (var d (q - (0.5 * size * [(1 - h) (1 + h)]) | length))
-  (d * (q.x * size.y + (q.y * size.x) - (size.x * size.y) | sign)))
+  (return (d * (q.x * size.y + (q.y * size.x) - (size.x * size.y) | sign))))
 
-(defshape/2d parallelogram [size skew]
+(defshape/2d parallelogram [:vec2 size :float skew]
   ```
   Returns a 2D shape. `size.x` is the width of the top and bottom edges, and `size.y` is the height of the parellogram.
   
@@ -41,9 +40,9 @@
   (var v (q - [size.x 0]))
   (-= v (e * (dot v e / dot e e | clamp -1 1)))
   (set d (min d [(dot v v) (size.x * size.y - abs s)]))
-  (sqrt d.x * sign d.y * -1))
+  (return (sqrt d.x * sign d.y * -1)))
 
-(defshape/2d quad-circle [radius]
+(defshape/2d quad-circle [:float radius]
   ```
   Returns a 2D shape, an approximation of a circle out of quadratic bezier curves.
 
@@ -67,4 +66,4 @@
     (set t ((- z) * (cos v + (sin v * sqrt 3))))))
   (*= t 0.5)
   (var w ([(- t) t] + 0.75 - (t * t) - q))
-  (radius * length w * sign (a * a * 0.5 + b - 1.5)))
+  (return (radius * length w * sign (a * a * 0.5 + b - 1.5))))

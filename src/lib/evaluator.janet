@@ -88,7 +88,7 @@
 
 (deftest "subject defaults to the final result"
   (test (run "(circle 10)")
-    @{subject @{:distance [- [length q] 10]
+    @{subject @{:distance [sdf-circle 10]
                 :tag <1>
                 :type :vec2}}))
 
@@ -104,6 +104,6 @@
     (circle 10 | view)
     (circle 20)
     `)
-    @{subject @{:distance [- [length q] 10]
+    @{subject @{:distance [sdf-circle 10]
                 :tag <1>
                 :type :vec2}}))
