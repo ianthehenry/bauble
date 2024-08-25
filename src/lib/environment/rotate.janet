@@ -34,7 +34,8 @@
     (- vec.z) 0 vec.x
     vec.y (- vec.x) 0)))
 
-(defhelper- :mat3 rotate-around [:vec3 axis :float angle]
+(defhelper :mat3 rotate-around [:vec3 axis :float angle]
+  "A rotation matrix about an arbitrary axis. More expensive to compute than the axis-aligned rotation matrices."
   (return (+
     (cos angle * mat3 1 0 0 0 1 0 0 0 1)
     (sin angle * cross-matrix axis)

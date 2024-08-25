@@ -131,6 +131,7 @@
     revolve @{:doc "(revolve shape axis &opt offset)\n\nRevolve a 2D shape around the given `axis` to return a 3D shape.\n\nYou can optionally supply an `offset` to move the shape away from the origin first (the default is `0`)."}
     rhombus @{:doc "(rhombus size)\n\nReturns a 2D shape. It rhombs with a kite."}
     rotate @{:doc "(rotate target & args)\n\nRotate a shape or a vector. Positive angles are counter-clockwise rotations.\n\nIn 3D, the arguments should be pairs of `axis angle`. For example:\n\n```\n(rotate (box 50) x 0.1 y 0.2)\n```\n\nAll `axis` arguments must be unit vectors. There are built-in axis variables `x`/`+y`/`-z`\nfor the cardinal directions, and these produce optimized rotation matrices. But you can\nrotate around an arbitrary axis:\n\n```\n(rotate (box 50) (normalize [1 1 1]) t)\n```\n\nThe order of the arguments is significant, as rotations are not commutative.\n\nIn 2D, the arguments should just be angles; no axis is allowed."}
+    rotate-around @{:doc "(rotate-around axis angle)\n\nA rotation matrix about an arbitrary axis. More expensive to compute than the axis-aligned rotation matrices."}
     rotate-x @{:doc "(rotate-x angle)\n\nA rotation matrix about the X axis."}
     rotate-y @{:doc "(rotate-y angle)\n\nA rotation matrix about the Y axis."}
     rotate-z @{:doc "(rotate-z angle)\n\nA rotation matrix about the Z axis."}

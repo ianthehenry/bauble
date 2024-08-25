@@ -3,6 +3,10 @@
 (import ./prelude :prefix "" :export true)
 (import ./rotate :prefix "" :export true)
 (import ./noise :prefix "" :export true)
+(import ./shapes-2d :prefix "" :export true)
+(import ./shapes-3d :prefix "" :export true)
+(import ./dimensions :prefix "" :export true)
+(import ./boolean :prefix "" :export true)
 (import ../dynvars :prefix "" :export true)
 (import ../../jlsl/prelude :prefix "" :export true)
 
@@ -14,34 +18,6 @@
 (var subject
   "A variable that determines what Bauble will render.\n\nYou can set this variable explicitly to change your focus, or use the `view` macro to change your focus. If you don't set a subject, Bauble will render the last shape in your script."
   nil)
-
-(defshape/2d circle [radius]
-  "Returns a 2D shape."
-  (- (length q) radius))
-
-(defshape/3d sphere [radius]
-  "Returns a 3D shape."
-  (- (length p) radius))
-
-(defshape/3d box [size]
-  ```
-  Returns a 3D shape, a box with corners at `(- size)` and `size`. `size` will be coerced to a `vec3`.
-  
-  Think of `size` like the "radius" of the box: a box with `size.x = 50` will be `100` units wide.
-  ```
-  (var d (abs p - vec3 ,size))
-  # TODO: i would like to add an overload such that this is just (max d)
-  (max d 0 | length + (min (max d.x (max d.y d.z)) 0)))
-
-(defshape/2d rect [size]
-  ```
-  Returns a 2D shape, a rectangle with corners at `(- size)` and `size`. `size` will be coerced to a `vec2`.
-
-  Think of `size` like the "radius" of the rect: a rect with `size.x = 50` will be `100` units wide.
-  ```
-  (var d (abs q - vec2 ,size))
-  # TODO: i would like to add an overload such that this is just (max d)
-  (max d 0 | length + (min (max d.x d.y) 0)))
 
 # This is a minor convenience that lets us use the 3D vector
 # x/y/-x/-y vectors as arguments to move
@@ -101,162 +77,6 @@
   (typecheck color jlsl/type/vec3)
   (field-set/with shape :color color))
 
-(defn- sharp-union [& shapes]
-  (def type (get-unique field-set/type shapes (fn [types]
-    (if (empty? types)
-      (error "empty union expression")
-      (error "cannot union 2D and 3D shapes")))))
-  (def distances (seq [{:distance d} :in shapes :when d] d))
-  (def colors (seq [{:color c :distance d} :in shapes :when c] [c (@or d (jlsl/coerce-expr 0))]))
-
-  (field-set/new type
-    :distance (case (@length distances)
-      0 nil
-      1 (distances 0)
-      (jlsl/do "union-distance"
-        (var nearest ,(first distances))
-        ,;(seq [expr :in (drop 1 distances)]
-          (jlsl/statement (set nearest (min nearest ,expr))))
-        nearest))
-
-    :color (case (@length colors)
-      0 nil
-      1 ((colors 0) 0)
-      (jlsl/iife "union-color"
-        ,;(seq [[c d] :in (reverse (drop 1 colors))]
-          (jlsl/statement
-            (if (< ,d 0)
-              (return ,c))))
-        ,((colors 0) 0)
-        ))
-    ))
-
-# TODO: we should probably have a way to do this
-(defn- symmetric-color-union [r shapes]
-  (def colors (seq [{:color c :distance d} :in shapes :when c] [c (@or d (jlsl/coerce-expr 0))]))
-  (case (@length colors)
-    0 nil
-    1 ((colors 0) 0)
-    (jlsl/do "smooth-union-color"
-      (var color [0 0 0])
-      (var nearest 1000000)
-      ,;(seq [[color-expr dist-expr] :in colors]
-        (jlsl/statement
-          (var dist ,dist-expr)
-          (var contribution (remap+ (clamp (/ (- nearest dist) r) -1 1)))
-          (set nearest (- (mix nearest dist contribution) (* r contribution (- 1 contribution))))
-          (if (> contribution 0) (set color (mix color ,color-expr contribution)))
-        ))
-      color)))
-
-(defn- asymmetric-color-union [r shapes]
-  (def colors (seq [{:color c :distance d} :in shapes :when c] [c (@or d (jlsl/coerce-expr 0))]))
-  (case (@length colors)
-    0 nil
-    1 ((colors 0) 0)
-    (jlsl/do "smooth-union-color"
-      (var color [0 0 0])
-      (var nearest 1000000)
-      ,;(seq [[color-expr dist-expr] :in colors]
-        (jlsl/statement
-          (var dist ,dist-expr)
-          # TODO: wait, what, do we need h here, what is happening
-          (var contribution (- 1 (remap+ (clamp (/ (min dist (- dist nearest)) r) -1 1))))
-          (var h (remap+ (clamp (/ (- nearest dist) r) -1 1)))
-          (set h contribution)
-          (set nearest (- (mix nearest dist h) (* r h (- 1 h))))
-          (if (> contribution 0) (set color (mix color ,color-expr contribution)))
-        ))
-      color)))
-
-(defn smooth-union [r & shapes]
-  (def type (get-unique field-set/type shapes (fn [types]
-    (if (empty? types)
-      (error "empty union expression")
-      (error "cannot union 2D and 3D shapes")))))
-  (def r (typecheck (jlsl/coerce-expr r) jlsl/type/float))
-
-  (def distances (seq [{:distance d} :in shapes :when d] d))
-
-  (field-set/new type
-    :distance (case (@length distances)
-      0 nil
-      1 (distances 0)
-      (jlsl/do "smooth-union-distance"
-        (var nearest ,(first distances))
-        ,;(seq [expr :in (drop 1 distances)]
-          (jlsl/statement
-            (var dist ,expr)
-            (var h (remap+ (clamp (/ (- nearest dist) r) -1 1)))
-            (set nearest (- (mix nearest dist h) (* r h (- 1 h))))))
-        nearest))
-
-    # TODO
-    #:color (symmetric-color-union r shapes)
-    :color (asymmetric-color-union r shapes)
-    ))
-
-# TODO: this should have an optional radius argument
-(defn union
-  "Join 'em up. Do it to it."
-  [& shapes]
-  (sharp-union ;shapes))
-
-(defhelper- :float ndot [:vec2 a :vec2 b]
-  (return ((* a.x b.x) - (* a.y b.y))))
-
-(defshape/2d rhombus [size]
-  "Returns a 2D shape. It rhombs with a kite."
-  (var q (abs q))
-  (var h (size - (2 * q) | ndot size / (dot size size) | clamp -1 1))
-  (var d (q - (0.5 * size * [(1 - h) (1 + h)]) | length))
-  (d * (q.x * size.y + (q.y * size.x) - (size.x * size.y) | sign)))
-
-(defshape/2d parallelogram [size skew]
-  ```
-  Returns a 2D shape. `size.x` is the width of the top and bottom edges, and `size.y` is the height of the parellogram.
-  
-  `skew` is how far the pallorelogram leans in the `x` direction, so the total width of the prellogram is `(size.x + skew) * 2`.
-  A `skew` of `0` gives the same shape as `rect`."
-  ```
-  (var e [skew size.y])
-  (var q (if (< q.y 0) (- q) q))
-  (var w (q - e))
-  (-= w.x (clamp w.x (- size.x) size.x))
-  (var d [(dot w w) (- w.y)])
-  (var s (q.x * e.y - (q.y * e.x)))
-  (set q (if (< s 0) (- q) q))
-  (var v (q - [size.x 0]))
-  (-= v (e * (dot v e / dot e e | clamp -1 1)))
-  (set d (min d [(dot v v) (size.x * size.y - abs s)]))
-  (sqrt d.x * sign d.y * -1))
-
-(defshape/2d quad-circle [radius]
-  ```
-  Returns a 2D shape, an approximation of a circle out of quadratic bezier curves.
-
-  It's like a circle, but quaddier.
-  ```
-  (var q (abs q / radius))
-  (if (> q.y q.x)
-    (set q q.yx))
-  (var a (q.x - q.y))
-  (var b (q.x + q.y))
-  (var c (2 * b - 1 / 3))
-  (var h (a * a + (c * c * c)))
-  # TODO: t should be uninitialized
-  (var t 0)
-  (if (>= h 0) (do
-    (set h (sqrt h))
-    (set t (sign (h - a) * pow (abs (h - a)) (1 / 3) - pow (h + a) (1 / 3))))
-  (do
-    (var z (sqrt (- c)))
-    (var v (acos (a / (c * z)) / 3))
-    (set t ((- z) * (cos v + (sin v * sqrt 3))))))
-  (*= t 0.5)
-  (var w ([(- t) t] + 0.75 - (t * t) - q))
-  (radius * length w * sign (a * a * 0.5 + b - 1.5)))
-
 (defhelper :float sum [:vec2 v]
   "Add the components of a vector."
   (return (+ v.x v.y)))
@@ -268,68 +88,3 @@
   (return (* v.x v.y)))
 (overload :float product [:vec3 v] (return (* v.x v.y v.z)))
 (overload :float product [:vec4 v] (return (* v.x v.y v.z v.w)))
-
-(defn- split-axis [axis]
-  (sugar (case axis
-    x [p.x p.yz]
-    y [p.y p.xz]
-    z [p.z p.xy]
-    (errorf "unknown axis %q" (jlsl/show axis)))))
-
-(defn revolve
-  ```
-  Revolve a 2D shape around the given `axis` to return a 3D shape.
-
-  You can optionally supply an `offset` to move the shape away from the origin first (the default is `0`).
-  ```
-  [shape axis &opt offset]
-  (def [this others] (split-axis axis))
-  (def offset (typecheck (jlsl/coerce-expr (@or offset 0)) jlsl/type/float))
-
-  (field-set/map shape (fn [expr]
-    (jlsl/with "revolve" [q [(- (length ,others) ,offset) ,this]] expr))
-    jlsl/type/vec3))
-
-(put (curenv) 'inf (dyn 'math/inf))
-
-(defn extrude
-  ```
-  Extrude a 2D shape into 3D along the given `axis`.
-
-  `distance` defaults to `0` and determines the width, length, or height of the final shape.
-  You can also pass `inf` to get an infinite extrusion (which is slightly cheaper to compute).
-  ```
-  [shape axis &opt distance]
-  (def [this others] (split-axis axis))
-  (def distance (if (not= math/inf distance)
-    (typecheck (jlsl/coerce-expr (@or distance 0)) jlsl/type/float)))
-
-  (def in-3d (field-set/map shape (fn [expr]
-    (jlsl/with "extrude" [q ,others] expr))
-    jlsl/type/vec3))
-
-  (if distance
-    (field-set/map-distance in-3d (fn [expr]
-      (sugar (jlsl/do "extrude"
-        (var w [,expr (- (abs ,this) ,distance)])
-        (min (max w) 0 + length (max w 0))))))
-    in-3d))
-
-(defn slice
-  ```
-  Take a 2D slice of a 3D shape at a given `position` along the supplied `axis`.
-
-  `position` defaults to `0`.
-  ```
-  [shape axis &opt position]
-  (def position (typecheck (jlsl/coerce-expr (@or position 0)) jlsl/type/float))
-
-  (def new-p (jlsl/coerce-expr (sugar (case axis
-    x [position q]
-    y [q.x position q.y]
-    z [q position]
-    (errorf "unknown axis %q" (jlsl/show axis))))))
-
-  (field-set/map shape (fn [expr]
-    (jlsl/with "slice" [p ,new-p] ,expr))
-    jlsl/type/vec2))
