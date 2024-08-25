@@ -207,6 +207,9 @@
     (box 40 | rotate y 0.2 x 0.5 | move [80 0 -80])
     (box 40 | rotate x 0.3 y 0.5 | move [80 0 80])
     (box 40 | rotate (normalize [1 0 1]) 1 | move [-80 0 -80]))`
+
+  "!round rect same" `(round-rect 80 20)`
+  "!round rect different" `(round-rect [60 80] [10 20 30 40])`
 })
 
 (each filename (os/dir "./cases")

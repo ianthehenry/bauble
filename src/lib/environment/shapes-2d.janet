@@ -67,3 +67,13 @@
   (*= t 0.5)
   (var w ([(- t) t] + 0.75 - (t * t) - q))
   (return (radius * length w * sign (a * a * 0.5 + b - 1.5))))
+
+# TODO: this should actually be an optional argument huh
+(defshape/2d round-rect [:vec2 size :vec4 radii]
+  ```
+  Like `rect`, but rounded. `radii` can be a single radius or a `vec4` of `[top-left top-right bottom-right bottom-left]`.`
+  ```
+  (var r (if (< q.x 0) radii.xw radii.yz))
+  (var r (if (> q.y 0) r.x r.y))
+  (var q (abs q - size + r))
+  (return (min (max q) 0 + length (max q 0) - r)))

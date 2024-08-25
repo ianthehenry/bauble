@@ -139,6 +139,7 @@
     rotation-matrix @{:doc "(rotation-matrix args)\n\n"}
     round @{}
     round-even @{}
+    round-rect @{:doc "(round-rect size radii)\n\nLike `rect`, but rounded. `radii` can be a single radius or a `vec4` of `[top-left top-right bottom-right bottom-left]`.`"}
     sign @{}
     sin @{}
     sinh @{}
