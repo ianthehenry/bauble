@@ -56,6 +56,7 @@
     atanh @{}
     bool @{}
     box @{:doc "(box size)\n\nReturns a 3D shape, a box with corners at `(- size)` and `size`. `size` will be coerced to a `vec3`.\n\nThink of `size` like the \"radius\" of the box: a box with `size.x = 50` will be `100` units wide."}
+    box-frame @{:doc "(box-frame size e)\n\nReturns a 3D shape, the outline of a box. `e` is the thickness of the frame."}
     ceil @{}
     circle @{:doc "(circle radius)\n\nReturns a 2D shape."}
     clamp @{}
