@@ -30,7 +30,7 @@
   ~(jlsl/jlsl/overload ,return-type ,name ,bindings
     ,;(syntax/expand body)))
 
-(defn- coerce-expr-to-type [desired-type constructor-function expr]
+(defn coerce-expr-to-type [desired-type constructor-function expr]
   (def expr (jlsl/coerce-expr expr))
   (if (= (jlsl/expr/type expr) desired-type)
     expr
