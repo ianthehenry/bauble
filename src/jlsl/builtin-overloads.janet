@@ -12,9 +12,9 @@
 (jlsl/overload :vec2 pow [:vec2 v :float e] (return (pow v (vec2 e))))
 (jlsl/overload :vec3 pow [:vec3 v :float e] (return (pow v (vec3 e))))
 (jlsl/overload :vec4 pow [:vec4 v :float e] (return (pow v (vec4 e))))
-(jlsl/overload :vec2 dot [:vec2 v] (return (dot v v)))
-(jlsl/overload :vec3 dot [:vec3 v] (return (dot v v)))
-(jlsl/overload :vec4 dot [:vec4 v] (return (dot v v)))
+(jlsl/overload :float dot [:vec2 v] (return (dot v v)))
+(jlsl/overload :float dot [:vec3 v] (return (dot v v)))
+(jlsl/overload :float dot [:vec4 v] (return (dot v v)))
 
 (typecheck (min [1 2] [1 2]) [:vec2 :vec2 -> :vec2])
 (typecheck (min [1 2]) [:vec2 -> :float])
