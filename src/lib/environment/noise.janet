@@ -11,10 +11,10 @@
 (overload   :vec4 fade [:vec4 t] (return (* t t t (t * (t * 6 - 15) + 10))))
 (defhelper- :vec3 mod7 [:vec3 x] (return (x - (floor (x * (/ 7)) * 7))))
 
-(defhelper :float perlin [:vec2 P]
+(defhelper :float perlin [:vec2 p]
   "Returns perlin noise from -1 to 1. The input is a vector of any dimension."
-  (var Pi ((floor P.xyxy) + [0 0 1 1]))
-  (var Pf ((fract P.xyxy) - [0 0 1 1]))
+  (var Pi ((floor p.xyxy) + [0 0 1 1]))
+  (var Pf ((fract p.xyxy) - [0 0 1 1]))
   (set Pi (mod289 Pi))
   (var ix Pi.xzxz)
   (var iy Pi.yyww)
@@ -49,12 +49,12 @@
   (var n-xy (mix n-x.x n-x.y fade-xy.y))
   (return (2.3 * n-xy)))
 
-(overload :float perlin [:vec3 P]
-  (var Pi0 (floor P))
+(overload :float perlin [:vec3 p]
+  (var Pi0 (floor p))
   (var Pi1 (Pi0 + 1))
   (var Pi0 (mod289 Pi0))
   (var Pi1 (mod289 Pi1))
-  (var Pf0 (fract P))
+  (var Pf0 (fract p))
   (var Pf1 (Pf0 - 1))
   (var ix [Pi0.x Pi1.x Pi0.x Pi1.x])
   (var iy [Pi0.yy Pi1.yy])
@@ -116,12 +116,12 @@
   (var n-xyz (mix n-yz.x n-yz.y fade-xyz.x))
   (return (2.2 * n-xyz)))
 
-(overload :float perlin [:vec4 P]
-  (var Pi0 (floor P))
+(overload :float perlin [:vec4 p]
+  (var Pi0 (floor p))
   (var Pi1 (Pi0 + 1))
   (set Pi0 (mod289 Pi0))
   (set Pi1 (mod289 Pi1))
-  (var Pf0 (fract P))
+  (var Pf0 (fract p))
   (var Pf1 (Pf0 - 1))
   (var ix [Pi0.x Pi1.x Pi0.x Pi1.x])
   (var iy [Pi0.yy Pi1.yy])
@@ -254,13 +254,13 @@
   (remap+ (perlin v)))
 
 (defmacro- define-worley2d [return-type name docstring & closing-statements]
-  ~(defhelper ,return-type ,name [:vec2 P]
+  ~(defhelper ,return-type ,name [:vec2 p]
     ,docstring
     (def K (1 / 7))
     (def Ko (3 / 7))
     (def jitter 1)
-    (var Pi (mod289 (floor P)))
-    (var Pf (fract P))
+    (var Pi (mod289 (floor p)))
+    (var Pf (fract p))
     (var oi [-1 0 1])
     (var of [-0.5 0.5 1.5])
     (var px (permute (+ Pi.x oi)))
@@ -309,7 +309,7 @@
 # This is a very gross "copy and paste" macro that exists to generate
 # similar but different versions of worley noise.
 (defmacro- overload-worley3d [return-type name & closing-statements]
-  ~(overload ,return-type ,name [:vec3 P]
+  ~(overload ,return-type ,name [:vec3 p]
     (def K (1 / 7))
     (def Ko (0.5 * (1 - K)))
     (def K2 (1 / 49))
@@ -317,8 +317,8 @@
     (def Kzo (0.5 - (1 / 12)))
     (def jitter 1.0)
 
-    (var Pi (mod289 (floor P)))
-    (var Pf (fract P - 0.5))
+    (var Pi (mod289 (floor p)))
+    (var Pf (fract p - 0.5))
 
     (var Pfx (Pf.x + [1 0 -1]))
     (var Pfy (Pf.y + [1 0 -1]))

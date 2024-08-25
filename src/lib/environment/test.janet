@@ -117,7 +117,7 @@
     outer-product @{}
     p @{:value [:var "p" :vec3]}
     parallelogram @{:doc "(parallelogram size skew)\n\nReturns a 2D shape. `size.x` is the width of the top and bottom edges, and `size.y` is the height of the parellogram.\n\n`skew` is how far the pallorelogram leans in the `x` direction, so the total width of the prellogram is `(size.x + skew) * 2`.\nA `skew` of `0` gives the same shape as `rect`.\""}
-    perlin @{:doc "(perlin P)\n\nReturns perlin noise from -1 to 1. The input is a vector of any dimension."}
+    perlin @{:doc "(perlin p)\n\nReturns perlin noise from -1 to 1. The input is a vector of any dimension."}
     perlin+ @{:doc "(perlin+ v)\n\nPerlin noise in the range 0 to 1."}
     pow @{}
     product @{:doc "(product v)\n\nMultiply the components of a vector."}
@@ -162,8 +162,8 @@
     vec4 @{}
     view @{:doc "(view subject)\n\nA shorthand for `(set subject _)` that fits nicely into pipe notation, e.g. `(sphere 50 | view)`."
            :macro true}
-    worley @{:doc "(worley P)\n\n2D Worley noise, also called cellular noise or voronoi noise. Returns the nearest distance to points distributed randomly within the tiles of a square grid."}
-    worley2 @{:doc "(worley2 P)\n\nLike `worley`, but returns the nearest distance in `x` and the second-nearest distance in `y`."}
+    worley @{:doc "(worley p)\n\n2D Worley noise, also called cellular noise or voronoi noise. Returns the nearest distance to points distributed randomly within the tiles of a square grid."}
+    worley2 @{:doc "(worley2 p)\n\nLike `worley`, but returns the nearest distance in `x` and the second-nearest distance in `y`."}
     x @{:doc "`[1 0 0]`" :value [1 0 0]}
     xor @{}
     y @{:doc "`[0 1 0]`" :value [0 1 0]}
