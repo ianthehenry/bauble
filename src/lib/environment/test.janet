@@ -72,6 +72,7 @@
     distance @{}
     dot @{}
     double @{}
+    elongate @{:doc "(elongate shape size)\n\nStretch a shape."}
     equal @{}
     equilateral-triangle @{:doc "(equilateral-triangle r)\n\nTODOC"}
     exp @{}

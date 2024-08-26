@@ -262,6 +262,8 @@
   `
   "!offset" `(rect 50 | offset 10)`
   "!map-distance" `(rect 50 | map-distance (fn [d] (abs d - 10)))`
+  "!elongate 2d" `(circle 10 | elongate [50 60])`
+  "!elongate 3d" `(sphere 10 | elongate [50 60 70])`
 
 })
 

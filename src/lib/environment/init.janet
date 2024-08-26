@@ -107,6 +107,24 @@
   (typecheck color jlsl/type/vec3)
   (field-set/with shape :color color))
 
+(deftransform elongate [shape size]
+  "Stretch a shape."
+  (typecheck size (field-set/type shape))
+  (case (field-set/type shape)
+    jlsl/type/vec2
+      (field-set/map shape (fn [expr]
+        (jlsl/do "elongate"
+          (var q-prime (abs q - size))
+          (+ (with [q (max q-prime 0)] expr)
+             (min (max q-prime) 0)))))
+    jlsl/type/vec3
+      (field-set/map shape (fn [expr]
+        (jlsl/do "elongate"
+          (var p-prime (abs p - size))
+          (+ (with [p (max p-prime 0)] expr)
+             (min (max p-prime) 0)))))
+    (error "BUG")))
+
 (defhelper :float sum [:vec2 v]
   "Add the components of a vector."
   (return (+ v.x v.y)))
