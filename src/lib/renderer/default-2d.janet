@@ -10,16 +10,17 @@
     (def shadow-thickness 0.5)
     (def boundary-thickness 2)
 
-    (var gradient-color (+ 0.5 (* 0.5 gradient)))
+    (var gradient-color (remap+ gradient))
 
-    (var inside (step (sign d) 0))
-    (var isoline (smoothstep (1 - shadow-thickness) 1 (mod (abs d) line-every / line-every)))
-    (var boundary-line (1 - (smoothstep 0 (0.5 * boundary-thickness) (abs d))))
+    (var inside (step d 0))
+    (var isoline (smoothstep (1 - shadow-thickness) 1 (abs d / line-every | fract)))
+    (var boundary-line (1 - (smoothstep 0 (boundary-thickness * 0.5) (abs d))))
 
     (mix
-      (pow [gradient-color inside] (mix 1 2 isoline))
+      (pow [gradient-color inside] (mix 1 2 isoline) | clamp 0 1)
       (vec3 1)
-      boundary-line))))
+      boundary-line)
+    )))
 
 (defn render [subject]
   (def NORMAL_OFFSET 0.005)
@@ -69,9 +70,12 @@
       (def aa-sample-width (/ (float (+ :1 aa-samples))))
       (def pixel-origin [0.5 0.5])
 
+      (var rotation (rotation-matrix 0.2))
       (for (var y :1) (<= y aa-samples) (++ y)
         (for (var x :1) (<= x aa-samples) (++ x)
           (var sample-offset (aa-sample-width * [(float x) (float y)] - pixel-origin))
+          (set sample-offset (* rotation sample-offset))
+          (set sample-offset (sample-offset + pixel-origin | fract - pixel-origin))
           (+= color (sample (gl-frag-coord.xy + sample-offset)))
           ))
       (/= color (float (aa-samples * aa-samples)))
