@@ -72,6 +72,36 @@
     (transform shape "move" q (- q offset))
     (transform shape "move" p (- p offset))))
 
+(defn shell
+  ```
+  Returns a hollow version of the provided shape (the absolute value of the distance field).
+  ```
+  [shape &opt thickness]
+  (default thickness 0)
+  (field-set/map-distance shape (fn [expr] (- (abs expr) (* thickness 0.5)))))
+
+(defn offset
+  ```
+  Offsets the provided shape, rounding corners in the process.
+
+  This is the same as subtracting `amount` from the distance. It's more accurate
+  to say that this "moves between isosurfaces," so it may not actually
+  round anything if the provided shape is not an exact distance field.
+  ```
+  [shape amount]
+  (field-set/map-distance shape (fn [expr] (- expr amount))))
+
+(defn map-distance [shape f]
+  ```
+  Apply a function `f` to the shape's distance field. `f` should take and return an expression.
+
+  The returned shape has the same dimensions as the input.
+  ```
+  (field-set/map-distance shape (fn [expr]
+    (jlsl/do "map-distance"
+      (var dist expr)
+      (f dist)))))
+
 (deftransform color [shape color]
   "Set the color field of a shape."
   (typecheck color jlsl/type/vec3)

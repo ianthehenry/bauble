@@ -99,6 +99,7 @@
     line @{:doc "(line start end width)\n\nTODOC"}
     log @{}
     log2 @{}
+    map-distance @{:doc "(map-distance shape f)\n\n"}
     mat2 @{}
     mat2x2 @{}
     mat2x3 @{}
@@ -122,6 +123,7 @@
     not-equal @{}
     not= @{}
     octagon @{:doc "(octagon r)\n\nTODOC"}
+    offset @{:doc "(offset shape amount)\n\nOffsets the provided shape, rounding corners in the process.\n\nThis is the same as subtracting `amount` from the distance. It's more accurate\nto say that this \"moves between isosurfaces,\" so it may not actually\nround anything if the provided shape is not an exact distance field."}
     or @{}
     oriented-rect @{:doc "(oriented-rect start end width)\n\nTODOC"}
     outer-product @{}
@@ -152,6 +154,7 @@
     round @{}
     round-even @{}
     round-rect @{:doc "(round-rect size radii)\n\nLike `rect`, but rounded. `radii` can be a single radius or a `vec4` of `[top-left top-right bottom-right bottom-left]`.`"}
+    shell @{:doc "(shell shape &opt thickness)\n\nReturns a hollow version of the provided shape (the absolute value of the distance field)."}
     sign @{}
     sin @{}
     sinh @{}

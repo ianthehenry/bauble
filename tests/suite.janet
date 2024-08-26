@@ -254,6 +254,15 @@
     (ring 60 0.8 10 | move [30 -60]))
   `
 
+  "!shell" `
+  (union
+    (rect 50 | shell | move [50 50])
+    (rect 50 | shell 10)
+  | move [-25 -25])
+  `
+  "!offset" `(rect 50 | offset 10)`
+  "!map-distance" `(rect 50 | map-distance (fn [d] (abs d - 10)))`
+
 })
 
 (each filename (os/dir "./cases")
