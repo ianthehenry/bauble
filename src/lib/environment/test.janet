@@ -136,7 +136,7 @@
     rotate-x @{:doc "(rotate-x angle)\n\nA rotation matrix about the X axis."}
     rotate-y @{:doc "(rotate-y angle)\n\nA rotation matrix about the Y axis."}
     rotate-z @{:doc "(rotate-z angle)\n\nA rotation matrix about the Z axis."}
-    rotation-matrix @{:doc "(rotation-matrix args)\n\n"}
+    rotation-matrix @{:doc "(rotation-matrix & args)\n\nReturn a rotation matrix. Takes the same arguments as `rotate`, minus the initial thing to rotate."}
     round @{}
     round-even @{}
     round-rect @{:doc "(round-rect size radii)\n\nLike `rect`, but rounded. `radii` can be a single radius or a `vec4` of `[top-left top-right bottom-right bottom-left]`.`"}

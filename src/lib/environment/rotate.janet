@@ -67,8 +67,9 @@
   (each arg args (assertf (floaty? arg) "expected angle, got %q" (show arg)))
   (rotate-2d (* multiplier (reduce2 + args))))
 
-(defn rotation-matrix [args]
+(defn rotation-matrix
   "Return a rotation matrix. Takes the same arguments as `rotate`, minus the initial thing to rotate."
+  [& args]
   (if (floaty? (first args))
     (rotation-matrix-2d 1 args)
     (rotation-matrix-3d 1 args)))
