@@ -210,6 +210,50 @@
 
   "!round rect same" `(round-rect 80 20)`
   "!round rect different" `(round-rect [60 80] [10 20 30 40])`
+
+  "!lines and rects" `
+  (union
+    (rect [100 5])
+    (oriented-rect [0 -30] [100 -30] 10)
+    (line [0 30] [100 30] 10)
+
+    (rect [100 5])
+    (oriented-rect [-100 -40] [100 -80] 10)
+    (line [-100 40] [100 80] 10))
+  `
+
+  "!triangles" `
+  (union
+    (equilateral-triangle 30 | move [-50 50])
+    (isosceles-triangle [40 40] | move [50 50])
+    (triangle [-20 -5] [45 17] [-16 -77]))
+  `
+
+
+  "!gons and grams" `
+  (union
+    (pentagon 30 | move [-50 -50])
+    (hexagon 30 | move [-50 50])
+    (octagon 30 | move [50 -50])
+    (hexagram 30 | move [50 50])
+    (star 30 15))
+  `
+
+  "!uneven capsule" `(uneven-capsule 39 32 37)`
+  "!pie" `(union ;(seq [i :range [1 5]] (pie 30 (math/pi / i - 0.3) | move y (i * 40 - 100))))`
+  "!cut disk" `
+  (union
+    (cut-disk 50 -40 | move y 60)
+    (cut-disk 50 20 | move y -60))
+  `
+  "!arc and ring" `
+  (union
+    (arc 60 2.3 10 | move [-30 0])
+    (ring 60 2.3 10 | move [0 0])
+    (arc 60 0.8 10 | move [30 -30])
+    (ring 60 0.8 10 | move [30 -60]))
+  `
+
 })
 
 (each filename (os/dir "./cases")

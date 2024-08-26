@@ -50,6 +50,7 @@
     acos @{}
     acosh @{}
     and @{}
+    arc @{:doc "(arc radius angle thickness)\n\nTODOC"}
     asin @{}
     asinh @{}
     atan @{}
@@ -65,12 +66,14 @@
     cosh @{}
     cross @{}
     cross-matrix @{:doc "(cross-matrix vec)\n\nReturns the matrix such that `(* (cross-matrix vec1) vec2)` = `(cross vec1 vec2)`."}
+    cut-disk @{:doc "(cut-disk radius bottom)\n\nTODOC"}
     d @{:value [:var "d" :float]}
     degrees @{}
     distance @{}
     dot @{}
     double @{}
     equal @{}
+    equilateral-triangle @{:doc "(equilateral-triangle r)\n\nTODOC"}
     exp @{}
     exp2 @{}
     extrude @{:doc "(extrude shape axis &opt distance)\n\nExtrude a 2D shape into 3D along the given `axis`.\n\n`distance` defaults to `0` and determines the width, length, or height of the final shape.\nYou can also pass `inf` to get an infinite extrusion (which is slightly cheaper to compute)."}
@@ -84,12 +87,16 @@
     gl-front-facing @{:value [:var "gl_FrontFacing" :bool]}
     gl-point-coord @{:value [:var "gl_PointCoord" :vec2]}
     gradient @{:value [:var "gradient" :vec2]}
+    hexagon @{:doc "(hexagon r)\n\nTODOC"}
+    hexagram @{:doc "(hexagram r)\n\nTODOC"}
     in @{:doc "(in & args)\n\n"}
     inf @{:doc "The number representing positive infinity"
           :value 9e999}
     int @{}
     inversesqrt @{}
+    isosceles-triangle @{:doc "(isosceles-triangle size)\n\nTODOC"}
     length @{}
+    line @{:doc "(line start end width)\n\nTODOC"}
     log @{}
     log2 @{}
     mat2 @{}
@@ -114,12 +121,16 @@
     not @{}
     not-equal @{}
     not= @{}
+    octagon @{:doc "(octagon r)\n\nTODOC"}
     or @{}
+    oriented-rect @{:doc "(oriented-rect start end width)\n\nTODOC"}
     outer-product @{}
     p @{:value [:var "p" :vec3]}
     parallelogram @{:doc "(parallelogram size skew)\n\nReturns a 2D shape. `size.x` is the width of the top and bottom edges, and `size.y` is the height of the parellogram.\n\n`skew` is how far the pallorelogram leans in the `x` direction, so the total width of the prellogram is `(size.x + skew) * 2`.\nA `skew` of `0` gives the same shape as `rect`.\""}
+    pentagon @{:doc "(pentagon r)\n\nTODOC"}
     perlin @{:doc "(perlin p)\n\nReturns perlin noise from -1 to 1. The input is a vector of any dimension."}
     perlin+ @{:doc "(perlin+ v)\n\nPerlin noise in the range 0 to 1."}
+    pie @{:doc "(pie radius angle)\n\nTODOC"}
     pow @{}
     product @{:doc "(product v)\n\nMultiply the components of a vector."}
     q @{:value [:var "q" :vec2]}
@@ -131,6 +142,7 @@
     remap+ @{:doc "(remap+ x)\n\nRemap a number in the range `[-1 1]` into the range `[0 1]`."}
     revolve @{:doc "(revolve shape axis &opt offset)\n\nRevolve a 2D shape around the given `axis` to return a 3D shape.\n\nYou can optionally supply an `offset` to move the shape away from the origin first (the default is `0`)."}
     rhombus @{:doc "(rhombus size)\n\nReturns a 2D shape. It rhombs with a kite."}
+    ring @{:doc "(ring radius angle thickness)\n\nTODOC"}
     rotate @{:doc "(rotate target & args)\n\nRotate a shape or a vector. Positive angles are counter-clockwise rotations.\n\nIn 3D, the arguments should be pairs of `axis angle`. For example:\n\n```\n(rotate (box 50) x 0.1 y 0.2)\n```\n\nAll `axis` arguments must be unit vectors. There are built-in axis variables `x`/`+y`/`-z`\nfor the cardinal directions, and these produce optimized rotation matrices. But you can\nrotate around an arbitrary axis:\n\n```\n(rotate (box 50) (normalize [1 1 1]) t)\n```\n\nThe order of the arguments is significant, as rotations are not commutative.\n\nIn 2D, the arguments should just be angles; no axis is allowed."}
     rotate-around @{:doc "(rotate-around axis angle)\n\nA rotation matrix about an arbitrary axis. More expensive to compute than the axis-aligned rotation matrices."}
     rotate-x @{:doc "(rotate-x angle)\n\nA rotation matrix about the X axis."}
@@ -148,6 +160,7 @@
     smoothstep @{}
     sphere @{:doc "(sphere radius)\n\nReturns a 3D shape."}
     sqrt @{}
+    star @{:doc "(star outer-radius inner-radius)\n\nTODOC"}
     step @{}
     subject @{:doc "A variable that determines what Bauble will render.\n\nYou can set this variable explicitly to change your focus, or use the `view` macro to change your focus. If you don't set a subject, Bauble will render the last shape in your script."
               :ref @[nil]}
@@ -156,8 +169,11 @@
     tan @{}
     tanh @{}
     torus @{:doc "(torus axis radius thickness)\n\nReturns a 3D shape, a torus around the provided `axis`."}
+    trapezoid @{:doc "(trapezoid bottom-width top-width height)\n\nTODOC"}
+    triangle @{:doc "(triangle a b c)\n\nTODOC"}
     trunc @{}
     uint @{}
+    uneven-capsule @{:doc "(uneven-capsule r1 r2 h)\n\nTODOC"}
     union @{:doc "(union & shapes)\n\nJoin 'em up. Do it to it."}
     vec @{}
     vec2 @{}
