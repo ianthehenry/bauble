@@ -25,6 +25,19 @@
     ((max [q.x p.y q.z] 0 | length) + (min (max q.x (max p.y q.z)) 0)))
     ((max [q.x q.y p.z] 0 | length) + (min (max q.x (max q.y p.z)) 0)))))
 
+(defshape/3d ellipsoid [:vec3 size]
+  ```
+  Returns a 3D shape **with an incorrect distance field**.
+
+  The distance is a bound.
+
+  This means that some operations, like a smooth union, will not behave
+  correctly on ellipsoids. Soft shadows will also appear too soft.
+  ```
+  (var k0 (length (p / size)))
+  (var k1 (length (p / (size * size))))
+  (return (k0 * (k0 - 1) / k1)))
+
 (deforiented torus [:float radius :float thickness]
   ```
   Returns a 3D shape, a torus around the provided `axis`.

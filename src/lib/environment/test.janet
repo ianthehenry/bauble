@@ -73,6 +73,7 @@
     distance @{}
     dot @{}
     double @{}
+    ellipsoid @{:doc "(ellipsoid size)\n\nReturns a 3D shape **with an incorrect distance field**.\n\nThe distance is a bound.\n\nThis means that some operations, like a smooth union, will not behave\ncorrectly on ellipsoids. Soft shadows will also appear too soft."}
     elongate @{:doc "(elongate shape size)\n\nStretch a shape."}
     equal @{}
     equilateral-triangle @{:doc "(equilateral-triangle r)\n\nTODOC"}
