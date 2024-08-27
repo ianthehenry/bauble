@@ -62,6 +62,7 @@
     circle @{:doc "(circle radius)\n\nReturns a 2D shape."}
     clamp @{}
     color @{:doc "(color shape color)\n\nSet the color field of a shape."}
+    cone @{:doc "(cone axis radius height)\n\nTODOC"}
     cos @{}
     cosh @{}
     cross @{}

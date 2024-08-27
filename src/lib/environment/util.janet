@@ -36,7 +36,7 @@
     expr
     (constructor-function expr)))
 
-(defmacro make-shaper [name constructor]
+(defmacro make-shaper [name constructor defn-macro]
   ~(defmacro ,name [name bindings docstring & body]
     (assert (string? docstring))
     (def gl/name (symbol "sdf-" name))
@@ -44,7 +44,7 @@
       # TODO: maybe this should not include the do wrap...
       (defhelper- :float ,gl/name ,bindings
         ,;(syntax/expand body))
-      (defn ,name ,docstring ,(tuple/brackets ;(seq [[_ name] :in (partition 2 bindings)] name))
+      (,',defn-macro ,name ,docstring ,(tuple/brackets ;(seq [[_ name] :in (partition 2 bindings)] name))
         (,,constructor (,gl/name
           ,;(seq [[type name] :in (partition 2 bindings)]
             # obviously this means you can only use primitive types
@@ -53,8 +53,10 @@
             ~(,coerce-expr-to-type ,<jlsl-type> ,constructor-function-name ,name)
 )))))))
 
-(make-shaper defshape/2d field-set/distance-2d)
-(make-shaper defshape/3d field-set/distance-3d)
+(make-shaper defshape/2d field-set/distance-2d defn)
+(make-shaper defshape/3d field-set/distance-3d defn)
+(make-shaper defshape/2d- field-set/distance-2d defn-)
+(make-shaper defshape/3d- field-set/distance-3d defn-)
 
 (test-macro (defshape/2d circle [:float radius]
   "Returns a 2D shape."

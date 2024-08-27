@@ -25,14 +25,21 @@
     ((max [q.x p.y q.z] 0 | length) + (min (max q.x (max p.y q.z)) 0)))
     ((max [q.x q.y p.z] 0 | length) + (min (max q.x (max q.y p.z)) 0)))))
 
-(defn torus
+(deforiented torus [:float radius :float thickness]
   ```
   Returns a 3D shape, a torus around the provided `axis`.
   ```
-  [axis radius thickness]
-  (def [this other] (split-axis axis))
-  (def radius (jlsl/coerce-expr radius))
-  (def thickness (jlsl/coerce-expr thickness))
-  (field-set/distance-3d (sugar
-    (jlsl/do "torus"
-      (length [(length other - radius) this] - thickness)))))
+  (return (length [(length other-axes - radius) this-axis] - thickness)))
+
+(deforiented cone [:float radius :float height]
+  ```
+  TODOC
+  ```
+  (var q [radius (- height)])
+  (var w [(length other-axes) (this-axis - height)])
+  (var a (w - (q * (dot w q / dot q | clamp 0 1))))
+  (var b (w - (q * [(w.x / q.x | clamp 0 1) 1])))
+  (var k (sign q.y))
+  (var d (min (dot a) (dot b)))
+  (var s (max (k * (w.x * q.y - (w.y * q.x))) (k * (w.y - q.y))))
+  (return (sqrt d * sign s)))
