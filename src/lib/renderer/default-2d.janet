@@ -46,8 +46,7 @@
 
     (defn :vec3 sample [:vec2 frag-coord]
       (var resolution viewport.zw)
-      (var local-frag-coord (frag-coord - viewport.xy))
-      (var relative-position (local-frag-coord - (resolution * 0.5) / resolution))
+      (var relative-position (frag-coord - (resolution * 0.5) / resolution))
       # TODO: should vary by zoom amount
       # 384 is a better approximation of a 45° fov at the default zoom level
       (var local-coord (relative-position * 256))
@@ -69,6 +68,7 @@
       (def aa-samples :3)
       (def aa-sample-width (/ (float (+ :1 aa-samples))))
       (def pixel-origin [0.5 0.5])
+      (var local-frag-coord (gl-frag-coord.xy - viewport.xy))
 
       (var rotation (rotation-matrix 0.2))
       (for (var y :1) (<= y aa-samples) (++ y)
@@ -76,7 +76,7 @@
           (var sample-offset (aa-sample-width * [(float x) (float y)] - pixel-origin))
           (set sample-offset (* rotation sample-offset))
           (set sample-offset (sample-offset + pixel-origin | fract - pixel-origin))
-          (+= color (sample (gl-frag-coord.xy + sample-offset)))
+          (+= color (sample (local-frag-coord + sample-offset)))
           ))
       (/= color (float (aa-samples * aa-samples)))
 

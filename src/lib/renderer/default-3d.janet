@@ -63,10 +63,7 @@
     (defn :vec3 nearest-color []
       (return ,(@or (subject :color) default-3d-color-expression)))
 
-    (defn :void main []
-      (def gamma 2.2)
-
-      (var local-coord (gl-frag-coord.xy - viewport.xy))
+    (defn :vec3 sample [:vec2 frag-coord]
       (var resolution viewport.zw)
 
       # the "camera orientation" vector is really "what transformation do we make to
@@ -76,45 +73,57 @@
         (rotate-z (- camera-orientation.z))
         (rotate-y (- camera-orientation.y))
         (rotate-x (- camera-orientation.x))
-        (perspective 45.0 resolution local-coord)
+        (perspective 45.0 resolution frag-coord)
         ))
 
       (var steps :0)
 
       (var hit (march camera-origin dir steps))
 
-      # TODO: should be unassigned
-      (var color [0 0 0])
-
       (case render-type
         # default color field
         :0 (do
           (var depth (distance camera-origin hit))
-          #(var depth (length (hit - camera-origin)))
           (if (>= depth MAXIMUM_TRACE_DISTANCE)
             (do
-              (def light (pow ([69 72 79] / 255) (vec3 gamma)))
-              (def dark (pow ([40 42 46] / 255) (vec3 gamma)))
-              (set color (vec3 (mix dark light
-                ( local-coord.x + local-coord.y
+              (def light (pow ([69 72 79] / 255) (vec3 2.2)))
+              (def dark (pow ([40 42 46] / 255) (vec3 2.2)))
+              (return (vec3 (mix dark light
+                ( frag-coord.x + frag-coord.y
                 / (resolution.x + resolution.y ))))))
             (with [p hit
                    P p
                    d (nearest-distance)
                    normal (calculate-normal)]
-              (set color (nearest-color))))
-          (break))
+              (return (nearest-color)))))
         # convergence debug view
-        :1 (do
-          (if (= steps MAX_STEPS)
-            (set color [1 0 1])
-            (set color (float steps / float MAX_STEPS | vec3)))
-          (break))
+        :1
+          (return (if (= steps MAX_STEPS)
+            [1 0 1]
+            (float steps / float MAX_STEPS | vec3)))
         # overshoot debug view
         :2 (with [p hit P p d (nearest-distance)]
           (var overshoot (max (- d) 0 / MINIMUM_HIT_DISTANCE))
           (var undershoot (max d 0 / MINIMUM_HIT_DISTANCE))
-          (set color [overshoot (- 1 undershoot overshoot) (1 - (step 1 undershoot))])
-          (break)))
+          (return [overshoot (- 1 undershoot overshoot) (1 - (step 1 undershoot))]))))
+
+    (defn :void main []
+      (def gamma 2.2)
+      (var color [0 0 0])
+      # too expenive to enable by default
+      (def aa-samples :1)
+      (def aa-sample-width (/ (float (+ :1 aa-samples))))
+      (def pixel-origin [0.5 0.5])
+      (var local-frag-coord (gl-frag-coord.xy - viewport.xy))
+
+      (var rotation (rotation-matrix 0.2))
+      (for (var y :1) (<= y aa-samples) (++ y)
+        (for (var x :1) (<= x aa-samples) (++ x)
+          (var sample-offset (aa-sample-width * [(float x) (float y)] - pixel-origin))
+          (set sample-offset (* rotation sample-offset))
+          (set sample-offset (sample-offset + pixel-origin | fract - pixel-origin))
+          (+= color (sample (local-frag-coord + sample-offset)))
+          ))
+      (/= color (float (aa-samples * aa-samples)))
 
       (set frag-color [(pow color (/ gamma)) 1]))))
