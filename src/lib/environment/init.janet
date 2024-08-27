@@ -136,3 +136,12 @@
   (return (* v.x v.y)))
 (overload :float product [:vec3 v] (return (* v.x v.y v.z)))
 (overload :float product [:vec4 v] (return (* v.x v.y v.z v.w)))
+
+(def pi math/pi)
+(def tau (* 2 math/pi))
+(loop [i :range-to [2 12]]
+  (put (curenv) (symbol "pi/" i) @{:value (/ pi i)})
+  (put (curenv) (symbol "tau/" i) @{:value (/ tau i)}))
+(loop [i :in [3 4 6 8 12] j :range [2 i]]
+  (put (curenv) (symbol "pi/" i "*" j) @{:value (* (/ pi i) j)})
+  (put (curenv) (symbol "tau/" i "*" j) @{:value (* (/ tau i) j)}))

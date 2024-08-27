@@ -137,6 +137,41 @@
     pentagon @{:doc "(pentagon r)\n\nTODOC"}
     perlin @{:doc "(perlin p)\n\nReturns perlin noise from -1 to 1. The input is a vector of any dimension."}
     perlin+ @{:doc "(perlin+ v)\n\nPerlin noise in the range 0 to 1."}
+    pi @{:value 3.1415926535897931}
+    pi/10 @{:value 0.31415926535897931}
+    pi/11 @{:value 0.28559933214452665}
+    pi/12 @{:value 0.26179938779914941}
+    pi/12*10 @{:value 2.617993877991494}
+    pi/12*11 @{:value 2.8797932657906435}
+    pi/12*2 @{:value 0.52359877559829882}
+    pi/12*3 @{:value 0.78539816339744828}
+    pi/12*4 @{:value 1.0471975511965976}
+    pi/12*5 @{:value 1.308996938995747}
+    pi/12*6 @{:value 1.5707963267948966}
+    pi/12*7 @{:value 1.8325957145940459}
+    pi/12*8 @{:value 2.0943951023931953}
+    pi/12*9 @{:value 2.3561944901923448}
+    pi/2 @{:value 1.5707963267948966}
+    pi/3 @{:value 1.0471975511965976}
+    pi/3*2 @{:value 2.0943951023931953}
+    pi/4 @{:value 0.78539816339744828}
+    pi/4*2 @{:value 1.5707963267948966}
+    pi/4*3 @{:value 2.3561944901923448}
+    pi/5 @{:value 0.62831853071795862}
+    pi/6 @{:value 0.52359877559829882}
+    pi/6*2 @{:value 1.0471975511965976}
+    pi/6*3 @{:value 1.5707963267948966}
+    pi/6*4 @{:value 2.0943951023931953}
+    pi/6*5 @{:value 2.617993877991494}
+    pi/7 @{:value 0.44879895051282759}
+    pi/8 @{:value 0.39269908169872414}
+    pi/8*2 @{:value 0.78539816339744828}
+    pi/8*3 @{:value 1.1780972450961724}
+    pi/8*4 @{:value 1.5707963267948966}
+    pi/8*5 @{:value 1.9634954084936207}
+    pi/8*6 @{:value 2.3561944901923448}
+    pi/8*7 @{:value 2.748893571891069}
+    pi/9 @{:value 0.3490658503988659}
     pie @{:doc "(pie radius angle)\n\nTODOC"}
     pow @{}
     product @{:doc "(product v)\n\nMultiply the components of a vector."}
@@ -176,6 +211,41 @@
     t @{:value [:var "t" :float]}
     tan @{}
     tanh @{}
+    tau @{:value 6.2831853071795862}
+    tau/10 @{:value 0.62831853071795862}
+    tau/11 @{:value 0.5711986642890533}
+    tau/12 @{:value 0.52359877559829882}
+    tau/12*10 @{:value 5.2359877559829879}
+    tau/12*11 @{:value 5.7595865315812871}
+    tau/12*2 @{:value 1.0471975511965976}
+    tau/12*3 @{:value 1.5707963267948966}
+    tau/12*4 @{:value 2.0943951023931953}
+    tau/12*5 @{:value 2.617993877991494}
+    tau/12*6 @{:value 3.1415926535897931}
+    tau/12*7 @{:value 3.6651914291880918}
+    tau/12*8 @{:value 4.1887902047863905}
+    tau/12*9 @{:value 4.71238898038469}
+    tau/2 @{:value 3.1415926535897931}
+    tau/3 @{:value 2.0943951023931953}
+    tau/3*2 @{:value 4.1887902047863905}
+    tau/4 @{:value 1.5707963267948966}
+    tau/4*2 @{:value 3.1415926535897931}
+    tau/4*3 @{:value 4.71238898038469}
+    tau/5 @{:value 1.2566370614359172}
+    tau/6 @{:value 1.0471975511965976}
+    tau/6*2 @{:value 2.0943951023931953}
+    tau/6*3 @{:value 3.1415926535897931}
+    tau/6*4 @{:value 4.1887902047863905}
+    tau/6*5 @{:value 5.2359877559829879}
+    tau/7 @{:value 0.89759790102565518}
+    tau/8 @{:value 0.78539816339744828}
+    tau/8*2 @{:value 1.5707963267948966}
+    tau/8*3 @{:value 2.3561944901923448}
+    tau/8*4 @{:value 3.1415926535897931}
+    tau/8*5 @{:value 3.9269908169872414}
+    tau/8*6 @{:value 4.71238898038469}
+    tau/8*7 @{:value 5.497787143782138}
+    tau/9 @{:value 0.69813170079773179}
     torus @{:doc "(torus axis radius thickness)\n\nReturns a 3D shape, a torus around the provided `axis`."}
     trapezoid @{:doc "(trapezoid bottom-width top-width height)\n\nTODOC"}
     triangle @{:doc "(triangle a b c)\n\nTODOC"}
