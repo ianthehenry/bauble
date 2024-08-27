@@ -265,6 +265,27 @@
   "!elongate 2d" `(circle 10 | elongate [50 60])`
   "!elongate 3d" `(sphere 10 | elongate [50 60 70])`
 
+  "!torus" `
+  (union
+    (torus x 100 10)
+    (torus y 100 10)
+    (torus z 100 10))
+  `
+
+  "!cone" `
+  (union
+    (cone x 40 160)
+    (cone y 40 160)
+    (cone z 40 -160))
+  `
+
+  "!ellipsoid" `
+  (union
+    (ellipsoid [100 40 40])
+    (ellipsoid [40 40 100])
+    (ellipsoid [40 100 40]))
+  `
+
 })
 
 (each filename (os/dir "./cases")
