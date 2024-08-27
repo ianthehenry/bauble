@@ -128,6 +128,7 @@
     not-equal @{}
     not= @{}
     octagon @{:doc "(octagon r)\n\nTODOC"}
+    octahedron @{:doc "(octahedron radius)\n\nTODOC"}
     offset @{:doc "(offset shape amount)\n\nOffsets the provided shape, rounding corners in the process.\n\nThis is the same as subtracting `amount` from the distance. It's more accurate\nto say that this \"moves between isosurfaces,\" so it may not actually\nround anything if the provided shape is not an exact distance field."}
     or @{}
     oriented-rect @{:doc "(oriented-rect start end width)\n\nTODOC"}

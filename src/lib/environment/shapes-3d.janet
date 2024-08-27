@@ -56,3 +56,20 @@
   (var d (min (dot a) (dot b)))
   (var s (max (k * (w.x * q.y - (w.y * q.x))) (k * (w.y - q.y))))
   (return (sqrt d * sign s)))
+
+(defshape/3d octahedron [:float radius]
+  ```
+  TODOC
+  ```
+  (var p (abs p))
+  (var m (p.x + p.y + p.z - radius))
+
+  # TODO: should be uninitialized
+  (var q [0 0 0])
+  (if (< (3 * p.x) m) (set q p.xyz)
+    (if (< (3 * p.y) m) (set q p.yzx)
+      (if (< (3 * p.z) m) (set q p.zxy)
+        (return (m * (sqrt 3 / 3))))))
+
+  (var k (q.z - q.y + radius * 0.5 | clamp 0 radius))
+  (return (length [q.x (q.y - radius + k) (q.z - k)])))

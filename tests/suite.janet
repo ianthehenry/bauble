@@ -293,6 +293,8 @@
     (box 10 | move target)
     (sphere 10 | move (align [0 0 100] z (normalize target))))
   `
+
+  "!octahedron" `(octahedron 120 | rotate x pi/4)`
 })
 
 (each filename (os/dir "./cases")
