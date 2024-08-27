@@ -49,6 +49,8 @@
     abs @{}
     acos @{}
     acosh @{}
+    align @{:doc "(align target from to)\n\nAlign a shape or a vector to another vector. Both the `from` and `to` vectors must have unit length.\n\nThis function is useful for \"pointing\" one shape towards another. For example:\n\n```\n(def pos [(sin (t * 2) * 50) (sin (t * 3) * 100) (cos (t * 5) * 50)])\n(union\n  (cone y 10 80 | align y (normalize pos))\n  (box 10 | move pos))\n```\n\nThe tip of the cone points towards the moving target. In this case the `from` vector is equal to the\naxis of the cone.\n\nIf `from` = `(- to)`, the result is undefined: there are infinitely many rotation matrices that reverse\na vector's direction."}
+    alignment-matrix @{:doc "(alignment-matrix from to)\n\nReturn a 3D rotation matrix that aligns one normalized vector to another.\n\nBoth input vectors must have a unit length!\n\nIf `from` = `(- to)`, the result is undefined."}
     and @{}
     arc @{:doc "(arc radius angle thickness)\n\nTODOC"}
     asin @{}
@@ -149,11 +151,11 @@
     rhombus @{:doc "(rhombus size)\n\nReturns a 2D shape. It rhombs with a kite."}
     ring @{:doc "(ring radius angle thickness)\n\nTODOC"}
     rotate @{:doc "(rotate target & args)\n\nRotate a shape or a vector. Positive angles are counter-clockwise rotations.\n\nIn 3D, the arguments should be pairs of `axis angle`. For example:\n\n```\n(rotate (box 50) x 0.1 y 0.2)\n```\n\nAll `axis` arguments must be unit vectors. There are built-in axis variables `x`/`+y`/`-z`\nfor the cardinal directions, and these produce optimized rotation matrices. But you can\nrotate around an arbitrary axis:\n\n```\n(rotate (box 50) (normalize [1 1 1]) t)\n```\n\nThe order of the arguments is significant, as rotations are not commutative.\n\nIn 2D, the arguments should just be angles; no axis is allowed."}
-    rotate-around @{:doc "(rotate-around axis angle)\n\nA rotation matrix about an arbitrary axis. More expensive to compute than the axis-aligned rotation matrices."}
-    rotate-x @{:doc "(rotate-x angle)\n\nA rotation matrix about the X axis."}
-    rotate-y @{:doc "(rotate-y angle)\n\nA rotation matrix about the Y axis."}
-    rotate-z @{:doc "(rotate-z angle)\n\nA rotation matrix about the Z axis."}
+    rotation-around @{:doc "(rotation-around axis angle)\n\nA rotation matrix about an arbitrary axis. More expensive to compute than the axis-aligned rotation matrices."}
     rotation-matrix @{:doc "(rotation-matrix & args)\n\nReturn a rotation matrix. Takes the same arguments as `rotate`, minus the initial thing to rotate."}
+    rotation-x @{:doc "(rotation-x angle)\n\nA rotation matrix about the X axis."}
+    rotation-y @{:doc "(rotation-y angle)\n\nA rotation matrix about the Y axis."}
+    rotation-z @{:doc "(rotation-z angle)\n\nA rotation matrix about the Z axis."}
     round @{}
     round-even @{}
     round-rect @{:doc "(round-rect size radii)\n\nLike `rect`, but rounded. `radii` can be a single radius or a `vec4` of `[top-left top-right bottom-right bottom-left]`.`"}
@@ -201,6 +203,6 @@
 (test (do (rotate (box 10) [1 2 3] 20) nil) nil)
 (test (do (rotate (box 10) x 1 y 2) nil) nil)
 (test-error (rotate (rect 10) x 10) "expected angle, got (1 0 0)")
-(test-error (rotate (box 10) 10 20) "rotate-around: no overload for arguments [:float :float]")
+(test-error (rotate (box 10) 10 20) "rotation-around: no overload for arguments [:float :float]")
 (test-error (rotate (box 10) 10) "angle required")
-(test-error (rotate (box 10) x 10 [1 2] 3) "rotate-around: no overload for arguments [:vec2 :float]")
+(test-error (rotate (box 10) x 10 [1 2] 3) "rotation-around: no overload for arguments [:vec2 :float]")

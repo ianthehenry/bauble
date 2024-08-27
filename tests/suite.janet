@@ -286,6 +286,13 @@
     (ellipsoid [40 100 40]))
   `
 
+  "!align" `
+  (def target [-80 101 52])
+  (union
+    (cone y 10 80 | align y (normalize target))
+    (box 10 | move target)
+    (sphere 10 | move (align [0 0 100] z (normalize target))))
+  `
 })
 
 (each filename (os/dir "./cases")

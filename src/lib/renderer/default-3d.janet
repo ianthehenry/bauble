@@ -70,9 +70,9 @@
       # the vector [0 0 1]" to arrive at to the camera origin. but we want to point to
       # the actual origin, so we basically want to reverse this transformation.
       (var dir (*
-        (rotate-z (- camera-orientation.z))
-        (rotate-y (- camera-orientation.y))
-        (rotate-x (- camera-orientation.x))
+        (rotation-z (- camera-orientation.z))
+        (rotation-y (- camera-orientation.y))
+        (rotation-x (- camera-orientation.x))
         (perspective 45.0 resolution frag-coord)
         ))
 
