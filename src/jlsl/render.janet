@@ -78,6 +78,7 @@
         ;(map render/expr args)
         ;(map |(render/expr (expr/identifier (param/var $))) (function/implicit-params function))]
     (dot expr field) ['. (render/expr expr) field]
+    (length expr) ['.length (render/expr expr)]
     (in expr index) ['in (render/expr expr) (render/expr index)]
     (if cond then else) ['if (render/expr cond) (render/expr then) (render/expr else)]
     (crement op expr) [op (render/expr expr)]))
@@ -1558,5 +1559,20 @@
     
     void main() {
       return 1.0;
+    }
+  `))
+
+(deftest "length method is weird and special"
+  (test-function
+    (jlsl/fn :int "foo" []
+      (var foo [1 2 3])
+      (var bar (.length foo))
+      (set bar (.length (+ foo 1)))
+      (return bar)) `
+    int foo() {
+      vec3 foo = vec3(1.0, 2.0, 3.0);
+      int bar = foo.length();
+      bar = (foo + 1.0).length();
+      return bar;
     }
   `))

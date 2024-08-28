@@ -86,6 +86,8 @@
     |symbol? [coerce-expr ast]
     |btuple? [call ~',builtins/vec (map expr/of-ast ast)]
     ['. expr field] [expr/dot (expr/of-ast expr) ['quote field]]
+    # TODO: I should maybe just make a .length function?
+    ['.length expr] [expr/length (expr/of-ast expr)]
     ['in expr index] [expr/in (expr/of-ast expr) (expr/of-ast index)]
     [(and tag (or 'do 'iife)) & body] (do
       (def [body name] (if (string? (first body))
@@ -112,6 +114,7 @@
     (identifier variable) (symbol (variable/name variable))
     (call function args) [(symbol (function/name function)) ;(map expr/to-sexp args)]
     (dot expr field) ['. (expr/to-sexp expr) field]
+    (length expr) ['.length (expr/to-sexp expr)]
     (in expr index) ['in (expr/to-sexp expr) (expr/to-sexp index)]
     (if cond then else) ['if (expr/to-sexp cond) (expr/to-sexp then) (expr/to-sexp else)]
     (crement op expr) [op (expr/to-sexp expr)]))

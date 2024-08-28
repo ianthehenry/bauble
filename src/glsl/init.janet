@@ -169,6 +169,9 @@
     ['. expr key] (do
       (render-expression p expr :needs-parens? true)
       (printer/prin p "." (identifier key)))
+    ['.length expr] (do
+      (render-expression p expr :needs-parens? true)
+      (printer/prin p ".length()"))
     [f & args] (do
       (printer/prin p (identifier f) "(")
       (each-last arg args
@@ -425,6 +428,16 @@
     void main() {
       const float x = lights[0];
       const float x = lights[i + 1];
+    }
+    
+  `))
+
+(deftest "length method"
+  (test-statements [
+    (def :int x (.length lights))
+    ] `
+    void main() {
+      const int x = lights.length();
     }
     
   `))

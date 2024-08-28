@@ -53,6 +53,7 @@
   (crement op value)
   (dot expr field)
   (in expr index)
+  (length expr)
   (if cond then else))
 
 (defadt statement

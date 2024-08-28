@@ -18,6 +18,7 @@
     (identifier variable) (variable/type variable)
     (call function _) (function/return-type function)
     (dot expr field) (type/field-type (expr/type expr) field)
+    (length _) type/int
     (in expr _) (type/element-type (expr/type expr))
     (if cond then else) (expr/type then)
     (crement _ expr) (expr/type expr)))
@@ -79,6 +80,7 @@
       (literal _ _) nil
       (identifier variable) variable
       (call _ _) nil
+      (length _) nil
       (dot expr _) (root-identifier expr)
       (in expr index) (root-identifier expr)
       (if _ _ _) nil
@@ -129,6 +131,7 @@
           # instead.
           (see-expr expr :read)
           (see-expr expr rw))
+        (length expr) (see-expr expr :read)
         (in expr index) (do (see-expr expr :read) (see-expr expr rw) (see-expr index :read))
         (if cond then else) (do (see-expr cond :read) (see-expr then :read) (see-expr else :read))
         (crement _ expr) (do (see-expr expr :read) (see-expr expr :write))
