@@ -225,6 +225,7 @@
           ['defn & args] ~(as-macro ,jlsl/defn ,;args)
           ['declare & args] ~(as-macro ,jlsl/declare ,;args)
           ['implement & args] ~(as-macro ,jlsl/implement ,;args)
+          ['struct & args] ~(as-macro ,jlsl/defstruct ,;args)
           ['unquote & args] args
           ['precision &] ~(,array/push ,$precisions ',form))))
     (unless defined-main?
@@ -248,13 +249,33 @@
   (with-syms [$var]
     ~(fn [,$var] [',thing (,type/to-glsl (,variable/type ,$var)) (,allocate-glsl-identifier ,$var)])))
 
+(defn declare-struct [t]
+  (type/match t
+    (struct name fields) (do
+      (def fields
+        (catseq [[field type] :in (partition 2 (ordered-table/kvs fields))]
+          [(type/to-glsl type) field]))
+      ~(struct ,name ,;fields))
+    (error "BUG")))
+
 (defn render/program [{:precisions precisions :uniforms uniforms :inputs inputs :outputs outputs :globals globals :main main}]
   (def root-variables (array/concat @[] uniforms inputs outputs globals))
+
+  (def structs (ordered-set/new))
+
+  (defn find-structs [node visiting? _]
+    (when visiting? (break))
+    (unless (type/struct? node) (break))
+    (ordered-set/put structs node))
+  (visit root-variables find-structs)
+  (visit main find-structs)
+
   (with-dyns [*glsl-identifier-map* (new-scope)
               *glsl-function-name-map* (bimap/new)]
     (each global globals
       (allocate-glsl-identifier global))
     [;precisions
+     ;(map declare-struct (ordered-set/values structs))
      ;(map (declare in) inputs)
      ;(map (declare out) outputs)
      ;(map (declare uniform) uniforms)
@@ -1438,5 +1459,104 @@
     
     float main() {
       return sum(vec2(1.0, 2.0)) + sum1(vec3(1.0, 2.0, 3.0));
+    }
+  `))
+
+(deftest "structs"
+  (test-function (do
+    (jlsl/defstruct Foo :float bar :float baz)
+
+    (jlsl/fn :float "main" []
+      (var foo (Foo 1 2))
+      (var bar (. foo bar))
+      (return bar))) `
+    float main() {
+      Foo foo = Foo(1.0, 2.0);
+      float bar = foo.bar;
+      return bar;
+    }
+  `))
+
+(deftest "basic structs"
+  (test-program [
+    (struct Foo :float bar :float baz)
+
+    (defn Foo helper []
+      (return (Foo 1 2)))
+
+    (defn :void main []
+      (var foo (helper))
+      (var bar (. foo bar))
+      (return bar))
+    ] `
+    struct Foo {
+      float bar;
+      float baz;
+    };
+    
+    Foo helper() {
+      return Foo(1.0, 2.0);
+    }
+    
+    void main() {
+      Foo foo = helper();
+      float bar = foo.bar;
+      return bar;
+    }
+  `))
+
+(deftest "struct constructors have a fixed arity"
+  (test-error (program/new
+    (struct Foo :float bar :float baz)
+    (defn Foo helper []
+      (return (Foo 1 2 3)))
+
+    (defn :void main [] (return 1)))
+    "<function Foo> called with 3 arguments, expected 2"))
+
+(deftest "structs that aren't used don't appear in the final output"
+  (test-program [
+    (struct Foo :float bar :float baz)
+
+    (defn :void main []
+      (return 1))
+    ] `
+    void main() {
+      return 1.0;
+    }
+  `))
+
+(deftest "structs that are are only used in uniforms, inputs, or outputs still appear in the final result"
+  (test-program [
+    (struct Foo :float field)
+    (struct Bar :float field)
+    (struct Baz :float field)
+    (struct Qux :float field)
+
+    (uniform Foo foo)
+    (in Bar bar)
+    (out Baz baz)
+
+    (defn :void main []
+      (return 1))
+    ] `
+    struct Foo {
+      float field;
+    };
+    struct Bar {
+      float field;
+    };
+    struct Baz {
+      float field;
+    };
+    
+    in Bar bar;
+    
+    out Baz baz;
+    
+    uniform Foo foo;
+    
+    void main() {
+      return 1.0;
     }
   `))

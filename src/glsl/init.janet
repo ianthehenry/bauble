@@ -303,7 +303,7 @@
   (pat/match toplevel
     ['struct name & fields] (do
       (printer/prin p "struct " (identifier name))
-      (printer/bracket-body p " {" "}"
+      (printer/bracket-body p " {" "};"
         (each field (partition 2 fields)
           (render-statement p ~(var ,;field))))
       (printer/newline p))
@@ -502,7 +502,7 @@
     struct LightIncidence {
       vec3 direction;
       vec3 color;
-    }
+    };
     
   `))
 

@@ -1,5 +1,6 @@
 (use judge)
 (use module)
+(import pat)
 (use ./adt)
 (use ./util)
 
@@ -16,7 +17,7 @@
   (vec type count)
   (mat cols rows) # this is specifically a float matrix; we don't support dmat yet
   (array type length)
-  (struct name fields))
+  (struct name fields)) # fields is an ordered-table
 
 (defadt variable
   (dynamic id name type)
@@ -141,16 +142,28 @@
      :mat4x3 (type/mat 4 3)
      :mat4x4 (type/mat 4 4)})
 
+  # TODO: we also need a fix for the weak table bug here
+  (def type-registry (table/weak-keys 64))
+  (defn- coerce-type [x] (in type-registry x x))
+  (defn register-constructor [constructor type] (put type-registry constructor type))
+
+  (defn struct? [t]
+    (and (type? t) (type/match t
+      (struct _ _) true
+      false)))
+
   (defn of-ast [ast]
     (if-let [t (in short-names ast)]
       ~',t
-      (if (and (ptuple? ast) (= (length ast) 2))
-        [type/array (of-ast (in ast 0)) (in ast 1)]
-        (if-let [prim (primitive-type/of-ast ast)]
-          [type/primitive prim]
-          (if (keyword? ast)
-            (errorf "unknown type %q" ast)
-            ast)))))
+      (pat/match ast
+        ['struct name & fields]
+          [type/struct (string name)
+            [ordered-table/new
+              ;(catseq [[type name] :in (partition 2 fields)]
+                [~',name (of-ast type)])]]
+        (and |ptuple? [type count]) [type/array (of-ast type) count]
+        |keyword? [type/primitive (primitive-type/of-ast ast)]
+        [coerce-type ast])))
 
   (test (of-ast :float)
     [@type/primitive [quote [<1> float]]])
@@ -209,7 +222,7 @@
               (errorf "cannot create a vector with %d components" len)))
           (errorf "unknown vector field %q" field))
       (struct name fields)
-        (or (in fields field)
+        (or (ordered-table/in fields field)
           (errorf "%s: unknown field %q" name field))))
 
   (defn element-type [t]
@@ -219,7 +232,7 @@
       (mat _ rows) (type/vec (primitive-type/float) rows)
       (array type _) type
       (vec t _) (type/primitive t)
-      (struct name fields) (error "cannot index into struct")))
+      (struct _ _) (error "cannot index into struct")))
   )
 
 (def param-sig-type-id (gensym))

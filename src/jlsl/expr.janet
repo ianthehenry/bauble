@@ -13,6 +13,7 @@
   # construction below, we have a handle
   # on a raw function. otherwise we expect
   # that we're invoking a multifunction wrapper
+  # or a struct constructor
   (if (function? general-function)
     (expr/call general-function args)
     (general-function ;args)))

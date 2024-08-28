@@ -70,8 +70,29 @@
     (call jlsl/declare-overload return-type name (map 0 (partition 2 params)))
     (call jlsl/implement return-type name params ;body)])
 
+(defmacro jlsl/defstruct [name & fields]
+  (def field-names (map 1 (partition 2 fields)))
+  (def <param-types> (map (comp type/of-ast 0) (partition 2 fields)))
+  (def <type> (type/of-ast ~(struct ,name ,;fields)))
+  (with-syms [$type $f $args]
+    ~(upscope
+      (def ,$type ,<type>)
+      (def ,$f (,function/builtin ,(string name) ,$type (,map ,param-sig/in ,<param-types>)))
+      (defn ,name [,;field-names]
+        (,expr/call ,$f (,map ,coerce-expr [,;field-names])))
+      (,type/register-constructor ,name ,$type))))
+
 (use ./builtins)
 (use ./flexins)
+
+(test-macro (jlsl/defstruct Foo :float bar :float baz)
+  (upscope
+    (def <1> (@type/struct "Foo" (@new (quote bar) (@type/primitive (quote (<2> float))) (quote baz) (@type/primitive (quote (<2> float))))))
+    (def <3> (@function/builtin "Foo" <1> (@map @in @[(@type/primitive (quote (<2> float))) (@type/primitive (quote (<2> float)))])))
+    (defn Foo
+      [bar baz]
+      (@expr/call <3> (@map @coerce-expr [bar baz])))
+    (@register-constructor Foo <1>)))
 
 (test-macro (jlsl/declare :float incr [:float])
   (def incr (@single "incr" (@type/primitive (quote (<1> float))) [(@new (@type/primitive (quote (<1> float))) :in)])))

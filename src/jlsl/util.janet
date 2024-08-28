@@ -172,6 +172,88 @@
   (defn has-key? [[forward _] k] (core/has-key? forward k))
   (defn has-value? [[_ backward] v] (core/has-key? backward v)))
 
+(def- core/put put)
+(def- core/in in)
+
+(defmodule ordered-table
+  (defn put [[ks vs indexes] k v]
+    (assert (not= k nil) "nil cannot act as a key")
+    (assert (not= v nil) "nil cannot act as a value")
+    (assertf (not (has-key? indexes k)) "can't insert duplicate key %q" k)
+    (core/put indexes k (length ks))
+    (array/push ks k)
+    (array/push vs v))
+  (defn in [[ks vs indexes] k &opt dflt]
+    (if-let [index (core/in indexes k)]
+      (core/in vs index)
+      dflt))
+
+  (defn kvs [[ks vs _]] (mapcat |[$0 $1] ks vs))
+  (defn keys [[ks vs _]] ks)
+  (defn values [[ks vs _]] vs)
+
+  (defn new [& kvs]
+    (def t [@[] @[] @{}])
+    (each [k v] (partition 2 kvs)
+      (put t k v))
+    t))
+
+(deftest "ordered-table"
+  (def t (ordered-table/new))
+  (ordered-table/put t 1 1)
+  (ordered-table/put t 2 2)
+  (ordered-table/put t 4 4)
+  (ordered-table/put t 3 3)
+  (ordered-table/put t 7 7)
+  (ordered-table/put t 5 5)
+  (ordered-table/put t 6 6)
+  (ordered-table/put t 8 8)
+  (test t
+    [@[1 2 4 3 7 5 6 8]
+     @[1 2 4 3 7 5 6 8]
+     @{1 0 2 1 3 3 4 2 5 5 6 6 7 4 8 7}])
+  (test (ordered-table/in t 7) 7)
+  (test (ordered-table/in t 20 "default") "default")
+  (test (ordered-table/keys t) @[1 2 4 3 7 5 6 8])
+  (test (ordered-table/values t) @[1 2 4 3 7 5 6 8])
+  (test (ordered-table/kvs t) @[1 1 2 2 4 4 3 3 7 7 5 5 6 6 8 8]))
+
+(defmodule ordered-set
+  (defn new [] [@[] @{}])
+  (defn put [[els mask] v]
+    (assert (not= v nil) "set cannot contain nil")
+    (when (in mask v) (break))
+    (array/push els v)
+    (core/put mask v true))
+  (defn in [[els mask] v]
+    (core/in mask v false))
+  (defn values [[els _]] els))
+
+(deftest "ordered-set"
+  (def t (ordered-set/new))
+  (ordered-set/put t 1)
+  (ordered-set/put t 2)
+  (ordered-set/put t 4)
+  (ordered-set/put t 3)
+  (ordered-set/put t 7)
+  (ordered-set/put t 5)
+  (ordered-set/put t 6)
+  (ordered-set/put t 8)
+  (ordered-set/put t 1)
+  (test t
+    [@[1 2 4 3 7 5 6 8]
+     @{1 true
+       2 true
+       3 true
+       4 true
+       5 true
+       6 true
+       7 true
+       8 true}])
+  (test (ordered-set/in t 7) true)
+  (test (ordered-set/in t 20) false)
+  (test (ordered-set/values t) @[1 2 4 3 7 5 6 8]))
+
 (def- core/dyn dyn)
 (defn dyn [dynvar & dflt]
   (assert (<= (length dflt) 1) "too many arguments")
