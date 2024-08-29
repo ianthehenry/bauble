@@ -1,7 +1,7 @@
 (use judge)
 (use ./util)
 (import ./syntax)
-(import ./field-set)
+(import ./shape)
 (import ./environment/derive :prefix "environment/derive/")
 
 # TODO: only doing this because of the stupid weak table bug
@@ -26,7 +26,7 @@
     (bad-compile msg nil where line col))
   [(string/slice buf 0 -2) macro-fiber])
 
-(defn can-be-subject? [x] (field-set/is? x))
+(defn can-be-subject? [x] (shape/is? x))
 
 # this returns the resulting environment
 (defn evaluate [script]
@@ -70,8 +70,8 @@
 
 (import ../jlsl)
 (defn- make-presentable [value]
-  (if (field-set/is? value)
-    (field-set/map value jlsl/show)
+  (if (shape/is? value)
+    (shape/map value jlsl/show)
     value))
 
 (defn- run [script]

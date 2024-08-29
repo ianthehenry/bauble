@@ -95,7 +95,7 @@
     (rotation-matrix-3d 1 args)))
 
 (defn- rotate-shape [shape args]
-  (case (field-set/type shape)
+  (case (shape/type shape)
     jlsl/type/vec2 (transform shape "rotate" q (* ,(rotation-matrix-2d -1 args) q))
     jlsl/type/vec3 (transform shape "rotate" p (* ,(rotation-matrix-3d -1 args) p))))
 
@@ -137,7 +137,7 @@
   ````
   [target & args]
   (assert (> (@length args) 0) "not enough arguments")
-  (if (field-set/is? target)
+  (if (shape/is? target)
     (rotate-shape target args)
     (rotate-vector target args)))
 
@@ -161,6 +161,6 @@
   a vector's direction.
   ````
   [target from to]
-  (if (field-set/is? target)
+  (if (shape/is? target)
     (align-shape target from to)
     (align-vector target from to)))

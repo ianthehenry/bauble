@@ -2,16 +2,16 @@
 (use ../util)
 (import ../../jlsl)
 (import ../../glsl)
-(import ../field-set)
+(import ../shape)
 (import ../dynvars)
 (import ./default-2d)
 (import ./default-3d)
 
 # TODO: probably add some way to hoist top-level variables
 (defn get-hoisted-field [shape field-name]
-  (def field (field-set/get-field shape field-name))
+  (def field (shape/get-field shape field-name))
   (unless field (break))
-  (def hoisted-vars (field-set/get-hoisted-vars shape field-name))
+  (def hoisted-vars (shape/get-hoisted-vars shape field-name))
   (if hoisted-vars
     (jlsl/with-expr (pairs hoisted-vars) [] field "hoist")
     field))
@@ -35,7 +35,7 @@
 
   # so our subject is either 2D or 3D
   (def program
-    (case (field-set/type subject)
+    (case (shape/type subject)
       jlsl/type/vec2 (render-2d env subject)
       jlsl/type/vec3 (render-3d env subject)
       (errorf "whoa whoa whoa, what the heck is %q" subject)))

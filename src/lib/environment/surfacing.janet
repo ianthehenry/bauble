@@ -109,6 +109,6 @@
   TODOC
   ```
   (-> shape
-    (field-set/hoist-all :color (hoisties lights))
-    (field-set/with :color (blinn-phong-color-expression color shine gloss lights))))
+    (shape/hoist-all :color (hoisties lights))
+    (shape/with :color (blinn-phong-color-expression color shine gloss lights))))
 

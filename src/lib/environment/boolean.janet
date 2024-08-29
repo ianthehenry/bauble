@@ -1,7 +1,7 @@
 (use ./import)
 
 (defn- sharp-union [& shapes]
-  (field-set/merge shapes (fn [fields]
+  (shape/merge shapes (fn [fields]
     (def distances (seq [{:distance d} :in fields :when d] d))
     (def colors (seq [{:color c :distance d} :in fields :when c] [c (@or d (jlsl/coerce-expr 0))]))
 
@@ -66,7 +66,7 @@
 
 (defn smooth-union [r & shapes]
   (def r (typecheck (jlsl/coerce-expr r) jlsl/type/float))
-  (field-set/merge shapes (fn [fields]
+  (shape/merge shapes (fn [fields]
     (def distances (seq [{:distance d} :in fields :when d] d))
     {:distance (case (@length distances)
        0 nil

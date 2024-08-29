@@ -1,7 +1,7 @@
 (use judge)
 (import ../../jlsl)
 (import ../syntax)
-(import ../field-set)
+(import ../shape)
 (import ../util :prefix "" :export true)
 
 (defn typecheck [expr expected]
@@ -45,10 +45,10 @@
             ~(,coerce-expr-to-type ,<jlsl-type> ,constructor-function-name ,name)
 )))))))
 
-(make-shaper defshape/2d field-set/distance-2d defn)
-(make-shaper defshape/3d field-set/distance-3d defn)
-(make-shaper defshape/2d- field-set/distance-2d defn-)
-(make-shaper defshape/3d- field-set/distance-3d defn-)
+(make-shaper defshape/2d shape/distance-2d defn)
+(make-shaper defshape/3d shape/distance-3d defn)
+(make-shaper defshape/2d- shape/distance-2d defn-)
+(make-shaper defshape/3d- shape/distance-3d defn-)
 
 (test-macro (defshape/2d circle [:float radius]
   "Returns a 2D shape."
@@ -64,14 +64,14 @@
 (defmacro deftransform [name bindings docstring & body]
   (assert (string? docstring))
   ~(defn ,name ,docstring ,bindings
-    (as-macro ,assertf (,field-set/is? ,(first bindings)) "first argument to %s should be a shape, got %q" ,(string name) ,(first bindings))
+    (as-macro ,assertf (,shape/is? ,(first bindings)) "first argument to %s should be a shape, got %q" ,(string name) ,(first bindings))
     ,;(seq [param :in (drop 1 bindings)]
       ~(def ,param (,jlsl/coerce-expr ,param)))
     ,;(syntax/expand body)))
 
 (defmacro transform [shape name variable new-position]
   (with-syms [$expr]
-    ~(field-set/map ,shape (fn [,$expr]
+    ~(shape/map ,shape (fn [,$expr]
       (jlsl/with ,name [,variable ,new-position] (,'unquote ,$expr))))))
 
 (defmacro sugar [expr] (syntax/expand expr))

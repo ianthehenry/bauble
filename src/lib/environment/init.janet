@@ -68,8 +68,8 @@
   That is the same as `(move (box 50) (+ (x * 100) (y * 100) (-z * 100)))`.
   ````
   [shape & args]
-  (def offset (sum-scaled-vectors (field-set/type shape) args))
-  (if (= (field-set/type shape) jlsl/type/vec2)
+  (def offset (sum-scaled-vectors (shape/type shape) args))
+  (if (= (shape/type shape) jlsl/type/vec2)
     (transform shape "move" q (- q offset))
     (transform shape "move" p (- p offset))))
 
@@ -79,7 +79,7 @@
   ```
   [shape &opt thickness]
   (default thickness 0)
-  (field-set/map-distance shape (fn [expr] (- (abs expr) (* thickness 0.5)))))
+  (shape/map-distance shape (fn [expr] (- (abs expr) (* thickness 0.5)))))
 
 (defn offset
   ```
@@ -90,7 +90,7 @@
   round anything if the provided shape is not an exact distance field.
   ```
   [shape amount]
-  (field-set/map-distance shape (fn [expr] (- expr amount))))
+  (shape/map-distance shape (fn [expr] (- expr amount))))
 
 (defn map-distance [shape f]
   ```
@@ -98,7 +98,7 @@
 
   The returned shape has the same dimensions as the input.
   ```
-  (field-set/map-distance shape (fn [expr]
+  (shape/map-distance shape (fn [expr]
     (jlsl/do "map-distance"
       (var dist expr)
       (f dist)))))
@@ -106,20 +106,20 @@
 (deftransform color [shape color]
   "Set the color field of a shape."
   (typecheck color jlsl/type/vec3)
-  (field-set/with shape :color color))
+  (shape/with shape :color color))
 
 (deftransform elongate [shape size]
   "Stretch a shape."
-  (typecheck size (field-set/type shape))
-  (case (field-set/type shape)
+  (typecheck size (shape/type shape))
+  (case (shape/type shape)
     jlsl/type/vec2
-      (field-set/map shape (fn [expr]
+      (shape/map shape (fn [expr]
         (jlsl/do "elongate"
           (var q-prime (abs q - size))
           (+ (with [q (max q-prime 0)] expr)
              (min (max q-prime) 0)))))
     jlsl/type/vec3
-      (field-set/map shape (fn [expr]
+      (shape/map shape (fn [expr]
         (jlsl/do "elongate"
           (var p-prime (abs p - size))
           (+ (with [p (max p-prime 0)] expr)

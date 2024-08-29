@@ -13,7 +13,7 @@
   (def [this others] (split-axis axis))
   (def offset (typecheck (jlsl/coerce-expr (@or offset 0)) jlsl/type/float))
 
-  (field-set/map shape (fn [expr]
+  (shape/map shape (fn [expr]
     (jlsl/with "revolve" [q [(- (length ,others) ,offset) ,this]] expr))
     jlsl/type/vec3))
 
@@ -29,12 +29,12 @@
   (def distance (if (not= math/inf distance)
     (typecheck (jlsl/coerce-expr (@or distance 0)) jlsl/type/float)))
 
-  (def in-3d (field-set/map shape (fn [expr]
+  (def in-3d (shape/map shape (fn [expr]
     (jlsl/with "extrude" [q ,others] expr))
     jlsl/type/vec3))
 
   (if distance
-    (field-set/map-distance in-3d (fn [expr]
+    (shape/map-distance in-3d (fn [expr]
       (sugar (jlsl/do "extrude"
         (var w [,expr (- (abs ,this) ,distance)])
         (min (max w) 0 + length (max w 0))))))
@@ -55,6 +55,6 @@
     z [q position]
     (errorf "unknown axis %q" (jlsl/show axis))))))
 
-  (field-set/map shape (fn [expr]
+  (shape/map shape (fn [expr]
     (jlsl/with "slice" [p ,new-p] ,expr))
     jlsl/type/vec2))

@@ -1,14 +1,55 @@
-# A collection of fields.
+# A shape is a collection of three things:
 #
-# All of the fields must share the same dimension.
+# 1. A dimension -- a shape is either 2D or 3D.
+# 2. A set of fields -- these should probably be JLSL expressions, although the
+#    module is technically agnostic to this. These might be distance fields,
+#    color fields, or arbitrary user-defined fields. Although user-defined fields
+#    aren't really well-supported yet.
+# 3. A set of "hoisted variables." These are confusing, and I will try to explain
+#    them in detail below:
 #
-# These might be 3D distance fields, 2D distance fields,
-# 3D color fields, 2D color fields, etc.
+# The idea is that we want to define some expensive expressions -- basically,
+# our lighting calculations -- that might be used by multiple different shapes.
+# You might have a sphere shaded with a certain light, and a box shaded with the
+# same light, and if you're rendering their smooth union you don't want to
+# cast that light ray twice in the region where both color fields contribute to
+# the final result.
 #
-# You could have something that is just a color field, or
-# a combination of a distance and color field.
+# So... we could just not care about this, if we had the simplest form of common
+# subexpression elimination. If the JLSL compiler had the ability to perform that
+# optimization pass, then we could just let both fields compute the same light and
+# trust that it would be hoisted up automatically and we wouldn't have to think about
+# it. (This is pretty hard, though, since in a smooth union we conditionally evaluate
+# color fields only when they contribute anything to the final result. And you don't
+# want to cast the light if *neither* shape contributes anything to the final color
+# field, as that would change the behavior of the program... although that is
+# equivalent to what we're doing here and it would still be nicer to have it as an
+# implicit pass.)
 #
-# Ultimately a "field" is just a JLSL expression.
+# But... we don't. So instead we have to mark specific expressions as explicitly
+# expensive, put them in variables, and then hoist those variables up to the very
+# root of the color expression.
+#
+# And when you combine multiple shapes -- say with `union` or `smooth-union` -- we
+# combine their hoisted variables.
+#
+# Now, the *right* thing to do would be to only hoist them up to the lowest common
+# ancestor. But that would require, like, being smart, and doing smart things, and
+# building a shape graph, and deferring computation of the "fields with their
+# hoisted variables" until the entire shape was realized.
+#
+# This would be a reasonable thing to do in the future, but right now we just hoist
+# everything up as far as we can. Because *in practice* we only use this for light
+# calculations, and *in practice* you pretty much always use a global set of lights
+# for the whole scene, this doesn't make a difference. But it *could*, and it's a
+# reasonable avenue to explore in the future, especially if we want to do something
+# like adding lights as explicit elements in a scene graph.
+#
+# A future alternative representation that I think would be better -- although a
+# little more complicated -- would be to treat e.g. color fields as *thunks*
+# that will be realized with the current set of lights, which would allow us to
+# share lights across different parts of the scene graph (instead of the current
+# dynamic variable approach).
 
 (import ../jlsl/type :as jlsl)
 (use judge)
