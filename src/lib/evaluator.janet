@@ -80,8 +80,7 @@
 
 (deftest "subject defaults to the final result"
   (test (run "(circle 10)")
-    @{nearest-distance "<function 0x1>"
-      subject {:fields {:distance [sdf-circle 10]}
+    @{subject {:fields {:distance [sdf-circle 10]}
                :hoisted {}
                :tag <1>
                :type [<2> vec [<3> float] 2]}}))
@@ -91,16 +90,14 @@
     (set subject 1)
     (circle 10)
     `)
-    @{nearest-distance "<function 0x1>"
-      subject 1}))
+    @{subject 1}))
 
 (deftest "view macro"
   (test (run `
     (circle 10 | view)
     (circle 20)
     `)
-    @{nearest-distance "<function 0x1>"
-      subject {:fields {:distance [sdf-circle 10]}
+    @{subject {:fields {:distance [sdf-circle 10]}
                :hoisted {}
                :tag <1>
                :type [<2> vec [<3> float] 2]}}))

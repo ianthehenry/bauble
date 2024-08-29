@@ -20,15 +20,17 @@
   (tabseq [[k v] :pairs t :when (symbol? k) :when (table? v)]
     k (cleanse-environment-entry v)))
 
-(defn proto-flatten-one [t]
+(defn proto-flatten-to-root-aux [t result]
+  (unless (= t root-env)
+    (proto-flatten-to-root-aux (table/getproto t) result)
+    (eachp [k v] t (put result k v))))
+
+(defn proto-flatten-to-root [t]
   (def result @{})
-  (eachp [k v] (table/getproto t)
-    (put result k v))
-  (eachp [k v] t
-    (put result k v))
+  (proto-flatten-to-root-aux t result)
   result)
 
-(test (cleanse-environment (proto-flatten-one (derive/new)))
+(test (cleanse-environment (proto-flatten-to-root (derive/new)))
   @{% @{}
     * @{}
     + @{}
@@ -72,6 +74,7 @@
     box @{:doc "(box size)\n\nReturns a 3D shape, a box with corners at `(- size)` and `size`. `size` will be coerced to a `vec3`.\n\nThink of `size` like the \"radius\" of the box: a box with `size.x = 50` will be `100` units wide."}
     box-frame @{:doc "(box-frame size thickness)\n\nReturns a 3D shape, the outline of a box."}
     camera-origin @{:value [:var "camera-origin" :vec3]}
+    cast-light-soft-shadow @{:doc "(cast-light-soft-shadow light-color light-position softness)\n\nTODOC"}
     ceil @{}
     circle @{:doc "(circle radius)\n\nReturns a 2D shape."}
     clamp @{}

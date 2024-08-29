@@ -13,13 +13,13 @@
   expr)
 
 (defmacro defhelper- [return-type name bindings & body]
-  ~(jlsl/jlsl/defn- ,return-type ,name ,bindings
+  ~(as-macro ,jlsl/jlsl/defn- ,return-type ,name ,bindings
     ,;(syntax/expand body)))
 (defmacro defhelper [return-type name bindings & body]
-  ~(jlsl/jlsl/defn ,return-type ,name ,bindings
+  ~(as-macro ,jlsl/jlsl/defn ,return-type ,name ,bindings
     ,;(syntax/expand body)))
 (defmacro overload [return-type name bindings & body]
-  ~(jlsl/jlsl/overload ,return-type ,name ,bindings
+  ~(as-macro ,jlsl/jlsl/overload ,return-type ,name ,bindings
     ,;(syntax/expand body)))
 
 (defn coerce-expr-to-type [desired-type constructor-function expr]
@@ -34,7 +34,7 @@
     (def gl/name (symbol "sdf-" name))
     ~(upscope
       # TODO: maybe this should not include the do wrap...
-      (defhelper- :float ,gl/name ,bindings
+      (as-macro ,defhelper- :float ,gl/name ,bindings
         ,;(syntax/expand body))
       (,',defn-macro ,name ,docstring ,(tuple/brackets ;(seq [[_ name] :in (partition 2 bindings)] name))
         (,,constructor (,gl/name
@@ -54,12 +54,11 @@
   "Returns a 2D shape."
   (return (length q - radius)))
   (upscope
-    (defhelper- :float sdf-circle [:float radius] (return (- (length q) radius)))
+    (as-macro @defhelper- :float sdf-circle [:float radius] (return (- (length q) radius)))
     (defn circle
       "Returns a 2D shape."
       [radius]
-      (@distance-2d (sdf-circle
-        (@coerce-expr-to-type (@type/primitive (quote (<1> float))) float radius))))))
+      (@distance-2d (sdf-circle (@coerce-expr-to-type (@type/primitive (quote (<1> float))) float radius))))))
 
 (defmacro deftransform [name bindings docstring & body]
   (assert (string? docstring))
@@ -75,3 +74,24 @@
       (jlsl/with ,name [,variable ,new-position] (,'unquote ,$expr))))))
 
 (defmacro sugar [expr] (syntax/expand expr))
+
+# Okay, so this is a global thing. I admit that. I will not deny it.
+# It would be smarter to have this be like a dynamic variable, and then to
+# require the environment with the dynamic variable in place correctly,
+# and use that. But. This is way easier and we can change it if it ever
+# becomes a problem.
+#
+# The point of this is that there are some parts of the user environment that we
+# can evaluate eagerly -- they're functions that don't change from one invocation
+# of the user's script to the next, so we can just evaluate them up front.
+#
+# But there are other functions that we need to re-create from scratch every time.
+# These are things like the `nearest-distance` definition: it's a forward-declared
+# GLSL function, and we can only implement it once. And therefore anything that
+# references that function -- like our shadow-casting code, or our raymarcher --
+# also needs to be re-evaluated every time. So they are declared as "thunks", and
+# gathered up into this array, and then evaluated every time we build a new user
+# environment.
+(def *thunks* @[])
+(defmacro thunk [expr]
+  ~(,array/push ',*thunks* ,expr))
