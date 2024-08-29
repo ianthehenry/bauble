@@ -8,13 +8,14 @@
   (jlsl/do
     (normal * 0.5 + 0.5))))
 
-(defn render [distance-field color-field]
+(defn render [env distance-field color-field]
   (def MAX_STEPS :256)
   (def MINIMUM_HIT_DISTANCE 0.1)
   (def NORMAL_OFFSET 0.005)
   (def MAXIMUM_TRACE_DISTANCE (* 64 1024))
   (def PI 3.14159265359)
   (def DEG_TO_RAD (/ PI 180))
+  (def nearest-distance (get-env env 'nearest-distance))
 
   (program/new
     (precision highp float)
@@ -26,7 +27,7 @@
     (out :vec4 frag-color)
 
     # TODO: we need a better default 3D surface
-    (defn :float nearest-distance []
+    (implement :float nearest-distance []
       (return distance-field))
       #(return ,(@or (subject :distance) (jlsl/do (length p - 100)))))
 

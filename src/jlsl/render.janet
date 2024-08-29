@@ -245,12 +245,12 @@
          :precisions ,$precisions
          :main (,multifunction/resolve-function main [])}))))
 
-(defmacro declare [thing]
+(defmacro- declare [thing]
   # TODO: allocate a decent name for this uniform??
   (with-syms [$var]
     ~(fn [,$var] [',thing (,type/to-glsl (,variable/type ,$var)) (,allocate-glsl-identifier ,$var)])))
 
-(defn declare-struct [t]
+(defn- declare-struct [t]
   (type/match t
     (struct name fields) (do
       (def fields

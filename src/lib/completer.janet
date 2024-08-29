@@ -1,5 +1,5 @@
 (use judge)
-(import ./evaluator)
+(import ./environment/derive)
 
 (def- declaration-peg (peg/compile
   ~{:main (* "(" :identifier :usage ")" -1)
@@ -28,7 +28,7 @@
 # [name usage tag]
 # where tag=0 for value, tag=1 for functions, tag=2 for macros
 (defn get-definitions []
-  (seq [[name binding] :pairs (table/proto-flatten evaluator/bauble-env)
+  (seq [[name binding] :pairs (table/proto-flatten (derive/new))
          :when (symbol? name)
          :let [{:value value :doc docstring :macro macro} binding]
          # lots of built-ins, like net/write, are nil in webassembly

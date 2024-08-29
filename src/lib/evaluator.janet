@@ -2,12 +2,10 @@
 (use ./util)
 (import ./syntax)
 (import ./field-set)
+(import ./environment/derive :prefix "environment/derive/")
 
 # TODO: only doing this because of the stupid weak table bug
 (import ../jlsl)
-
-# we create a copy here so that we don't import private bindings
-(def bauble-env (merge-module (make-env root-env) (require "./environment")))
 
 (defn- chunk-string [str]
   (var unread true)
@@ -34,13 +32,7 @@
 (defn evaluate [script]
   # TODO: remove this once the bug is fixed
   (jlsl/multifunction/fix-the-weak-table-bug)
-  (def env (make-env bauble-env))
-
-  (loop [[sym entry] :pairs bauble-env
-         :when (and (symbol? sym) (table? entry))
-         :let [ref (in entry :ref)]
-         :when (and (array? ref) (= (length ref) 1))]
-    (put env sym @{:doc (in entry :doc) :ref @[(in ref 0)]}))
+  (def env (environment/derive/new))
 
   (var last-value nil)
   (def errors @[])
@@ -88,7 +80,8 @@
 
 (deftest "subject defaults to the final result"
   (test (run "(circle 10)")
-    @{subject {:fields {:distance [sdf-circle 10]}
+    @{nearest-distance "<function 0x1>"
+      subject {:fields {:distance [sdf-circle 10]}
                :hoisted {}
                :tag <1>
                :type [<2> vec [<3> float] 2]}}))
@@ -98,14 +91,16 @@
     (set subject 1)
     (circle 10)
     `)
-    @{subject 1}))
+    @{nearest-distance "<function 0x1>"
+      subject 1}))
 
 (deftest "view macro"
   (test (run `
     (circle 10 | view)
     (circle 20)
     `)
-    @{subject {:fields {:distance [sdf-circle 10]}
+    @{nearest-distance "<function 0x1>"
+      subject {:fields {:distance [sdf-circle 10]}
                :hoisted {}
                :tag <1>
                :type [<2> vec [<3> float] 2]}}))

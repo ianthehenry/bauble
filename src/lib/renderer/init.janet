@@ -16,13 +16,16 @@
     (jlsl/with-expr (pairs hoisted-vars) [] field "hoist")
     field))
 
-(defn render-2d [shape]
-  (default-2d/render
+# TODO: maybe it would be better to have a function that derived a new subject
+# out of the old one, and just passed that along
+
+(defn render-2d [env shape]
+  (default-2d/render env
     (get-hoisted-field shape :distance)
     (get-hoisted-field shape :color)))
 
-(defn render-3d [shape]
-  (default-3d/render
+(defn render-3d [env shape]
+  (default-3d/render env
     (get-hoisted-field shape :distance)
     (get-hoisted-field shape :color)))
 
@@ -33,8 +36,8 @@
   # so our subject is either 2D or 3D
   (def program
     (case (field-set/type subject)
-      jlsl/type/vec2 (render-2d subject)
-      jlsl/type/vec3 (render-3d subject)
+      jlsl/type/vec2 (render-2d env subject)
+      jlsl/type/vec3 (render-3d env subject)
       (errorf "whoa whoa whoa, what the heck is %q" subject)))
 
   (def glsl (jlsl/render/program program))

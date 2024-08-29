@@ -22,7 +22,8 @@
       boundary-line)
     )))
 
-(defn render [distance-field color-field]
+(defn render [env distance-field color-field]
+  (def nearest-distance (get-env env 'nearest-distance))
   (def NORMAL_OFFSET 0.005)
 
   (program/new
@@ -34,7 +35,7 @@
     (uniform :vec4 viewport)
     (out :vec4 frag-color)
 
-    (defn :float nearest-distance []
+    (implement :float nearest-distance []
       (return ,(@or distance-field 0)))
 
     (defn :vec2 calculate-gradient []

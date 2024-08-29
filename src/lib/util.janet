@@ -1,5 +1,10 @@
 (use judge)
 
+(defn get-env [env sym]
+  (-> env
+    (in sym)
+    (in :value)))
+
 (defn get-var [env sym]
   (-> env
     (in sym)

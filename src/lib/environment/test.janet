@@ -1,5 +1,6 @@
 (use judge)
 (import ../../jlsl)
+(import ./derive)
 
 (defn cleanse-environment-entry [t]
   (if (table? t) (do
@@ -16,10 +17,18 @@
   t))
 
 (defn cleanse-environment [t]
-  (tabseq [[k v] :pairs t :when (symbol? k) :when (not (v :private))]
+  (tabseq [[k v] :pairs t :when (symbol? k) :when (table? v)]
     k (cleanse-environment-entry v)))
 
-(test (cleanse-environment (require "."))
+(defn proto-flatten-one [t]
+  (def result @{})
+  (eachp [k v] (table/getproto t)
+    (put result k v))
+  (eachp [k v] t
+    (put result k v))
+  result)
+
+(test (cleanse-environment (proto-flatten-one (derive/new)))
   @{% @{}
     * @{}
     + @{}
@@ -126,6 +135,7 @@
     mix @{}
     mod @{}
     move @{:doc "(move shape & args)\n\nTranslate a shape. Usually you'd use this with a vector offset:\n\n```\n(move (box 50) [0 100 0])\n```\n\nBut you can also provide a vector and a scalar:\n\n```\n(move (box 50) y 100)\n```\n\nWhich is the same as `(move (box 50) (y * 100))`.\n\nIf you provide multiple vector-scalar pairs, their sum is the final offset:\n\n```\n(move (box 50) x 100 y 100 -z 20)\n```\n\nThat is the same as `(move (box 50) (+ (x * 100) (y * 100) (-z * 100)))`."}
+    nearest-distance @{:doc "(nearest-distance)\n\nThis is the forward declaration of the function that will become the eventual\ndistance field for the shape we're rendering. This is used in the main raymarcher,\nas well as the shadow calculations. You can refer to this function to sample the\ncurrent distance field at the current value of `p` or `q`, for example to create\na custom ambient occlusion value."}
     normal @{:value [:var "normal" :vec3]}
     normalize @{}
     not @{}
