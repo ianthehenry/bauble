@@ -23,8 +23,6 @@
 # maybe one day we will learn about proper exhaustivity. but it is
 # not this day.
 
-# TODO: defadt-
-
 (defn- defadt-helper [private? name cases]
   (def unique-type-tag (gensym))
   (def prefix (string name "/"))

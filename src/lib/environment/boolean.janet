@@ -1,38 +1,34 @@
 (use ./import)
 
 (defn- sharp-union [& shapes]
-  (def type (get-unique field-set/type shapes (fn [types]
-    (if (empty? types)
-      (error "empty union expression")
-      (error "cannot union 2D and 3D shapes")))))
-  (def distances (seq [{:distance d} :in shapes :when d] d))
-  (def colors (seq [{:color c :distance d} :in shapes :when c] [c (@or d (jlsl/coerce-expr 0))]))
+  (field-set/merge shapes (fn [fields]
+    (def distances (seq [{:distance d} :in fields :when d] d))
+    (def colors (seq [{:color c :distance d} :in fields :when c] [c (@or d (jlsl/coerce-expr 0))]))
 
-  (field-set/new type
-    :distance (case (@length distances)
-      0 nil
-      1 (distances 0)
-      (jlsl/do "union-distance"
-        (var nearest ,(first distances))
-        ,;(seq [expr :in (drop 1 distances)]
-          (jlsl/statement (set nearest (min nearest ,expr))))
-        nearest))
+    {:distance (case (@length distances)
+       0 nil
+       1 (distances 0)
+       (jlsl/do "union-distance"
+         (var nearest ,(first distances))
+         ,;(seq [expr :in (drop 1 distances)]
+           (jlsl/statement (set nearest (min nearest ,expr))))
+         nearest))
 
-    :color (case (@length colors)
-      0 nil
-      1 ((colors 0) 0)
-      (jlsl/iife "union-color"
-        ,;(seq [[c d] :in (reverse (drop 1 colors))]
-          (jlsl/statement
-            (if (< ,d 0)
-              (return ,c))))
-        ,((colors 0) 0)
-        ))
-    ))
+     :color (case (@length colors)
+       0 nil
+       1 ((colors 0) 0)
+       (jlsl/iife "union-color"
+         ,;(seq [[c d] :in (reverse (drop 1 colors))]
+           (jlsl/statement
+             (if (< ,d 0)
+               (return ,c))))
+         ,((colors 0) 0)
+         ))}
+    )))
 
 # TODO: we should probably have a way to do this
-(defn- symmetric-color-union [r shapes]
-  (def colors (seq [{:color c :distance d} :in shapes :when c] [c (@or d (jlsl/coerce-expr 0))]))
+(defn- symmetric-color-union [r fields]
+  (def colors (seq [{:color c :distance d} :in fields :when c] [c (@or d (jlsl/coerce-expr 0))]))
   (case (@length colors)
     0 nil
     1 ((colors 0) 0)
@@ -48,8 +44,8 @@
         ))
       color)))
 
-(defn- asymmetric-color-union [r shapes]
-  (def colors (seq [{:color c :distance d} :in shapes :when c] [c (@or d (jlsl/coerce-expr 0))]))
+(defn- asymmetric-color-union [r fields]
+  (def colors (seq [{:color c :distance d} :in fields :when c] [c (@or d (jlsl/coerce-expr 0))]))
   (case (@length colors)
     0 nil
     1 ((colors 0) 0)
@@ -69,31 +65,25 @@
       color)))
 
 (defn smooth-union [r & shapes]
-  (def type (get-unique field-set/type shapes (fn [types]
-    (if (empty? types)
-      (error "empty union expression")
-      (error "cannot union 2D and 3D shapes")))))
   (def r (typecheck (jlsl/coerce-expr r) jlsl/type/float))
+  (field-set/merge shapes (fn [fields]
+    (def distances (seq [{:distance d} :in fields :when d] d))
+    {:distance (case (@length distances)
+       0 nil
+       1 (distances 0)
+       (jlsl/do "smooth-union-distance"
+         (var nearest ,(first distances))
+         ,;(seq [expr :in (drop 1 distances)]
+           (jlsl/statement
+             (var dist ,expr)
+             (var h (remap+ (clamp (/ (- nearest dist) r) -1 1)))
+             (set nearest (- (mix nearest dist h) (* r h (- 1 h))))))
+         nearest))
 
-  (def distances (seq [{:distance d} :in shapes :when d] d))
-
-  (field-set/new type
-    :distance (case (@length distances)
-      0 nil
-      1 (distances 0)
-      (jlsl/do "smooth-union-distance"
-        (var nearest ,(first distances))
-        ,;(seq [expr :in (drop 1 distances)]
-          (jlsl/statement
-            (var dist ,expr)
-            (var h (remap+ (clamp (/ (- nearest dist) r) -1 1)))
-            (set nearest (- (mix nearest dist h) (* r h (- 1 h))))))
-        nearest))
-
-    # TODO
-    #:color (symmetric-color-union r shapes)
-    :color (asymmetric-color-union r shapes)
-    ))
+     # TODO
+     #:color (symmetric-color-union r shapes)
+     :color (asymmetric-color-union r fields)}
+    )))
 
 # TODO: this should have an optional radius argument
 (defn union

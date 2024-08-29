@@ -145,7 +145,7 @@
 
   # TODO: we also need a fix for the weak table bug here
   (def type-registry (table/weak-keys 64))
-  (defn- coerce-type [x] (in type-registry x x))
+  (defn coerce [x] (in type-registry x x))
   (defn register-constructor [constructor type] (put type-registry constructor type))
 
   (defn struct? [t]
@@ -164,7 +164,7 @@
                 [~',name (of-ast type)])]]
         (and |ptuple? [type count]) [type/array (of-ast type) count]
         |keyword? [type/primitive (primitive-type/of-ast ast)]
-        [coerce-type ast])))
+        [coerce ast])))
 
   (test (of-ast :float)
     [@type/primitive [quote [<1> float]]])

@@ -5,6 +5,7 @@
 # available in distance or color fields:
 
 (jlsl/defdyn t :float)
+(jlsl/defdyn camera-origin :vec3)
 
 (jlsl/defdyn p :vec3)
 (jlsl/defdyn P :vec3)

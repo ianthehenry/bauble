@@ -57,15 +57,14 @@
   (check-statements statements can-return? false false)
   (iife name (expr/type last-expr) [;statements (statement/return last-expr)]))
 
-(defn- with-expr [bindings statements last-expr name]
+(defn with-expr [bindings statements last-expr name]
   (default name "with")
   (check-statements statements false false false)
   (let [return-type (expr/type last-expr)]
     (iife (string name "-outer") return-type [
       (statement/with bindings [
         (statement/return (iife (string name "-inner") return-type [;statements (statement/return last-expr)]))
-        ])
-      ])))
+        ])])))
 
 (defn- if-expr [cond then else]
   (assertf (= (expr/type then) (expr/type else))

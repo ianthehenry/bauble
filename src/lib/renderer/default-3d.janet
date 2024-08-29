@@ -8,7 +8,7 @@
   (jlsl/do
     (normal * 0.5 + 0.5))))
 
-(defn render [subject]
+(defn render [distance-field color-field]
   (def MAX_STEPS :256)
   (def MINIMUM_HIT_DISTANCE 0.1)
   (def NORMAL_OFFSET 0.005)
@@ -18,7 +18,7 @@
 
   (program/new
     (precision highp float)
-    (uniform :vec3 camera-origin)
+    (uniform ,camera-origin)
     (uniform :vec3 camera-orientation)
     (uniform :int render-type)
     (uniform ,t)
@@ -27,8 +27,7 @@
 
     # TODO: we need a better default 3D surface
     (defn :float nearest-distance []
-      (return ,(subject :distance))
-      )
+      (return distance-field))
       #(return ,(@or (subject :distance) (jlsl/do (length p - 100)))))
 
     (defn :vec3 march [:vec3 ray-origin :vec3 ray-direction [out :int] steps]
@@ -61,7 +60,7 @@
          (with [p (p + step.yyx)] (nearest-distance) - with [p (p - step.yyx)] (nearest-distance))])))
 
     (defn :vec3 nearest-color []
-      (return ,(@or (subject :color) default-3d-color-expression)))
+      (return ,(@or color-field default-3d-color-expression)))
 
     (defn :vec3 sample [:vec2 frag-coord]
       (var resolution viewport.zw)

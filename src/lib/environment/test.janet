@@ -44,6 +44,7 @@
     @length @{:doc "(length ds)\n\nReturns the length or count of a data structure in constant time as an integer. For structs and tables, returns the number of key-value pairs in the data structure."}
     @or @{:doc "(or & forms)\n\nEvaluates to the last argument if all preceding elements are falsey, otherwise\nevaluates to the first truthy element."
           :macro true}
+    LightIncidence @{:doc "(LightIncidence color direction)\n\n"}
     P @{:value [:var "P" :vec3]}
     Q @{:value [:var "Q" :vec2]}
     abs @{}
@@ -57,9 +58,11 @@
     asinh @{}
     atan @{}
     atanh @{}
+    blinn-phong @{:doc "(blinn-phong shape color shine gloss lights)\n\n"}
     bool @{}
     box @{:doc "(box size)\n\nReturns a 3D shape, a box with corners at `(- size)` and `size`. `size` will be coerced to a `vec3`.\n\nThink of `size` like the \"radius\" of the box: a box with `size.x = 50` will be `100` units wide."}
     box-frame @{:doc "(box-frame size thickness)\n\nReturns a 3D shape, the outline of a box."}
+    camera-origin @{:value [:var "camera-origin" :vec3]}
     ceil @{}
     circle @{:doc "(circle radius)\n\nReturns a 2D shape."}
     clamp @{}
@@ -101,6 +104,7 @@
     inversesqrt @{}
     isosceles-triangle @{:doc "(isosceles-triangle size)\n\nTODOC"}
     length @{}
+    light/new @{:doc "(light/new color position)\n\n"}
     line @{:doc "(line start end width)\n\nTODOC"}
     log @{}
     log2 @{}

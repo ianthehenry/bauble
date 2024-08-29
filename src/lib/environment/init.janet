@@ -7,6 +7,7 @@
 (import ./shapes-3d :prefix "" :export true)
 (import ./dimensions :prefix "" :export true)
 (import ./boolean :prefix "" :export true)
+(import ./surfacing :prefix "" :export true)
 (import ../dynvars :prefix "" :export true)
 (import ../../jlsl/prelude :prefix "" :export true)
 

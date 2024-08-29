@@ -2,15 +2,7 @@
 (import ../../jlsl)
 (import ../syntax)
 (import ../field-set)
-
-(defn get-unique [f ind on-error]
-  (def distincts (distinct (map f ind)))
-  (case (length distincts)
-    1 (in distincts 0)
-    (on-error distincts)))
-
-(defmacro assertf [x & args]
-  ~(as-macro ,assert ,x (,string/format ,;args)))
+(import ../util :prefix "" :export true)
 
 (defn typecheck [expr expected]
   (def actual (jlsl/expr/type expr))

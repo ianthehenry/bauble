@@ -7,16 +7,28 @@
 (import ./default-2d)
 (import ./default-3d)
 
-(defn render-2d [subject]
-  (default-2d/render subject))
+# TODO: probably add some way to hoist top-level variables
+(defn get-hoisted-field [shape field-name]
+  (def field (field-set/get-field shape field-name))
+  (unless field (break))
+  (def hoisted-vars (field-set/get-hoisted-vars shape field-name))
+  (if hoisted-vars
+    (jlsl/with-expr (pairs hoisted-vars) [] field "hoist")
+    field))
 
-(defn render-3d [subject]
-  (default-3d/render subject))
+(defn render-2d [shape]
+  (default-2d/render
+    (get-hoisted-field shape :distance)
+    (get-hoisted-field shape :color)))
+
+(defn render-3d [shape]
+  (default-3d/render
+    (get-hoisted-field shape :distance)
+    (get-hoisted-field shape :color)))
 
 (defn render [env glsl-version]
   (def subject (get-var env 'subject))
-  (unless subject
-    (error "nothing to render"))
+  (unless subject (error "nothing to render"))
 
   # so our subject is either 2D or 3D
   (def program

@@ -22,7 +22,7 @@
       boundary-line)
     )))
 
-(defn render [subject]
+(defn render [distance-field color-field]
   (def NORMAL_OFFSET 0.005)
 
   (program/new
@@ -35,7 +35,7 @@
     (out :vec4 frag-color)
 
     (defn :float nearest-distance []
-      (return ,(@or (subject :distance) 0)))
+      (return ,(@or distance-field 0)))
 
     (defn :vec2 calculate-gradient []
       (def step (vec2 NORMAL_OFFSET 0))
@@ -55,10 +55,10 @@
              Q q
              d (nearest-distance)
              gradient (calculate-gradient)]
-        (return ,(if-let [color-expression (subject :color)]
+        (return ,(if color-field
           (jlsl/do "coloring"
             (if (< d 0)
-              ,color-expression
+              ,color-field
               [0 0 0]))
           default-2d-color-expression))))
 

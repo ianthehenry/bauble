@@ -295,6 +295,13 @@
   `
 
   "!octahedron" `(octahedron 120 | rotate x pi/4)`
+
+  "!blinn phong" `
+  (box 50 | offset 10 | blinn-phong [0.25 1 0.25] 0.5 10
+    [(light/new [1 1 1] [-200 100 200])
+     (light/new [1 0.1 0.1] [200 200 200])
+    ])
+  `
 })
 
 (each filename (os/dir "./cases")

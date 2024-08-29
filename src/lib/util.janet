@@ -40,3 +40,25 @@
 
 (defn ptuple? [x]
   (and (tuple? x) (= (tuple/type x) :parens)))
+
+(defn get-unique [f ind on-error]
+  (def distincts (distinct (map f ind)))
+  (case (length distincts)
+    1 (in distincts 0)
+    (on-error distincts)))
+
+(defmacro assertf [x & args]
+  ~(as-macro ,assert ,x (,string/format ,;args)))
+
+(defn merge-structs [f structs]
+  (def result @{})
+  (each struct structs
+    (eachp [k v] struct
+      (put result k
+        (if-let [old-v (in result k)]
+          (f k old-v v)
+          v))))
+  (table/to-struct result))
+
+(test (merge-structs |(+ $1 $2) [{:foo 1 :bar 2} {:bar 2 :baz 3}]) {:bar 4 :baz 3 :foo 1})
+
