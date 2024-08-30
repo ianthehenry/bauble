@@ -155,7 +155,8 @@
     pentagon @{:doc "(pentagon r)\n\nTODOC"}
     perlin @{:doc "(perlin p)\n\nReturns perlin noise from -1 to 1. The input is a vector of any dimension."}
     perlin+ @{:doc "(perlin+ v)\n\nPerlin noise in the range 0 to 1."}
-    pi @{:value 3.1415926535897931}
+    pi @{:doc "I think it's around three.\n\nNote that there are also values like `pi/4` and `pi/6*5` and related helpers all the way up to `pi/12`. They don't show up in autocomplete because they're annoying, but they're there."
+         :value 3.1415926535897931}
     pi/10 @{:value 0.31415926535897931}
     pi/11 @{:value 0.28559933214452665}
     pi/12 @{:value 0.26179938779914941}
@@ -244,7 +245,8 @@
     t @{:value [:var "t" :float]}
     tan @{}
     tanh @{}
-    tau @{:value 6.2831853071795862}
+    tau @{:doc "Bigger than six, but smaller than seven.\n\nNote that there are also values like `tau/4` and `tau/6*5` and related helpers all the way up to `tau/12`.  They don't show up in autocomplete because they're annoying, but they're there."
+          :value 6.2831853071795862}
     tau/10 @{:value 0.62831853071795862}
     tau/11 @{:value 0.5711986642890533}
     tau/12 @{:value 0.52359877559829882}
