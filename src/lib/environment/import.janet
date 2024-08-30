@@ -4,3 +4,4 @@
 (import ./util :prefix "" :export true)
 (import ../shape :export true)
 (import ../../jlsl/prelude :prefix "" :export true)
+(import ./deferred-evaluation :prefix "" :export true)

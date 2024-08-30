@@ -69,14 +69,19 @@
 # now we want to invoke a function that's like "given this subject, give me a JLSL program to compile"
 
 (import ../jlsl)
-(defn- make-presentable [value]
+(defn- make-presentable [entry]
+  (def value (or (in entry :value) (in (in entry :ref) 0)))
   (if (shape/is? value)
     (shape/map value jlsl/show)
     value))
 
 (defn- run [script]
-  (tabseq [[sym entry] :pairs (evaluate script) :when (symbol? sym)]
-    sym (make-presentable (or (in entry :value) (in (in entry :ref) 0)))))
+  (def env (evaluate script))
+  (def user-defined
+    (tabseq [[sym entry] :pairs env :when (symbol? sym) :when (table? entry) :unless (entry :private)]
+      sym (make-presentable entry)))
+  (put user-defined 'subject (make-presentable (in env 'subject)))
+  user-defined)
 
 (deftest "subject defaults to the final result"
   (test (run "(circle 10)")
