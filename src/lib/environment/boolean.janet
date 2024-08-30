@@ -1,30 +1,48 @@
 (use ./import)
 
-(defn- sharp-union [& shapes]
-  (shape/merge shapes (fn [fields]
-    (def distances (seq [{:distance d} :in fields :when d] d))
-    (def colors (seq [{:color c :distance d} :in fields :when c] [c (@or d (jlsl/coerce-expr 0))]))
+(defn- make-boolean [reduce-distances reduce-colors]
+  (fn [& shapes]
+    (shape/merge shapes (fn [fields]
+      (def distances (seq [{:distance d} :in fields :when d] d))
+      (def colors (seq [{:color c :distance d} :in fields :when c] [c (@or d (jlsl/coerce-expr 0))]))
+      {:distance
+        (case (@length distances)
+          0 nil
+          1 (distances 0)
+          (reduce-distances distances))
+        :color (case (@length colors)
+          0 nil
+          1 ((colors 0) 0)
+          (reduce-colors colors))}))))
 
-    {:distance (case (@length distances)
-       0 nil
-       1 (distances 0)
-       (jlsl/do "union-distance"
-         (var nearest ,(first distances))
-         ,;(seq [expr :in (drop 1 distances)]
-           (jlsl/statement (set nearest (min nearest ,expr))))
-         nearest))
+(defn- min-distance [distances]
+  (jlsl/do "union-distance"
+     (var nearest ,(first distances))
+     ,;(seq [expr :in (drop 1 distances)]
+       (jlsl/statement (set nearest (min nearest ,expr))))
+     nearest))
 
-     :color (case (@length colors)
-       0 nil
-       1 ((colors 0) 0)
-       (jlsl/iife "union-color"
-         ,;(seq [[c d] :in (reverse (drop 1 colors))]
-           (jlsl/statement
-             (if (< ,d 0)
-               (return ,c))))
-         ,((colors 0) 0)
-         ))}
-    )))
+(defn- sharp-union-color [colors]
+  (def surface-id
+    (jlsl/iife "union-color-index"
+      (var nearest 1e10)
+      (var nearest-index :-1)
+      ,;(seq [[i [_ d]] :pairs (reverse colors)]
+        (def i (keyword (- (@length colors) i 1)))
+        (jlsl/statement
+          (var d ,d)
+          (if (< d 0) (return i))
+          (if (< d nearest) (do
+            (set nearest d)
+            (set nearest-index i)))))
+      nearest-index))
+
+  (jlsl/iife "union-color"
+    ,(jlsl/statement/case surface-id
+      (seq [[i [c _]] :pairs colors] [(jlsl/coerce-expr (keyword i)) (jlsl/statement (return ,c))]))
+    [0 0 0]))
+
+(def- sharp-union (make-boolean min-distance sharp-union-color))
 
 # TODO: we should probably have a way to do this
 (defn- symmetric-color-union [r fields]

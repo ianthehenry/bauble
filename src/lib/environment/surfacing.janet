@@ -5,6 +5,11 @@
 # registered before the thunks we register here
 (require "./forward-declarations")
 
+(deftransform color [shape color]
+  "Set the color field of a shape."
+  (typecheck color jlsl/type/vec3)
+  (shape/replace shape :color color))
+
 # TODO: this should be somewhere else and called something else
 (def- MINIMUM_HIT_DISTANCE 0.01)
 (def- MAX_LIGHT_STEPS :256)
@@ -105,6 +110,9 @@
   ```
   TODOC
   ```
-  (-> shape
-    (shape/hoist-all :color (hoisties lights))
-    (shape/with :color (blinn-phong-color-expression color shine gloss lights))))
+  (shape/replace shape :color
+    (blinn-phong-color-expression color shine gloss lights)
+    (hoisties lights)))
+
+(defn resurface [dest-shape source-shape]
+  (shape/transplant :color source-shape dest-shape))

@@ -103,11 +103,6 @@
       (var dist expr)
       (f dist)))))
 
-(deftransform color [shape color]
-  "Set the color field of a shape."
-  (typecheck color jlsl/type/vec3)
-  (shape/with shape :color color))
-
 (deftransform elongate [shape size]
   "Stretch a shape."
   (typecheck size (shape/type shape))

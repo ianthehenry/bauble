@@ -195,11 +195,26 @@
     product @{:doc "(product v)\n\nMultiply the components of a vector."}
     q @{:value [:var "q" :vec2]}
     quad-circle @{:doc "(quad-circle radius)\n\nReturns a 2D shape, an approximation of a circle out of quadratic bezier curves.\n\nIt's like a circle, but quaddier."}
+    r2 @{:value {:fields {:distance [<2>
+                                     literal
+                                     [<4> primitive [<5> float]]
+                                     0]}
+                 :hoisted {}
+                 :tag <28>
+                 :type [<4> vec [<5> float] 2]}}
+    r3 @{:value {:fields {:distance [<2>
+                                     literal
+                                     [<4> primitive [<5> float]]
+                                     0]}
+                 :hoisted {}
+                 :tag <28>
+                 :type [<4> vec [<5> float] 3]}}
     radians @{}
     rect @{:doc "(rect size)\n\nReturns a 2D shape, a rectangle with corners at `(- size)` and `size`. `size` will be coerced to a `vec2`.\n\nThink of `size` like the \"radius\" of the rect: a rect with `size.x = 50` will be `100` units wide."}
     reflect @{}
     refract @{}
     remap+ @{:doc "(remap+ x)\n\nRemap a number in the range `[-1 1]` into the range `[0 1]`."}
+    resurface @{:doc "(resurface dest-shape source-shape)\n\n"}
     revolve @{:doc "(revolve shape axis &opt offset)\n\nRevolve a 2D shape around the given `axis` to return a 3D shape.\n\nYou can optionally supply an `offset` to move the shape away from the origin first (the default is `0`)."}
     rhombus @{:doc "(rhombus size)\n\nReturns a 2D shape. It rhombs with a kite."}
     ring @{:doc "(ring radius angle thickness)\n\nTODOC"}

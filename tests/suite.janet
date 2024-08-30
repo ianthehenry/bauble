@@ -229,7 +229,6 @@
     (triangle [-20 -5] [45 17] [-16 -77]))
   `
 
-
   "!gons and grams" `
   (union
     (pentagon 30 | move [-50 -50])
@@ -302,6 +301,26 @@
      (light/new [1 0.1 0.1] [200 200 200])
     ])
   `
+
+  "!union 3d color fields" `
+  (union
+    (box 50 | color [0.9 0.1 0.1] | move [0 -50 0])
+    (box 30 | color [0.9 0.9 0.1] | move [0 30 0]))
+  `
+
+  "!2d color fields that extend outside of their shape"
+  `
+  (def circles (union 
+    (circle 10 | move [-10 0] | color [1 0.1 0.1]) 
+    (circle 20 | move [10 0] | color [0.1 1 0.1])))
+  (union
+    (circles | offset 10 | move [0 80])
+    (circles | move [0 20])
+    (rect 40 
+    | resurface circles
+    | move [0 -50]))
+  `
+
 })
 
 (each filename (os/dir "./cases")

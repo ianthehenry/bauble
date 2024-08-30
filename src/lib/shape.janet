@@ -50,6 +50,10 @@
 # that will be realized with the current set of lights, which would allow us to
 # share lights across different parts of the scene graph (instead of the current
 # dynamic variable approach).
+#
+# It's weird that if you `map-color` to an expression that is completely different,
+# you keep the hoisted color variables around. Really the hoisted variables are
+# properties of individual *expressions*, not fields.
 
 (import ../jlsl/type :as jlsl)
 (use judge)
@@ -107,6 +111,12 @@
    :hoisted (t :hoisted)
    :fields (map-struct f (t :fields))})
 
+(defn replace [t field value &opt hoisted]
+  {:type (t :type)
+   :tag tag
+   :hoisted (struct ;(kvs (t :hoisted)) field (or hoisted {}))
+   :fields (struct ;(kvs (t :fields)) field value)})
+
 (defn with [t & new-kvs]
   {:type (t :type)
    :tag tag
@@ -127,6 +137,9 @@
 
 (defn get-field [t k] (in (in t :fields) k))
 (defn get-hoisted-vars [t k] (in (in t :hoisted) k))
+
+(defn transplant [field from to]
+  (replace to field (get-field from field) (get-hoisted-vars from field)))
 
 (deftest "shapes"
   (def t (test (distance-2d 1)
