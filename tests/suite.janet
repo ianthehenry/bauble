@@ -310,15 +310,26 @@
 
   "!2d color fields that extend outside of their shape"
   `
-  (def circles (union 
-    (circle 10 | move [-10 0] | color [1 0.1 0.1]) 
-    (circle 20 | move [10 0] | color [0.1 1 0.1])))
+  (def sharp-circles (union 
+      (circle 10 | move [-10 0] | color [1 0.1 0.1]) 
+      (circle 20 | move [10 0] | color [0.1 1 0.1])))
+
+  (def smooth-circles (smooth-union 5
+      (circle 10 | move [-10 0] | color [1 0.1 0.1]) 
+      (circle 20 | move [10 0] | color [0.1 1 0.1])))
+
+  (defn make [circles]
+    (union
+      (circles | offset 10 | move [0 80])
+      (circles | move [0 20])
+      (rect 40 
+      | resurface circles
+      | move [0 -50])))
   (union
-    (circles | offset 10 | move [0 80])
-    (circles | move [0 20])
-    (rect 40 
-    | resurface circles
-    | move [0 -50]))
+    (make sharp-circles
+    | move [-50 0])
+    (make smooth-circles
+    | move [50 0]))
   `
 
 })
