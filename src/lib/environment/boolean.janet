@@ -51,6 +51,7 @@
     0 nil
     1 ((colors 0) 0)
     (jlsl/do "smooth-union-color"
+      (var r ,r)
       (var color [0 0 0])
       (var nearest 1000000)
       ,;(seq [[color-expr dist-expr] :in colors]
@@ -68,6 +69,7 @@
     0 nil
     1 ((colors 0) 0)
     (jlsl/do "smooth-union-color"
+      (var r ,r)
       (var color [0 0 0])
       (var nearest 1000000)
       ,;(seq [[color-expr dist-expr] :in colors]
@@ -90,6 +92,7 @@
        0 nil
        1 (distances 0)
        (jlsl/do "smooth-union-distance"
+         (var r ,r)
          (var nearest ,(first distances))
          ,;(seq [expr :in (drop 1 distances)]
            (jlsl/statement
