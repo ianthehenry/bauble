@@ -1,4 +1,5 @@
 (use judge)
+(import ../util :prefix "" :export true)
 
 (defn get-env [env sym]
   (-> env
@@ -42,18 +43,6 @@
       (break))
     (-- i))
   result)
-
-(defn ptuple? [x]
-  (and (tuple? x) (= (tuple/type x) :parens)))
-
-(defn get-unique [f ind on-error]
-  (def distincts (distinct (map f ind)))
-  (case (length distincts)
-    1 (in distincts 0)
-    (on-error distincts)))
-
-(defmacro assertf [x & args]
-  ~(as-macro ,assert ,x (,string/format ,;args)))
 
 (defn merge-structs [f structs]
   (def result @{})

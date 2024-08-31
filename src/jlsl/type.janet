@@ -3,6 +3,7 @@
 (import pat)
 (use ./adt)
 (use ./util)
+(import ../ordered)
 
 (defadt primitive-type
   (float)
@@ -17,7 +18,7 @@
   (vec type count)
   (mat cols rows) # this is specifically a float matrix; we don't support dmat yet
   (array type length)
-  (struct name fields)) # fields is an ordered-table
+  (struct name fields)) # fields is an ordered/table
 
 (defadt variable
   (dynamic id name type)
@@ -159,7 +160,7 @@
       (pat/match ast
         ['struct name & fields]
           [type/struct (string name)
-            [ordered-table/new
+            [ordered/table/new
               ;(catseq [[type name] :in (partition 2 fields)]
                 [~',name (of-ast type)])]]
         (and |ptuple? [type count]) [type/array (of-ast type) count]
@@ -223,7 +224,7 @@
               (errorf "cannot create a vector with %d components" len)))
           (errorf "unknown vector field %q" field))
       (struct name fields)
-        (or (ordered-table/in fields field)
+        (or (ordered/table/in fields field)
           (errorf "%s: unknown field %q" name field))))
 
   (defn element-type [t]

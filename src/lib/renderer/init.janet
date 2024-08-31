@@ -6,6 +6,7 @@
 (import ../dynvars)
 (import ./default-2d)
 (import ./default-3d)
+(import ../../ordered)
 
 # TODO: probably add some way to hoist top-level variables
 (defn get-hoisted-field [shape field-name]

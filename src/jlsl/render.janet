@@ -1,6 +1,7 @@
 (use judge)
 (use module)
 (import pat)
+(import ../ordered)
 (use ./util)
 (import ../glsl)
 (use ./expr)
@@ -254,7 +255,7 @@
   (type/match t
     (struct name fields) (do
       (def fields
-        (catseq [[field type] :in (partition 2 (ordered-table/kvs fields))]
+        (catseq [[field type] :in (partition 2 (ordered/table/kvs fields))]
           [(type/to-glsl type) field]))
       ~(struct ,name ,;fields))
     (error "BUG")))
@@ -262,12 +263,12 @@
 (defn render/program [{:precisions precisions :uniforms uniforms :inputs inputs :outputs outputs :globals globals :main main}]
   (def root-variables (array/concat @[] uniforms inputs outputs globals))
 
-  (def structs (ordered-set/new))
+  (def structs (ordered/set/new))
 
   (defn find-structs [node visiting? _]
     (when visiting? (break))
     (unless (type/struct? node) (break))
-    (ordered-set/put structs node))
+    (ordered/set/put structs node))
   (visit root-variables find-structs)
   (visit main find-structs)
 
@@ -276,7 +277,7 @@
     (each global globals
       (allocate-glsl-identifier global))
     [;precisions
-     ;(map declare-struct (ordered-set/values structs))
+     ;(map declare-struct (ordered/set/values structs))
      ;(map (declare in) inputs)
      ;(map (declare out) outputs)
      ;(map (declare uniform) uniforms)
