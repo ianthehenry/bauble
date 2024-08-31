@@ -297,8 +297,8 @@
 
   "!blinn phong" `
   (box 50 | offset 10 | blinn-phong [0.25 1 0.25] 0.5 10
-    [(light/new [1 1 1] [-200 100 200])
-     (light/new [1 0.1 0.1] [200 200 200])
+    [(light/point [1 1 1] [-200 100 200])
+     (light/point [1 0.1 0.1] [200 200 200])
     ])
   `
 
@@ -330,6 +330,68 @@
     | move [-50 0])
     (make smooth-circles
     | move [50 0]))
+  `
+
+  "!shadow radius"
+  `
+  (defn grid [size xs zs & shapes]
+    (union
+      ;(seq [[i shape] :pairs shapes]
+        (def x (div i zs - (xs - 1 / 2)))
+        (def z (mod i zs - (zs - 1 / 2)))
+        (shape | move [(* size x 2) 0 (* size z 2)]))))
+  (defn make-with-lights [lights]
+    (union
+      (box [50 5 50])
+      (box 20 | move y 30 | offset 1)
+    | blinn-phong [1 0.1 0.1] 0.25 5 lights))
+  (grid 60 2 2
+    (make-with-lights [(light/directional [0.9 0.9 0.9] [-1 -5 1] 100)])
+    (make-with-lights [(light/directional [0.9 0.9 0.9] [-1 -5 1] 100 0)])
+    (make-with-lights [(light/directional [0.9 0.9 0.9] [-1 -5 1] 100 0.5)])
+    (make-with-lights [(light/directional [0.9 0.9 0.9] [-1 -5 1] 100 1)])
+    )
+  `
+
+  "!shadows are always computed in a global coordinate space"
+  `
+  (defn grid [size xs zs & shapes]
+    (union
+      ;(seq [[i shape] :pairs shapes]
+        (def x (div i zs - (xs - 1 / 2)))
+        (def z (mod i zs - (zs - 1 / 2)))
+        (shape | move [(* size x 2) 0 (* size z 2)]))))
+  (defn make-with-lights [lights]
+    (union
+      (box [50 5 50])
+      (box 20 | move y 30 | offset 1)
+    | blinn-phong [1 0.1 0.1] 0.25 5 lights))
+  (grid 60 2 2
+    (make-with-lights [(light/point [0.9 0.9 0.9] [0 200 0])])
+    (make-with-lights [(light/point [0.9 0.9 0.9] [0 200 0])])
+    (make-with-lights [(light/point [0.9 0.9 0.9] [0 200 0])])
+    (make-with-lights [(light/point [0.9 0.9 0.9] [0 200 0])])
+    )
+  `
+
+  "!ambient lights and other weird lights"
+  `
+  (defn grid [size xs zs & shapes]
+    (union
+      ;(seq [[i shape] :pairs shapes]
+        (def x (div i zs - (xs - 1 / 2)))
+        (def z (mod i zs - (zs - 1 / 2)))
+        (shape | move [(* size x 2) 0 (* size z 2)]))))
+  (defn make-with-lights [lights]
+    (union
+      (box [50 5 50])
+      (box 20 | move y 30 | offset 1)
+    | blinn-phong [1 0.1 0.1] 0.25 5 lights))
+  (grid 60 2 2
+    (make-with-lights [])
+    (make-with-lights [(light/ambient [0.5 0.5 0.5])])
+    (make-with-lights [(light/point [0.9 0.9 0.9] (+ P normal [0 10 0]))])
+    (make-with-lights [(light/point [0.9 0.9 0.9] (+ P normal))]))
   `
 
 })

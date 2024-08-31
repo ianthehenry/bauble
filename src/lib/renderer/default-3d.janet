@@ -91,8 +91,8 @@
               (return (vec3 (mix dark light
                 ( frag-coord.x + frag-coord.y
                 / (resolution.x + resolution.y ))))))
-            (with [p hit
-                   P p
+            (with [P hit
+                   p P
                    d (nearest-distance)
                    normal (calculate-normal)]
               (return (nearest-color)))))
@@ -102,7 +102,7 @@
             [1 0 1]
             (float steps / float MAX_STEPS | vec3)))
         # overshoot debug view
-        :2 (with [p hit P p d (nearest-distance)]
+        :2 (with [P hit p P d (nearest-distance)]
           (var overshoot (max (- d) 0 / MINIMUM_HIT_DISTANCE))
           (var undershoot (max d 0 / MINIMUM_HIT_DISTANCE))
           (return [overshoot (- 1 undershoot overshoot) (1 - (step 1 undershoot))]))))

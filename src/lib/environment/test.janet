@@ -13,6 +13,9 @@
       (put t :value [:var (jlsl/variable/name (t :value)) (jlsl/show-type (jlsl/variable/type (t :value)))]))
     (when (function? (get-in t [:ref 0]))
       (put t :ref nil))
+    # this is a hack so that we don't render the default lights...
+    (when (array? (get-in t [:ref 0]))
+      (put t :ref '<array>))
     t)
   t))
 
@@ -69,11 +72,13 @@
     asinh @{}
     atan @{}
     atanh @{}
-    blinn-phong @{:doc "(blinn-phong shape color shine gloss lights)\n\n"}
+    blinn-phong @{:doc "(blinn-phong shape color shine gloss &opt lights)\n\n"}
     bool @{}
     box @{:doc "(box size)\n\nReturns a 3D shape, a box with corners at `(- size)` and `size`. `size` will be coerced to a `vec3`.\n\nThink of `size` like the \"radius\" of the box: a box with `size.x = 50` will be `100` units wide."}
     box-frame @{:doc "(box-frame size thickness)\n\nReturns a 3D shape, the outline of a box."}
     camera-origin @{:value [:var "camera-origin" :vec3]}
+    cast-light-hard-shadow @{:doc "(cast-light-hard-shadow light-color light-position)\n\nTODOC"}
+    cast-light-no-shadow @{:doc "(cast-light-no-shadow light-color light-position)\n\nTODOC"}
     cast-light-soft-shadow @{:doc "(cast-light-soft-shadow light-color light-position softness)\n\nTODOC"}
     ceil @{}
     circle @{:doc "(circle radius)\n\nReturns a 2D shape."}
@@ -116,7 +121,12 @@
     inversesqrt @{}
     isosceles-triangle @{:doc "(isosceles-triangle size)\n\nTODOC"}
     length @{}
-    light/new @{:doc "(light/new color position)\n\n"}
+    light/ambient @{:doc "(light/ambient color)\n\nShorthand for `(light/point color P nil)`."}
+    light/directional @{:doc "(light/directional color dir distance & shadow)\n\nA light that hits every point at the same angle.\n\nShorthand for `(light/point color (P - (dir * distance)) shadow)`."}
+    light/point @{:doc "(light/point color position & shadow)\n\nReturns a new light, which can be used as an input to some shading functions.\n\nAlthough this is called a point light, the location of the \"point\" can vary\nwith a dynamic expression. A light that casts no shadows and is located at `P`\n(no matter where `P` is) is an ambient light. A light that is always located at\na fixed offset from `P` is a directional light.\n\n`shadow` can be `nil` to disable casting shadows, or a number that controls the\nsoftness of the shadows that the light casts. `0` means that shadows will have\nhard edges. The default value is `0.25`.\n\nLighting always occurs in the global coordinate space, so you should position lights\nrelative to `P`, not `p`. They will be the same at the time that lights are computed,\nso it doesn't *actually* matter, but it's just more accurate to use `P`, and there's\na chance that a future version of Bauble will support computing lights in local\ncoordinate spaces, where `p` might vary."}
+    light? @{:doc "(light? t)\n\nReturns true if its argument is a light."}
+    lights @{:doc "The default lights used by surfacing functions like `blinn-phong`.\n\nAlthough `lights` is an ordinary lexical variable, it behaves like a dynamic variable. Why isn't it a dynamic variable? Good question."
+             :ref <array>}
     line @{:doc "(line start end width)\n\nTODOC"}
     log @{}
     log2 @{}
