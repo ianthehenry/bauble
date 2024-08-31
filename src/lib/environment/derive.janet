@@ -10,6 +10,8 @@
   (if thunks-realized
     (assert (= thunks-realized (length *thunks*)) "ian the number of realized thunks changed from one environment creation to the next, which means you introduced some terrible bug that's causing the default environment to fall out of the module cache")
     (set thunks-realized (length *thunks*)))
-  (each thunk *thunks* (eval thunk thunk-env))
+  (resume (fiber/new (fn []
+    (each thunk *thunks*
+      (eval thunk))) : thunk-env))
   (def env (make-env thunk-env))
   env)
