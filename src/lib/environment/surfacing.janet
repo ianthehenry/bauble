@@ -205,9 +205,9 @@
   (shape/with shape :color
     (blinn-phong-color-expression color shine gloss lights)))
 
-# TODO: "recolor"?
-(defn resurface [dest-shape source-shape]
-  "Replaces the color field on `dest-shape` with the color field on `source-shape`. Doesn't affect the distance field."
+(defn recolor
+  "Replaces the color field on `dest-shape` with the color field on `source-shape`. Does not affect the distance field."
+  [dest-shape source-shape]
   (shape/transplant :color source-shape dest-shape))
 
 (defmacro with-lights

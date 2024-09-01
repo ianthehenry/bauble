@@ -220,11 +220,11 @@
                  :tag <1>
                  :type [<3> vec [<4> float] 3]}}
     radians @{}
+    recolor @{:doc "(recolor dest-shape source-shape)\n\nReplaces the color field on `dest-shape` with the color field on `source-shape`. Does not affect the distance field."}
     rect @{:doc "(rect size)\n\nReturns a 2D shape, a rectangle with corners at `(- size)` and `size`. `size` will be coerced to a `vec2`.\n\nThink of `size` like the \"radius\" of the rect: a rect with `size.x = 50` will be `100` units wide."}
     reflect @{}
     refract @{}
     remap+ @{:doc "(remap+ x)\n\nRemap a number in the range `[-1 1]` into the range `[0 1]`."}
-    resurface @{:doc "(resurface dest-shape source-shape)\n\n"}
     revolve @{:doc "(revolve shape axis &opt offset)\n\nRevolve a 2D shape around the given `axis` to return a 3D shape.\n\nYou can optionally supply an `offset` to move the shape away from the origin first (the default is `0`)."}
     rhombus @{:doc "(rhombus size)\n\nReturns a 2D shape. It rhombs with a kite."}
     ring @{:doc "(ring radius angle thickness)\n\nTODOC"}
