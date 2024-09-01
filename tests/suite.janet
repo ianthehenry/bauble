@@ -391,6 +391,15 @@
     ((make) | with-lights (light/point [0.9 0.9 0.9] (+ P normal))))
   `
 
+  "!mirror 2d"
+  `
+  (circle 50 | move x 20 y 20 | mirror x y)
+  `
+
+  "!mirror 3d"
+  `
+  (sphere 50 | move [20 20 20] | mirror x z)
+  `
 })
 
 (each filename (os/dir "./cases")

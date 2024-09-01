@@ -146,3 +146,23 @@
 
 (def r2 (shape/distance-2d (jlsl/coerce-expr 0)))
 (def r3 (shape/distance-3d (jlsl/coerce-expr 0)))
+
+(defn mirror
+  ```
+  Mirror a shape across one or more axes.
+  ```
+  [shape & axes]
+  (def mask @[false false false])
+  (each axis axes (case axis
+    x (put mask 0 true)
+    y (put mask 1 true)
+    z (put mask 2 true)
+    (errorf "unknown axis %q" axis)))
+  (if (= (shape/type shape) jlsl/type/vec2)
+    (transform shape "mirror" q ,(vec2
+      (if (mask 0) (abs (. q x)) (. q x))
+      (if (mask 1) (abs (. q y)) (. q y))))
+    (transform shape "mirror" p ,(vec3
+      (if (mask 0) (abs (. p x)) (. p x))
+      (if (mask 1) (abs (. p y)) (. p y))
+      (if (mask 2) (abs (. p z)) (. p z))))))
