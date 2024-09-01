@@ -242,6 +242,7 @@
     sin @{}
     sinh @{}
     slice @{:doc "(slice shape axis &opt position)\n\nTake a 2D slice of a 3D shape at a given `position` along the supplied `axis`.\n\n`position` defaults to `0`."}
+    slow @{:doc "(slow shape amount)\n\nScales distances around `shape`, causing the raymarcher to converge more slowly.\n\nThis is useful for raymarching distance fields that vary based on `p` -- shapes\nthat don't actually provide an accurate distance field unless you are very close\nto the surface.\n\nValues larger than 1 will give weird results, and this will slow the render down."}
     smooth-union @{:doc "(smooth-union r & shapes)\n\n"}
     smoothstep @{}
     sphere @{:doc "(sphere radius)\n\nReturns a 3D shape."}

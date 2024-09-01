@@ -81,6 +81,19 @@
   [shape amount]
   (shape/map-distance shape (fn [expr] (- expr amount))))
 
+(defn slow
+  ```
+  Scales distances around `shape`, causing the raymarcher to converge more slowly.
+
+  This is useful for raymarching distance fields that vary based on `p` -- shapes
+  that don't actually provide an accurate distance field unless you are very close
+  to the surface.
+
+  Values larger than 1 will give weird results, and this will slow the render down.
+  ```
+  [shape amount]
+  (shape/map-distance shape (fn [expr] (* expr amount))))
+
 (defn map-distance [shape f]
   ```
   Apply a function `f` to the shape's distance field. `f` should take and return an expression.
