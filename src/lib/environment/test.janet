@@ -36,6 +36,9 @@
 (test (cleanse-environment (proto-flatten-to-root (derive/new)))
   @{% @{}
     * @{}
+    *lights* @{:doc "The default lights used by surfacing functions like `blinn-phong`. You can manipulate this using `setdyn` or `with-dyns` like any other dynamic variable, but there is a dedicated `with-lights` function to set it in a way that fits nicely into a pipeline."
+               :dyn true
+               :value :lights}
     + @{}
     +x @{:doc "`[1 0 0]`" :value [1 0 0]}
     +y @{:doc "`[0 1 0]`" :value [0 1 0]}
@@ -121,12 +124,10 @@
     inversesqrt @{}
     isosceles-triangle @{:doc "(isosceles-triangle size)\n\nTODOC"}
     length @{}
-    light/ambient @{:doc "(light/ambient color)\n\nShorthand for `(light/point color P nil)`."}
+    light/ambient @{:doc "(light/ambient color &opt offset)\n\nShorthand for `(light/point color (P + offset) nil)`.\n\nWith no offset, the ambient light will be completely directionless, so it won't\ncontribute to specular highlights. By offsetting by a multiple of the surface\nnormal, or by the surface normal plus some constant, you can create an ambient\nlight with specular highlights, which provides some depth in areas of your scene\nthat are in full shadow."}
     light/directional @{:doc "(light/directional color dir distance & shadow)\n\nA light that hits every point at the same angle.\n\nShorthand for `(light/point color (P - (dir * distance)) shadow)`."}
     light/point @{:doc "(light/point color position & shadow)\n\nReturns a new light, which can be used as an input to some shading functions.\n\nAlthough this is called a point light, the location of the \"point\" can vary\nwith a dynamic expression. A light that casts no shadows and is located at `P`\n(no matter where `P` is) is an ambient light. A light that is always located at\na fixed offset from `P` is a directional light.\n\n`shadow` can be `nil` to disable casting shadows, or a number that controls the\nsoftness of the shadows that the light casts. `0` means that shadows will have\nhard edges. The default value is `0.25`.\n\nLighting always occurs in the global coordinate space, so you should position lights\nrelative to `P`, not `p`. They will be the same at the time that lights are computed,\nso it doesn't *actually* matter, but it's just more accurate to use `P`, and there's\na chance that a future version of Bauble will support computing lights in local\ncoordinate spaces, where `p` might vary."}
     light? @{:doc "(light? t)\n\nReturns true if its argument is a light."}
-    lights @{:doc "The default lights used by surfacing functions like `blinn-phong`.\n\nAlthough `lights` is an ordinary lexical variable, it behaves like a dynamic variable. Why isn't it a dynamic variable? Good question."
-             :ref <array>}
     line @{:doc "(line start end width)\n\nTODOC"}
     log @{}
     log2 @{}
@@ -302,6 +303,8 @@
     vec4 @{}
     view @{:doc "(view subject)\n\nA shorthand for `(set subject _)` that fits nicely into pipe notation, e.g. `(sphere 50 | view)`."
            :macro true}
+    with-lights @{:doc "(with-lights shape & lights)\n\nEvaluate `shape` with the `*lights*` dynamic variable set to the provided lights.\n\nThe argument order makes it easy to stick this in a pipeline. For example:\n\n```\n(sphere 50 | blinn-phong [1 0 0] | with-lights light1 light2)\n```"
+                  :macro true}
     worley @{:doc "(worley p)\n\n2D Worley noise, also called cellular noise or voronoi noise. Returns the nearest distance to points distributed randomly within the tiles of a square grid."}
     worley2 @{:doc "(worley2 p)\n\nLike `worley`, but returns the nearest distance in `x` and the second-nearest distance in `y`."}
     x @{:doc "`[1 0 0]`" :value [1 0 0]}

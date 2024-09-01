@@ -361,17 +361,14 @@
         (def x (div i zs - (xs - 1 / 2)))
         (def z (mod i zs - (zs - 1 / 2)))
         (shape | move [(* size x 2) 0 (* size z 2)]))))
-  (defn make-with-lights [lights]
+  (defn make []
     (union
       (box [50 5 50])
       (box 20 | move y 30 | offset 1)
-    | blinn-phong [1 0.1 0.1] 0.25 5 lights))
-  (grid 60 2 2
-    (make-with-lights [(light/point [0.9 0.9 0.9] [0 200 0])])
-    (make-with-lights [(light/point [0.9 0.9 0.9] [0 200 0])])
-    (make-with-lights [(light/point [0.9 0.9 0.9] [0 200 0])])
-    (make-with-lights [(light/point [0.9 0.9 0.9] [0 200 0])])
-    )
+    | blinn-phong [1 0.1 0.1] 0.25 5))
+  (def point-light (light/point [0.9 0.9 0.9] [0 200 0]))
+  (grid 60 2 2 (make) (make) (make) (make)
+  | with-lights point-light)
   `
 
   "!ambient lights and other weird lights"
@@ -382,16 +379,16 @@
         (def x (div i zs - (xs - 1 / 2)))
         (def z (mod i zs - (zs - 1 / 2)))
         (shape | move [(* size x 2) 0 (* size z 2)]))))
-  (defn make-with-lights [lights]
+  (defn make []
     (union
       (box [50 5 50])
       (box 20 | move y 30 | offset 1)
-    | blinn-phong [1 0.1 0.1] 0.25 5 lights))
+    | blinn-phong [1 0.1 0.1] 0.25 5))
   (grid 60 2 2
-    (make-with-lights [])
-    (make-with-lights [(light/ambient [0.5 0.5 0.5])])
-    (make-with-lights [(light/point [0.9 0.9 0.9] (+ P normal [0 10 0]))])
-    (make-with-lights [(light/point [0.9 0.9 0.9] (+ P normal))]))
+    ((make) | with-lights)
+    ((make) | with-lights (light/ambient [0.5 0.5 0.5]))
+    ((make) | with-lights (light/point [0.9 0.9 0.9] (+ P normal [0 10 0])))
+    ((make) | with-lights (light/point [0.9 0.9 0.9] (+ P normal))))
   `
 
 })

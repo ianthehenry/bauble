@@ -1,6 +1,8 @@
 (use ./import)
 (import ../expression-hoister)
 
+(defdyn *lights* "The default lights used by surfacing functions like `blinn-phong`. You can manipulate this using `setdyn` or `with-dyns` like any other dynamic variable, but there is a dedicated `with-lights` function to set it in a way that fits nicely into a pipeline.")
+
 (thunk ~(setdyn ,expression-hoister/*hoisted-vars* (table/weak-keys 8)))
 
 # we need to make sure that the distance-function thunk has been
@@ -136,10 +138,16 @@
 
 (thunk ~(defn light/ambient
   ```
-  Shorthand for `(light/point color P nil)`.
+  Shorthand for `(light/point color (P + offset) nil)`.
+
+  With no offset, the ambient light will be completely directionless, so it won't
+  contribute to specular highlights. By offsetting by a multiple of the surface
+  normal, or by the surface normal plus some constant, you can create an ambient
+  light with specular highlights, which provides some depth in areas of your scene
+  that are in full shadow.
   ```
-  [color]
-  (light/point color P nil)))
+  [color &opt offset]
+  (light/point color (if offset (+ P offset) P) nil)))
 
 (thunk ~(defn light/directional
   ```
@@ -156,9 +164,10 @@
   [t]
   (and (struct? t) (= (t :tag) light-tag)))
 
-# TODO: should this just be a dynamic variable? why isn't this a dynamic variable?
-(thunk ~(var lights "The default lights used by surfacing functions like `blinn-phong`.\n\nAlthough `lights` is an ordinary lexical variable, it behaves like a dynamic variable. Why isn't it a dynamic variable? Good question."
-  @[(light/directional [1 1 1] (normalize [-2 -2 -1]) 512)]))
+(thunk ~(setdyn ,*lights*
+  @[(light/directional (vec3 0.95) (normalize [-2 -2 -1]) 512)
+    (light/ambient (vec3 0.03))
+    (light/ambient (vec3 0.02) (* normal 0.1))]))
 
 (defhelper- :vec3 blinn-phong1 [:vec3 color :float shine :float gloss :vec3 light-color :vec3 light-dir]
   # TODO: ray-dir should just be available as a dynamic variable
@@ -189,12 +198,27 @@
   ```
   TODOC
   ```
-  (default lights (get-var (curenv) 'lights))
+  (default lights (dyn :lights))
   (assertf (indexed? lights) "%q should be a list" lights)
   (each light lights
     (assertf (light? light) "%q is not a light" light))
   (shape/with shape :color
     (blinn-phong-color-expression color shine gloss lights)))
 
+# TODO: "recolor"?
 (defn resurface [dest-shape source-shape]
+  "Replaces the color field on `dest-shape` with the color field on `source-shape`. Doesn't affect the distance field."
   (shape/transplant :color source-shape dest-shape))
+
+(defmacro with-lights
+  ````
+  Evaluate `shape` with the `*lights*` dynamic variable set to the provided lights.
+
+  The argument order makes it easy to stick this in a pipeline. For example:
+
+  ```
+  (sphere 50 | blinn-phong [1 0 0] | with-lights light1 light2)
+  ```
+  ````
+  [shape & lights]
+  ~(as-macro ,with-dyns [:lights (,tuple ,;lights)] ,shape))
