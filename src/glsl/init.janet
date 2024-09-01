@@ -100,7 +100,13 @@
 
 (defn- to-float [num]
   (def str (string num))
-  (if (string/find "." str) str (string str ".0")))
+  (var looks-integral true)
+  (each c str
+    (when (= c (chr ".")) (set looks-integral false) (break))
+    (when (= c (chr "e")) (set looks-integral false) (break)))
+  (if looks-integral
+    (string str ".0")
+    str))
 
 (varfn render-expression [p expression &named needs-parens?]
   (default needs-parens? false)
@@ -606,6 +612,26 @@
         float x = 10.0;
       }
       float x = 10.0;
+    }
+    
+  `))
+
+(deftest "scientific notation"
+  (test-statements [
+    (return 0.0001)
+    (return 0.00001)
+    (return 0.0000123)
+    (return 0.000001)
+    (return 1e15)
+    (return 1e16)
+    ] `
+    void main() {
+      return 0.0001;
+      return 1e-05;
+      return 1.23e-05;
+      return 1e-06;
+      return 1000000000000000.0;
+      return 1e+16;
     }
     
   `))
