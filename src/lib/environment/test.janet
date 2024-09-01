@@ -47,7 +47,7 @@
     -x @{:doc "`[-1 0 0]`" :value [-1 0 0]}
     -y @{:doc "`[0 -1 0]`" :value [0 -1 0]}
     -z @{:doc "`[0 0 -1]`" :value [0 0 -1]}
-    . @{:doc "(. expr field)\n\nBehaves like `.` in GLSL, for accessing components of a vector or struct, e.g. `(. foo xy)`.\n\nBauble's dot syntax, `foo.xy`, expands to call this macro."
+    . @{:doc "(. expr field)\n\nBehaves like `.` in GLSL, for accessing components of a vector or struct, e.g. `(. foo xy)`.\n\nBauble's dot syntax, `foo.xy`, expands to call this macro. The second argument to `.` will be\nquasiquoted, so you can dynamically select a dynamic field with `(. foo ,axis)`."
         :macro true}
     / @{}
     < @{}

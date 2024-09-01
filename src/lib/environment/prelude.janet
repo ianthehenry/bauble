@@ -2,9 +2,14 @@
 (import ../../jlsl)
 
 (defmacro .
-  "Behaves like `.` in GLSL, for accessing components of a vector or struct, e.g. `(. foo xy)`.\n\nBauble's dot syntax, `foo.xy`, expands to call this macro."
+  ```
+  Behaves like `.` in GLSL, for accessing components of a vector or struct, e.g. `(. foo xy)`.
+
+  Bauble's dot syntax, `foo.xy`, expands to call this macro. The second argument to `.` will be
+  quasiquoted, so you can dynamically select a dynamic field with `(. foo ,axis)`.
+  ```
   [expr field]
-  [jlsl/expr/dot [jlsl/coerce-expr expr] ['quote field]])
+  [jlsl/expr/dot [jlsl/coerce-expr expr] ['quasiquote field]])
 
 (def x "`[1 0 0]`" [1 0 0])
 (def y "`[0 1 0]`" [0 1 0])
