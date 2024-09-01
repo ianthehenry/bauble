@@ -122,7 +122,7 @@
           (var sample-offset (aa-sample-width * [(float x) (float y)] - pixel-origin))
           (set sample-offset (* rotation sample-offset))
           (set sample-offset (sample-offset + pixel-origin | fract - pixel-origin))
-          (+= color (sample (local-frag-coord + sample-offset)))
+          (+= color (sample (local-frag-coord + sample-offset) | clamp 0 1))
           ))
       (/= color (float (aa-samples * aa-samples)))
 
