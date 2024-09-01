@@ -6,29 +6,35 @@
 (import ../dynvars)
 (import ./default-2d)
 (import ./default-3d)
+(import ../expression-hoister)
 (import ../../ordered)
 
-# TODO: probably add some way to hoist top-level variables
-(defn get-hoisted-field [shape field-name]
-  (def field (shape/get-field shape field-name))
-  (unless field (break))
-  (def hoisted-vars (shape/get-hoisted-vars shape field-name))
-  (if hoisted-vars
-    (jlsl/with-expr (pairs hoisted-vars) [] field "hoist")
-    field))
-
-# TODO: maybe it would be better to have a function that derived a new subject
-# out of the old one, and just passed that along
+(defn unhoist [env expr]
+  (def hoisted-vars (in env expression-hoister/*hoisted-vars*))
+  (def references (ordered/table/new))
+  (def seen? @{})
+  (visit expr (fn [node visiting? _]
+    (when (seen? node) (break))
+    (put seen? node true)
+    (when visiting? (break))
+    (unless (jlsl/variable? node) (break))
+    (when-let [expr (in hoisted-vars node)]
+      (unless (ordered/table/has-key? references node)
+        (ordered/table/put references node expr)))))
+  (def to-hoist (ordered/table/pairs references))
+  (if (empty? to-hoist)
+    expr
+    (jlsl/with-expr to-hoist [] expr "hoist")))
 
 (defn render-2d [env shape]
   (default-2d/render env
-    (get-hoisted-field shape :distance)
-    (get-hoisted-field shape :color)))
+    (unhoist env (shape/get-field shape :distance))
+    (unhoist env (shape/get-field shape :color))))
 
 (defn render-3d [env shape]
   (default-3d/render env
-    (get-hoisted-field shape :distance)
-    (get-hoisted-field shape :color)))
+    (unhoist env (shape/get-field shape :distance))
+    (unhoist env (shape/get-field shape :color))))
 
 (defn render [env glsl-version]
   (def subject (get-var env 'subject))

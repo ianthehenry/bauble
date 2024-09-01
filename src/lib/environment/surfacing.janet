@@ -1,4 +1,7 @@
 (use ./import)
+(import ../expression-hoister)
+
+(thunk ~(setdyn ,expression-hoister/*hoisted-vars* (table/weak-keys 8)))
 
 # we need to make sure that the distance-function thunk has been
 # registered before the thunks we register here
@@ -7,7 +10,7 @@
 (deftransform color [shape color]
   "Set the color field of a shape."
   (typecheck color jlsl/type/vec3)
-  (shape/replace shape :color color))
+  (shape/with shape :color color))
 
 # TODO: this should be somewhere else and called something else
 (def- MINIMUM_HIT_DISTANCE 0.01)
@@ -120,17 +123,16 @@
   (assert (<= (@length shadow) 1) "too many arguments")
   (def shadow (if (empty? shadow) 0.25 (shadow 0)))
   {:tag ',light-tag
-   :variable (,jlsl/variable/new "light" (,jlsl/type/coerce LightIncidence))
    :expression
-     (case shadow
-      nil (cast-light-no-shadow color position)
-      # the soft shadow calculation below has to handle this, because
-      # shadow might be a dynamic expression that is only sometimes
-      # zero. but in the case that all lights have known constant zeroes,
-      # there's no need to compile and include the soft shadow function
-      # at all. which... will never happen but whatever
-      0 (cast-light-hard-shadow color position)
-      (cast-light-soft-shadow color position shadow))}))
+     (,expression-hoister/hoist "light" (case shadow
+        nil (cast-light-no-shadow color position)
+        # the soft shadow calculation below has to handle this, because
+        # shadow might be a dynamic expression that is only sometimes
+        # zero. but in the case that all lights have known constant zeroes,
+        # there's no need to compile and include the soft shadow function
+        # at all. which... will never happen but whatever
+        0 (cast-light-hard-shadow color position)
+        (cast-light-soft-shadow color position shadow)))}))
 
 (thunk ~(defn light/ambient
   ```
@@ -172,20 +174,16 @@
   (jlsl/do "blinn-phong"
     (var result (vec3 0))
     ,;(seq [light :in lights]
-      (def incidence-variable (light :variable))
+      (def light-incidence (light :expression))
       # TODO hmmmmm okay wait a minute. can't we use the position of the light
       # to just determine the incidence angle? why do we need to forward it? can
       # the incidence just be a color and nothing else? unless we like... we don't
       # distort this, right?
       (jlsl/statement
         (+= result (blinn-phong1 color shine gloss
-          (. incidence-variable color)
-          (. incidence-variable direction)))))
+          (. light-incidence color)
+          (. light-incidence direction)))))
     result))
-
-(defn- hoisties [lights]
-  (tabseq [{:variable variable :expression expression} :in lights]
-    variable expression))
 
 (defn blinn-phong [shape color shine gloss &opt lights]
   ```
@@ -195,9 +193,8 @@
   (assertf (indexed? lights) "%q should be a list" lights)
   (each light lights
     (assertf (light? light) "%q is not a light" light))
-  (shape/replace shape :color
-    (blinn-phong-color-expression color shine gloss lights)
-    (hoisties lights)))
+  (shape/with shape :color
+    (blinn-phong-color-expression color shine gloss lights)))
 
 (defn resurface [dest-shape source-shape]
   (shape/transplant :color source-shape dest-shape))

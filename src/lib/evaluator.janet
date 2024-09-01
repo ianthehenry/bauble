@@ -86,7 +86,6 @@
 (deftest "subject defaults to the final result"
   (test (run "(circle 10)")
     @{subject {:fields {:distance [sdf-circle 10]}
-               :hoisted {}
                :tag <1>
                :type [<2> vec [<3> float] 2]}}))
 
@@ -103,6 +102,5 @@
     (circle 20)
     `)
     @{subject {:fields {:distance [sdf-circle 10]}
-               :hoisted {}
                :tag <1>
                :type [<2> vec [<3> float] 2]}}))
