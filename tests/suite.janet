@@ -39,7 +39,7 @@
   "map-color 2" `(sphere 100 | map-color (fn [col] (pow col 2)))`
 
   "explicit fresnel" `
-    (sphere 100 | color (let [view-dir (normalize (- camera P))] 
+    (sphere 100 | color (let [view-dir (normalize (- camera P))]
       (1.0 - dot normal view-dir | pow 5 + c)))
   `
 
@@ -168,7 +168,6 @@
       (circle 60 | move [-61 0])
     | move [0 -60])
   )
-    
   `
 
   "!default gradient" `(circle 100)`
@@ -310,19 +309,19 @@
 
   "!2d color fields that extend outside of their shape"
   `
-  (def sharp-circles (union 
-      (circle 10 | move [-10 0] | color [1 0.1 0.1]) 
+  (def sharp-circles (union
+      (circle 10 | move [-10 0] | color [1 0.1 0.1])
       (circle 20 | move [10 0] | color [0.1 1 0.1])))
 
   (def smooth-circles (smooth-union 5
-      (circle 10 | move [-10 0] | color [1 0.1 0.1]) 
+      (circle 10 | move [-10 0] | color [1 0.1 0.1])
       (circle 20 | move [10 0] | color [0.1 1 0.1])))
 
   (defn make [circles]
     (union
       (circles | offset 10 | move [0 80])
       (circles | move [0 20])
-      (rect 40 
+      (rect 40
       | recolor circles
       | move [0 -50])))
   (union
@@ -399,6 +398,14 @@
   "!mirror 3d"
   `
   (sphere 50 | move [20 20 20] | mirror x z)
+  `
+
+  "!morph"
+  `
+  (box 50
+  | blinn-phong [1 0 0] 0.25 5
+  | morph :color 0.1 :distance 0.25
+    (sphere 50 | blinn-phong [0 1 0] 0.25 5))
   `
 })
 

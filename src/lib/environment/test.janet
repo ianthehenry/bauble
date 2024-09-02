@@ -1,6 +1,7 @@
 (use judge)
 (import ../../jlsl)
 (import ./derive)
+(use ./util)
 
 (defn cleanse-environment-entry [t]
   (if (table? t) (do
@@ -149,6 +150,7 @@
     mirror @{:doc "(mirror shape & axes)\n\nMirror a shape across one or more axes."}
     mix @{}
     mod @{}
+    morph @{:doc "(morph shape1 amount shape2 [:distance amount] [:color amount])\n\nMorph linearly interpolates between two shapes.\n\n```\n# 50% box, 50% sphere\n(box 50 | morph (sphere 50))\n\n# 75% box, 25% sphere\n(box 50 | morph 0.25 (sphere 50))\n```\n\nConcretely this means that it returns a new shape whose individual fields\nare linear interpolations of its inputs. With an anonymous `amount` coefficient,\nboth the distance and color fields will be interpolated with the same value.\nBut you can also specify per-field overrides:\n\n```\n# distance is a 50% blend, but the color is 90% red\n(box 50 | color [1 0 0] | morph :color 0.1 (sphere 50 | color [0 1 0]))\n```"}
     move @{:doc "(move shape & args)\n\nTranslate a shape. Usually you'd use this with a vector offset:\n\n```\n(move (box 50) [0 100 0])\n```\n\nBut you can also provide a vector and a scalar:\n\n```\n(move (box 50) y 100)\n```\n\nWhich is the same as `(move (box 50) (y * 100))`.\n\nIf you provide multiple vector-scalar pairs, their sum is the final offset:\n\n```\n(move (box 50) x 100 y 100 -z 20)\n```\n\nThat is the same as `(move (box 50) (+ (x * 100) (y * 100) (-z * 100)))`."}
     nearest-distance @{:doc "(nearest-distance)\n\nThis is the forward declaration of the function that will become the eventual\ndistance field for the shape we're rendering. This is used in the main raymarcher,\nas well as the shadow calculations. You can refer to this function to sample the\ncurrent distance field at the current value of `p` or `q`, for example to create\na custom ambient occlusion value."}
     normal @{:value [:var "normal" :vec3]}
@@ -315,12 +317,111 @@
     z @{:doc "`[0 0 1]`" :value [0 0 1]}})
 
 (use .)
-# just make sure valid use cases don't error
-(test (do (rotate (rect 10) 10) nil) nil)
-(test (do (rotate (box 10) x 20) nil) nil)
-(test (do (rotate (box 10) [1 2 3] 20) nil) nil)
-(test (do (rotate (box 10) x 1 y 2) nil) nil)
-(test-error (rotate (rect 10) x 10) "expected angle, got (1 0 0)")
-(test-error (rotate (box 10) 10 20) "rotation-around: no overload for arguments [:float :float]")
-(test-error (rotate (box 10) 10) "angle required")
-(test-error (rotate (box 10) x 10 [1 2] 3) "rotation-around: no overload for arguments [:vec2 :float]")
+(import ../shape)
+
+(defmacro* test-shape [expr & args]
+  ~(test (,shape/map ,((|sugar) expr) ,jlsl/show) ,;args))
+
+(deftest "rotate"
+  # just make sure valid use cases don't error
+  (test-shape (rotate (rect 10) 10)
+    {:fields {:distance [rotate-outer]}
+     :tag <1>
+     :type [<2> vec [<3> float] 2]})
+  (test-shape (rotate (box 10) x 20)
+    {:fields {:distance [rotate-outer]}
+     :tag <1>
+     :type [<2> vec [<3> float] 3]})
+  (test-shape (rotate (box 10) [1 2 3] 20)
+    {:fields {:distance [rotate-outer]}
+     :tag <1>
+     :type [<2> vec [<3> float] 3]})
+  (test-shape (rotate (box 10) x 1 y 2)
+    {:fields {:distance [rotate-outer]}
+     :tag <1>
+     :type [<2> vec [<3> float] 3]})
+  (test-error (rotate (rect 10) x 10) "expected angle, got (1 0 0)")
+  (test-error (rotate (box 10) 10 20) "rotation-around: no overload for arguments [:float :float]")
+  (test-error (rotate (box 10) 10) "angle required")
+  (test-error (rotate (box 10) x 10 [1 2] 3) "rotation-around: no overload for arguments [:vec2 :float]"))
+
+(deftest "morph coefficient defaults to 0.5"
+  (test-shape (morph (box 10) (sphere 10))
+    {:fields {:distance [mix
+                         [sdf-box [vec3 10]]
+                         [sdf-sphere 10]
+                         0.5]}
+     :tag <1>
+     :type [<2> vec [<3> float] 3]}))
+
+(deftest "morph coefficient can appear in any position"
+  (test-shape (morph 0.25 (box 10) (sphere 10))
+    {:fields {:distance [mix
+                         [sdf-box [vec3 10]]
+                         [sdf-sphere 10]
+                         0.25]}
+     :tag <1>
+     :type [<2> vec [<3> float] 3]})
+
+  (test-shape (morph (box 10) 0.25 (sphere 10))
+    {:fields {:distance [mix
+                         [sdf-box [vec3 10]]
+                         [sdf-sphere 10]
+                         0.25]}
+     :tag <1>
+     :type [<2> vec [<3> float] 3]})
+
+  (test-shape (morph (box 10) (sphere 10) 0.25)
+    {:fields {:distance [mix
+                         [sdf-box [vec3 10]]
+                         [sdf-sphere 10]
+                         0.25]}
+     :tag <1>
+     :type [<2> vec [<3> float] 3]})
+  )
+
+(deftest "morph will evaluate its coefficient argument multiple times if it has more than two shapes"
+  # this is bad, but it's not easy to fix and no one will ever do this anyway
+  (test-shape (morph (sin t) (box 10) (sphere 10) (box 20))
+    {:fields {:distance [mix
+                         [mix
+                          [sdf-box [vec3 10]]
+                          [sdf-sphere 10]
+                          [sin t]]
+                         [sdf-box [vec3 20]]
+                         [sin t]]}
+     :tag <1>
+     :type [<2> vec [<3> float] 3]}))
+
+(deftest "morph with per-field coefficients"
+  # this is bad, but it's not easy to fix and no one will ever do this anyway
+  (test-shape (morph :distance 0.9 (box 10 | color [1 1 0]) (sphere 10 | color [1 0 1]))
+    {:fields {:color [mix [vec3 1 1 0] [vec3 1 0 1] 0.5]
+              :distance [mix
+                         [sdf-box [vec3 10]]
+                         [sdf-sphere 10]
+                         0.9]}
+     :tag <1>
+     :type [<2> vec [<3> float] 3]}))
+
+(deftest "morph with nonsense coefficients"
+  # eh it would be nice to error but i don't really care
+  (test-shape (morph :foo 0.9 (box 10 | color [1 1 0]) (sphere 10 | color [1 0 1]))
+    {:fields {:color [mix [vec3 1 1 0] [vec3 1 0 1] 0.5]
+              :distance [mix
+                         [sdf-box [vec3 10]]
+                         [sdf-sphere 10]
+                         0.5]}
+     :tag <1>
+     :type [<2> vec [<3> float] 3]}))
+
+(deftest "morph with a single shape"
+  (test-shape (morph (box 10))
+    {:fields {:distance [sdf-box [vec3 10]]}
+     :tag <1>
+     :type [<2> vec [<3> float] 3]}))
+
+(deftest "invalid morphs"
+  (test-error (morph) "no shapes to combine")
+  (test-error (morph (box 10) :color) "no value for :color")
+  (test-error (morph (box 10) :color [1 2]) "type mismatch: expected :float, got :vec2"))
