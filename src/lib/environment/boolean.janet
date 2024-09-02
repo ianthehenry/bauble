@@ -113,7 +113,7 @@
   (sharp-union ;shapes))
 
 (defn- get-coefficient [value] (typecheck (jlsl/coerce-expr value) jlsl/type/float))
-(def morph
+(deffn morph [& args]
   ````(morph shape1 amount shape2 [:distance amount] [:color amount])
 
   Morph linearly interpolates between two shapes.
@@ -136,25 +136,24 @@
   (box 50 | color [1 0 0] | morph :color 0.1 (sphere 50 | color [0 1 0]))
   ```
   ````
-  (fn morph [& args]
-    (def field-coefficients @{})
-    (var default-coefficient nil)
-    (var key (next args))
-    (def shapes @[])
+  (def field-coefficients @{})
+  (var default-coefficient nil)
+  (var key (next args))
+  (def shapes @[])
 
-    (while (not= key nil)
-      (var arg (@in args key))
-      (cond
-        (shape/is? arg) (array/push shapes arg)
-        (keyword? arg) (do
-          (set key (next args key))
-          (assertf (not= key nil) "no value for %q" arg)
-          (put field-coefficients arg (get-coefficient (args key))))
-        (if (= nil default-coefficient)
-          (set default-coefficient (get-coefficient arg))
-          (error "duplicate coefficient")))
-      (set key (next args key)))
-    (default default-coefficient (jlsl/coerce-expr 0.5))
-    (shape/merge shapes (fn [fields]
-      (merge-structs (fn [field a b]
-        (mix a b (@in field-coefficients field default-coefficient))) fields)))))
+  (while (not= key nil)
+    (var arg (@in args key))
+    (cond
+      (shape/is? arg) (array/push shapes arg)
+      (keyword? arg) (do
+        (set key (next args key))
+        (assertf (not= key nil) "no value for %q" arg)
+        (put field-coefficients arg (get-coefficient (args key))))
+      (if (= nil default-coefficient)
+        (set default-coefficient (get-coefficient arg))
+        (error "duplicate coefficient")))
+    (set key (next args key)))
+  (default default-coefficient (jlsl/coerce-expr 0.5))
+  (shape/merge shapes (fn [fields]
+    (merge-structs (fn [field a b]
+      (mix a b (@in field-coefficients field default-coefficient))) fields))))

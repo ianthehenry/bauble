@@ -74,3 +74,9 @@
       (jlsl/with ,name [,variable ,new-position] (,'unquote ,$expr))))))
 
 (defmacro sugar [expr] (syntax/expand expr))
+
+# like defn, but docstring is required, it appears in the right place, and
+# it doesn't implicitly include the arguments
+(defmacro deffn [name args docstring & body]
+  (assert (string? docstring) "docstring required")
+  ~(def ,name ,docstring (fn ,name ,args ,;body)))
