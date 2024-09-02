@@ -11,3 +11,4 @@
 (import ./surfacing :prefix "" :export true)
 (import ../dynvars :prefix "" :export true)
 (import ../../jlsl/prelude :prefix "" :export true)
+(import ./operator-overloads :prefix "" :export true)

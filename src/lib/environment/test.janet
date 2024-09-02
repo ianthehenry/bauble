@@ -36,21 +36,21 @@
 
 (test (cleanse-environment (proto-flatten-to-root (derive/new)))
   @{% @{}
-    * @{}
+    * @{:doc "(- & xs)\n\nOverloaded to work with tuples, arrays, and expressions."}
     *lights* @{:doc "The default lights used by surfacing functions like `blinn-phong`. You can manipulate this using `setdyn` or `with-dyns` like any other dynamic variable, but there is a dedicated `with-lights` function to set it in a way that fits nicely into a pipeline."
                :dyn true
                :value :lights}
-    + @{}
+    + @{:doc "(+ & xs)\n\nOverloaded to work with tuples, arrays, and expressions."}
     +x @{:doc "`[1 0 0]`" :value [1 0 0]}
     +y @{:doc "`[0 1 0]`" :value [0 1 0]}
     +z @{:doc "`[0 0 1]`" :value [0 0 1]}
-    - @{}
+    - @{:doc "(- & xs)\n\nOverloaded to work with tuples, arrays, and expressions."}
     -x @{:doc "`[-1 0 0]`" :value [-1 0 0]}
     -y @{:doc "`[0 -1 0]`" :value [0 -1 0]}
     -z @{:doc "`[0 0 -1]`" :value [0 0 -1]}
     . @{:doc "(. expr field)\n\nBehaves like `.` in GLSL, for accessing components of a vector or struct, e.g. `(. foo xy)`.\n\nBauble's dot syntax, `foo.xy`, expands to call this macro. The second argument to `.` will be\nquasiquoted, so you can dynamically select a dynamic field with `(. foo ,axis)`."
         :macro true}
-    / @{}
+    / @{:doc "(/ & xs)\n\nOverloaded to work with tuples, arrays, and expressions."}
     < @{}
     <= @{}
     = @{}
@@ -425,3 +425,6 @@
   (test-error (morph) "no shapes to combine")
   (test-error (morph (box 10) :color) "no value for :color")
   (test-error (morph (box 10) :color [1 2]) "type mismatch: expected :float, got :vec2"))
+
+(test (jlsl/show (+ p 1)) [+ p 1])
+(test (jlsl/show (+ p [1 2 3])) [+ p [vec3 1 2 3]])
