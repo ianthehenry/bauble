@@ -85,7 +85,7 @@
       color)))
 
 (defn smooth-union [r & shapes]
-  (def r (typecheck (jlsl/coerce-expr r) jlsl/type/float))
+  (def r (typecheck r jlsl/type/float))
   (shape/merge shapes (fn [fields]
     (def distances (seq [{:distance d} :in fields :when d] d))
     {:distance (case (@length distances)
@@ -112,7 +112,7 @@
   [& shapes]
   (sharp-union ;shapes))
 
-(defn- get-coefficient [value] (typecheck (jlsl/coerce-expr value) jlsl/type/float))
+(defn- get-coefficient [value] (typecheck value jlsl/type/float))
 (deffn morph [& args]
   ````(morph shape1 amount shape2 [:distance amount] [:color amount])
 

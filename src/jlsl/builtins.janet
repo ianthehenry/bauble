@@ -191,7 +191,7 @@
 (defbuiltin min (partial resolve-generic 2))
 (defbuiltin max (partial resolve-generic 2))
 (defbuiltin clamp (partial resolve-generic 3))
-# TODO: mix also supports an interesitng boolean selection overload
+# TODO: mix also supports an interesting boolean selection overload
 (defbuiltin mix (partial resolve-generic 3))
 (defbuiltin step (partial resolve-generic 2))
 (defbuiltin smoothstep (partial resolve-generic 3))

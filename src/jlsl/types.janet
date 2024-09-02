@@ -276,8 +276,6 @@
       |variable? (expr/identifier value)
       |tuple? (let [args (map coerce-expr value)]
         (expr/call (builtins-prelude/resolve-vec-constructor nil "[]" (tmap expr/type args)) args))
-      # TODO:
-      #['. expr field] [expr/dot (of-ast expr) ['quote field]]
       (errorf "Can't coerce %q into an expression" value)
       )))
 

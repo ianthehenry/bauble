@@ -5,6 +5,7 @@
 (import ../util :prefix "" :export true)
 
 (defn typecheck [expr expected]
+  (def expr (jlsl/coerce-expr expr))
   (def actual (jlsl/expr/type expr))
   (assertf (= actual expected)
     "type mismatch: expected %q, got %q"
@@ -33,7 +34,6 @@
     (assert (string? docstring))
     (def gl/name (symbol "sdf-" name))
     ~(upscope
-      # TODO: maybe this should not include the do wrap...
       (as-macro ,defhelper- :float ,gl/name ,bindings
         ,;(syntax/expand body))
       (,',defn-macro ,name ,docstring ,(tuple/brackets ;(seq [[_ name] :in (partition 2 bindings)] name))

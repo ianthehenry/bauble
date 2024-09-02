@@ -14,15 +14,14 @@
 # TODO: should we just truncate the vector instead? That's... easier and maybe better?
 (defn- coerce-axis-vector [type vector]
   (typecheck
-    (jlsl/coerce-expr
-      (if (= type jlsl/type/vec2)
-        (case vector
-          x [1 0]
-          y [0 1]
-          -x [-1 0]
-          -y [0 -1]
-          vector)
-        vector))
+    (if (= type jlsl/type/vec2)
+      (case vector
+        x [1 0]
+        y [0 1]
+        -x [-1 0]
+        -y [0 -1]
+        vector)
+      vector)
     type))
 
 # TODO: maybe this should be, like, a vector sum, but you peek forward
@@ -107,7 +106,7 @@
 
 (deftransform elongate [shape size]
   "Stretch a shape."
-  (typecheck size (shape/type shape))
+  (def size (typecheck size (shape/type shape)))
   (case (shape/type shape)
     jlsl/type/vec2
       (shape/map shape (fn [expr]

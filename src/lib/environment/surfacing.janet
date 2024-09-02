@@ -11,8 +11,7 @@
 
 (deftransform color [shape color]
   "Set the color field of a shape."
-  (typecheck color jlsl/type/vec3)
-  (shape/with shape :color color))
+  (shape/with shape :color (typecheck color jlsl/type/vec3)))
 
 # TODO: this should be somewhere else and called something else
 (def- MINIMUM_HIT_DISTANCE 0.01)
@@ -147,17 +146,18 @@
   that are in full shadow.
   ```
   [color &opt offset]
-  (light/point color (if offset (+ P offset) P) nil)))
+  (light/point color (if offset (+ P (,typecheck offset ',jlsl/type/vec3)) P) nil)))
 
 (thunk ~(defn light/directional
   ```
   A light that hits every point at the same angle.
 
-  Shorthand for `(light/point color (P - (dir * distance)) shadow)`.
+  Shorthand for `(light/point color (P - (dir * dist)) shadow)`.
   ```
-  [color dir distance & shadow]
-  # TODO: these coercions aren't necessary if we overload * to work on tuples
-  (light/point color (- P (* (,jlsl/coerce-expr dir) (,jlsl/coerce-expr distance))) ;shadow)))
+  [color dir dist & shadow]
+  (def dir (,typecheck dir ',jlsl/type/vec3))
+  (def dist (,typecheck dist ',jlsl/type/float))
+  (light/point color (- P (* dir dist)) ;shadow)))
 
 (defn light?
   "Returns true if its argument is a light."

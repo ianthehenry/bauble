@@ -19,18 +19,14 @@
 (defmacro deforiented [name bindings docstring & body]
   (def axes [[x "x"] [y "y"] [z "z"]])
   (def params (map 1 (partition 2 bindings)))
-  # TODO: bit of a hygiene problem here...
   ~(upscope
     ,;(seq [[axis axis-name] :in axes]
       (def [this-axis other-axes] (split-axis axis))
-      # TODO: this should be private. also maybe not do the wrapper thing
-      # so many times...
       ~(as-macro ,defshape/3d- ,(symbol name "-" axis-name) ,bindings ,docstring ,;[
         ~(var other-axes ,['unquote ~',other-axes])
         ~(var this-axis ,['unquote ~',this-axis])
         ;body]))
     (defn ,name ,docstring [axis ,;params]
-      # TODO: hygiene
       ((case axis
         ,;(catseq [[axis axis-name] :in axes]
           [~',axis (symbol name "-" axis-name)])

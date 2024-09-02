@@ -11,7 +11,7 @@
   ```
   [shape axis &opt offset]
   (def [this others] (split-axis axis))
-  (def offset (typecheck (jlsl/coerce-expr (@or offset 0)) jlsl/type/float))
+  (def offset (typecheck (@or offset 0) jlsl/type/float))
 
   (shape/map shape (fn [expr]
     (jlsl/with "revolve" [q [(- (length ,others) ,offset) ,this]] expr))
@@ -27,7 +27,7 @@
   [shape axis &opt distance]
   (def [this others] (split-axis axis))
   (def distance (if (not= math/inf distance)
-    (typecheck (jlsl/coerce-expr (@or distance 0)) jlsl/type/float)))
+    (typecheck (@or distance 0) jlsl/type/float)))
 
   (def in-3d (shape/map shape (fn [expr]
     (jlsl/with "extrude" [q ,others] expr))
@@ -47,7 +47,7 @@
   `position` defaults to `0`.
   ```
   [shape axis &opt position]
-  (def position (typecheck (jlsl/coerce-expr (@or position 0)) jlsl/type/float))
+  (def position (typecheck (@or position 0) jlsl/type/float))
 
   (def new-p (jlsl/coerce-expr (sugar (case axis
     x [position q]

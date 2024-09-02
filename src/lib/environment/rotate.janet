@@ -110,7 +110,7 @@
   (transform shape "align" p (* (alignment-matrix to from) p)))
 
 (defn- align-vector [vector from to]
-  (def v (typecheck (jlsl/coerce-expr vector) jlsl/type/vec3))
+  (def v (typecheck vector jlsl/type/vec3))
   jlsl/type/vec3 (* (alignment-matrix from to) v))
 
 (defn rotate

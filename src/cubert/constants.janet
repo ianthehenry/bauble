@@ -33,7 +33,6 @@
   0x70c 0x605 0x50f 0x406 0x30a 0x203 0x109 0x000
 ])
 
-# TODO: might be more efficient to pack this into a single large 1d array
 (def triangle-table [
   []
   [0 8 3]
