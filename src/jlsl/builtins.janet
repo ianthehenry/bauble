@@ -18,15 +18,15 @@
 
 (defn- numeric-vector-to-number [arity name arg-types]
   (check-arity name arity arg-types)
-  (def return-type (get-unique (partial get-floaty-vector-base-type name) arg-types |(errorf "%s: cannot mix vector types" name)))
-  (get-unique type/components arg-types |(errorf "%s: cannot mix argument lengths" name))
+  (def return-type (get-unique (partial get-floaty-vector-base-type name) arg-types (fn [_] (errorf "%s: cannot mix vector types" name))))
+  (get-unique type/components arg-types (fn [_] (errorf "%s: cannot mix argument lengths" name)))
   (builtin name return-type arg-types))
 
 (defn- resolve-not [name arg-types]
   (check-arity name 1 arg-types)
   (each arg-type arg-types
     (check-booly name arg-type))
-  (def components (get-unique type/components arg-types |(errorf "%s: cannot mix argument lengths" name)))
+  (def components (get-unique type/components arg-types (fn [_] (errorf "%s: cannot mix argument lengths" name))))
   (builtin name (vec-or-prim (primitive-type/bool) components) arg-types))
 
 (defn- just [types] (fn just [name arg-types]

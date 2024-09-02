@@ -8,8 +8,9 @@
 # separate from the builtins/ module.
 
 (defn on-same-type-error [name arg-types]
-  |(errorf "%s: arguments must have the same base type, got %q"
-    name (tmap type/to-glsl arg-types)))
+  (fn [base-types]
+    (errorf "%s: arguments must have the same base type, got %q"
+      name (tmap type/to-glsl arg-types))))
 
 (defn check-arity [name arity arg-types]
   (def actual (length arg-types))

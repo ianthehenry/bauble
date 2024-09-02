@@ -8,7 +8,7 @@
 (defn get-unique [f ind on-error]
   (pat/match (distinct (map f ind))
     [unique] unique
-    (on-error)))
+    values (on-error values)))
 
 (defn ptuple? [x] (and (tuple? x) (= (tuple/type x) :parens)))
 (defn btuple? [x] (and (tuple? x) (= (tuple/type x) :brackets)))
