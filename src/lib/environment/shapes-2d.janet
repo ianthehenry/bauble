@@ -268,7 +268,7 @@
   ```
   TODOC
   ```
-  (set q (rotate [(abs q.x) q.y] angle))
+  (var q (rotate [(abs q.x) q.y] angle))
   (return (max
     (abs (length q - radius) - (thickness * 0.5))
     (length [q.x (max 0 (abs (radius - q.y) - (thickness * 0.5)))] * sign q.x))))
