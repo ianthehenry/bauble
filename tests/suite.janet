@@ -407,6 +407,22 @@
   | morph :color 0.1 :distance 0.25
     (sphere 50 | blinn-phong [0 1 0] 0.25 5))
   `
+
+  "!round 2d shapes"
+  `
+  (union
+    (rect 30 :r 5 | move [-100 100])
+    (hexagon 30 :r 5 | move [0 100])
+    (hexagram 30 :r 5 | move [100 100])
+    (star 30 20 :r 10 | move [-100 0]))
+  `
+
+  "!round 3d shapes"
+  `
+  (union
+    (box 50 :r 10 | move [-99 0 66])
+    (box-frame 50 10 :r 5 | move [53 0 -100]))
+  `
 })
 
 (each filename (os/dir "./cases")

@@ -5,6 +5,8 @@
   "Returns a 2D shape."
   (return (length q - radius)))
 
+# TODO: we should make an overload that lets you
+# pass a vec4 for the round arguments
 (defshape/2d rect [:vec2 !size]
   ```
   Returns a 2D shape, a rectangle with corners at `(- size)` and `size`. `size` will be coerced to a `vec2`.
@@ -14,9 +16,20 @@
   (var d (abs q - size))
   (return (max d 0 | length + min (max d) 0)))
 
+(defshape/2d round-rect [:vec2 size :vec4 radii]
+  ```
+  Like `rect`, but rounded. `radii` can be a single radius or a `vec4` of `[top-left top-right bottom-right bottom-left]`.`
+  ```
+  (var r (if (< q.x 0) radii.xw radii.yz))
+  (var r (if (> q.y 0) r.x r.y))
+  (var q (abs q - size + r))
+  (return (min (max q) 0 + length (max q 0) - r)))
+
 (defhelper- :float ndot [:vec2 a :vec2 b]
   (return ((* a.x b.x) - (* a.y b.y))))
 
+# TODO: rounding this is tricky because we need to subtract
+# r from the short side and 2r from the long side
 (defshape/2d rhombus [:vec2 size]
   "Returns a 2D shape. It rhombs with a kite."
   (var q (abs q))
@@ -24,6 +37,8 @@
   (var d (q - (0.5 * size * [(1 - h) (1 + h)]) | length))
   (return (d * (q.x * size.y + (q.y * size.x) - (size.x * size.y) | sign))))
 
+# TODO: rounding this is kinda complex because because skew
+# needs to change by some complex factor
 (defshape/2d parallelogram [:vec2 size :float skew]
   ```
   Returns a 2D shape. `size.x` is the width of the top and bottom edges, and `size.y` is the height of the parellogram.
@@ -69,16 +84,6 @@
   (var w ([(- t) t] + 0.75 - (t * t) - q))
   (return (radius * length w * sign (a * a * 0.5 + b - 1.5))))
 
-# TODO: this should actually be an optional argument huh
-(defshape/2d round-rect [:vec2 size :vec4 radii]
-  ```
-  Like `rect`, but rounded. `radii` can be a single radius or a `vec4` of `[top-left top-right bottom-right bottom-left]`.`
-  ```
-  (var r (if (< q.x 0) radii.xw radii.yz))
-  (var r (if (> q.y 0) r.x r.y))
-  (var q (abs q - size + r))
-  (return (min (max q) 0 + length (max q 0) - r)))
-
 (defshape/2d oriented-rect [:vec2 start :vec2 end :float width]
   ```
   TODOC
@@ -99,7 +104,7 @@
   (var h (clamp (dot q-start end-start / dot end-start) 0 1))
   (return (length (q-start - (end-start * h)) - (width * 0.5))))
 
-(defshape/2d trapezoid [:float bottom-width :float top-width :float height]
+(defshape/2d trapezoid [:float !bottom-width :float !top-width :float !height]
   ```
   TODOC
   ```
@@ -111,17 +116,18 @@
   (var s (if (and (< cb.x 0) (< ca.y 0)) -1 1))
   (return (s * sqrt (min (dot ca) (dot cb)))))
 
-(defshape/2d equilateral-triangle [:float r]
+(defshape/2d equilateral-triangle [:float !radius]
   ```
   TODOC
   ```
   (def k (sqrt 3))
-  (var q [((abs q.x) - r) (q.y + (r / k))])
+  (var q [((abs q.x) - radius) (q.y + (radius / k))])
   (if (> (q.x + (k * q.y)) 0)
     (set q ([(q.x - (k * q.y)) (- k * q.x - q.y)] * 0.5)))
-  (-= q.x (clamp q.x (-2 * r) 0))
+  (-= q.x (clamp q.x (-2 * radius) 0))
   (return (* -1 (length q) (sign q.y))))
 
+# TODO: the asymmetric height makes it difficult to round this
 (defshape/2d isosceles-triangle [:vec2 size]
   ```
   TODOC
@@ -134,6 +140,7 @@
   (var s (max (q.x * size.y - (q.y * size.x) * k) (q.y - size.y * k)))
   (return (sqrt d * sign s)))
 
+# TODO: I *think* we can round this, maybe?
 (defshape/2d triangle [:vec2 a :vec2 b :vec2 c]
   ```
   TODOC
@@ -154,21 +161,21 @@
     [(dot pq2) (v2.x * e2.y - (v2.y * e2.x) * s)]))
   (return (* -1 (sqrt d.x) (sign d.y))))
 
-(defshape/2d uneven-capsule [:float r1 :float r2 :float h]
+(defshape/2d uneven-capsule [:float bottom-radius :float top-radius :float height]
   ```
   TODOC
   ```
   (var q [(abs q.x) q.y])
-  (var b (r1 - r2 / h))
+  (var b (bottom-radius - top-radius / height))
   (var a (sqrt (1 - (b * b))))
   (var k (dot q [(- b) a]))
   (if (< k 0)
-    (return (length q - r1)))
-  (if (> k (a * h))
-    (return (length (q - [0 h]) - r2)))
-  (return (dot q [a b] - r1)))
+    (return (length q - bottom-radius)))
+  (if (> k (a * height))
+    (return (length (q - [0 height]) - top-radius)))
+  (return (dot q [a b] - bottom-radius)))
 
-(defshape/2d pentagon [:float r]
+(defshape/2d pentagon [:float !radius]
   ```
   TODOC
   ```
@@ -177,10 +184,10 @@
   (var q [(abs q.x) (- q.y)])
   (-= q (2 * (min (dot [(- k.x) k.y] q) 0) * [(- k.x) k.y]))
   (-= q (2 * (min (dot [k.x k.y] q) 0) * [k.x k.y]))
-  (-= q [(clamp q.x (* -1 r k.z) (r * k.z)) r])
+  (-= q [(clamp q.x (* -1 radius k.z) (radius * k.z)) radius])
   (return (length q * sign q.y)))
 
-(defshape/2d hexagon [:float r]
+(defshape/2d hexagon [:float !radius]
   ```
   TODOC
   ```
@@ -188,10 +195,10 @@
   (def k [(- (cos angle)) (sin angle) (tan angle)])
   (var q (abs q))
   (-= q (2 * (min (dot k.xy q) 0) * k.xy))
-  (-= q [(clamp q.x ((- k.z) * r) (k.z * r)) r])
+  (-= q [(clamp q.x ((- k.z) * radius) (k.z * radius)) radius])
   (return (length q * sign q.y)))
 
-(defshape/2d octagon [:float r]
+(defshape/2d octagon [:float !radius]
   ```
   TODOC
   ```
@@ -200,23 +207,23 @@
   (var q (abs q))
   (-= q (2 * (min (dot [k.x k.y] q) 0) * [k.x k.y]))
   (-= q (2 * (min (dot [(- k.x) k.y] q) 0) * [(- k.x) k.y]))
-  (-= q [(clamp q.x (- k.z * r) (k.z * r)) r])
+  (-= q [(clamp q.x (- k.z * radius) (k.z * radius)) radius])
   (return (length q * sign q.y)))
 
-(defshape/2d hexagram [:float r]
+(defshape/2d hexagram [:float !radius]
   ```
   TODOC
   ```
   (def angle (math/pi / 6))
   (def k [(- (sin angle)) (cos angle) (tan angle) (sqrt 3)])
   (var q (abs q))
-  (var r (0.5 * r))
+  (var radius (0.5 * radius))
   (-= q (2 * (min (dot k.xy q) 0) * k.xy))
   (-= q (2 * (min (dot k.yx q) 0) * k.yx))
-  (-= q [(clamp q.x (k.z * r) (k.w * r)) r])
+  (-= q [(clamp q.x (k.z * radius) (k.w * radius)) radius])
   (return (length q * sign q.y)))
 
-(defshape/2d star [:float outer-radius :float inner-radius]
+(defshape/2d star [:float !outer-radius :float !inner-radius]
   ```
   TODOC
   ```
@@ -233,6 +240,7 @@
   (var h (dot q ba / (dot ba) | clamp 0 outer-radius))
   (return (length (q - (ba * h)) * sign (q.y * ba.x - (q.x * ba.y)))))
 
+# TODO: kinda tricky to round because it's centered at the origin
 (defshape/2d pie [:float radius :float angle]
   ```
   TODOC
@@ -243,6 +251,8 @@
   (var m (length (q - (c * (dot q c | clamp 0 radius)))))
   (return (max l (m * sign (c.y * q.x - (c.x * q.y))))))
 
+# TODO: in order to round this, we have to subtract from
+# radius but add to bottom
 (defshape/2d cut-disk [:float radius :float bottom]
   ```
   TODOC

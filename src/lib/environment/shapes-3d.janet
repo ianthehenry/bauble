@@ -5,7 +5,7 @@
   "Returns a 3D shape."
   (return (length p - radius)))
 
-(defshape/3d box [:vec3 size]
+(defshape/3d box [:vec3 !size]
   ```
   Returns a 3D shape, a box with corners at `(- size)` and `size`. `size` will be coerced to a `vec3`.
   
@@ -14,7 +14,7 @@
   (var d (abs p - size))
   (return (max d 0 | length + min (max d) 0)))
 
-(defshape/3d box-frame [:vec3 size :float thickness]
+(defshape/3d box-frame [:vec3 !size :float !thickness]
   ```
   Returns a 3D shape, the outline of a box.
   ```
@@ -44,6 +44,7 @@
   ```
   (return (length [(length other-axes - radius) this-axis] - thickness)))
 
+# TODO: pretty complicated to round correctly
 (deforiented cone [:float radius :float height]
   ```
   TODOC
@@ -57,6 +58,8 @@
   (var s (max (k * (w.x * q.y - (w.y * q.x))) (k * (w.y - q.y))))
   (return (sqrt d * sign s)))
 
+# TODO: subtracting from the radius does *something*, but it's not what
+# i would expect
 (defshape/3d octahedron [:float radius]
   ```
   TODOC

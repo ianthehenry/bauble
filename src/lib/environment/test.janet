@@ -78,8 +78,8 @@
     atanh @{}
     blinn-phong @{:doc "(blinn-phong shape color shine gloss &opt lights)\n\n"}
     bool @{}
-    box @{:doc "(box size)\n\nReturns a 3D shape, a box with corners at `(- size)` and `size`. `size` will be coerced to a `vec3`.\n\nThink of `size` like the \"radius\" of the box: a box with `size.x = 50` will be `100` units wide."}
-    box-frame @{:doc "(box-frame size thickness)\n\nReturns a 3D shape, the outline of a box."}
+    box @{:doc "(box size [:r round])\n\nReturns a 3D shape, a box with corners at `(- size)` and `size`. `size` will be coerced to a `vec3`.\n\nThink of `size` like the \"radius\" of the box: a box with `size.x = 50` will be `100` units wide."}
+    box-frame @{:doc "(box-frame size thickness [:r round])\n\nReturns a 3D shape, the outline of a box."}
     camera-origin @{:value [:var "camera-origin" :vec3]}
     cast-light-hard-shadow @{:doc "(cast-light-hard-shadow light-color light-position)\n\nTODOC"}
     cast-light-no-shadow @{:doc "(cast-light-no-shadow light-color light-position)\n\nTODOC"}
@@ -102,7 +102,7 @@
     ellipsoid @{:doc "(ellipsoid size)\n\nReturns a 3D shape **with an incorrect distance field**.\n\nThe distance is a bound.\n\nThis means that some operations, like a smooth union, will not behave\ncorrectly on ellipsoids. Soft shadows will also appear too soft."}
     elongate @{:doc "(elongate shape size)\n\nStretch a shape."}
     equal @{}
-    equilateral-triangle @{:doc "(equilateral-triangle r)\n\nTODOC"}
+    equilateral-triangle @{:doc "(equilateral-triangle radius [:r round])\n\nTODOC"}
     exp @{}
     exp2 @{}
     extrude @{:doc "(extrude shape axis &opt distance)\n\nExtrude a 2D shape into 3D along the given `axis`.\n\n`distance` defaults to `0` and determines the width, length, or height of the final shape.\nYou can also pass `inf` to get an infinite extrusion (which is slightly cheaper to compute)."}
@@ -116,8 +116,8 @@
     gl-front-facing @{:value [:var "gl_FrontFacing" :bool]}
     gl-point-coord @{:value [:var "gl_PointCoord" :vec2]}
     gradient @{:value [:var "gradient" :vec2]}
-    hexagon @{:doc "(hexagon r)\n\nTODOC"}
-    hexagram @{:doc "(hexagram r)\n\nTODOC"}
+    hexagon @{:doc "(hexagon radius [:r round])\n\nTODOC"}
+    hexagram @{:doc "(hexagram radius [:r round])\n\nTODOC"}
     in @{:doc "(in & args)\n\n"}
     inf @{:doc "The number representing positive infinity"
           :value 9e999}
@@ -158,7 +158,7 @@
     not @{}
     not-equal @{}
     not= @{}
-    octagon @{:doc "(octagon r)\n\nTODOC"}
+    octagon @{:doc "(octagon radius [:r round])\n\nTODOC"}
     octahedron @{:doc "(octahedron radius)\n\nTODOC"}
     offset @{:doc "(offset shape amount)\n\nOffsets the provided shape, rounding corners in the process.\n\nThis is the same as subtracting `amount` from the distance. It's more accurate\nto say that this \"moves between isosurfaces,\" so it may not actually\nround anything if the provided shape is not an exact distance field."}
     or @{}
@@ -166,7 +166,7 @@
     outer-product @{}
     p @{:value [:var "p" :vec3]}
     parallelogram @{:doc "(parallelogram size skew)\n\nReturns a 2D shape. `size.x` is the width of the top and bottom edges, and `size.y` is the height of the parellogram.\n\n`skew` is how far the pallorelogram leans in the `x` direction, so the total width of the prellogram is `(size.x + skew) * 2`.\nA `skew` of `0` gives the same shape as `rect`.\""}
-    pentagon @{:doc "(pentagon r)\n\nTODOC"}
+    pentagon @{:doc "(pentagon radius [:r round])\n\nTODOC"}
     perlin @{:doc "(perlin p)\n\nReturns perlin noise from -1 to 1. The input is a vector of any dimension."}
     perlin+ @{:doc "(perlin+ v)\n\nPerlin noise in the range 0 to 1."}
     pi @{:doc "I think it's around three.\n\nNote that there are also values like `pi/4` and `pi/6*5` and related helpers all the way up to `pi/12`. They don't show up in autocomplete because they're annoying, but they're there."
@@ -250,7 +250,7 @@
     smoothstep @{}
     sphere @{:doc "(sphere radius)\n\nReturns a 3D shape."}
     sqrt @{}
-    star @{:doc "(star outer-radius inner-radius)\n\nTODOC"}
+    star @{:doc "(star outer-radius inner-radius [:r round])\n\nTODOC"}
     step @{}
     subject @{:doc "A variable that determines what Bauble will render.\n\nYou can set this variable explicitly to change your focus, or use the `view` macro to change your focus. If you don't set a subject, Bauble will render the last shape in your script."
               :ref @[nil]}
@@ -295,11 +295,11 @@
     tau/8*7 @{:value 5.497787143782138}
     tau/9 @{:value 0.69813170079773179}
     torus @{:doc "(torus axis radius thickness)\n\nReturns a 3D shape, a torus around the provided `axis`."}
-    trapezoid @{:doc "(trapezoid bottom-width top-width height)\n\nTODOC"}
+    trapezoid @{:doc "(trapezoid bottom-width top-width height [:r round])\n\nTODOC"}
     triangle @{:doc "(triangle a b c)\n\nTODOC"}
     trunc @{}
     uint @{}
-    uneven-capsule @{:doc "(uneven-capsule r1 r2 h)\n\nTODOC"}
+    uneven-capsule @{:doc "(uneven-capsule bottom-radius top-radius height)\n\nTODOC"}
     union @{:doc "(union & shapes)\n\nJoin 'em up. Do it to it."}
     vec @{}
     vec2 @{}

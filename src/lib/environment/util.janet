@@ -41,12 +41,12 @@
       (string/join (map 0 params) " ")
       (if add-round-param? " [:r round]")
       ")"))
-    (def <adjusted-distance> ~(,gl/name
+    (def <adjusted-distance> ~(- (,gl/name
       ,;(seq [[name type subtract-roundness?] :in params]
         (def constructor-function-name (symbol type))
         (def <jlsl-type> (jlsl/type/of-ast type))
         ~(,coerce-expr-to-type ,<jlsl-type> ,constructor-function-name
-          ,(if subtract-roundness? ~(- ,name r) name)))))
+          ,(if subtract-roundness? ~(- ,name r) name)))) r))
 
     (def <unadjusted-distance> ~(,gl/name
       ,;(seq [[name type _] :in params]
@@ -62,9 +62,10 @@
         (fn ,name [,;(map 0 params) ,;(if add-round-param? '[&named r] [])]
           (,,constructor
             ,(if add-round-param?
-              ~(if (= r nil)
+              ~(if (nil? r)
                 ,<unadjusted-distance>
-                (as-macro ,jlsl/let [r r] (- ,['unquote <adjusted-distance>] r)))
+                (as-macro ,jlsl/let [r r]
+                  ,['unquote <adjusted-distance>]))
               <unadjusted-distance>)
           ))))))
 
@@ -88,7 +89,7 @@
   (return (max d 0 | length + min (max d) 0)))
   (upscope
     (as-macro @defhelper- :float sdf-rect [:vec2 size] (var d (- (abs q) size)) (return (+ (length (max d 0)) (min (max d) 0))))
-    (def rect "(rect size [:r round])\n\nReturns a 2D shape." (fn rect [size &named r] (@distance-2d (if (= r nil) (sdf-rect (@coerce-expr-to-type (quote (<1> vec (<2> float) 2)) vec2 size)) (as-macro @let [r r] (- (unquote (sdf-rect (@coerce-expr-to-type (quote (<1> vec (<2> float) 2)) vec2 (- size r)))) r))))))))
+    (def rect "(rect size [:r round])\n\nReturns a 2D shape." (fn rect [size &named r] (@distance-2d (if (nil? r) (sdf-rect (@coerce-expr-to-type (quote (<1> vec (<2> float) 2)) vec2 size)) (as-macro @let [r r] (unquote (- (sdf-rect (@coerce-expr-to-type (quote (<1> vec (<2> float) 2)) vec2 (- size r))) r)))))))))
 
 (defmacro deftransform [name bindings docstring & body]
   (assert (string? docstring))
