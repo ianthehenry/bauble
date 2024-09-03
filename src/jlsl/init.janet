@@ -16,5 +16,10 @@
 
 (defmacro iife [& ast] (expr/of-ast ['iife ;ast]))
 (defmacro do [& ast] (expr/of-ast ['do ;ast]))
+(defmacro let [bindings & ast]
+  (expr/of-ast ['do
+    ;(seq [[name val] :in (partition 2 bindings)]
+      ~(var ,name ,val))
+    ;ast]))
 (defmacro with [& ast] (expr/of-ast ['with ;ast]))
 (defmacro statement [& ast] (statement/of-ast ['upscope ;ast]))

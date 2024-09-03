@@ -5,7 +5,7 @@
   "Returns a 2D shape."
   (return (length q - radius)))
 
-(defshape/2d rect [:vec2 size]
+(defshape/2d rect [:vec2 !size]
   ```
   Returns a 2D shape, a rectangle with corners at `(- size)` and `size`. `size` will be coerced to a `vec2`.
 
