@@ -16,6 +16,5 @@
 # gathered up into this array, and then evaluated every time we build a new user
 # environment.
 (def *thunks* @[])
-# TODO: macex
 (defn thunk [expr]
-  (array/push *thunks* expr))
+  (array/push *thunks* (macex expr)))
