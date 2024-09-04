@@ -165,3 +165,7 @@
       (if (mask 0) (abs (. p x)) (. p x))
       (if (mask 1) (abs (. p y)) (. p y))
       (if (mask 2) (abs (. p z)) (. p z))))))
+
+(deftransform color [shape color]
+  "Set a shape's color field."
+  (shape/with shape :color (typecheck color jlsl/type/vec3)))

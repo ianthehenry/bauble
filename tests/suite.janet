@@ -295,10 +295,11 @@
   "!octahedron" `(octahedron 120 | rotate x pi/4)`
 
   "!blinn phong" `
-  (box 50 | offset 10 | blinn-phong [0.25 1 0.25] 0.5 10
-    [(light/point [1 1 1] [-200 100 200])
-     (light/point [1 0.1 0.1] [200 200 200])
-    ])
+  (box 60 :r 10
+  | blinn-phong [0.25 1 0.25] :s 0.5 :g 10
+  | with-lights
+    (light/point [1 1 1] [-200 100 200])
+    (light/point [1 0.1 0.1] [200 200 200]))
   `
 
   "!union 3d color fields" `
@@ -310,12 +311,12 @@
   "!2d color fields that extend outside of their shape"
   `
   (def sharp-circles (union
-      (circle 10 | move [-10 0] | color [1 0.1 0.1])
-      (circle 20 | move [10 0] | color [0.1 1 0.1])))
+    (circle 10 | move [-10 0] | color [1 0.1 0.1])
+    (circle 20 | move [10 0] | color [0.1 1 0.1])))
 
   (def smooth-circles (smooth-union 5
-      (circle 10 | move [-10 0] | color [1 0.1 0.1])
-      (circle 20 | move [10 0] | color [0.1 1 0.1])))
+    (circle 10 | move [-10 0] | color [1 0.1 0.1])
+    (circle 20 | move [10 0] | color [0.1 1 0.1])))
 
   (defn make [circles]
     (union
@@ -339,16 +340,16 @@
         (def x (div i zs - (xs - 1 / 2)))
         (def z (mod i zs - (zs - 1 / 2)))
         (shape | move [(* size x 2) 0 (* size z 2)]))))
-  (defn make-with-lights [lights]
+  (defn make []
     (union
       (box [50 5 50])
       (box 20 | move y 30 | offset 1)
-    | blinn-phong [1 0.1 0.1] 0.25 5 lights))
+    | blinn-phong [1 0.1 0.1]))
   (grid 60 2 2
-    (make-with-lights [(light/directional [0.9 0.9 0.9] [-1 -5 1] 100)])
-    (make-with-lights [(light/directional [0.9 0.9 0.9] [-1 -5 1] 100 0)])
-    (make-with-lights [(light/directional [0.9 0.9 0.9] [-1 -5 1] 100 0.5)])
-    (make-with-lights [(light/directional [0.9 0.9 0.9] [-1 -5 1] 100 1)])
+    ((make) | with-lights (light/directional [0.9 0.9 0.9] [-1 -5 1] 100))
+    ((make) | with-lights (light/directional [0.9 0.9 0.9] [-1 -5 1] 100 0))
+    ((make) | with-lights (light/directional [0.9 0.9 0.9] [-1 -5 1] 100 0.5))
+    ((make) | with-lights (light/directional [0.9 0.9 0.9] [-1 -5 1] 100 1))
     )
   `
 
@@ -364,7 +365,7 @@
     (union
       (box [50 5 50])
       (box 20 | move y 30 | offset 1)
-    | blinn-phong [1 0.1 0.1] 0.25 5))
+    | blinn-phong [1 0.1 0.1]))
   (def point-light (light/point [0.9 0.9 0.9] [0 200 0]))
   (grid 60 2 2 (make) (make) (make) (make)
   | with-lights point-light)
@@ -382,7 +383,7 @@
     (union
       (box [50 5 50])
       (box 20 | move y 30 | offset 1)
-    | blinn-phong [1 0.1 0.1] 0.25 5))
+    | blinn-phong [1 0.1 0.1]))
   (grid 60 2 2
     ((make) | with-lights)
     ((make) | with-lights (light/ambient [0.5 0.5 0.5]))
@@ -403,9 +404,9 @@
   "!morph"
   `
   (box 50
-  | blinn-phong [1 0 0] 0.25 5
+  | blinn-phong [1 0 0]
   | morph :color 0.1 :distance 0.25
-    (sphere 50 | blinn-phong [0 1 0] 0.25 5))
+    (sphere 50 | blinn-phong [0 1 0]))
   `
 
   "!round 2d shapes"

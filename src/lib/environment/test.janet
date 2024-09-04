@@ -76,7 +76,7 @@
     asinh @{}
     atan @{}
     atanh @{}
-    blinn-phong @{:doc "(blinn-phong shape color shine gloss &opt lights)\n\n"}
+    blinn-phong @{:doc "(blinn-phong shape color [:s shininess] [:g glossiness])\n\nTODOC"}
     bool @{}
     box @{:doc "(box size [:r round])\n\nReturns a 3D shape, a box with corners at `(- size)` and `size`. `size` will be coerced to a `vec3`.\n\nThink of `size` like the \"radius\" of the box: a box with `size.x = 50` will be `100` units wide."}
     box-frame @{:doc "(box-frame size thickness [:r round])\n\nReturns a 3D shape, the outline of a box."}

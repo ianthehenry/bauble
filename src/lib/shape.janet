@@ -16,7 +16,7 @@
   (struct
     :type type
     :tag tag
-    ;kvs))
+    :fields (struct ;kvs)))
 
 (defn distance-2d [expr]
   {:type jlsl/type/vec2

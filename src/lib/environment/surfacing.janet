@@ -9,10 +9,6 @@
 # registered before the thunks we register here
 (require "./forward-declarations")
 
-(deftransform color [shape color]
-  "Set the color field of a shape."
-  (shape/with shape :color (typecheck color jlsl/type/vec3)))
-
 # TODO: this should be somewhere else and called something else
 (def- MINIMUM_HIT_DISTANCE 0.01)
 (def- MAX_LIGHT_STEPS :256)
@@ -169,17 +165,17 @@
     (light/ambient (vec3 0.03))
     (light/ambient (vec3 0.02) (* normal 0.1))]))
 
-(defhelper- :vec3 blinn-phong1 [:vec3 color :float shine :float gloss :vec3 light-color :vec3 light-dir]
+(defhelper- :vec3 blinn-phong1 [:vec3 color :float shininess :float glossiness :vec3 light-color :vec3 light-dir]
   # TODO: ray-dir should just be available as a dynamic variable
   (if (= light-dir (vec3 0))
     (return (* color light-color)))
   (var view-dir (camera-origin - P | normalize))
   (var halfway-dir (light-dir + view-dir | normalize))
-  (var specular-strength (shine * pow (max (dot normal halfway-dir) 0) (gloss * gloss)))
+  (var specular-strength (shininess * pow (max (dot normal halfway-dir) 0) (glossiness * glossiness)))
   (var diffuse (max 0 (dot normal light-dir)))
   (return (light-color * specular-strength + (* color diffuse light-color))))
 
-(defn- blinn-phong-color-expression [color shine gloss lights]
+(defn- blinn-phong-color-expression [color shininess glossiness lights]
   (jlsl/do "blinn-phong"
     (var result (vec3 0))
     ,;(seq [light :in lights]
@@ -189,21 +185,18 @@
       # the incidence just be a color and nothing else? unless we like... we don't
       # distort this, right?
       (jlsl/statement
-        (+= result (blinn-phong1 color shine gloss
+        (+= result (blinn-phong1 color shininess glossiness
           (. light-incidence color)
           (. light-incidence direction)))))
     result))
 
-(defn blinn-phong [shape color shine gloss &opt lights]
+(defnamed blinn-phong [shape color :?s:shininess :?g:glossiness]
   ```
   TODOC
   ```
-  (default lights (dyn :lights))
-  (assertf (indexed? lights) "%q should be a list" lights)
-  (each light lights
-    (assertf (light? light) "%q is not a light" light))
-  (shape/with shape :color
-    (blinn-phong-color-expression color shine gloss lights)))
+  (default shininess 0.25)
+  (default glossiness 5)
+  (shape/with shape :color (blinn-phong-color-expression color shininess glossiness (dyn :lights))))
 
 (defn recolor
   "Replaces the color field on `dest-shape` with the color field on `source-shape`. Does not affect the distance field."
