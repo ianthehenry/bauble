@@ -108,3 +108,129 @@
     (if (empty? dflt)
       (errorf "dynamic variable %q is not set" dynvar)
       (in dflt 0))))
+
+# like defn, but docstring is required, it appears in the right place, and
+# it doesn't implicitly include the arguments
+(defmacro deffn [name args docstring & body]
+  (assert (string? docstring) "docstring required")
+  ~(def ,name ,docstring (fn ,name ,args ,;body)))
+
+(defn- true-false [f list]
+  (def {true trues false falses} (group-by |(truthy? (f $)) list))
+  [(or trues @[]) (or falses @[])])
+
+(defmacro defnamed [name params docstring & body]
+  (assert (string? docstring) "docstring required")
+  (def [named-params positional-params] (true-false keyword? params))
+  (var named-params-ordered (seq [name :in (or named-params [])]
+    (match (string/split ":" name)
+      [short long] [(keyword short) (symbol long)]
+      [short] [(keyword short) (symbol short)]
+      (errorf "invalid param %q" name))))
+  (def named-variadic-index (find-index (fn [[k _]] (string/has-prefix? "&" k)) named-params-ordered))
+  (def variadic-named-params-symbol
+    (if named-variadic-index
+      (symbol (string/triml (get-in named-params-ordered [named-variadic-index 1]) "&"))))
+  (when named-variadic-index
+    (array/remove named-params-ordered named-variadic-index))
+  (def named-params (from-pairs named-params-ordered))
+
+  (defn parse-params [args]
+    (var key nil)
+    (var variadic-named-args (if named-variadic-index @{}))
+    (def positional-args @[])
+    (def named-args @{})
+    (each arg args
+      (if (keyword? arg)
+        (if (nil? key)
+          (set key arg)
+          (errorf "%s: no value for %q" name key))
+        (if (nil? key)
+          (array/push positional-args arg)
+          (do
+            (if (has-key? named-params key)
+              (if (has-key? named-args key)
+                (errorf "%s: duplicate named argument %q" name key)
+                (put named-args key arg))
+              (if variadic-named-args
+                (if (has-key? variadic-named-args key)
+                  (errorf "%s: duplicate named argument %q" name key)
+                  (put variadic-named-args key arg))
+                (errorf "%s: unknown named argument %q" name key)))
+            (set key nil)))))
+    (assert (nil? key) (errorf "%s: no value for %q" name key))
+    (eachk param-name named-params
+      (unless (has-key? named-args param-name)
+        (errorf "%s: missing named argument %q" name param-name)))
+    (cond
+      (< (length positional-args) (length positional-params))
+        (errorf "%s: not enough arguments, missing %s"
+          name (string/join (slice positional-params (length positional-args)) " "))
+      (> (length positional-args) (length positional-params))
+        (errorf "%s: too many arguments"name))
+
+    [named-args ;(if variadic-named-args [variadic-named-args] []) ;positional-args])
+
+  (def signature
+    (string "(" name " "
+    (string/join positional-params " ")
+    ;(map (fn [[k v]] (string/format " [%q %q]" k v)) named-params-ordered)
+    (if variadic-named-params-symbol (string/format " [& :%s]" variadic-named-params-symbol))
+    ")"))
+
+  (with-syms [$key $args]
+    ~(def ,name ,(string signature "\n\n" docstring) (fn ,name [& ,$args]
+      (def [,named-params
+            ,;(if variadic-named-params-symbol [variadic-named-params-symbol] [])
+            ,;positional-params] (,parse-params ,$args))
+      ,;body))))
+
+(test-macro (defnamed foo [x] "docstring" (+ x 1))
+  (def foo "(foo x)\n\ndocstring" (fn foo [& <1>] (def [@{} x] (@parse-params <1>)) (+ x 1))))
+
+(test-macro (defnamed foo [x :y] "docstring" (+ x 1))
+  (def foo "(foo x [:y y])\n\ndocstring" (fn foo [& <1>] (def [@{:y y} x] (@parse-params <1>)) (+ x 1))))
+
+(test-macro (defnamed foo [x :y:long] "docstring" (+ x 1))
+  (def foo "(foo x [:y long])\n\ndocstring" (fn foo [& <1>] (def [@{:y long} x] (@parse-params <1>)) (+ x 1))))
+
+(test-macro (defnamed foo [x :&fields] "docstring" (+ x 1))
+  (def foo "(foo x [& :fields])\n\ndocstring" (fn foo [& <1>] (def [@{} fields x] (@parse-params <1>)) (+ x 1))))
+
+(deftest "basic defnamed"
+  (defnamed foo [x] "" (+ x 1))
+  (test (foo 1) 2)
+
+  (defnamed foo [:x] "" (+ x 1))
+  (test (foo :x 1) 2)
+
+  (defnamed foo [:x y] "" (- x y))
+  (test (foo 1 :x 2) 1)
+  (test (foo 2 :x 1) -1))
+
+(deftest "duplicate param names"
+  (defnamed foo [:x y x] "" x)
+  (test (foo :x 1 2 3) 3))
+
+(deftest "variadic named arguments"
+  (defnamed foo [:x :&extras] "" [x extras])
+  (test (foo :x 1 :y 2) [1 @{:y 2}])
+  (test-error (foo :x 1 :x 2) "foo: duplicate named argument :x")
+  (test-error (foo :x 0 :y 1 :y 2) "foo: duplicate named argument :y"))
+
+(deftest "illegal"
+  (defnamed foo [x] "" (+ x 1))
+  (test-error (foo) "foo: not enough arguments, missing x")
+  (test-error (foo 1 2) "foo: too many arguments")
+  (test-error (foo :x 1) "foo: unknown named argument :x")
+
+  (defnamed foo [x y z] "" (+ x 1))
+  (test-error (foo 1) "foo: not enough arguments, missing y z")
+
+  (defnamed foo [:x] "" (+ x 1))
+  (test-error (foo) "foo: missing named argument :x")
+  (test-error (foo 1) "foo: missing named argument :x")
+  (test-error (foo :x 1 2) "foo: too many arguments")
+  (test-error (foo :x 1 :x 2) "foo: duplicate named argument :x")
+  (test-error (foo :x 1 :y 2) "foo: unknown named argument :y")
+  (test-error (foo :y 2) "foo: unknown named argument :y"))
