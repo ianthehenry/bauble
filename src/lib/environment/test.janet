@@ -167,8 +167,8 @@
     p @{:value [:var "p" :vec3]}
     parallelogram @{:doc "(parallelogram size skew)\n\nReturns a 2D shape. `size.x` is the width of the top and bottom edges, and `size.y` is the height of the parellogram.\n\n`skew` is how far the pallorelogram leans in the `x` direction, so the total width of the prellogram is `(size.x + skew) * 2`.\nA `skew` of `0` gives the same shape as `rect`.\""}
     pentagon @{:doc "(pentagon radius [:r round])\n\nTODOC"}
-    perlin @{:doc "(perlin p)\n\nReturns perlin noise from -1 to 1. The input is a vector of any dimension."}
-    perlin+ @{:doc "(perlin+ v)\n\nPerlin noise in the range 0 to 1."}
+    perlin @{:doc "(perlin point)\n\nReturns perlin noise ranging from `-1` to `1`. The input `point` can be a vector of any dimension.\n\nUse `perlin+` to return noise in the range `0` to `1`."}
+    perlin+ @{:doc "(perlin+ point)\n\nPerlin noise in the range `0` to `1`."}
     pi @{:doc "I think it's around three.\n\nNote that there are also values like `pi/4` and `pi/6*5` and related helpers all the way up to `pi/12`. They don't show up in autocomplete because they're annoying, but they're there."
          :value 3.1415926535897931}
     pi/10 @{:value 0.31415926535897931}
@@ -322,8 +322,8 @@
            :macro true}
     with-lights @{:doc "(with-lights shape & lights)\n\nEvaluate `shape` with the `*lights*` dynamic variable set to the provided lights.\n\nThe argument order makes it easy to stick this in a pipeline. For example:\n\n```\n(sphere 50 | blinn-phong [1 0 0] | with-lights light1 light2)\n```"
                   :macro true}
-    worley @{:doc "(worley p)\n\n2D Worley noise, also called cellular noise or voronoi noise. Returns the nearest distance to points distributed randomly within the tiles of a square grid."}
-    worley2 @{:doc "(worley2 p)\n\nLike `worley`, but returns the nearest distance in `x` and the second-nearest distance in `y`."}
+    worley @{:doc "(worley point)\n\nWorley noise, also called cellular noise or voronoi noise.\nThe input `point` can be a `vec2` or a `vec3`.\n\nReturns the nearest distance to points distributed randomly within the tiles of a square or cubic grid."}
+    worley2 @{:doc "(worley2 point)\n\nLike `worley`, but returns the nearest distance in `x` and the second-nearest distance in `y`."}
     x @{:doc "`[1 0 0]`" :value [1 0 0]}
     xor @{}
     y @{:doc "`[0 1 0]`" :value [0 1 0]}
