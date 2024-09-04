@@ -119,13 +119,14 @@
   (def {true trues false falses} (group-by |(truthy? (f $)) list))
   [(or trues @[]) (or falses @[])])
 
-(defmacro defnamed [name params docstring & body]
+(defn defnamed-aux [def-flavor name params docstring & body]
   (assert (string? docstring) "docstring required")
   (def [named-params positional-params] (true-false keyword? params))
   (var named-params-ordered (seq [name :in (or named-params [])]
     (match (string/split ":" name)
-      [short long] [(keyword short) (symbol long)]
-      [short] [(keyword short) (symbol short)]
+      [short long] [(keyword (string/triml short "?")) (symbol long) (not (string/has-prefix? "?" short))]
+      [short] (let [trimmed (string/triml short "?")]
+        [(keyword trimmed) (symbol trimmed) (not (string/has-prefix? "?" short))])
       (errorf "invalid param %q" name))))
   (def named-variadic-index (find-index (fn [[k _]] (string/has-prefix? "&" k)) named-params-ordered))
   (def variadic-named-params-symbol
@@ -133,7 +134,10 @@
       (symbol (string/triml (get-in named-params-ordered [named-variadic-index 1]) "&"))))
   (when named-variadic-index
     (array/remove named-params-ordered named-variadic-index))
+
+  # even though this is a triple, from-pairs only looks at the first two arguments
   (def named-params (from-pairs named-params-ordered))
+  (def required-named-params (tabseq [[k _ required?] :in named-params-ordered :when required?] k true))
 
   (defn parse-params [args]
     (var key nil)
@@ -159,7 +163,7 @@
                 (errorf "%s: unknown named argument %q" name key)))
             (set key nil)))))
     (assert (nil? key) (errorf "%s: no value for %q" name key))
-    (eachk param-name named-params
+    (eachk param-name required-named-params
       (unless (has-key? named-args param-name)
         (errorf "%s: missing named argument %q" name param-name)))
     (cond
@@ -174,28 +178,41 @@
   (def signature
     (string "(" name " "
     (string/join positional-params " ")
-    ;(map (fn [[k v]] (string/format " [%q %q]" k v)) named-params-ordered)
-    (if variadic-named-params-symbol (string/format " [& :%s]" variadic-named-params-symbol))
+    ;(map (fn [[k v required?]]
+      (if required?
+        (string/format " %q %q" k v)
+        (string/format " [%q %q]" k v)))
+      named-params-ordered)
+    (if variadic-named-params-symbol (string/format " :& %s]" variadic-named-params-symbol))
     ")"))
 
   (with-syms [$key $args]
-    ~(def ,name ,(string signature "\n\n" docstring) (fn ,name [& ,$args]
+    ~(,def-flavor ,name ,(string signature "\n\n" docstring) (fn ,name [& ,$args]
       (def [,named-params
             ,;(if variadic-named-params-symbol [variadic-named-params-symbol] [])
             ,;positional-params] (,parse-params ,$args))
       ,;body))))
 
+(def defnamed :macro (partial defnamed-aux 'def))
+(def defnamed- :macro (partial defnamed-aux 'def-))
+
 (test-macro (defnamed foo [x] "docstring" (+ x 1))
   (def foo "(foo x)\n\ndocstring" (fn foo [& <1>] (def [@{} x] (@parse-params <1>)) (+ x 1))))
 
 (test-macro (defnamed foo [x :y] "docstring" (+ x 1))
-  (def foo "(foo x [:y y])\n\ndocstring" (fn foo [& <1>] (def [@{:y y} x] (@parse-params <1>)) (+ x 1))))
+  (def foo "(foo x :y y)\n\ndocstring" (fn foo [& <1>] (def [@{:y y} x] (@parse-params <1>)) (+ x 1))))
 
 (test-macro (defnamed foo [x :y:long] "docstring" (+ x 1))
-  (def foo "(foo x [:y long])\n\ndocstring" (fn foo [& <1>] (def [@{:y long} x] (@parse-params <1>)) (+ x 1))))
+  (def foo "(foo x :y long)\n\ndocstring" (fn foo [& <1>] (def [@{:y long} x] (@parse-params <1>)) (+ x 1))))
+
+(test-macro (defnamed foo [x :y:long] "docstring" (+ x 1))
+  (def foo "(foo x :y long)\n\ndocstring" (fn foo [& <1>] (def [@{:y long} x] (@parse-params <1>)) (+ x 1))))
 
 (test-macro (defnamed foo [x :&fields] "docstring" (+ x 1))
-  (def foo "(foo x [& :fields])\n\ndocstring" (fn foo [& <1>] (def [@{} fields x] (@parse-params <1>)) (+ x 1))))
+  (def foo "(foo x :& fields])\n\ndocstring" (fn foo [& <1>] (def [@{} fields x] (@parse-params <1>)) (+ x 1))))
+
+(test-macro (defnamed foo [x :?y:something] "docstring" (+ x 1))
+  (def foo "(foo x [:y something])\n\ndocstring" (fn foo [& <1>] (def [@{:y something} x] (@parse-params <1>)) (+ x 1))))
 
 (deftest "basic defnamed"
   (defnamed foo [x] "" (+ x 1))
@@ -212,9 +229,26 @@
   (defnamed foo [:x y x] "" x)
   (test (foo :x 1 2 3) 3))
 
+(deftest "optional named params"
+  (defnamed foo [:?x y] "" (+ (or x 0) y))
+  (test (foo :x 1 2) 3)
+  (test (foo 2) 2))
+
+(deftest "no way to distinguish explicit nil from missing argument"
+  (defnamed foo [:?x] "" x)
+  (test (foo) nil)
+  (test (foo :x nil) nil))
+
 (deftest "variadic named arguments"
   (defnamed foo [:x :&extras] "" [x extras])
   (test (foo :x 1 :y 2) [1 @{:y 2}])
+  (test-error (foo :x 1 :x 2) "foo: duplicate named argument :x")
+  (test-error (foo :x 0 :y 1 :y 2) "foo: duplicate named argument :y"))
+
+(deftest "optional and variadic named arguments"
+  (defnamed foo [:?x :&extras] "" [x extras])
+  (test (foo :x 1 :y 2) [1 @{:y 2}])
+  (test (foo :y 2) [nil @{:y 2}])
   (test-error (foo :x 1 :x 2) "foo: duplicate named argument :x")
   (test-error (foo :x 0 :y 1 :y 2) "foo: duplicate named argument :y"))
 
