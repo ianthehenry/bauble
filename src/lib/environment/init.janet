@@ -4,6 +4,7 @@
 (import ./general :prefix "" :export true)
 (import ./rotate :prefix "" :export true)
 (import ./noise :prefix "" :export true)
+(import ../shape :prefix "shape/" :export true)
 (import ./shapes-2d :prefix "" :export true)
 (import ./shapes-3d :prefix "" :export true)
 (import ./dimensions :prefix "" :export true)

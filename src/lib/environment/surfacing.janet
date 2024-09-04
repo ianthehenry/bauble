@@ -201,7 +201,7 @@
 (defn recolor
   "Replaces the color field on `dest-shape` with the color field on `source-shape`. Does not affect the distance field."
   [dest-shape source-shape]
-  (shape/transplant :color source-shape dest-shape))
+  (shape/transplant dest-shape :color source-shape))
 
 (defmacro with-lights
   ````

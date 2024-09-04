@@ -4,15 +4,6 @@
 (import ../shape)
 (import ../util :prefix "" :export true)
 
-(defn typecheck [expr expected]
-  (def expr (jlsl/coerce-expr expr))
-  (def actual (jlsl/expr/type expr))
-  (assertf (= actual expected)
-    "type mismatch: expected %q, got %q"
-    (jlsl/show-type expected)
-    (jlsl/show-type actual))
-  expr)
-
 (defmacro defhelper- [return-type name bindings & body]
   ~(as-macro ,jlsl/jlsl/defn- ,return-type ,name ,bindings
     ,;(syntax/expand body)))
@@ -63,17 +54,17 @@
                 ,['unquote <adjusted-distance>]))
             <unadjusted-distance>))))))
 
-(make-shaper defshape/2d shape/distance-2d defnamed)
-(make-shaper defshape/3d shape/distance-3d defnamed)
-(make-shaper defshape/2d- shape/distance-2d defnamed-)
-(make-shaper defshape/3d- shape/distance-3d defnamed-)
+(make-shaper defshape/2d shape/2d defnamed)
+(make-shaper defshape/3d shape/3d defnamed)
+(make-shaper defshape/2d- shape/2d defnamed-)
+(make-shaper defshape/3d- shape/3d defnamed-)
 
 (test-macro (defshape/2d circle [:float radius]
   "Returns a 2D shape."
   (return (length q - radius)))
   (upscope
     (as-macro @defhelper- :float sdf-circle [:float radius] (return (- (length q) radius)))
-    (defnamed circle (radius) "Returns a 2D shape." (@distance-2d (sdf-circle (@coerce-expr-to-type (@type/primitive (quote (<1> float))) float radius))))))
+    (defnamed circle (radius) "Returns a 2D shape." (@shape/2d (sdf-circle (@coerce-expr-to-type (@type/primitive (quote (<1> float))) float radius))))))
 
 (test-macro (defshape/2d rect [:vec2 !size]
   ```
@@ -83,7 +74,7 @@
   (return (max d 0 | length + min (max d) 0)))
   (upscope
     (as-macro @defhelper- :float sdf-rect [:vec2 size] (var d (- (abs q) size)) (return (+ (length (max d 0)) (min (max d) 0))))
-    (defnamed rect (size :?r:round) "Returns a 2D shape." (@distance-2d (if (nil? round) (sdf-rect (@coerce-expr-to-type (quote (<1> vec (<2> float) 2)) vec2 size)) (as-macro @let [r round] (unquote (- (sdf-rect (@coerce-expr-to-type (quote (<1> vec (<2> float) 2)) vec2 (- size r))) r))))))))
+    (defnamed rect (size :?r:round) "Returns a 2D shape." (@shape/2d (if (nil? round) (sdf-rect (@coerce-expr-to-type (quote (<1> vec (<2> float) 2)) vec2 size)) (as-macro @let [r round] (unquote (- (sdf-rect (@coerce-expr-to-type (quote (<1> vec (<2> float) 2)) vec2 (- size r))) r))))))))
 
 (defmacro deftransform [name bindings docstring & body]
   (assert (string? docstring))

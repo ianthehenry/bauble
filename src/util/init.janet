@@ -18,6 +18,17 @@
 (test (ptuple? [1 2 3]) true)
 (test (ptuple? '[1 2 3]) false)
 
+(defn- unprefix [sym]
+  (symbol/slice (drop-until |(= $ (chr "/")) sym) 1))
+
+(test (unprefix 'foo/bar) bar)
+
+(defmacro export [sym]
+  ~(put (curenv) ',(unprefix sym) (table/setproto @{:private false} (dyn ',sym))))
+
+(test-macro (export foo/bar)
+  (put (curenv) (quote bar) (table/setproto @{:private false} (dyn (quote foo/bar)))))
+
 (defn contents= [a b]
   (and
     (= (length a) (length b))

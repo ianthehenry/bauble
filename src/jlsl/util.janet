@@ -3,17 +3,6 @@
 (import pat)
 (import ../util :prefix "" :export true)
 
-(defn unprefix [sym]
-  (symbol/slice (drop-until |(= $ (chr "/")) sym) 1))
-
-(test (unprefix 'foo/bar) bar)
-
-(defmacro export [sym]
-  ~(put (curenv) ',(unprefix sym) (table/setproto @{:private false} (dyn ',sym))))
-
-(test-macro (export foo/bar)
-  (put (curenv) (quote bar) (table/setproto @{:private false} (dyn (quote foo/bar)))))
-
 (defn >> [f g] |(g (f ;$&)))
 (defn << [f g] |(f (g ;$&)))
 

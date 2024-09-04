@@ -143,8 +143,8 @@
   (put (curenv) (symbol "pi/" i "*" j) @{:value (* (/ pi i) j)})
   (put (curenv) (symbol "tau/" i "*" j) @{:value (* (/ tau i) j)}))
 
-(def r2 (shape/distance-2d (jlsl/coerce-expr 0)))
-(def r3 (shape/distance-3d (jlsl/coerce-expr 0)))
+(def r2 (shape/2d (jlsl/coerce-expr 0)))
+(def r3 (shape/3d (jlsl/coerce-expr 0)))
 
 (defn mirror
   ```

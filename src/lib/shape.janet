@@ -12,79 +12,160 @@
 
 (def- tag (gensym))
 
-(defn new [type & kvs]
+(defn new
+  ````
+  Returns a new shape with the given type and fields.
+
+  ```
+  # red circle with radius 10
+  (shape/new jlsl/type/vec2
+    :distance (length q - 10)
+    :color [1 0 0])
+  ```
+  ````
+  [type & fields]
   (struct
     :type type
     :tag tag
-    :fields (struct ;kvs)))
+    :fields (struct ;fields)))
 
-(defn distance-2d [expr]
+(defn- shape/2d
+  ```
+  Returns a new 2D shape with the given distance field.
+  ```
+  [distance]
   {:type jlsl/type/vec2
    :tag tag
-   :fields {:distance expr}})
+   :fields {:distance (typecheck distance jlsl/type/float)}})
 
-(defn distance-3d [expr]
+(defn- shape/3d
+  ```
+  Returns a new 3D shape with the given distance field.
+  ```
+  [distance]
   {:type jlsl/type/vec3
    :tag tag
-   :fields {:distance expr}})
+   :fields {:distance (typecheck distance jlsl/type/float)}})
 
-(defn type [t] (t :type))
+(export shape/2d)
+(export shape/3d)
+
+(defn type
+  ```
+  Returns the dimension of a shape, as a JLSL type equal to the dimension of a point
+  in the shape -- either `vec2` or `vec3`.
+  ```
+  [shape] (shape :type))
 
 (defn- map-opt [f x] (if x (f x)))
 (defn- map-struct [f t] (table/to-struct (tabseq [[k v] :pairs t] k (f v))))
 
 (test (map-struct |(* $ 2) {:foo 1 :bar 2}) {:bar 4 :foo 2})
 
-(defn is? [x] (and (struct? x) (= (x :tag) tag)))
+(defn is?
+  "Returns `true` if its argument is a shape."
+  [x]
+  (and (struct? x) (= (x :tag) tag)))
 
-(defn merge [ts f]
-  (def type (get-unique type ts (fn [types]
+(defn merge
+  ```
+  Merge multiple shapes together. `shapes` should be a list of shapes that all
+  have the same dimension.
+
+  `f` will be called with an array of all of the fields from each shape, and
+  should return a struct with the fields for the new shape.
+
+  `merge` returns a new shape with the same dimension as its inputs.
+  ```
+  [shapes f]
+  (def type (get-unique type shapes (fn [types]
     (if (empty? types)
       (error "no shapes to combine")
       (error "cannot combine shapes with different dimensions")))))
   {:type type
    :tag tag
-   :fields (f (map |(in $ :fields) ts))})
+   :fields (f (map |(in $ :fields) shapes))})
 
-(defn map [t f &opt type]
-  {:type (or type (t :type))
+(defn map
+  ```
+  Alter the fields on a shape, optionally changing its dimension in the process.
+  ```
+  [shape f &opt type]
+  {:type (or type (shape :type))
    :tag tag
-   :fields (map-struct f (t :fields))})
+   :fields (map-struct f (shape :fields))})
 
-(defn with [t & new-kvs]
-  {:type (t :type)
+(defn with
+  ```
+  Replace arbitrary fields on a shape.
+
+  You probably don't want to use this. Theoretically shapes
+  in Bauble are collections of arbitrary fields, but in practice
+  `:color` and `:distance` are the only fields that are really
+  supported in a meaningful way.
+
+  But you could associate other fields with shapes, and use that to
+  model, for example, analytic normals. But none of the existing
+  infrastructure will understand you if you do this.
+  ```
+  [shape & new-kvs]
+  {:type (shape :type)
    :tag tag
-   :fields (struct ;(kvs (t :fields)) ;new-kvs)})
+   :fields (struct ;(kvs (shape :fields)) ;new-kvs)})
 
-(defn- map-key [t f key] (with t key (map-opt f (in (in t :fields) key))))
+(defn map-field
+  ```
+  Map a single field on a shape. If the field does not exist, this does nothing.
+  ```
+  [shape field f] (with shape field (map-opt f (in (in shape :fields) field))))
 
-(defn map-distance [t f] (map-key t f :distance))
-(defn map-color [t f] (map-key t f :color))
+(defn map-distance
+  ```
+  Shorthand for `(shape/map-field shape :distance f)`.
+  ```
+  [shape f]
+  (map-field shape :distance f))
 
-(defn get-field [t k] (in (in t :fields) k))
+(defn map-color
+  ```
+  Shorthand for `(shape/map-field shape :color f)`.
+  ```
+  [shape f]
+  (map-field shape :color f))
 
-(defn transplant [field from to]
-  (with to field (get-field from field)))
+(defn get-field
+  ```
+  Look up a single field on a shape. If the field does not exist, this will return `nil`.
+  ```
+  [shape field]
+  (in (in shape :fields) field))
+
+(defn transplant
+  ```
+  Shorthand for `(shape/with dest-shape field (shape/get-field source-shape field))`.
+  ```
+  [dest-shape field source-shape]
+  (with dest-shape field (get-field source-shape field)))
 
 (deftest "shapes"
-  (def t (test (distance-2d 1)
+  (def t (test (new :dimension :distance 1)
            {:fields {:distance 1}
             :tag <1>
-            :type [<2> vec [<3> float] 2]}))
+            :type :dimension}))
   (def t (test (with t :color 2)
            {:fields {:color 2 :distance 1}
             :tag <1>
-            :type [<2> vec [<3> float] 2]}))
+            :type :dimension}))
   (def t (test (map t |(* $ 2))
            {:fields {:color 4 :distance 2}
             :tag <1>
-            :type [<2> vec [<3> float] 2]}))
+            :type :dimension}))
   (def t (test (map-distance t |(* $ 2))
            {:fields {:color 4 :distance 4}
             :tag <1>
-            :type [<2> vec [<3> float] 2]}))
+            :type :dimension}))
   (def t (test (map-color t |(* $ 2))
            {:fields {:color 8 :distance 4}
             :tag <1>
-            :type [<2> vec [<3> float] 2]}))
+            :type :dimension}))
   )

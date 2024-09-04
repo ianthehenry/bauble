@@ -1,5 +1,6 @@
 (use judge)
 (import ../util :prefix "" :export true)
+(import ../jlsl)
 
 (defn get-env [env sym]
   (-> env
@@ -56,3 +57,11 @@
 
 (test (merge-structs |(+ $1 $2) [{:foo 1 :bar 2} {:bar 2 :baz 3}]) {:bar 4 :baz 3 :foo 1})
 
+(defn typecheck [expr expected]
+  (def expr (jlsl/coerce-expr expr))
+  (def actual (jlsl/expr/type expr))
+  (assertf (= actual expected)
+    "type mismatch: expected %q, got %q"
+    (jlsl/show-type expected)
+    (jlsl/show-type actual))
+  expr)

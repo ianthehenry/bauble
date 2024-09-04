@@ -87,7 +87,7 @@
     ceil @{}
     circle @{:doc "(circle radius)\n\nReturns a 2D shape."}
     clamp @{}
-    color @{:doc "(color shape color)\n\nSet the color field of a shape."}
+    color @{:doc "(color shape color)\n\nSet a shape's color field."}
     cone @{:doc "(cone axis radius height)\n\nTODOC"}
     cos @{}
     cosh @{}
@@ -240,6 +240,19 @@
     round @{}
     round-even @{}
     round-rect @{:doc "(round-rect size radii)\n\nLike `rect`, but rounded. `radii` can be a single radius or a `vec4` of `[top-left top-right bottom-right bottom-left]`.`"}
+    shape/2d @{:doc "(shape/2d distance)\n\nReturns a new 2D shape with the given distance field."}
+    shape/3d @{:doc "(shape/3d distance)\n\nReturns a new 3D shape with the given distance field."}
+    shape/get-field @{:doc "(get-field shape field)\n\nLook up a single field on a shape. If the field does not exist, this will return `nil`."}
+    shape/is? @{:doc "(is? x)\n\nReturns `true` if its argument is a shape."}
+    shape/map @{:doc "(map shape f &opt type)\n\nAlter the fields on a shape, optionally changing its dimension in the process."}
+    shape/map-color @{:doc "(map-color shape f)\n\nShorthand for `(shape/map-field shape :color f)`."}
+    shape/map-distance @{:doc "(map-distance shape f)\n\nShorthand for `(shape/map-field shape :distance f)`."}
+    shape/map-field @{:doc "(map-field shape field f)\n\nMap a single field on a shape. If the field does not exist, this does nothing."}
+    shape/merge @{:doc "(merge shapes f)\n\nMerge multiple shapes together. `shapes` should be a list of shapes that all\nhave the same dimension.\n\n`f` will be called with an array of all of the fields from each shape, and\nshould return a struct with the fields for the new shape.\n\n`merge` returns a new shape with the same dimension as its inputs."}
+    shape/new @{:doc "(new type & fields)\n\nReturns a new shape with the given type and fields.\n\n```\n# red circle with radius 10\n(shape/new jlsl/type/vec2\n  :distance (length q - 10)\n  :color [1 0 0])\n```"}
+    shape/transplant @{:doc "(transplant dest-shape field source-shape)\n\nShorthand for `(shape/with dest-shape field (shape/get-field source-shape field))`."}
+    shape/type @{:doc "(type shape)\n\nReturns the dimension of a shape, as a JLSL type equal to the dimension of a point\nin the shape -- either `vec2` or `vec3`."}
+    shape/with @{:doc "(with shape & new-kvs)\n\nReplace arbitrary fields on a shape.\n\nYou probably don't want to use this. Theoretically shapes\nin Bauble are collections of arbitrary fields, but in practice\n`:color` and `:distance` are the only fields that are really\nsupported in a meaningful way.\n\nBut you could associate other fields with shapes, and use that to\nmodel, for example, analytic normals. But none of the existing\ninfrastructure will understand you if you do this."}
     shell @{:doc "(shell shape &opt thickness)\n\nReturns a hollow version of the provided shape (the absolute value of the distance field)."}
     sign @{}
     sin @{}
