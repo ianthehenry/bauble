@@ -2,7 +2,45 @@
 (import ./forward-declarations)
 (use ./deferred-evaluation)
 
-(def- root (merge-module (make-env root-env) (require ".")))
+(def static-environment (require "."))
+
+(def excluded-symbols (tabseq [sym :in '(
+  dofile
+  cli-main
+  flycheck
+  getline
+  import
+  import*
+  use
+  require
+  native
+  quit
+  repl
+  root-env
+  sandbox
+  short-fn
+  slurp
+  spit
+  stdin
+  )] sym true))
+(def censored-root-env (tabseq [[sym entry] :pairs root-env
+  :unless (string/has-prefix? "os/" sym)
+  :unless (string/has-prefix? "net/" sym)
+  :unless (string/has-prefix? "file/" sym)
+  :unless (string/has-prefix? "ffi/" sym)
+  :unless (string/has-prefix? "bundle/" sym)
+  :unless (string/has-prefix? "parser/" sym)
+  :unless (string/has-prefix? "module/" sym)
+  :unless (string/has-prefix? "debug/" sym)
+  :unless (string/has-prefix? "debug" sym)
+  :unless (string/has-prefix? "load-image" sym)
+  :unless (string/has-prefix? "make-image" sym)
+  :unless (and (string/has-prefix? "*" sym) (string/has-suffix? "*" sym))
+  :unless (has-key? excluded-symbols sym)
+  ]
+  sym entry))
+
+(def- root (merge-module (make-env censored-root-env) static-environment))
 
 (var- thunks-realized nil)
 (defn new []

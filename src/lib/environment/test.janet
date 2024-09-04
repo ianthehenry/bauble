@@ -25,7 +25,7 @@
     k (cleanse-environment-entry v)))
 
 (defn proto-flatten-to-root-aux [t result]
-  (unless (= t root-env)
+  (unless (nil? (table/getproto t))
     (proto-flatten-to-root-aux (table/getproto t) result)
     (eachp [k v] t (put result k v))))
 
