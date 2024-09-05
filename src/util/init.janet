@@ -146,6 +146,14 @@
   (when named-variadic-index
     (array/remove named-params-ordered named-variadic-index))
 
+  (def variadic-positional-params-symbol
+    (if (and (not (empty? positional-params)) (string/has-prefix? "&" (last positional-params)))
+      (symbol (string/triml (last positional-params) "&"))))
+
+  (def positional-params (if variadic-positional-params-symbol
+    (drop -1 positional-params)
+    positional-params))
+
   # even though this is a triple, from-pairs only looks at the first two arguments
   (def named-params (from-pairs named-params-ordered))
   (def required-named-params (tabseq [[k _ required?] :in named-params-ordered :when required?] k true))
@@ -181,27 +189,35 @@
       (< (length positional-args) (length positional-params))
         (errorf "%s: not enough arguments, missing %s"
           name (string/join (slice positional-params (length positional-args)) " "))
-      (> (length positional-args) (length positional-params))
+      (and (nil? variadic-positional-params-symbol) (> (length positional-args) (length positional-params)))
         (errorf "%s: too many arguments"name))
 
     [named-args ;(if variadic-named-args [variadic-named-args] []) ;positional-args])
 
   (def signature
-    (string "(" name " "
-    (string/join positional-params " ")
-    ;(map (fn [[k v required?]]
-      (if required?
-        (string/format " %q %q" k v)
-        (string/format " [%q %q]" k v)))
-      named-params-ordered)
-    (if variadic-named-params-symbol (string/format " :& %s]" variadic-named-params-symbol))
-    ")"))
+    (string
+      "("
+      (string/join
+        [name
+        ;positional-params
+        ;(if variadic-positional-params-symbol ['& variadic-positional-params-symbol] [])
+        ;(map (fn [[k v required?]]
+          (if required?
+            (string/format "%q %q" k v)
+            (string/format "[%q %q]" k v)))
+          named-params-ordered)
+        ;(if variadic-named-params-symbol [":&" variadic-named-params-symbol] [])
+        ]
+      " ")
+      ")"))
 
   (with-syms [$key $args]
     ~(,def-flavor ,name ,(string signature "\n\n" docstring) (fn ,name [& ,$args]
       (def [,named-params
             ,;(if variadic-named-params-symbol [variadic-named-params-symbol] [])
-            ,;positional-params] (,parse-params ,$args))
+            ,;positional-params
+            ,;(if variadic-positional-params-symbol ['& variadic-positional-params-symbol] [])
+            ] (,parse-params ,$args))
       ,;body))))
 
 (def defnamed :macro (partial defnamed-aux 'def))
@@ -220,10 +236,16 @@
   (def foo "(foo x :y long)\n\ndocstring" (fn foo [& <1>] (def [@{:y long} x] (@parse-params <1>)) (+ x 1))))
 
 (test-macro (defnamed foo [x :&fields] "docstring" (+ x 1))
-  (def foo "(foo x :& fields])\n\ndocstring" (fn foo [& <1>] (def [@{} fields x] (@parse-params <1>)) (+ x 1))))
+  (def foo "(foo x :& fields)\n\ndocstring" (fn foo [& <1>] (def [@{} fields x] (@parse-params <1>)) (+ x 1))))
 
 (test-macro (defnamed foo [x :?y:something] "docstring" (+ x 1))
   (def foo "(foo x [:y something])\n\ndocstring" (fn foo [& <1>] (def [@{:y something} x] (@parse-params <1>)) (+ x 1))))
+
+(test-macro (defnamed foo [x :?y:something &rest] "docstring" (+ x 1))
+  (def foo "(foo x & rest [:y something])\n\ndocstring" (fn foo [& <1>] (def [@{:y something} x & rest] (@parse-params <1>)) (+ x 1))))
+
+(test-macro (defnamed foo [x :?y:something &rest :&foo] "docstring" (+ x 1))
+  (def foo "(foo x & rest [:y something] :& foo)\n\ndocstring" (fn foo [& <1>] (def [@{:y something} foo x & rest] (@parse-params <1>)) (+ x 1))))
 
 (deftest "basic defnamed"
   (defnamed foo [x] "" (+ x 1))
@@ -262,6 +284,11 @@
   (test (foo :y 2) [nil @{:y 2}])
   (test-error (foo :x 1 :x 2) "foo: duplicate named argument :x")
   (test-error (foo :x 0 :y 1 :y 2) "foo: duplicate named argument :y"))
+
+(deftest "variadic positional arguments"
+  (defnamed foo [x y &rest] "" [x y rest])
+  (test (foo 1 2) [1 2 []])
+  (test (foo 1 2 3 4) [1 2 [3 4]]))
 
 (deftest "illegal"
   (defnamed foo [x] "" (+ x 1))
