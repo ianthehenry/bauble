@@ -1,26 +1,54 @@
 (use ./import)
 
-(defn- make-boolean [reduce-distances reduce-colors]
-  (fn [& shapes]
-    (shape/merge shapes (fn [fields]
-      (def distances (seq [{:distance d} :in fields :when d] d))
-      (def colors (seq [{:color c :distance d} :in fields :when c] [c (@or d (jlsl/coerce-expr 0))]))
-      {:distance
-        (case (@length distances)
-          0 nil
-          1 (distances 0)
-          (reduce-distances distances))
-        :color (case (@length colors)
-          0 nil
-          1 ((colors 0) 0)
-          (reduce-colors colors))}))))
+(defn- boolean [shapes reduce-distances reduce-colors]
+  (shape/merge shapes (fn [fields]
+    (def distances (seq [{:distance d} :in fields :when d] d))
+    (def colors (seq [{:color c :distance d} :in fields :when c] [c (@or d (jlsl/coerce-expr 0))]))
+    {:distance
+      (case (@length distances)
+        0 nil
+        1 (distances 0)
+        (reduce-distances distances))
+      :color (case (@length colors)
+        0 nil
+        1 ((colors 0) 0)
+        (reduce-colors colors))})))
 
 (defn- min-distance [distances]
-  (jlsl/do "union-distance"
+  (jlsl/do "min-distance"
      (var nearest ,(first distances))
      ,;(seq [expr :in (drop 1 distances)]
        (jlsl/statement (set nearest (min nearest ,expr))))
      nearest))
+
+(defn- max-distance [distances]
+  (jlsl/do "max-distance"
+     (var nearest ,(first distances))
+     ,;(seq [expr :in (drop 1 distances)]
+       (jlsl/statement (set nearest (max nearest ,expr))))
+     nearest))
+
+(defn- smooth-min-distance [r distances]
+  (jlsl/do "smooth-min-distance"
+    (var r ,r)
+    (var nearest ,(first distances))
+    ,;(seq [expr :in (drop 1 distances)]
+      (jlsl/statement
+        (var dist ,expr)
+        (var h (remap+ (clamp (/ (- nearest dist) r) -1 1)))
+        (set nearest (- (mix nearest dist h) (* r h (- 1 h))))))
+    nearest))
+
+(defn- smooth-max-distance [r distances]
+  (jlsl/do "smooth-min-distance"
+    (var r ,r)
+    (var nearest ,(first distances))
+    ,;(seq [expr :in (drop 1 distances)]
+      (jlsl/statement
+        (var dist ,expr)
+        (var h (- 1 (remap+ (clamp (/ (- nearest dist) r) -1 1))))
+        (set nearest (+ (mix nearest dist h) (* r h (- 1 h))))))
+    nearest))
 
 (defn- sharp-union-color [colors]
   (def surface-id
@@ -42,75 +70,101 @@
       (seq [[i [c _]] :pairs colors] [(jlsl/coerce-expr (keyword i)) (jlsl/statement (return ,c))]))
     [0 0 0]))
 
-(def- sharp-union (make-boolean min-distance sharp-union-color))
-
-# TODO: we should probably have a way to do this
-(defn- symmetric-color-union [r fields]
-  (def colors (seq [{:color c :distance d} :in fields :when c] [c (@or d (jlsl/coerce-expr 0))]))
-  (case (@length colors)
-    0 nil
-    1 ((colors 0) 0)
-    (jlsl/do "smooth-union-color"
-      (var r ,r)
-      (var color [0 0 0])
-      (var nearest 1000000)
-      ,;(seq [[color-expr dist-expr] :in colors]
+(defn- sharp-intersect-color [colors]
+  (def surface-id
+    (jlsl/iife "intersect-color-index"
+      (var nearest -1e10)
+      (var nearest-index :-1)
+      ,;(seq [[i [_ d]] :pairs colors]
+        (def i (keyword i))
         (jlsl/statement
-          (var dist ,dist-expr)
-          (var contribution (remap+ (clamp (/ (- nearest dist) r) -1 1)))
-          (set nearest (- (mix nearest dist contribution) (* r contribution (- 1 contribution))))
-          (if (> contribution 0) (set color (mix color ,color-expr contribution)))
-        ))
-      color)))
+          (var d ,d)
+          (if (> d nearest) (do
+            (set nearest d)
+            (set nearest-index i)))))
+      nearest-index))
 
-(defn- asymmetric-color-union [r fields]
-  (def colors (seq [{:color c :distance d} :in fields :when c] [c (@or d (jlsl/coerce-expr 0))]))
-  (case (@length colors)
-    0 nil
-    1 ((colors 0) 0)
-    (jlsl/do "smooth-union-color"
-      (var r ,r)
-      (var color [0 0 0])
-      (var nearest 1000000)
-      ,;(seq [[color-expr dist-expr] :in colors]
-        (jlsl/statement
-          (var dist ,dist-expr)
-          # TODO: wait, what, do we need h here, what is happening
-          (var contribution (- 1 (remap+ (clamp (/ (min dist (- dist nearest)) r) -1 1))))
-          (var h (remap+ (clamp (/ (- nearest dist) r) -1 1)))
-          (set h contribution)
-          (set nearest (- (mix nearest dist h) (* r h (- 1 h))))
-          (if (> contribution 0) (set color (mix color ,color-expr contribution)))
-        ))
-      color)))
+  (jlsl/iife "intersect-color"
+    ,(jlsl/statement/case surface-id
+      (seq [[i [c _]] :pairs colors] [(jlsl/coerce-expr (keyword i)) (jlsl/statement (return ,c))]))
+    [0 0 0]))
 
-(defn smooth-union [r & shapes]
-  (def r (typecheck r jlsl/type/float))
-  (shape/merge shapes (fn [fields]
-    (def distances (seq [{:distance d} :in fields :when d] d))
-    {:distance (case (@length distances)
-       0 nil
-       1 (distances 0)
-       (jlsl/do "smooth-union-distance"
-         (var r ,r)
-         (var nearest ,(first distances))
-         ,;(seq [expr :in (drop 1 distances)]
-           (jlsl/statement
-             (var dist ,expr)
-             (var h (remap+ (clamp (/ (- nearest dist) r) -1 1)))
-             (set nearest (- (mix nearest dist h) (* r h (- 1 h))))))
-         nearest))
+(defn- smooth-union-color-symmetric [r colors]
+  (jlsl/do "smooth-union-color"
+    (var r ,r)
+    (var color [0 0 0])
+    (var nearest 1000000)
+    ,;(seq [[color-expr dist-expr] :in colors]
+      (jlsl/statement
+        (var dist ,dist-expr)
+        (var contribution (remap+ (clamp (/ (- nearest dist) r) -1 1)))
+        (set nearest (- (mix nearest dist contribution) (* r contribution (- 1 contribution))))
+        (if (> contribution 0) (set color (mix color ,color-expr contribution)))
+      ))
+      color))
 
-     # TODO
-     #:color (symmetric-color-union r shapes)
-     :color (asymmetric-color-union r fields)}
-    )))
+(defn- smooth-intersect-color-symmetric [r colors]
+  (jlsl/do "smooth-intersect-color"
+    (var r ,r)
+    (var color [0 0 0])
+    (var nearest -1000000)
+    ,;(seq [[color-expr dist-expr] :in colors]
+      (jlsl/statement
+        (var dist ,dist-expr)
+        (var contribution (- 1 (remap+ (clamp (/ (- nearest dist) r) -1 1))))
+        (set nearest (+ (mix nearest dist contribution) (* r contribution (- 1 contribution))))
+        (if (> contribution 0) (set color (mix color ,color-expr contribution)))
+      ))
+      color))
+(def- smooth-intersect-color-asymmetric smooth-intersect-color-symmetric)
 
-# TODO: this should have an optional radius argument
-(defn union
+(defn- smooth-union-color-asymmetric [r colors]
+  (jlsl/do "smooth-union-color"
+    (var r ,r)
+    (var color [0 0 0])
+    (var nearest 1000000)
+    ,;(seq [[color-expr dist-expr] :in colors]
+      (jlsl/statement
+        (var dist ,dist-expr)
+        (var contribution (- 1 (remap+ (clamp (/ (min dist (- dist nearest)) r) -1 1))))
+        (set nearest (- (mix nearest dist contribution) (* r contribution (- 1 contribution))))
+        (if (> contribution 0) (set color (mix color ,color-expr contribution)))
+      ))
+    color))
+
+(defnamed union
+  [:?r :?distance :?color :?color-sym &shapes]
   "Join 'em up. Do it to it."
-  [& shapes]
-  (sharp-union ;shapes))
+  (assert (not (and color color-sym)) "you can only specify :color or :color-sym, not both")
+
+  (def distance-roundness (or distance r))
+  (def color-roundness (or color-sym color r))
+  (def union-color (if color-roundness
+    (partial
+      (if color-sym smooth-union-color-symmetric smooth-union-color-asymmetric)
+      (typecheck color-roundness jlsl/type/float))
+    sharp-union-color))
+  (def union-distance (if distance-roundness
+    (partial smooth-min-distance (typecheck distance-roundness jlsl/type/float))
+    min-distance))
+  (boolean shapes union-distance union-color))
+
+(defnamed intersect
+  [:?r :?distance :?color :?color-sym &shapes]
+  "Get it outta there."
+  (assert (not (and color color-sym)) "you can only specify :color or :color-sym, not both")
+
+  (def distance-roundness (or distance r))
+  (def color-roundness (or color-sym color r))
+  (def intersect-color (if color-roundness
+    (partial
+      (if color-sym smooth-intersect-color-symmetric smooth-intersect-color-asymmetric)
+      (typecheck color-roundness jlsl/type/float))
+    sharp-intersect-color))
+  (def intersect-distance (if distance-roundness
+    (partial smooth-max-distance (typecheck distance-roundness jlsl/type/float))
+    max-distance))
+  (boolean shapes intersect-distance intersect-color))
 
 (defn- get-coefficient [value] (typecheck value jlsl/type/float))
 (deffn morph [& args]

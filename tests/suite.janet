@@ -121,7 +121,7 @@
   "swirl" `(box 80 | swirl :y 0.040 | slow 0.5)`
 
   "!union" `(union (circle 75 | move [-30 0]) (rect 60 | move [30 0]))`
-  "!union smooth" `(smooth-union 10 (circle 75 | move [-30 0]) (rect 60 | move [30 0]))`
+  "!union smooth" `(union :r 10 (circle 75 | move [-30 0]) (rect 60 | move [30 0]))`
   "!union order is significant when combining color fields" `
     (union
       (union (circle 50 | color [1 1 0.5] | move [-30 0]) (circle 50 | color [1 0.5 1] | move [30 0])
@@ -132,14 +132,14 @@
   `
   "!union order is significant when combining color fields even with smooth union" `
     (union
-      (smooth-union 10 (circle 50 | color [1 1 0.5] | move [-30 0]) (circle 50 | color [1 0.5 1] | move [30 0])
+      (union :r 10 (circle 50 | color [1 1 0.5] | move [-30 0]) (circle 50 | color [1 0.5 1] | move [30 0])
       | move [0 60])
-      (smooth-union 10 (circle 50 | color [1 0.5 1] | move [30 0]) (circle 50 | color [1 1 0.5] | move [-30 0])
+      (union :r 10 (circle 50 | color [1 0.5 1] | move [30 0]) (circle 50 | color [1 1 0.5] | move [-30 0])
       | move [0 -60])
       )
   `
   "!union smooth can combine non-overlapping shapes" `
-    (smooth-union 20
+    (union :r 20
       (circle 40 | move [41 0] | color [0.5 1 1])
       (circle 60 | move [-61 0] | color [1 1 0.5]))
   `
@@ -152,8 +152,9 @@
       (circle 25 | move [15 15] | color [0.5 1 1])])
     (var i 0)
     (union
-      ;(seq [x :in [-50 50] y :in [-50 50] :let [offset [x y]] :after (++ i)]
-        (smooth-union 5 ;(drop i shapes) ;(take i shapes)
+      (union :r 5 :color-sym 5 ;shapes)
+      ;(seq [x :in [-75 75] y :in [-75 75] :let [offset [x y]] :after (++ i)]
+        (union :r 5 ;(drop i shapes) ;(take i shapes)
         | move offset)))
   `
 
@@ -314,7 +315,7 @@
     (circle 10 | move [-10 0] | color [1 0.1 0.1])
     (circle 20 | move [10 0] | color [0.1 1 0.1])))
 
-  (def smooth-circles (smooth-union 5
+  (def smooth-circles (union :r 5
     (circle 10 | move [-10 0] | color [1 0.1 0.1])
     (circle 20 | move [10 0] | color [0.1 1 0.1])))
 
@@ -424,6 +425,59 @@
     (box 50 :r 10 | move [-99 0 66])
     (box-frame 50 10 :r 5 | move [53 0 -100]))
   `
+
+  # TODO: i want to add some tests showing the interior distance field of
+  # color vs color-sym
+  "!union arguments"
+  `
+  (def green-sphere (sphere 50 | blinn-phong [0.05 0.95 0.05]))
+  (def red-box (box 40 | blinn-phong [0.95 0.05 0.05]))
+  (union
+    (union green-sphere red-box)
+    (union :r 10 green-sphere red-box | move [-100 0 0])
+    (union :r 10 :color 3 green-sphere red-box | move [100 0 0])
+    (union :distance 10 green-sphere red-box | move [-100 0 100])
+    (union :color 10 green-sphere red-box | move [0 0 100])
+    (union :color-sym 10 green-sphere red-box | move [100 0 100])
+    (union :color-sym 10 green-sphere red-box | move [100 0 -100]))
+  `
+
+  "!intersect arguments"
+  `
+  (def green-sphere (sphere 50 | blinn-phong [0.05 0.95 0.05]))
+  (def red-box (box 40 | blinn-phong [0.95 0.05 0.05]))
+  (union
+    (intersect green-sphere red-box)
+    (intersect red-box green-sphere | move [-100 0 0])
+    (intersect :r 10 red-box green-sphere | move [0 0 100])
+    (intersect :color 10 green-sphere red-box | move [100 0 100])
+    (intersect :distance 10 green-sphere red-box | move [100 0 0])
+    (intersect :distance 1 :color 10 green-sphere red-box | move [-100 0 100]))
+  `
+
+  "!interior union distance fields"
+  [ortho-z `
+  (def green-sphere (sphere 44 | color [0.05 0.95 0.05]))
+  (def red-box (box 40 | color [0.95 0.05 0.05]))
+  (union
+    (union :r 10 green-sphere red-box | move [-50 -50 0])
+    (union :r 10 red-box green-sphere | move [50 -50 0])
+    (union :r 10 :color-sym 10 green-sphere red-box | move [-50 50 0])
+    (union :r 10 :color-sym 10 red-box green-sphere | move [50 50 0])
+  | slice z 0 | extrude z 0)
+  `]
+
+  "!interior intersect distance fields"
+  [ortho-z `
+  (def green-sphere (sphere 44 | color [0.05 0.95 0.05]))
+  (def red-box (box 40 | color [0.95 0.05 0.05]))
+  (union
+    (intersect :r 10 green-sphere red-box | move [-50 -50 0])
+    (intersect :r 10 red-box green-sphere | move [50 -50 0])
+    (intersect :r 10 :color-sym 10 green-sphere red-box | move [-50 50 0])
+    (intersect :r 10 :color-sym 10 red-box green-sphere | move [50 50 0])
+  | slice z 0 | extrude z 0)
+  `]
 })
 
 (each filename (os/dir "./cases")
