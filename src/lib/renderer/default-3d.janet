@@ -55,11 +55,13 @@
       (return (normalize [xy z])))
 
     (defn :vec3 calculate-normal []
-      (def step (vec2 NORMAL_OFFSET 0))
-      (return (normalize
-        [(with [p (p + step.xyy)] (nearest-distance) - with [p (p - step.xyy)] (nearest-distance))
-         (with [p (p + step.yxy)] (nearest-distance) - with [p (p - step.yxy)] (nearest-distance))
-         (with [p (p + step.yyx)] (nearest-distance) - with [p (p - step.yyx)] (nearest-distance))])))
+      (def s [1 -1])
+      (return (normalize (+
+        (s.xyy * with [p (s.xyy * NORMAL_OFFSET + p)] (nearest-distance))
+        (s.yyx * with [p (s.yyx * NORMAL_OFFSET + p)] (nearest-distance))
+        (s.yxy * with [p (s.yxy * NORMAL_OFFSET + p)] (nearest-distance))
+        (s.xxx * with [p (s.xxx * NORMAL_OFFSET + p)] (nearest-distance))
+        ))))
 
     (defn :vec3 nearest-color []
       (return ,(@or color-field default-3d-color-expression)))
