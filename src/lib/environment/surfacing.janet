@@ -129,6 +129,8 @@
   [color position & shadow]
   (assert (<= (@length shadow) 1) "too many arguments")
   (def shadow (if (empty? shadow) 0.25 (shadow 0)))
+  (def color (,coerce-expr-to-type ',jlsl/type/vec3 vec3 color))
+  (def position (,typecheck position ',jlsl/type/vec3))
   {:tag ',light-tag
    :expression
      (,expression-hoister/hoist "light" (case shadow
@@ -139,7 +141,7 @@
         # there's no need to compile and include the soft shadow function
         # at all. which... will never happen but whatever
         0 (cast-light-hard-shadow color position)
-        (cast-light-soft-shadow color position shadow)))}))
+        (cast-light-soft-shadow color position (,typecheck shadow ',jlsl/type/float))))}))
 
 (thunk ~(defn light/ambient
   ```
