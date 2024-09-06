@@ -118,6 +118,8 @@
     gradient @{:value [:var "gradient" :vec2]}
     hexagon @{:doc "(hexagon radius [:r round])\n\nTODOC"}
     hexagram @{:doc "(hexagram radius [:r round])\n\nTODOC"}
+    hsl @{:doc "(hsl hue saturation lightness)\n\nReturns a color."}
+    hsv @{:doc "(hsv hue saturation value)\n\nReturns a color."}
     in @{:doc "(in & args)\n\n"}
     inf @{:doc "The number representing positive infinity"
           :value 9e999}

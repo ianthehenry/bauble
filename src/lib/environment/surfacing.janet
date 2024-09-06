@@ -227,3 +227,17 @@
   ````
   [shape & lights]
   ~(as-macro ,with-dyns [:lights (,tuple ,;lights)] ,shape))
+
+(defhelper :vec3 hsv [:float hue :float saturation :float value]
+  ```
+  Returns a color.
+  ```
+  (var c (hue * 6 + [0 4 2] | mod 6 - 3 | abs))
+  (return (value * (mix (vec3 1) (c - 1 | clamp 0 1) saturation))))
+
+(defhelper :vec3 hsl [:float hue :float saturation :float lightness]
+  ```
+  Returns a color.
+  ```
+  (var c (hue * 6 + [0 4 2] | mod 6 - 3 | abs))
+  (return (* saturation (c - 1 | clamp 0 1 - 0.5) (1 - abs (2 * lightness - 1)) + lightness)))
