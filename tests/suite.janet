@@ -152,7 +152,7 @@
       (circle 25 | move [15 15] | color [0.5 1 1])])
     (var i 0)
     (union
-      (union :r 5 :color-sym 5 ;shapes)
+      (union :rs 5 ;shapes)
       ;(seq [x :in [-75 75] y :in [-75 75] :let [offset [x y]] :after (++ i)]
         (union :r 5 ;(drop i shapes) ;(take i shapes)
         | move offset)))
@@ -426,57 +426,82 @@
     (box-frame 50 10 :r 5 | move [53 0 -100]))
   `
 
-  # TODO: i want to add some tests showing the interior distance field of
-  # color vs color-sym
-  "!union arguments"
+  "!boolean union"
   `
-  (def green-sphere (sphere 50 | blinn-phong [0.05 0.95 0.05]))
-  (def red-box (box 40 | blinn-phong [0.95 0.05 0.05]))
+  (def green-sphere (sphere 40 | blinn-phong [0.05 0.95 0.05]))
+  (def red-box (box 30 | blinn-phong [0.95 0.05 0.05]))
   (union
-    (union green-sphere red-box)
-    (union :r 10 green-sphere red-box | move [-100 0 0])
-    (union :r 10 :color 3 green-sphere red-box | move [100 0 0])
-    (union :distance 10 green-sphere red-box | move [-100 0 100])
-    (union :color 10 green-sphere red-box | move [0 0 100])
-    (union :color-sym 10 green-sphere red-box | move [100 0 100])
-    (union :color-sym 10 green-sphere red-box | move [100 0 -100]))
+    (union green-sphere red-box | move [-40 0 0])
+    (union red-box green-sphere | move [+40 0 0])
+    (union :r 10 green-sphere red-box | move [-40 0 -80])
+    (union :r 10 red-box green-sphere | move [+40 0 -80])
+    (union :r 10 :distance 0 green-sphere red-box  | move [-120 0 -80])
+    (union :r 10 :distance 0 red-box green-sphere | move [+120 0 -80])
+    (union :rs 10 green-sphere red-box | move [-40 0 +80])
+    (union :rs 10 red-box green-sphere | move [+40 0 +80])
+    (union :rs 10 :distance 0 green-sphere red-box  | move [-120 0 +80])
+    (union :rs 10 :distance 0 red-box green-sphere | move [+120 0 +80])
+  | intersect (box [1000 80 1000] | move y -66))
   `
 
-  "!intersect arguments"
+  "!boolean intersect"
   `
-  (def green-sphere (sphere 50 | blinn-phong [0.05 0.95 0.05]))
-  (def red-box (box 40 | blinn-phong [0.95 0.05 0.05]))
+  (def green-sphere (sphere 40 | blinn-phong [0.05 0.95 0.05]))
+  (def red-box (box 30 | blinn-phong [0.95 0.05 0.05]))
   (union
-    (intersect green-sphere red-box)
-    (intersect red-box green-sphere | move [-100 0 0])
-    (intersect :r 10 red-box green-sphere | move [0 0 100])
-    (intersect :color 10 green-sphere red-box | move [100 0 100])
-    (intersect :distance 10 green-sphere red-box | move [100 0 0])
-    (intersect :distance 1 :color 10 green-sphere red-box | move [-100 0 100]))
+    (intersect green-sphere red-box | move [-40 0 0])
+    (intersect red-box green-sphere | move [+40 0 0])
+    (intersect :r 10 green-sphere red-box | move [-40 0 -80])
+    (intersect :r 10 red-box green-sphere | move [+40 0 -80])
+    (intersect :r 10 :distance 0 green-sphere red-box  | move [-120 0 -80])
+    (intersect :r 10 :distance 0 red-box green-sphere | move [+120 0 -80])
+    (intersect :rs 10 green-sphere red-box | move [-40 0 +80])
+    (intersect :rs 10 red-box green-sphere | move [+40 0 +80])
+    (intersect :rs 10 :distance 0 green-sphere red-box  | move [-120 0 +80])
+    (intersect :rs 10 :distance 0 red-box green-sphere | move [+120 0 +80])
+  | intersect (box [1000 80 1000] | move y -66))
   `
 
-  "!interior union distance fields"
+  "!boolean subtract"
+  `
+  (def green-sphere (sphere 40 | blinn-phong [0.05 0.95 0.05]))
+  (def red-box (box 30 | blinn-phong [0.95 0.05 0.05]))
+  (union
+    (subtract green-sphere red-box | move [-40 0 0])
+    (subtract red-box green-sphere | move [+40 0 0])
+    (subtract :r 10 green-sphere red-box | move [-40 0 -80])
+    (subtract :r 10 red-box green-sphere | move [+40 0 -80])
+    (subtract :r 10 :distance 0 green-sphere red-box  | move [-120 0 -80])
+    (subtract :r 10 :distance 0 red-box green-sphere | move [+120 0 -80])
+    (subtract :rs 10 green-sphere red-box | move [-40 0 +80])
+    (subtract :rs 10 red-box green-sphere | move [+40 0 +80])
+    (subtract :rs 10 :distance 0 green-sphere red-box  | move [-120 0 +80])
+    (subtract :rs 10 :distance 0 red-box green-sphere | move [+120 0 +80])
+  | intersect (box [1000 80 1000] | move y -66))
+  `
+
+  "!boolean union interior color fields"
   [ortho-z `
   (def green-sphere (sphere 44 | color [0.05 0.95 0.05]))
   (def red-box (box 40 | color [0.95 0.05 0.05]))
   (union
     (union :r 10 green-sphere red-box | move [-50 -50 0])
     (union :r 10 red-box green-sphere | move [50 -50 0])
-    (union :r 10 :color-sym 10 green-sphere red-box | move [-50 50 0])
-    (union :r 10 :color-sym 10 red-box green-sphere | move [50 50 0])
-  | slice z 0 | extrude z 0)
+    (union :rs 10 green-sphere red-box | move [-50 50 0])
+    (union :rs 10 red-box green-sphere | move [50 50 0])
+  | slice z 0)
   `]
 
-  "!interior intersect distance fields"
+  "!boolean intersect interior color fields"
   [ortho-z `
   (def green-sphere (sphere 44 | color [0.05 0.95 0.05]))
   (def red-box (box 40 | color [0.95 0.05 0.05]))
   (union
     (intersect :r 10 green-sphere red-box | move [-50 -50 0])
     (intersect :r 10 red-box green-sphere | move [50 -50 0])
-    (intersect :r 10 :color-sym 10 green-sphere red-box | move [-50 50 0])
-    (intersect :r 10 :color-sym 10 red-box green-sphere | move [50 50 0])
-  | slice z 0 | extrude z 0)
+    (intersect :rs 10 green-sphere red-box | move [-50 50 0])
+    (intersect :rs 10 red-box green-sphere | move [50 50 0])
+  | slice z 0)
   `]
 })
 

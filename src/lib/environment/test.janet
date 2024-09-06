@@ -122,7 +122,7 @@
     inf @{:doc "The number representing positive infinity"
           :value 9e999}
     int @{}
-    intersect @{:doc "(intersect & shapes [:r r] [:distance distance] [:color color] [:color-sym color-sym])\n\nGet it outta there."}
+    intersect @{:doc "(intersect & shapes [:r r] [:rs rs] [:distance distance] [:color color])\n\nIntersect two or more shapes. The named arguments here produce a smooth intersection,\nand are similar to the arguments to `union`.\n\nIf you're performing rounded intersections with surfaced shapes in 3D, the color\nfield produced by `:rs` might give more intuitive results. This is because\nthe color field of the first shape is only visible as a thin, two-dimensional\nsurface, and as soon as you start to blend it with the second shape it will be\novertaken.\n\nMeanwhile if you're working in 2D, or looking at the interior distance field of a 3D\nintersection (i.e. slicing into the intersection, or transplanting the color field),\nthe asymmetric `:r` rounding will probably be more intuitive."}
     inversesqrt @{}
     isosceles-triangle @{:doc "(isosceles-triangle size)\n\nTODOC"}
     length @{}
@@ -267,6 +267,7 @@
     step @{}
     subject @{:doc "A variable that determines what Bauble will render.\n\nYou can set this variable explicitly to change your focus, or use the `view` macro to change your focus. If you don't set a subject, Bauble will render the last shape in your script."
               :ref @[nil]}
+    subtract @{:doc "(subtract & shapes [:r r] [:rs rs] [:distance distance] [:color color])\n\nSubtract one or more shapes from a source shape. The named arguments\nhere produce a smooth subtraction, and are similar to the arguments to `union`.\n\nIf you're performing rounded subtractions with surfaced shapes in 3D, the color\nfield produced by `:rs` might give more intuitive results. This is because\nthe color field of the first shape is only visible as a thin, two-dimensional\nsurface, and as soon as you start to blend it with the second shape it will be\novertaken.\n\nMeanwhile if you're working in 2D, or looking at the interior distance field of a 3D\nsubtraction (i.e. slicing into the subtracting shape), the asymmetric `:r` rounding\nwill probably be more intuitive.\n"}
     sum @{:doc "(sum v)\n\nAdd the components of a vector."}
     t @{:value [:var "t" :float]}
     tan @{}
@@ -313,7 +314,7 @@
     trunc @{}
     uint @{}
     uneven-capsule @{:doc "(uneven-capsule bottom-radius top-radius height)\n\nTODOC"}
-    union @{:doc "(union & shapes [:r r] [:distance distance] [:color color] [:color-sym color-sym])\n\nJoin 'em up. Do it to it."}
+    union @{:doc "(union & shapes [:r r] [:rs rs] [:distance distance] [:color color])\n\nUnion two or more shapes together. Pass `:r` or `:rs` to produce a smooth union.\n\n`:r` and `:rs` combine color fields differently. `:rs` is a symmetric union, where\nthe color field is based on the nearest shape, regardless of the order that they're\nspecified. `:r` is an asymmetric union where the order matters, and later shapes will\nbe considered \"on top of\" previous shapes.\n\nThese produce identical colors on the surface, but different interior color fields.\nIt's easy to see the difference in 2D, while in 3D the difference only matters if\nyou're cutting into a shape, or transplanting the color field from one shape to another.\n\nYou can also pass `:distance` or `:color` to specify a different smoothing radius for\nthe separate fields. For example, to produce a smooth symmetric color union with a sharp\ndistance field, pass `(union :rs 10 :distance 0 ;shapes)`."}
     vec @{}
     vec2 @{}
     vec3 @{}
