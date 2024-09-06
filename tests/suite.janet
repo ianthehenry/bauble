@@ -503,6 +503,24 @@
     (intersect :rs 10 red-box green-sphere | move [50 50 0])
   | slice z 0)
   `]
+
+  "!shadow banding artifacts"
+  [ortho-z `
+  (union
+    (sphere 50 | blinn-phong [1 1 1] | with-lights (light/point [1 1 1] [500 -50 0]) | move y -50)
+    (sphere 50 | blinn-phong [1 1 1] | with-lights (light/directional [1 1 1] [-1 0 0] 500) | move y 50))
+  `]
+
+  "!raymarcher tries not to penetrate shape 1" `
+  (sphere 50 
+    | morph 2 (box 50) 
+    | blinn-phong [1 1 1])
+  `
+  "!raymarcher tries not to penetrate shape 2" [ortho-z `
+  (sphere 50 
+    | morph 2 (box 50) 
+    | blinn-phong [1 1 1])
+  `]
 })
 
 (each filename (os/dir "./cases")

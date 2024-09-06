@@ -35,29 +35,42 @@
 # expression to march through. This would let us create a light that casts
 # shadows from a custom source, which would be cool and fun.
 
-# TODO: we should be able to check the dot product with the normal here and
-# short-circuit the marching for anything facing away from the light
 (thunk ~(as-macro ,defhelper- LightIncidence cast-light-hard-shadow [:vec3 light-color :vec3 light-position]
   ```
   TODOC
   ```
   (if (= light-position P)
     (return (LightIncidence light-color (vec3 0))))
-  (var target (,MINIMUM_HIT_DISTANCE * normal + P))
-  (var target-distance (distance light-position target))
-  (var to-light (light-position - target / target-distance))
+  # because it can be so hard to converge exactly
+  # to a point on a shape's surface, we actually
+  # march the light to a point very near the surface.
+  # this produces much better results when shading
+  # smooth surfaces like spheres
+  (var to-light (normalize (light-position - P)))
   # don't bother marching if the light won't contribute anything
   (if (= light-color (vec3 0))
     (return (LightIncidence light-color to-light)))
-  (var progress 0)
+  # If you're looking at a surface facing away from the light,
+  # there's no need to march all the way to it. I mean,
+  # theoretically you could have an infinitely-thin surface or
+  # invalid normals or something, but for the most part this is just
+  # a nice optimization. Another way to achieve this is to do the
+  # march in the reverse direction, from the surface to the light,
+  # stopping as soon as you hit the volume behind you. But I think
+  # it's more clear to march from the light to the surface.
+  (if (< (dot to-light normal) 0)
+    (return (LightIncidence (vec3 0) to-light)))
+  (var target (,MINIMUM_HIT_DISTANCE * normal + P))
+  (var light-distance (length (target - light-position)))
+  (var ray-dir (target - light-position / light-distance))
+  (var depth 0)
   (for (var i :0) (< i ,MAX_LIGHT_STEPS) (++ i)
-    (var distance (with [P (light-position - (to-light * progress)) p P] (nearest-distance)))
-    (if (< distance ,MINIMUM_HIT_DISTANCE)
-      (if (>= (progress + distance) (target-distance - ,MINIMUM_HIT_DISTANCE))
-        (return (LightIncidence light-color to-light))
-        (return (LightIncidence (vec3 0) to-light))))
-    (+= progress distance))
-  (return (LightIncidence (vec3 0) to-light))))
+    (var nearest (with [P (light-position + (ray-dir * depth)) p P] (nearest-distance)))
+    (if (< nearest ,MINIMUM_HIT_DISTANCE) (break))
+    (+= depth nearest))
+  (if (>= depth light-distance)
+    (return (LightIncidence light-color to-light))
+    (return (LightIncidence (vec3 0) to-light)))))
 
 (thunk ~(as-macro ,defhelper- LightIncidence cast-light-soft-shadow [:vec3 light-color :vec3 light-position :float softness]
   ```
@@ -67,33 +80,30 @@
     (return (cast-light-hard-shadow light-color light-position)))
   (if (= light-position P)
     (return (LightIncidence light-color (vec3 0))))
-  # TODO: we do this adjustment because if you land inside a shape you want to try to get out of it.
-  (var target (,MINIMUM_HIT_DISTANCE * normal + P))
-  (var target-distance (distance light-position target))
-  (if (= target-distance 0)
-    (return (LightIncidence light-color (vec3 0))))
-  (var to-light (light-position - target / target-distance))
-  # don't bother marching if the light won't contribute anything
+  (var to-light (normalize (light-position - P)))
   (if (= light-color (vec3 0))
     (return (LightIncidence light-color to-light)))
+  (if (< (dot to-light normal) 0)
+    (return (LightIncidence (vec3 0) to-light)))
+  (var target (,MINIMUM_HIT_DISTANCE * normal + P))
+  (var light-distance (length (target - light-position)))
+  (var ray-dir (target - light-position / light-distance))
   (var in-light 1)
   (var sharpness (softness * softness /))
-  (var last-distance 1e10)
-  (var progress 0)
+  (var last-nearest 1e10)
+  (var depth 0)
   (for (var i :0) (< i ,MAX_LIGHT_STEPS) (++ i)
-    (var distance (with [P (light-position - (to-light * progress)) p P] (nearest-distance)))
-    (if (< distance ,MINIMUM_HIT_DISTANCE)
-      (if (>= (progress + distance) (target-distance - ,MINIMUM_HIT_DISTANCE))
-        (return (LightIncidence (in-light * light-color) to-light))
-        (return (LightIncidence (vec3 0) to-light))))
+    (var nearest (with [P (light-position + (ray-dir * depth)) p P] (nearest-distance)))
+    (if (< nearest ,MINIMUM_HIT_DISTANCE) (break))
+    (var intersect-offset (nearest * nearest / (2 * last-nearest)))
+    (var intersect-distance (sqrt (nearest * nearest - (intersect-offset * intersect-offset))))
+    (set in-light (min in-light (sharpness * intersect-distance / (max 0 (light-distance - depth - intersect-offset)))))
+    (+= depth nearest)
+    (set last-nearest nearest))
 
-    (if (< distance last-distance) (do
-      (var intersect-offset (distance * distance / (2 * last-distance)))
-      (var intersect-distance (sqrt (distance * distance - (intersect-offset * intersect-offset))))
-      (set in-light (min in-light (sharpness * intersect-distance / (max 0 (target-distance - progress - intersect-offset)))))))
-    (+= progress distance)
-    (set last-distance distance))
-  (return (LightIncidence (vec3 0) to-light))))
+  (if (>= depth light-distance)
+    (return (LightIncidence (in-light * light-color) to-light))
+    (return (LightIncidence (vec3 0) to-light)))))
 
 (def- light-tag (gensym))
 

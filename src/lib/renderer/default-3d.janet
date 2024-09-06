@@ -31,21 +31,22 @@
       (return distance-field))
       #(return ,(@or (subject :distance) (jlsl/do (length p - 100)))))
 
-    (defn :vec3 march [:vec3 ray-origin :vec3 ray-direction [out :int] steps]
-      (var distance 0)
+    # returns the depth that it's able to march
+    (defn :float march [:vec3 ray-origin :vec3 ray-direction [out :int] steps]
+      (var depth 0)
 
       (for (set steps :0) (< steps MAX_STEPS) (++ steps)
-        (with [P (+ ray-origin (* distance ray-direction)) p P]
+        (with [P (+ ray-origin (* depth ray-direction)) p P]
           (var nearest (nearest-distance))
 
           # we could dynamically adjust the minimum_hit_distance when the ray
           # is farther away from the camera... it could speed up scenes with background
           # scenery for little cost, but might cause issues with reflections
-          (if (or (< nearest MINIMUM_HIT_DISTANCE) (> distance MAXIMUM_TRACE_DISTANCE))
-            (return (+ p (* nearest ray-direction))))
+          (if (or (and (>= nearest 0) (< nearest MINIMUM_HIT_DISTANCE)) (> depth MAXIMUM_TRACE_DISTANCE))
+            (return depth))
 
-          (+= distance nearest)))
-      (return (+ ray-origin (* distance ray-direction))))
+          (+= depth nearest)))
+      (return depth))
 
     (defn :vec3 perspective [:float fov :vec2 size :vec2 pos]
       (var xy (pos - (size * 0.5)))
@@ -78,12 +79,12 @@
 
       (var steps :0)
 
-      (var hit (march camera-origin dir steps))
+      (var depth (march camera-origin dir steps))
+      (var hit (+ camera-origin (* dir depth)))
 
       (case render-type
         # default color field
         :0 (do
-          (var depth (distance camera-origin hit))
           (if (>= depth MAXIMUM_TRACE_DISTANCE)
             (do
               (def light (pow ([69 72 79] / 255) (vec3 2.2)))
