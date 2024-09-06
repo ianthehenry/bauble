@@ -116,6 +116,10 @@
     gl-front-facing @{:value [:var "gl_FrontFacing" :bool]}
     gl-point-coord @{:value [:var "gl_PointCoord" :vec2]}
     gradient @{:value [:var "gradient" :vec2]}
+    hash @{:doc "(hash v)\n\nReturn a pseudorandom float. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
+    hash2 @{:doc "(hash2 v)\n\nReturn a pseudorandom `vec2`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
+    hash3 @{:doc "(hash3 v)\n\nReturn a pseudorandom `vec3`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
+    hash4 @{:doc "(hash4 v)\n\nReturn a pseudorandom `vec4`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
     hexagon @{:doc "(hexagon radius [:r round])\n\nTODOC"}
     hexagram @{:doc "(hexagram radius [:r round])\n\nTODOC"}
     hsl @{:doc "(hsl hue saturation lightness)\n\nReturns a color."}
