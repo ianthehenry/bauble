@@ -215,6 +215,8 @@
     pi/8*7 @{:value 2.748893571891069}
     pi/9 @{:value 0.3490658503988659}
     pie @{:doc "(pie radius angle)\n\nTODOC"}
+    pivot @{:doc "(pivot (operation subject & args) point)\n\nApply a transformation with a different pivot point. You can combine this with any\noperation, but it's probably most useful with `rotate` and `scale`.\n\nThis is a syntactic transformation, so it requires a particular kind of invocation.\nIt's designed to fit into a pipeline, immediately after the operation you want to apply:\n\n```\n# rotate around one corner\n(rect 30 | rotate t | pivot [30 30])\n```\n\nThis essentially rewrites its argument to:\n\n```\n(gl/let [$pivot [30 30]]\n  (rect 30 | move (- $pivot) | rotate t | move $pivot))\n```"
+            :macro true}
     pow @{}
     product @{:doc "(product v)\n\nMultiply the components of a vector."}
     q @{:value [:var "q" :vec2]}
@@ -249,6 +251,7 @@
     round @{}
     round-even @{}
     round-rect @{:doc "(round-rect size radii)\n\nLike `rect`, but rounded. `radii` can be a single radius or a `vec4` of `[top-left top-right bottom-right bottom-left]`.`"}
+    scale @{:doc "(scale shape factor)\n\nScale a shape. If the scale factor is a float, this will produce an exact\ndistance field. If it's a vector, space will be distorted by the smallest\ncomponent of the vector."}
     shape/2d @{:doc "(shape/2d distance)\n\nReturns a new 2D shape with the given distance field."}
     shape/3d @{:doc "(shape/3d distance)\n\nReturns a new 3D shape with the given distance field."}
     shape/get-field @{:doc "(get-field shape field)\n\nLook up a single field on a shape. If the field does not exist, this will return `nil`."}
@@ -463,3 +466,9 @@
     (if (@is? <2>)
       (@map <2> (fn [<3>] (@with-expr @[[r <1>]] [] <3> "let")))
       (@with-expr @[[r <1>]] [] (@coerce-expr <2>) "let"))))
+
+(test-macro (pivot (scale (rect 30) 0.75) [30 30])
+  (as-macro @gl/let [<1> [30 30]] (@move (scale (@move (rect 30) (- <1>)) 0.75) <1>)))
+
+(test-macro (pivot (rotate [1 2 3] z 0.75) [30 30])
+  (as-macro @gl/let [<1> [30 30]] (@move (rotate (@move [1 2 3] (- <1>)) z 0.75) <1>)))

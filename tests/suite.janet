@@ -521,6 +521,15 @@
     | morph 2 (box 50) 
     | blinn-phong [1 1 1])
   `]
+
+  "!scale" `
+  (union
+    (rect 30)
+    (rect 30 | scale [0.5 1] | move x -67)
+    (rect 30 | scale [2 0.5] | move y 65)
+    (rect 30 | scale 0.75 | move x 71)
+    (rect 30 | scale 0.5 | pivot [30 30] | move y -70))
+  `
 })
 
 (each filename (os/dir "./cases")

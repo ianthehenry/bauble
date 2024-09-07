@@ -229,6 +229,52 @@
       (map-axes shape axes (fn [x] (sqrt (+ (* x x) (* r r))))))
     (map-axes shape axes abs)))
 
+(defnamed scale [shape factor]
+  ```
+  Scale a shape. If the scale factor is a float, this will produce an exact
+  distance field. If it's a vector, space will be distorted by the smallest
+  component of the vector.
+  ```
+  (def factor (jlsl/coerce-expr factor))
+  (def uniform? (= (jlsl/expr/type factor) jlsl/type/float))
+  (gl/let [factor factor]
+    (map-distance
+      (if (= (shape/type shape) jlsl/type/vec2)
+        (transform shape "scale" q (/ q factor))
+        (transform shape "scale" p (/ p factor)))
+      (if uniform?
+        |(* (abs factor) $)
+        |(* (min (abs factor)) $)))))
+
 (deftransform color [shape color]
   "Set a shape's color field."
   (shape/with shape :color (typecheck color jlsl/type/vec3)))
+
+(def pivot
+  :macro
+  ````(pivot (operation subject & args) point)
+
+  Apply a transformation with a different pivot point. You can combine this with any
+  operation, but it's probably most useful with `rotate` and `scale`.
+
+  This is a syntactic transformation, so it requires a particular kind of invocation.
+  It's designed to fit into a pipeline, immediately after the operation you want to apply:
+
+  ```
+  # rotate around one corner
+  (rect 30 | rotate t | pivot [30 30])
+  ```
+
+  This essentially rewrites its argument to:
+  
+  ```
+  (gl/let [$pivot [30 30]]
+    (rect 30 | move (- $pivot) | rotate t | move $pivot))
+  ```
+  ````
+  (fn pivot [transformation point]
+    (assertf (and (ptuple? transformation) (>= (@length transformation) 2)) "%q does not look like something I can transform")
+    (def [op subject & args] transformation)
+    (with-syms [$pivot]
+      ~(as-macro ,gl/let [,$pivot ,point]
+        (,move (,op (,move ,subject (- ,$pivot)) ,;args) ,$pivot)))))
