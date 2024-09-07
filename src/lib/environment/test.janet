@@ -115,6 +115,8 @@
     gl-frag-depth @{:value [:var "gl_FragDepth" :float]}
     gl-front-facing @{:value [:var "gl_FrontFacing" :bool]}
     gl-point-coord @{:value [:var "gl_PointCoord" :vec2]}
+    gl/let @{:doc "(gl/let bindings & body)\n\nLike `let`, but creates GLSL bindings instead of a Janet bindings. You can use this\nto reference an expression multiple times while only evaluating it once in the resulting\nshader.\n\nFor example:\n\n```\n(let [s (sin t)]\n  (+ s s))\n```\n\nProduces GLSL code like this:\n\n```\nsin(t) + sin(t)\n```\n\nBecause `s` refers to the GLSL *expression* `(sin t)`.\n\nMeanwhile:\n\n```\n(gl/let [s (sin t)]\n  (+ s s))\n```\n\nProduces GLSL code like this:\n\n```\nfloat let(float s) {\n  return s + s;\n}\n\nlet(sin(t))\n```\n\nOr something equivalent. Note that the variable is hoisted into an immediately-invoked function\nbecause it's the only way to introduce a new identifier in a GLSL expression context."
+             :macro true}
     gradient @{:value [:var "gradient" :vec2]}
     hash @{:doc "(hash v)\n\nReturn a pseudorandom float. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
     hash2 @{:doc "(hash2 v)\n\nReturn a pseudorandom `vec2`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
@@ -154,7 +156,7 @@
     mat4x4 @{}
     max @{}
     min @{}
-    mirror @{:doc "(mirror shape & axes)\n\nMirror a shape across one or more axes."}
+    mirror @{:doc "(mirror shape & axes [:r r])\n\nMirror a shape across one or more axes. Normally this takes the absolute value\nof the coordinates, but if you supply `:r` it will take a biased square root to\ngive a smooth mirror effect."}
     mix @{}
     mod @{}
     morph @{:doc "(morph shape1 amount shape2 [:distance amount] [:color amount])\n\nMorph linearly interpolates between two shapes.\n\n```\n# 50% box, 50% sphere\n(box 50 | morph (sphere 50))\n\n# 75% box, 25% sphere\n(box 50 | morph 0.25 (sphere 50))\n```\n\nConcretely this means that it returns a new shape whose individual fields\nare linear interpolations of its inputs. With an anonymous `amount` coefficient,\nboth the distance and color fields will be interpolated with the same value.\nBut you can also specify per-field overrides:\n\n```\n# distance is a 50% blend, but the color is 90% red\n(box 50 | color [1 0 0] | morph :color 0.1 (sphere 50 | color [0 1 0]))\n```"}
@@ -448,3 +450,16 @@
 
 (test (jlsl/show (+ p 1)) [+ p 1])
 (test (jlsl/show (+ p [1 2 3])) [+ p [vec3 1 2 3]])
+
+(test (jlsl/show (gl/let [r 10] (* r 2))) [let-outer])
+
+(test-macro
+  (gl/let [r (typecheck r jlsl/type/float)]
+    (map-axes shape axes (fn [x] (sqrt (+ (* x x) (* r r))))))
+  (do
+    (def <1> (@coerce-expr (typecheck r jlsl/type/float)))
+    (def r (@new "r" (@expr/type <1>)))
+    (def <2> (do (map-axes shape axes (fn [x] (sqrt (+ (* x x) (* r r)))))))
+    (if (@is? <2>)
+      (@map <2> (fn [<3>] (@with-expr @[[r <1>]] [] <3> "let")))
+      (@with-expr @[[r <1>]] [] (@coerce-expr <2>) "let"))))

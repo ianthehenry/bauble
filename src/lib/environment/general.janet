@@ -146,11 +146,7 @@
 (def r2 (shape/2d (jlsl/coerce-expr 0)))
 (def r3 (shape/3d (jlsl/coerce-expr 0)))
 
-(defn mirror
-  ```
-  Mirror a shape across one or more axes.
-  ```
-  [shape & axes]
+(defn- map-axes [shape axes f]
   (def mask @[false false false])
   (each axis axes (case axis
     x (put mask 0 true)
@@ -158,13 +154,80 @@
     z (put mask 2 true)
     (errorf "unknown axis %q" axis)))
   (if (= (shape/type shape) jlsl/type/vec2)
-    (transform shape "mirror" q ,(vec2
-      (if (mask 0) (abs (. q x)) (. q x))
-      (if (mask 1) (abs (. q y)) (. q y))))
-    (transform shape "mirror" p ,(vec3
-      (if (mask 0) (abs (. p x)) (. p x))
-      (if (mask 1) (abs (. p y)) (. p y))
-      (if (mask 2) (abs (. p z)) (. p z))))))
+    (transform shape "map-axes" q ,(vec2
+      (if (mask 0) (f (. q x)) (. q x))
+      (if (mask 1) (f (. q y)) (. q y))))
+    (transform shape "map-axes" p ,(vec3
+      (if (mask 0) (f (. p x)) (. p x))
+      (if (mask 1) (f (. p y)) (. p y))
+      (if (mask 2) (f (. p z)) (. p z))))))
+
+# TODO: this should work with either a shape or an expression
+(defmacro gl/let
+  ````
+  Like `let`, but creates GLSL bindings instead of a Janet bindings. You can use this
+  to reference an expression multiple times while only evaluating it once in the resulting
+  shader.
+
+  For example:
+
+  ```
+  (let [s (sin t)]
+    (+ s s))
+  ```
+
+  Produces GLSL code like this:
+
+  ```
+  sin(t) + sin(t)
+  ```
+
+  Because `s` refers to the GLSL *expression* `(sin t)`.
+
+  Meanwhile:
+
+  ```
+  (gl/let [s (sin t)]
+    (+ s s))
+  ```
+
+  Produces GLSL code like this:
+
+  ```
+  float let(float s) {
+    return s + s;
+  }
+
+  let(sin(t))
+  ```
+
+  Or something equivalent. Note that the variable is hoisted into an immediately-invoked function
+  because it's the only way to introduce a new identifier in a GLSL expression context.
+  ````
+  [bindings & body]
+  (def bindings (seq [[name <value>] :in (partition 2 bindings)]
+    [name <value> (gensym)]))
+  (def <with-bindings> (map (fn [[name _ $value]] (tuple/brackets name $value)) bindings))
+  (with-syms [$subject $field] ~(do
+    ,;(catseq [[name <value> $value] :in bindings]
+      [~(def ,$value (,jlsl/coerce-expr ,<value>))
+       ~(def ,name (,jlsl/variable/new ,(string name) (,jlsl/expr/type ,$value)))])
+    (def ,$subject (do ,;body))
+    (if (,shape/is? ,$subject)
+      (,shape/map ,$subject (fn [,$field]
+        (,jlsl/with-expr ,<with-bindings> [] ,$field "let")))
+      (,jlsl/with-expr ,<with-bindings> [] (,jlsl/coerce-expr ,$subject) "let")))))
+
+(defnamed mirror [shape :?r &axes]
+  ```
+  Mirror a shape across one or more axes. Normally this takes the absolute value
+  of the coordinates, but if you supply `:r` it will take a biased square root to
+  give a smooth mirror effect.
+  ```
+  (if r
+    (gl/let [r (typecheck r jlsl/type/float)]
+      (map-axes shape axes (fn [x] (sqrt (+ (* x x) (* r r))))))
+    (map-axes shape axes abs)))
 
 (deftransform color [shape color]
   "Set a shape's color field."
