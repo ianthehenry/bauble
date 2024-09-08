@@ -22,6 +22,7 @@
 (def +z "`[0 0 1]`" [0 0 1])
 
 (import ../../jlsl/prelude :prefix "" :export true)
+(import ./gl :prefix "" :export true)
 
 (defn remap+
   "Remap a number in the range `[-1 1]` into the range `[0 1]`."

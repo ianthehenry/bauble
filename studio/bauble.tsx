@@ -339,6 +339,7 @@ const Bauble = (props: BaubleProps) => {
           console.error(result.error);
         } else {
           try {
+            console.log(result.shaderSource);
             renderer.recompileShader(result.shaderSource);
             Signal.set(evaluationState, EvaluationState.Success);
             Signal.set(isAnimation, result.isAnimated);

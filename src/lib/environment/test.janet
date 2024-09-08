@@ -119,8 +119,10 @@
     gl-frag-depth @{:value [:var "gl_FragDepth" :float]}
     gl-front-facing @{:value [:var "gl_FrontFacing" :bool]}
     gl-point-coord @{:value [:var "gl_PointCoord" :vec2]}
-    gl/let @{:doc "(gl/let bindings & body)\n\nLike `let`, but creates GLSL bindings instead of a Janet bindings. You can use this\nto reference an expression multiple times while only evaluating it once in the resulting\nshader.\n\nFor example:\n\n```\n(let [s (sin t)]\n  (+ s s))\n```\n\nProduces GLSL code like this:\n\n```\nsin(t) + sin(t)\n```\n\nBecause `s` refers to the GLSL *expression* `(sin t)`.\n\nMeanwhile:\n\n```\n(gl/let [s (sin t)]\n  (+ s s))\n```\n\nProduces GLSL code like this:\n\n```\nfloat let(float s) {\n  return s + s;\n}\n\nlet(sin(t))\n```\n\nOr something equivalent. Note that the variable is hoisted into an immediately-invoked function\nbecause it's the only way to introduce a new identifier in a GLSL expression context."
+    gl/let @{:doc "(gl/let bindings & body)\n\nLike `let`, but creates GLSL bindings instead of a Janet bindings. You can use this\nto reference an expression multiple times while only evaluating it once in the resulting\nshader.\n\nFor example:\n\n```\n(let [s (sin t)]\n  (+ s s))\n```\n\nProduces GLSL code like this:\n\n```\nsin(t) + sin(t)\n```\n\nBecause `s` refers to the GLSL *expression* `(sin t)`.\n\nMeanwhile:\n\n```\n(gl/let [s (sin t)]\n  (+ s s))\n```\n\nProduces GLSL code like this:\n\n```\nfloat let(float s) {\n  return s + s;\n}\n\nlet(sin(t))\n```\n\nOr something equivalent. Note that the variable is hoisted into an immediately-invoked function\nbecause it's the only way to introduce a new identifier in a GLSL expression context.\n\nYou can also use Bauble's underscore notation to fit this into a pipeline:\n\n```\n(s + s | gl/let [s (sin t)] _)\n```\n\nIf the body of the `gl/let` returns a shape, the bound variable will be available in all of its\nfields. If you want to refer to variables or expressions that are only available in color fields,\npass a keyword as the first argument:\n\n```\n(gl/let :color [banding (sin depth)]\n  (sphere 100 | blinn-phong [1 banding 0]))\n```"
              :macro true}
+    gl/with @{:doc "(gl/with bindings & body)\n\nLike `gl/let`, but instead of creating a new binding, it alters the value of an existing\nvariable. You can use this to give new values to dynamic variables. For example:\n\n```\n# implement your own `move`\n(gl/with [p (- p [0 50 0])] (sphere 50))\n```\n\nYou can also use Bauble's underscore notation to fit this into a pipeline:\n\n```\n(sphere 50 | gl/with [p (- p [0 50 0])] _)\n```\n\nYou can -- if you really want -- use this to alter `P` or `Q` to not refer to the point in\nglobal space, or use it to pretend that `ray-dir` is actually a different angle.\n\nThe variables you change in `gl/with` will, by default, apply to all of the fields of a shape.\nYou can pass a keyword as the first argument to only change a particular field. This allows you\nto refer to variables that only exist in color expressions:\n\n```\n(gl/with :color [normal (normal + (perlin p * 0.1))]\n  (sphere 100 | blinn-phong [1 0 0] | move [-50 0 0]))\n```"
+              :macro true}
     gradient @{:doc "(Color only!) An approximation of the 2D distance field gradient at `Q`."
                :value [:var "gradient" :vec2]}
     hash @{:doc "(hash v)\n\nReturn a pseudorandom float. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
@@ -485,3 +487,7 @@
 
 (test-macro (pivot (rotate [1 2 3] z 0.75) [30 30])
   (as-macro @gl/let [<1> [30 30]] (@move (rotate (@move [1 2 3] (- <1>)) z 0.75) <1>)))
+
+(test-macro (sugar
+  (s + s | gl/let [s (sin t)] _))
+  (gl/let [s (sin t)] (+ s s)))

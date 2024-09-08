@@ -530,6 +530,22 @@
     (rect 30 | scale 0.75 | move x 71)
     (rect 30 | scale 0.5 | pivot [30 30] | move y -70))
   `
+
+  "!gl helpers" `
+  (union
+    (gl/let [foo [50 0]] (rect 30 | move foo))
+    (gl/with [q (- q [-50 0])] (rect 30))
+    )
+  `
+
+  "!gl with color fields" `
+  (union
+    (gl/with :color [normal (normal + (perlin p * 0.1))]
+      (sphere 100 | blinn-phong [1 0 0] | move [-50 0 0]))
+    (sphere 100 | blinn-phong [1 0 0] | move [50 0 0]
+    | gl/with :color [normal (normal + (perlin p * 0.1))] _)
+  )
+  `
 })
 
 (each filename (os/dir "./cases")
@@ -626,37 +642,37 @@ img {
     (def after-export-before-hash (os/time))
     (def hash (string/slice ($<_ shasum -ba 256 snapshots/tmp.png) 0 32))
     (def after-hash (os/time))
-    (def final-file-name (string "snapshots/" hash ".png"))
+    (def new-file-name (string "snapshots/" hash ".png"))
     (def ref-name (string (string/replace-all " " "-" name) suffix ".png"))
     (put current-refs ref-name true)
     (def ref-path (string "refs/" ref-name))
-    (if (os/stat final-file-name)
+    (if (os/stat new-file-name)
       (do
         (eprin ".")
         (os/rm temporary-file-name))
       (do
         (eprin ":")
-        (os/rename temporary-file-name final-file-name)
+        (os/rename temporary-file-name new-file-name)
         (set success false)))
 
-    (def current-file-name (try
-      (slice ($<_ git show HEAD:tests/ ^ ,ref-path) 3)
+    (def old-file-name (try
+      (slice ($<_ git show HEAD:tests/ ^ ,ref-path >[stderr :null]) 3)
       ([_ _] nil)))
-    ($ ln -fs (string "../" final-file-name) ,ref-path)
+    ($ ln -fs (string "../" new-file-name) ,ref-path)
 
-    (def changed? (and current-file-name (not= current-file-name final-file-name)))
+    (def changed? (and old-file-name (not= old-file-name new-file-name)))
 
     (printf `<pre class="shader-source">%s</pre>` (html-escape shader-source))
     (printf `<div class="images">`)
-    (when changed?
-      (printf `<div class="old">`)
-      (img current-file-name)
-      (printf `</div>`))
-    (printf `<div class="new">`)
-    (when changed?
-      (img final-file-name "underlay"))
-    (img current-file-name (if changed? "overlay"))
-    (printf `</div>`)
+      (when changed?
+        (printf `<div class="old">`)
+        (img new-file-name)
+        (printf `</div>`))
+      (printf `<div class="new">`)
+        (when changed?
+          (img old-file-name "underlay"))
+        (img new-file-name (if changed? "overlay"))
+      (printf `</div>`)
     (printf `</div>`)
 
     # (os/time) returns an integer number of seconds, so...

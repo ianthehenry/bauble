@@ -162,61 +162,6 @@
       (if (mask 1) (f (. p y)) (. p y))
       (if (mask 2) (f (. p z)) (. p z))))))
 
-(defmacro gl/let
-  ````
-  Like `let`, but creates GLSL bindings instead of a Janet bindings. You can use this
-  to reference an expression multiple times while only evaluating it once in the resulting
-  shader.
-
-  For example:
-
-  ```
-  (let [s (sin t)]
-    (+ s s))
-  ```
-
-  Produces GLSL code like this:
-
-  ```
-  sin(t) + sin(t)
-  ```
-
-  Because `s` refers to the GLSL *expression* `(sin t)`.
-
-  Meanwhile:
-
-  ```
-  (gl/let [s (sin t)]
-    (+ s s))
-  ```
-
-  Produces GLSL code like this:
-
-  ```
-  float let(float s) {
-    return s + s;
-  }
-
-  let(sin(t))
-  ```
-
-  Or something equivalent. Note that the variable is hoisted into an immediately-invoked function
-  because it's the only way to introduce a new identifier in a GLSL expression context.
-  ````
-  [bindings & body]
-  (def bindings (seq [[name <value>] :in (partition 2 bindings)]
-    [name <value> (gensym)]))
-  (def <with-bindings> (map (fn [[name _ $value]] (tuple/brackets name $value)) bindings))
-  (with-syms [$subject $field] ~(do
-    ,;(catseq [[name <value> $value] :in bindings]
-      [~(def ,$value (,jlsl/coerce-expr ,<value>))
-       ~(def ,name (,jlsl/variable/new ,(string name) (,jlsl/expr/type ,$value)))])
-    (def ,$subject (do ,;body))
-    (if (,shape/is? ,$subject)
-      (,shape/map ,$subject (fn [,$field]
-        (,jlsl/with-expr ,<with-bindings> [] ,$field "let")))
-      (,jlsl/with-expr ,<with-bindings> [] (,jlsl/coerce-expr ,$subject) "let")))))
-
 (defnamed mirror [shape :?r &axes]
   ```
   Mirror a shape across one or more axes. Normally this takes the absolute value
