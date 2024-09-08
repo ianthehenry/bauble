@@ -4,9 +4,6 @@
 (import ./shape)
 (import ./environment/derive :prefix "environment/derive/")
 
-# TODO: only doing this because of the stupid weak table bug
-(import ../jlsl)
-
 (defn- chunk-string [str]
   (var unread true)
   (fn [buf _]
@@ -30,8 +27,6 @@
 
 # this returns the resulting environment
 (defn evaluate [script]
-  # TODO: remove this once the bug is fixed
-  (jlsl/multifunction/fix-the-weak-table-bug)
   (def env (environment/derive/new))
 
   (var last-value nil)

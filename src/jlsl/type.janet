@@ -144,7 +144,6 @@
      :mat4x3 (type/mat 4 3)
      :mat4x4 (type/mat 4 4)})
 
-  # TODO: we also need a fix for the weak table bug here
   (def type-registry (table/weak-keys 64))
   (defn coerce [x] (in type-registry x x))
   (defn register-constructor [constructor type] (put type-registry constructor type))
