@@ -222,3 +222,8 @@
     (with-syms [$pivot]
       ~(as-macro ,gl/let [,$pivot ,point]
         (,move (,op (,move ,subject (- ,$pivot)) ,;args) ,$pivot)))))
+
+(setdyn '@+ (table/getproto (dyn '+)))
+(setdyn '@- (table/getproto (dyn '-)))
+(setdyn '@* (table/getproto (dyn '*)))
+(setdyn '@/ (table/getproto (dyn '/)))
