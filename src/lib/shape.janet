@@ -59,8 +59,10 @@
 
 (defn- map-opt [f x] (if x (f x)))
 (defn- map-struct [f t] (table/to-struct (tabseq [[k v] :pairs t] k (f v))))
+(defn- map-structp [f t] (table/to-struct (tabseq [[k v] :pairs t] k (f k v))))
 
 (test (map-struct |(* $ 2) {:foo 1 :bar 2}) {:bar 4 :foo 2})
+(test (map-structp |[$0 (* $1 2)] {:foo 1 :bar 2}) {:bar [:bar 4] :foo [:foo 2]})
 
 (defn is?
   "Returns `true` if its argument is a shape."
@@ -89,11 +91,23 @@
 (defn map
   ```
   Alter the fields on a shape, optionally changing its dimension in the process.
+
+  `f` will be called with the value of the field. If you want to do something different
+  for each field, use `shape/map-fields`.
   ```
   [shape f &opt type]
   {:type (or type (shape :type))
    :tag tag
    :fields (map-struct f (shape :fields))})
+
+(defn map-fields
+  ```
+  Like `shape/map`, but `f` will be called with two arguments: the field name (as a keyword) and its value.
+  ```
+  [shape f &opt type]
+  {:type (or type (shape :type))
+   :tag tag
+   :fields (map-structp f (shape :fields))})
 
 (defn with
   ```

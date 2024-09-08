@@ -512,13 +512,13 @@
   `]
 
   "!raymarcher tries not to penetrate shape 1" `
-  (sphere 50 
-    | morph 2 (box 50) 
+  (sphere 50
+    | morph 2 (box 50)
     | blinn-phong [1 1 1])
   `
   "!raymarcher tries not to penetrate shape 2" [ortho-z `
-  (sphere 50 
-    | morph 2 (box 50) 
+  (sphere 50
+    | morph 2 (box 50)
     | blinn-phong [1 1 1])
   `]
 
@@ -544,6 +544,32 @@
       (sphere 100 | blinn-phong [1 0 0] | move [-50 0 0]))
     (sphere 100 | blinn-phong [1 0 0] | move [50 0 0]
     | gl/with :color [normal (normal + (perlin p * 0.1))] _)
+  )
+  `
+
+  "!tile" `
+  (sphere 30 | tile [80 80 80] :limit [1 1 1])
+  `
+
+  "!tile 2d with asymmetric shape, no oversampling" `
+  (rect 30 | rotate 0.3 | tile [80 80])
+  `
+  "!tile 2d with asymmetric shape, oversampling" `
+  (rect 30 | rotate 0.3 | tile [80 80] :oversample true)
+  `
+
+  "!tile 3d with asymmetric shape, no oversampling" `
+  (cone y 30 60
+  | blinn-phong [1 0 0]
+  | rotate x -1 y 2 z 3
+  | tile [60 60 60] :limit [1 1 1]
+  )
+  `
+  "!tile 3d with asymmetric shape, oversampling" `
+  (cone y 30 60
+  | blinn-phong [1 0 0]
+  | rotate x -1 y 2 z 3
+  | tile [60 60 60] :limit [1 1 1] :oversample true
   )
   `
 })

@@ -275,10 +275,11 @@
     shape/3d @{:doc "(shape/3d distance)\n\nReturns a new 3D shape with the given distance field."}
     shape/get-field @{:doc "(get-field shape field)\n\nLook up a single field on a shape. If the field does not exist, this will return `nil`."}
     shape/is? @{:doc "(is? x)\n\nReturns `true` if its argument is a shape."}
-    shape/map @{:doc "(map shape f &opt type)\n\nAlter the fields on a shape, optionally changing its dimension in the process."}
+    shape/map @{:doc "(map shape f &opt type)\n\nAlter the fields on a shape, optionally changing its dimension in the process.\n\n`f` will be called with the value of the field. If you want to do something different\nfor each field, use `shape/map-fields`."}
     shape/map-color @{:doc "(map-color shape f)\n\nShorthand for `(shape/map-field shape :color f)`."}
     shape/map-distance @{:doc "(map-distance shape f)\n\nShorthand for `(shape/map-field shape :distance f)`."}
     shape/map-field @{:doc "(map-field shape field f)\n\nMap a single field on a shape. If the field does not exist, this does nothing."}
+    shape/map-fields @{:doc "(map-fields shape f &opt type)\n\nLike `shape/map`, but `f` will be called with two arguments: the field name (as a keyword) and its value."}
     shape/merge @{:doc "(merge shapes f)\n\nMerge multiple shapes together. `shapes` should be a list of shapes that all\nhave the same dimension.\n\n`f` will be called with an array of all of the fields from each shape, and\nshould return a struct with the fields for the new shape.\n\n`merge` returns a new shape with the same dimension as its inputs."}
     shape/new @{:doc "(new type & fields)\n\nReturns a new shape with the given type and fields.\n\n```\n# red circle with radius 10\n(shape/new jlsl/type/vec2\n  :distance (length q - 10)\n  :color [1 0 0])\n```"}
     shape/transplant @{:doc "(transplant dest-shape field source-shape)\n\nShorthand for `(shape/with dest-shape field (shape/get-field source-shape field))`."}
@@ -339,6 +340,7 @@
     tau/8*6 @{:value 4.71238898038469}
     tau/8*7 @{:value 5.497787143782138}
     tau/9 @{:value 0.69813170079773179}
+    tile @{:doc "(tile shape size [:limit limit] [:oversample oversample] [:sample-from sample-from] [:sample-to sample-to])\n\nRepeat the region of space `size` units around the origin. Pass `:limit` to constrain\nthe number of repetitions.\n\n`shape` can be a single shape or a callback that returns a shape.\n\nThe callback takes the original shape and `index`, which is a vector of the same dimension\nas the shape, i.e. in 3D, the shape at the origin has an index of `[0 0 0]` and the shape\nabove it has an index of `[0 1 0]`.\n\n(Protip: you can use `(hash index)` in the callback to produce pseudorandom variations of shapes.)\n\nTo repeat space only along some axes, pass `0`. For example, `(tile (sphere 50) [0 100 0])` will\nonly tile in the `y` direction.\n\nIf you're repeating a shape that is not symmetric, you can use `:oversample true` to evaluate\nmultiple instances at each pass, essentially considering the distance not only to this\ntile, but also to neighboring tiles.\n\nThe default oversampling is `[0 0 0]` `[1 1 1]`, which means looking at one adjacent\ntile, asymmetrically based on the location of the point (so when evaluating a point near\nthe right edge of a tile, it will look at the adjacent tile to the right, but not the tile\nto the left). By passing `:sample-from [-1 -1 -1]`, you can also look at the tile to the left.\nBy passing `:sample-from [0 0 0] :sample-to [2 2 2]`, it will look at two tiles to the right.\n\nThis can be useful when raymarching a 3D space where each tile is quite different, but note\nthat it's very costly to increase these values. If you're tiling a 3D shape in all directions,\nthe default `:oversample` parameters will do 8 distance field evaluations;\n`:sample-from [-1 -1 -1]` `:sample-to [1 1 1]` will do 27."}
     torus @{:doc "(torus axis radius thickness)\n\nReturns a 3D shape, a torus around the provided `axis`."}
     trapezoid @{:doc "(trapezoid bottom-width top-width height [:r round])\n\nTODOC"}
     triangle @{:doc "(triangle a b c)\n\nTODOC"}
