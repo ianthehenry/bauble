@@ -115,6 +115,7 @@
     floor @{}
     fma @{}
     fract @{}
+    fresnel @{:doc "(fresnel subject [:color color] [:exponent exponent])\n\nTint a shape with an approximation of Fresnel reflectivity.\n\n`:color` defaults to `[1 1 1]`; `:exponent` defaults to `5`."}
     gl-frag-coord @{:value [:var "gl_FragCoord" :vec4]}
     gl-frag-depth @{:value [:var "gl_FragDepth" :float]}
     gl-front-facing @{:value [:var "gl_FrontFacing" :bool]}

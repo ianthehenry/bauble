@@ -239,3 +239,16 @@
   ```
   (var c (hue * 6 + [0 4 2] | mod 6 - 3 | abs))
   (return (* saturation (c - 1 | clamp 0 1 - 0.5) (1 - abs (2 * lightness - 1)) + lightness)))
+
+(defhelper- :float fresnel-intensity [:float exponent]
+  (return (1 + dot normal ray-dir | pow exponent)))
+
+(defnamed fresnel [subject :?color :?exponent]
+  ```
+  Tint a shape with an approximation of Fresnel reflectivity.
+
+  `:color` defaults to `[1 1 1]`; `:exponent` defaults to `5`.
+  ```
+  (default color [1 1 1])
+  (default exponent 5)
+  (shape/map-color subject |(+ $ (* color (fresnel-intensity exponent)))))
