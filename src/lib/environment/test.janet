@@ -63,8 +63,10 @@
     @or @{:doc "(or & forms)\n\nEvaluates to the last argument if all preceding elements are falsey, otherwise\nevaluates to the first truthy element."
           :macro true}
     LightIncidence @{:doc "(LightIncidence color direction)\n\n"}
-    P @{:value [:var "P" :vec3]}
-    Q @{:value [:var "Q" :vec2]}
+    P @{:doc "The global point in 3D space. This is the position of the current ray before any transformations are applied to it."
+        :value [:var "P" :vec3]}
+    Q @{:doc "The global point in 2D space."
+        :value [:var "Q" :vec2]}
     abs @{}
     acos @{}
     acosh @{}
@@ -80,7 +82,6 @@
     bool @{}
     box @{:doc "(box size [:r round])\n\nReturns a 3D shape, a box with corners at `(- size)` and `size`. `size` will be coerced to a `vec3`.\n\nThink of `size` like the \"radius\" of the box: a box with `size.x = 50` will be `100` units wide."}
     box-frame @{:doc "(box-frame size thickness [:r round])\n\nReturns a 3D shape, the outline of a box."}
-    camera-origin @{:value [:var "camera-origin" :vec3]}
     cast-light-hard-shadow @{:doc "(cast-light-hard-shadow light-color light-position)\n\nTODOC"}
     cast-light-no-shadow @{:doc "(cast-light-no-shadow light-color light-position)\n\nTODOC"}
     cast-light-soft-shadow @{:doc "(cast-light-soft-shadow light-color light-position softness)\n\nTODOC"}
@@ -94,8 +95,11 @@
     cross @{}
     cross-matrix @{:doc "(cross-matrix vec)\n\nReturns the matrix such that `(* (cross-matrix vec1) vec2)` = `(cross vec1 vec2)`."}
     cut-disk @{:doc "(cut-disk radius bottom)\n\nTODOC"}
-    d @{:value [:var "d" :float]}
     degrees @{}
+    depth @{:doc "The distance that the current ray has marched, equal to `(distance ray-origin P)`. Not defined in 2D."
+            :value [:var "depth" :float]}
+    dist @{:doc "(Color only!) The value of the global distance field at `P`. In 3D, this should be a very small positive number, assuming the ray was able to converge correctly. In 2D, this gives a more useful value."
+           :value [:var "dist" :float]}
     distance @{}
     dot @{}
     double @{}
@@ -117,7 +121,8 @@
     gl-point-coord @{:value [:var "gl_PointCoord" :vec2]}
     gl/let @{:doc "(gl/let bindings & body)\n\nLike `let`, but creates GLSL bindings instead of a Janet bindings. You can use this\nto reference an expression multiple times while only evaluating it once in the resulting\nshader.\n\nFor example:\n\n```\n(let [s (sin t)]\n  (+ s s))\n```\n\nProduces GLSL code like this:\n\n```\nsin(t) + sin(t)\n```\n\nBecause `s` refers to the GLSL *expression* `(sin t)`.\n\nMeanwhile:\n\n```\n(gl/let [s (sin t)]\n  (+ s s))\n```\n\nProduces GLSL code like this:\n\n```\nfloat let(float s) {\n  return s + s;\n}\n\nlet(sin(t))\n```\n\nOr something equivalent. Note that the variable is hoisted into an immediately-invoked function\nbecause it's the only way to introduce a new identifier in a GLSL expression context."
              :macro true}
-    gradient @{:value [:var "gradient" :vec2]}
+    gradient @{:doc "(Color only!) An approximation of the 2D distance field gradient at `Q`."
+               :value [:var "gradient" :vec2]}
     hash @{:doc "(hash v)\n\nReturn a pseudorandom float. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
     hash2 @{:doc "(hash2 v)\n\nReturn a pseudorandom `vec2`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
     hash3 @{:doc "(hash3 v)\n\nReturn a pseudorandom `vec3`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
@@ -162,7 +167,8 @@
     morph @{:doc "(morph shape1 amount shape2 [:distance amount] [:color amount])\n\nMorph linearly interpolates between two shapes.\n\n```\n# 50% box, 50% sphere\n(box 50 | morph (sphere 50))\n\n# 75% box, 25% sphere\n(box 50 | morph 0.25 (sphere 50))\n```\n\nConcretely this means that it returns a new shape whose individual fields\nare linear interpolations of its inputs. With an anonymous `amount` coefficient,\nboth the distance and color fields will be interpolated with the same value.\nBut you can also specify per-field overrides:\n\n```\n# distance is a 50% blend, but the color is 90% red\n(box 50 | color [1 0 0] | morph :color 0.1 (sphere 50 | color [0 1 0]))\n```"}
     move @{:doc "(move shape & args)\n\nTranslate a shape. Usually you'd use this with a vector offset:\n\n```\n(move (box 50) [0 100 0])\n```\n\nBut you can also provide a vector and a scalar:\n\n```\n(move (box 50) y 100)\n```\n\nWhich is the same as `(move (box 50) (y * 100))`.\n\nIf you provide multiple vector-scalar pairs, their sum is the final offset:\n\n```\n(move (box 50) x 100 y 100 -z 20)\n```\n\nThat is the same as `(move (box 50) (+ (x * 100) (y * 100) (-z * 100)))`."}
     nearest-distance @{:doc "(nearest-distance)\n\nThis is the forward declaration of the function that will become the eventual\ndistance field for the shape we're rendering. This is used in the main raymarcher,\nas well as the shadow calculations. You can refer to this function to sample the\ncurrent distance field at the current value of `p` or `q`, for example to create\na custom ambient occlusion value."}
-    normal @{:value [:var "normal" :vec3]}
+    normal @{:doc "(Color only!) A normalized vector that approximates the 3D distance field gradient at `P` (in other words, the surface normal for shading)."
+             :value [:var "normal" :vec3]}
     normalize @{}
     not @{}
     not-equal @{}
@@ -173,7 +179,8 @@
     or @{}
     oriented-rect @{:doc "(oriented-rect start end width)\n\nTODOC"}
     outer-product @{}
-    p @{:value [:var "p" :vec3]}
+    p @{:doc "The local point in 3D space. This is position of the current ray, with any transformations applied to it."
+        :value [:var "p" :vec3]}
     parallelogram @{:doc "(parallelogram size skew)\n\nReturns a 2D shape. `size.x` is the width of the top and bottom edges, and `size.y` is the height of the parellogram.\n\n`skew` is how far the pallorelogram leans in the `x` direction, so the total width of the prellogram is `(size.x + skew) * 2`.\nA `skew` of `0` gives the same shape as `rect`.\""}
     pentagon @{:doc "(pentagon radius [:r round])\n\nTODOC"}
     perlin @{:doc "(perlin point)\n\nReturns perlin noise ranging from `-1` to `1`. The input `point` can be a vector of any dimension.\n\nUse `perlin+` to return noise in the range `0` to `1`."}
@@ -219,7 +226,8 @@
             :macro true}
     pow @{}
     product @{:doc "(product v)\n\nMultiply the components of a vector."}
-    q @{:value [:var "q" :vec2]}
+    q @{:doc "The local point in 2D space. This is the position being shaded, with any transformations applied."
+        :value [:var "q" :vec2]}
     quad-circle @{:doc "(quad-circle radius)\n\nReturns a 2D shape, an approximation of a circle out of quadratic bezier curves.\n\nIt's like a circle, but quaddier."}
     r2 @{:value {:fields {:distance [<2>
                                      literal
@@ -234,6 +242,10 @@
                  :tag <1>
                  :type [<3> vec [<4> float] 3]}}
     radians @{}
+    ray-dir @{:doc "A normalized vector that represents the direction of the current ray."
+              :value [:var "ray-dir" :vec3]}
+    ray-origin @{:doc "A point in the global coordinate space that represents the origin of the ray -- in other words, the location of the camera."
+                 :value [:var "ray-origin" :vec3]}
     recolor @{:doc "(recolor dest-shape source-shape)\n\nReplaces the color field on `dest-shape` with the color field on `source-shape`. Does not affect the distance field."}
     rect @{:doc "(rect size [:r round])\n\nReturns a 2D shape, a rectangle with corners at `(- size)` and `size`. `size` will be coerced to a `vec2`.\n\nThink of `size` like the \"radius\" of the rect: a rect with `size.x = 50` will be `100` units wide."}
     reflect @{}
@@ -280,7 +292,8 @@
               :ref @[nil]}
     subtract @{:doc "(subtract & shapes [:r r] [:rs rs] [:distance distance] [:color color])\n\nSubtract one or more shapes from a source shape. The named arguments\nhere produce a smooth subtraction, and are similar to the arguments to `union`.\n\nIf you're performing rounded subtractions with surfaced shapes in 3D, the color\nfield produced by `:rs` might give more intuitive results. This is because\nthe color field of the first shape is only visible as a thin, two-dimensional\nsurface, and as soon as you start to blend it with the second shape it will be\novertaken.\n\nMeanwhile if you're working in 2D, or looking at the interior distance field of a 3D\nsubtraction (i.e. slicing into the subtracting shape), the asymmetric `:r` rounding\nwill probably be more intuitive.\n"}
     sum @{:doc "(sum v)\n\nAdd the components of a vector."}
-    t @{:value [:var "t" :float]}
+    t @{:doc "The current time in seconds."
+        :value [:var "t" :float]}
     tan @{}
     tanh @{}
     tau @{:doc "Bigger than six, but smaller than seven.\n\nNote that there are also values like `tau/4` and `tau/6*5` and related helpers all the way up to `tau/12`.  They don't show up in autocomplete because they're annoying, but they're there."

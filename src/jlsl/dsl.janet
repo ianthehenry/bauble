@@ -3,8 +3,8 @@
 (use ./types)
 (use ./expr)
 
-(defmacro jlsl/defdyn [name type]
-  ~(def ,name (,variable/new ,(string name) ,(type/of-ast type))))
+(defmacro jlsl/defdyn [name type docstring]
+  ~(def ,name ,docstring (,variable/new ,(string name) ,(type/of-ast type))))
 
 (defmacro- jlsl/stub [return-type name param-sigs]
   ~(,multifunction/single ,name ,(type/of-ast return-type) [,;(map param-sig/of-ast param-sigs)]))

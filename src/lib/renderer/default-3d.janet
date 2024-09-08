@@ -19,7 +19,7 @@
 
   (program/new
     (precision highp float)
-    (uniform ,camera-origin)
+    (uniform :vec3 camera-origin)
     (uniform :vec3 camera-orientation)
     (uniform :int render-type)
     (uniform ,t)
@@ -32,21 +32,22 @@
       #(return ,(@or (subject :distance) (jlsl/do (length p - 100)))))
 
     # returns the depth that it's able to march
-    (defn :float march [:vec3 ray-origin :vec3 ray-direction [out :int] steps]
-      (var depth 0)
+    (defn :float march [[out :int] steps]
+      (var ray-depth 0)
 
       (for (set steps :0) (< steps MAX_STEPS) (++ steps)
-        (with [P (+ ray-origin (* depth ray-direction)) p P]
-          (var nearest (nearest-distance))
-
+        (with [depth ray-depth
+               P (+ ray-origin (* ray-depth ray-dir))
+               p P]
+          (var dist (nearest-distance))
           # we could dynamically adjust the minimum_hit_distance when the ray
           # is farther away from the camera... it could speed up scenes with background
           # scenery for little cost, but might cause issues with reflections
-          (if (or (and (>= nearest 0) (< nearest MINIMUM_HIT_DISTANCE)) (> depth MAXIMUM_TRACE_DISTANCE))
-            (return depth))
+          (if (or (and (>= dist 0) (< dist MINIMUM_HIT_DISTANCE)) (> ray-depth MAXIMUM_TRACE_DISTANCE))
+            (return ray-depth))
 
-          (+= depth nearest)))
-      (return depth))
+          (+= ray-depth dist)))
+      (return ray-depth))
 
     (defn :vec3 perspective [:float fov :vec2 size :vec2 pos]
       (var xy (pos - (size * 0.5)))
@@ -81,34 +82,32 @@
 
       (var steps :0)
 
-      (var depth (march camera-origin dir steps))
-      (var hit (+ camera-origin (* dir depth)))
-
-      (case render-type
-        # default color field
-        :0 (do
-          (if (>= depth MAXIMUM_TRACE_DISTANCE)
-            (do
-              (def light (pow ([69 72 79] / 255) (vec3 2.2)))
-              (def dark (pow ([40 42 46] / 255) (vec3 2.2)))
-              (return (vec3 (mix dark light
-                ( frag-coord.x + frag-coord.y
-                / (resolution.x + resolution.y ))))))
-            (with [P hit
-                   p P
-                   d (nearest-distance)
-                   normal (calculate-normal)]
-              (return (nearest-color)))))
-        # convergence debug view
-        :1
-          (return (if (= steps MAX_STEPS)
-            [1 0 1]
-            (float steps / float MAX_STEPS | vec3)))
-        # overshoot debug view
-        :2 (with [P hit p P d (nearest-distance)]
-          (var overshoot (max (- d) 0 / MINIMUM_HIT_DISTANCE))
-          (var undershoot (max d 0 / MINIMUM_HIT_DISTANCE))
-          (return [overshoot (- 1 undershoot overshoot) (1 - (step 1 undershoot))]))))
+      (with [ray-origin camera-origin
+             ray-dir dir
+             depth (march steps)
+             P (+ ray-origin (* ray-dir depth))
+             p P
+             dist (nearest-distance)
+             normal (calculate-normal)]
+        (case render-type
+          # default color field
+          :0 (if (>= depth MAXIMUM_TRACE_DISTANCE)
+              (do
+                (def light (pow ([69 72 79] / 255) (vec3 2.2)))
+                (def dark (pow ([40 42 46] / 255) (vec3 2.2)))
+                (return (vec3 (mix dark light
+                  (frag-coord.x + frag-coord.y / (resolution.x + resolution.y))))))
+              (return (nearest-color)))
+          # convergence debug view
+          :1
+            (return (if (= steps MAX_STEPS)
+              [1 0 1]
+              (float steps / float MAX_STEPS | vec3)))
+          # overshoot debug view
+          :2 (do
+            (var overshoot (max (- dist) 0 / MINIMUM_HIT_DISTANCE))
+            (var undershoot (max dist 0 / MINIMUM_HIT_DISTANCE))
+            (return [overshoot (- 1 undershoot overshoot) (1 - (step 1 undershoot))])))))
 
     (defn :void main []
       (def gamma 2.2)

@@ -539,6 +539,7 @@
 (def out-buffer @"")
 (setdyn *out* out-buffer)
 
+(print `<!DOCTYPE html>`)
 (print `<html>`)
 (print `<head>`)
 (print `<meta charset="utf-8" />`)
@@ -573,6 +574,18 @@ img {
 .shader-source, .error {
   grid-column: 2;
 }
+.images {
+  display: flex;
+}
+.images .new {
+  position: relative;
+}
+.images .new .underlay {
+  position: absolute;
+}
+.images .new .underlay:hover {
+  mix-blend-mode: difference;
+}
 </style>`)
 (print `</head>`)
 (print `<body>`)
@@ -590,6 +603,11 @@ img {
   (let [env (bauble/evaluator/evaluate source)
         [animated? shader-source] (bauble/renderer/render env "330")]
     shader-source))
+
+(defn img [filename &opt class]
+  (printf `<img%s src="%s" width="%d" height="%d" />`
+    (if class (string ` class="` class `"`) "")
+    filename (display-resolution 0) (display-resolution 1)))
 
 (defn render [name program camera-origin camera-orientation compile-function &opt suffix]
   (var success true)
@@ -620,10 +638,26 @@ img {
         (eprin ":")
         (os/rename temporary-file-name final-file-name)
         (set success false)))
+
+    (def current-file-name (try
+      (slice ($<_ git show HEAD:tests/ ^ ,ref-path) 3)
+      ([_ _] nil)))
     ($ ln -fs (string "../" final-file-name) ,ref-path)
 
+    (def changed? (and current-file-name (not= current-file-name final-file-name)))
+
     (printf `<pre class="shader-source">%s</pre>` (html-escape shader-source))
-    (printf `<img src="%s" width="%d" height="%d" />` final-file-name (display-resolution 0) (display-resolution 1))
+    (printf `<div class="images">`)
+    (when changed?
+      (printf `<div class="old">`)
+      (img current-file-name)
+      (printf `</div>`))
+    (printf `<div class="new">`)
+    (when changed?
+      (img final-file-name "underlay"))
+    (img current-file-name (if changed? "overlay"))
+    (printf `</div>`)
+    (printf `</div>`)
 
     # (os/time) returns an integer number of seconds, so...
     # (printf `<div class="stats">%.3f compile, %.3f render, %.3f export, %.3f hash</div>`

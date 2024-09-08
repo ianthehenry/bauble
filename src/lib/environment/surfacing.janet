@@ -178,11 +178,9 @@
     (light/ambient (vec3 0.02) (* normal 0.1))]))
 
 (defhelper- :vec3 blinn-phong1 [:vec3 color :float shininess :float glossiness :vec3 light-color :vec3 light-dir]
-  # TODO: ray-dir should just be available as a dynamic variable
   (if (= light-dir (vec3 0))
     (return (* color light-color)))
-  (var view-dir (camera-origin - P | normalize))
-  (var halfway-dir (light-dir + view-dir | normalize))
+  (var halfway-dir (light-dir - ray-dir | normalize))
   (var specular-strength (shininess * pow (max (dot normal halfway-dir) 0) (glossiness * glossiness)))
   (var diffuse (max 0 (dot normal light-dir)))
   (return (light-color * specular-strength + (* color diffuse light-color))))

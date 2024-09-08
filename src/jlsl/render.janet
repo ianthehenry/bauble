@@ -943,7 +943,7 @@
   `))
 
 (deftest "with expressions"
-  (jlsl/defdyn q :vec2)
+  (jlsl/defdyn q :vec2 "q")
   (test-function (do
     (jlsl/defn :float circle [:float r]
       (return (- (length q) r)))

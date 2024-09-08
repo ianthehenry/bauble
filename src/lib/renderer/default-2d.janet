@@ -12,9 +12,9 @@
 
     (var gradient-color (remap+ gradient))
 
-    (var inside (step d 0))
-    (var isoline (smoothstep (1 - shadow-thickness) 1 (abs d / line-every | fract)))
-    (var boundary-line (1 - (smoothstep 0 (boundary-thickness * 0.5) (abs d))))
+    (var inside (step dist 0))
+    (var isoline (smoothstep (1 - shadow-thickness) 1 (abs dist / line-every | fract)))
+    (var boundary-line (1 - (smoothstep 0 (boundary-thickness * 0.5) (abs dist))))
 
     (mix
       (pow [gradient-color inside] (mix 1 2 isoline) | clamp 0 1)
@@ -54,11 +54,11 @@
 
       (with [q local-coord
              Q q
-             d (nearest-distance)
+             dist (nearest-distance)
              gradient (calculate-gradient)]
         (return ,(if color-field
           (jlsl/do "coloring"
-            (if (< d 0)
+            (if (< dist 0)
               ,color-field
               [0 0 0]))
           default-2d-color-expression))))

@@ -162,7 +162,6 @@
       (if (mask 1) (f (. p y)) (. p y))
       (if (mask 2) (f (. p z)) (. p z))))))
 
-# TODO: this should work with either a shape or an expression
 (defmacro gl/let
   ````
   Like `let`, but creates GLSL bindings instead of a Janet bindings. You can use this

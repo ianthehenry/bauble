@@ -16,7 +16,7 @@
   (def PI 3.14159265359)
   (def DEG_TO_RAD (/ PI 180))
 
-  (jlsl/jlsl/defdyn p :vec3)
+  (jlsl/jlsl/defdyn p :vec3 "point in space")
 
   (def program (jlsl/render/program (jlsl/program/new
     (precision highp float)
