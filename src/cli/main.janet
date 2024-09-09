@@ -6,6 +6,7 @@
 (use ./helpers)
 (use ./test-glsl)
 (use ./test-jlsl)
+(import ../lib :as bauble)
 
 (def arg/resolution (cmd/peg "WxH" ~(/ (* (number :d+) "x" (number :d+) -1) ,|[$0 $1])))
 
@@ -13,7 +14,9 @@
   [infile (required :file)
    outfile (required :file)
    --resolution (optional arg/resolution [512 512]) "default 512x512"]
-  (def shader-source (compile-shader (slurp infile)))
+  (def source (slurp infile))
+  (def env (bauble/evaluator/evaluate source))
+  (def [animated? shader-source] (bauble/shade/compile-shape nil env "330"))
   (init-jaylib)
   (def image (render-image shader-source
     :resolution resolution
