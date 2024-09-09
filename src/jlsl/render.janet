@@ -260,24 +260,39 @@
       ~(struct ,name ,;fields))
     (error "BUG")))
 
+(defn find-structs [root-variables main]
+  (def structs (ordered/set/new))
+  (def seen @{})
+  (defn visit [node]
+    (when (seen node) (break))
+    (put seen node true)
+    (pat/match node
+      ,(@type/struct _ _) (do
+        (ordered/set/put structs node)
+        (walk visit node))
+      ,(@function/custom impl) (do
+        # an impl is pretty big, and has a lot of
+        # unnecessary memoized values that we don't
+        # need to traverse at all
+        (walk visit (impl :declared-return-type))
+        (walk visit (impl :params))
+        (walk visit (impl :body)))
+      (walk visit node)))
+  (walk visit root-variables)
+  (walk visit main)
+  (ordered/set/values structs))
+
 (defn render/program [{:precisions precisions :uniforms uniforms :inputs inputs :outputs outputs :globals globals :main main}]
   (def root-variables (array/concat @[] uniforms inputs outputs globals))
 
-  (def structs (ordered/set/new))
-
-  (defn find-structs [node visiting? _]
-    (when visiting? (break))
-    (unless (type/struct? node) (break))
-    (ordered/set/put structs node))
-  (visit root-variables find-structs)
-  (visit main find-structs)
+  (def structs (find-structs root-variables main))
 
   (with-dyns [*glsl-identifier-map* (new-scope)
               *glsl-function-name-map* (bimap/new)]
     (each global globals
       (allocate-glsl-identifier global))
     [;precisions
-     ;(map declare-struct (ordered/set/values structs))
+     ;(map declare-struct structs)
      ;(map (declare in) inputs)
      ;(map (declare out) outputs)
      ;(map (declare uniform) uniforms)
