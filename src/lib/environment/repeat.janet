@@ -14,22 +14,31 @@
     ]))
 
 (defmacro- make-tiler [name variable & loop-body]
-  ~(defn- ,name [$index distance-field other-field size limit sample-from sample-to] (sugar (jlsl/do
-  (var size size)
-  (var base-index (,variable | safe-div size | round))
-  (var look-direction (,variable - (size * base-index) | sign))
-  ,['unquote ['splice ~(if limit [(jlsl/statement (var limit limit))] [])]]
-  (var start-logical (sample-from * look-direction + base-index))
-  (var end-logical (sample-to * look-direction + base-index))
-  ,['unquote ['splice ~(if limit
-    [(jlsl/statement (set start-logical (clamp start-logical (- limit) limit)))
-     (jlsl/statement (set end-logical (clamp end-logical (- limit) limit)))]
-    [])]]
-
-  (var start (min start-logical end-logical))
-  (var end (max start-logical end-logical))
-
-  ,;loop-body))))
+  ~(defn- ,name [$index distance-field other-field size limit sample-from sample-to]
+    (sugar (if limit
+      (jlsl/do
+        (var size size)
+        (var base-index (,variable | safe-div size | round))
+        (var look-direction (,variable - (size * base-index) | sign))
+        (var limit limit)
+        (var limit-start (limit - 1 / 2 | floor -))
+        (var limit-end (limit / 2 | floor))
+        (var start-logical (sample-from * look-direction + base-index))
+        (var end-logical (sample-to * look-direction + base-index))
+        (set start-logical (clamp start-logical limit-start limit-end))
+        (set end-logical (clamp end-logical limit-start limit-end))
+        (var start (min start-logical end-logical))
+        (var end (max start-logical end-logical))
+        ,;loop-body)
+      (jlsl/do
+        (var size size)
+        (var base-index (,variable | safe-div size | round))
+        (var look-direction (,variable - (size * base-index) | sign))
+        (var start-logical (sample-from * look-direction + base-index))
+        (var end-logical (sample-to * look-direction + base-index))
+        (var start (min start-logical end-logical))
+        (var end (max start-logical end-logical))
+        ,;loop-body)))))
 
 (make-tiler tile-distance-2d q
   (var nearest 1e20)
@@ -76,24 +85,26 @@
     other-field))
 
 (defn- simple-tile [coord $index expr size limit]
-  (sugar (gl/let [size size]
-    (gl/with [$index (let [index (coord | safe-div size | round)]
-                        (if limit
-                          (gl/let [limit limit]
-                            (index | clamp (- limit) limit))
-                          index))
-              coord (- coord (size * $index))]
-      expr))))
+  (def index-expr
+    (sugar (let [index (coord | safe-div size | round)]
+      (if limit
+        (gl/let [limit limit]
+          (index | clamp (limit - 1 / 2 | floor -) (limit / 2 | floor)))
+        index))))
+  (gl/let [size size]
+    (gl/with [$index index-expr
+              coord (- coord (* size $index))]
+      expr)))
 
 (defn- tile-aux [shape $index size limit oversample sample-from sample-to]
-  (def size (typecheck size (shape/type shape)))
-  (def limit (if limit (typecheck limit (shape/type shape))))
-  (def [coord tile-distance tile-other default-sample-from default-sample-to]
+  (def size (coerce-to-domain size shape))
+  (def limit (if limit (coerce-to-domain limit shape)))
+  (def [coord tile-distance tile-other]
     (case (shape/type shape)
-      jlsl/type/vec2 [q tile-distance-2d tile-other-2d [0 0] [1 1]]
-      jlsl/type/vec3 [p tile-distance-3d tile-other-3d [0 0 0] [1 1 1]]))
-  (default sample-from default-sample-from)
-  (default sample-to default-sample-to)
+      jlsl/type/vec2 [q tile-distance-2d tile-other-2d]
+      jlsl/type/vec3 [p tile-distance-3d tile-other-3d]))
+  (def sample-from (coerce-to-domain (or sample-from 0) shape))
+  (def sample-to (coerce-to-domain (or sample-to 1) shape))
 
   (if oversample
     (shape/map-fields shape (fn [name expr]
@@ -117,11 +128,12 @@
   multiple instances at each pass, essentially considering the distance not only to this
   tile, but also to neighboring tiles.
 
-  The default oversampling is `[0 0 0]` `[1 1 1]`, which means looking at one adjacent
+  The default oversampling is `:sample-from 0` `:sample-to 1`, which means looking at one adjacent
   tile, asymmetrically based on the location of the point (so when evaluating a point near
   the right edge of a tile, it will look at the adjacent tile to the right, but not the tile
-  to the left). By passing `:sample-from [-1 -1 -1]`, you can also look at the tile to the left.
-  By passing `:sample-from [0 0 0] :sample-to [2 2 2]`, it will look at two tiles to the right.
+  to the left). By passing `:sample-from -1`, you can also look at the tile to the left.
+  By passing `:sample-from 0 :sample-to [2 1 1]`, it will look at two tiles to the right in the
+  `x` direction, and one tile up/down/in/out.
 
   This can be useful when raymarching a 3D space where each tile is quite different, but note
   that it's very costly to increase these values. If you're tiling a 3D shape in all directions,

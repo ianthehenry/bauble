@@ -550,7 +550,7 @@
   `
 
   "!tile" `
-  (sphere 30 | tile [80 80 80] :limit [1 1 1])
+  (sphere 30 | tile [80 80 80] :limit [2 3 4])
   `
 
   "!tile 2d with asymmetric shape, no oversampling" `
@@ -564,14 +564,14 @@
   (cone y 30 60
   | blinn-phong [1 0 0]
   | rotate x -1 y 2 z 3
-  | tile [60 60 60] :limit [1 1 1]
+  | tile 60 :limit 3
   )
   `
   "!tile 3d with asymmetric shape, oversampling" `
   (cone y 30 60
   | blinn-phong [1 0 0]
   | rotate x -1 y 2 z 3
-  | tile [60 60 60] :limit [1 1 1] :oversample true
+  | tile [60 60 60] :limit 3 :oversample true
   )
   `
 

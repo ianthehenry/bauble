@@ -1,5 +1,6 @@
 (use judge)
 (import ../../jlsl)
+(import ../../jlsl/prelude :as jlsl/prelude)
 (import ../syntax)
 (import ../shape)
 (import ../util :prefix "" :export true)
@@ -19,6 +20,13 @@
   (if (= (jlsl/expr/type expr) desired-type)
     expr
     (constructor-function expr)))
+
+(defn coerce-to-domain [expr shape]
+  (def vec-constructor (case (shape/type shape)
+    jlsl/type/vec2 jlsl/prelude/vec2
+    jlsl/type/vec3 jlsl/prelude/vec3
+    (error "BUG")))
+  (coerce-expr-to-type (shape/type shape) vec-constructor expr))
 
 (defmacro make-shaper [name constructor def-macro]
   ~(defmacro ,name [name bindings docstring & body]
