@@ -1,6 +1,8 @@
 (import jaylib)
 (use sh)
 (use ../src/cli/helpers)
+(import ../src/legacy)
+(import ../src/lib :as bauble)
 
 (init-jaylib)
 
@@ -652,34 +654,34 @@ img {
 (def current-refs @{})
 (def previous-refs (os/dir "refs"))
 
-(import ../src/lib :as bauble)
-(defn compile-shader-new [source]
-  (let [env (bauble/evaluator/evaluate source)
-        [animated? shader-source] (bauble/renderer/render env "330")]
-    shader-source))
-
 (defn img [filename &opt class]
   (printf `<img%s src="%s" width="%d" height="%d" />`
     (if class (string ` class="` class `"`) "")
     filename (display-resolution 0) (display-resolution 1)))
 
-(defn render [name program camera-origin camera-orientation compile-function &opt suffix]
+(defn ms [start end]
+  (string/format "%.1fms" (* (- end start) 1000)))
+
+(defn render [name program camera-origin camera-orientation eval-function compile-function &opt suffix]
+  (gccollect)
   (var success true)
   (try (do
-    (def before-compile (os/time))
-    (def shader-source (compile-function program))
-    (def after-compile-before-render (os/time))
+    (def before-eval (os/clock :monotonic))
+    (def eval-result (eval-function program))
+    (def after-eval-before-compile (os/clock :monotonic))
+    (def [animated? shader-source] (compile-function ;(if (indexed? eval-result) eval-result [nil eval-result]) "330"))
+    (def after-compile-before-render (os/clock :monotonic))
     (def image (render-image shader-source
       :resolution physical-resolution
       :camera-origin camera-origin
       :camera-orientation camera-orientation
       ))
-    (def after-render-before-export (os/time))
+    (def after-render-before-export (os/clock :monotonic))
     (def temporary-file-name "snapshots/tmp.png")
     (jaylib/export-image image temporary-file-name)
-    (def after-export-before-hash (os/time))
+    (def after-export-before-hash (os/clock :monotonic))
     (def hash (string/slice ($<_ shasum -ba 256 snapshots/tmp.png) 0 32))
-    (def after-hash (os/time))
+    (def after-hash (os/clock :monotonic))
     (def new-file-name (string "snapshots/" hash ".png"))
     (def ref-name (string (string/replace-all " " "-" name) suffix ".png"))
     (put current-refs ref-name true)
@@ -713,12 +715,12 @@ img {
       (printf `</div>`)
     (printf `</div>`)
 
-    # (os/time) returns an integer number of seconds, so...
-    # (printf `<div class="stats">%.3f compile, %.3f render, %.3f export, %.3f hash</div>`
-    #   (- after-compile-before-render before-compile)
-    #   (- after-render-before-export after-compile-before-render)
-    #   (- after-export-before-hash after-render-before-export)
-    #   (- after-hash after-export-before-hash))
+    (printf `<div class="stats">%s eval, %s compile, %s render, %s export, %s hash</div>`
+      (ms before-eval after-eval-before-compile)
+      (ms after-eval-before-compile after-compile-before-render)
+      (ms after-compile-before-render after-render-before-export)
+      (ms after-render-before-export after-export-before-hash)
+      (ms after-export-before-hash after-hash))
     )
 
     ([e fib]
@@ -740,10 +742,14 @@ img {
   (print `<div class="test-case">`)
   (printf `<h1>%s</h1>` (html-escape name))
   (printf `<pre>%s</pre>` (html-escape program))
-  (def success (render name program camera-origin camera-orientation compile-shader))
+  (def success (render name program camera-origin camera-orientation
+    legacy/bauble-evaluator/evaluate
+    legacy/shade/compile-shape))
   (def success2
     (if (string/has-prefix? "!" name)
-      (render name program camera-origin camera-orientation compile-shader-new "-new")
+      (render name program camera-origin camera-orientation
+        bauble/evaluator/evaluate
+        bauble/shade/compile-shape "-new")
       true))
   (unless (and success success2) (++ failing-tests))
   (print `</div>`)
