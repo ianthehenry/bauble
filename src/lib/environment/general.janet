@@ -56,10 +56,15 @@
   That is the same as `(move (box 50) (+ (x * 100) (y * 100) (-z * 100)))`.
   ````
   [shape & args]
-  (def offset (sum-scaled-vectors (shape/type shape) args))
-  (if (= (shape/type shape) jlsl/type/vec2)
-    (transform shape "move" q (- q offset))
-    (transform shape "move" p (- p offset))))
+  (def shape (if (shape/is? shape) shape (jlsl/coerce-expr shape)))
+  (def dimension (if (shape/is? shape) (shape/type shape) (jlsl/expr/type shape)))
+  (def offset (sum-scaled-vectors dimension args))
+  (if (shape/is? shape)
+    (case dimension
+      jlsl/type/vec2 (transform shape "move" q (- q offset))
+      jlsl/type/vec3 (transform shape "move" p (- p offset))
+      (error "BUG"))
+    (+ shape offset)))
 
 (defn shell
   ```
