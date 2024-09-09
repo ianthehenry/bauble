@@ -1,4 +1,5 @@
 (use judge)
+(import pat)
 (use ../util)
 (import ../../jlsl)
 (import ../../glsl)
@@ -12,15 +13,19 @@
 (defn unhoist [env expr]
   (def hoisted-vars (in env expression-hoister/*hoisted-vars*))
   (def references (ordered/table/new))
-  (def seen? @{})
-  (visit expr (fn [node visiting? _]
-    (when (seen? node) (break))
-    (put seen? node true)
-    (when visiting? (break))
-    (unless (jlsl/variable? node) (break))
-    (when-let [expr (in hoisted-vars node)]
-      (unless (ordered/table/has-key? references node)
-        (ordered/table/put references node expr)))))
+  (def seen @{})
+  (defn visit [node]
+    (when (seen node) (break))
+    (put seen node true)
+    (if (jlsl/variable? node)
+      (when-let [expr (in hoisted-vars node)]
+        (unless (ordered/table/has-key? references node)
+          (ordered/table/put references node expr)))
+      (pat/match node
+        ,(jlsl/@function/custom impl) (walk visit (impl :body))
+        (walk visit node))))
+  (walk visit expr)
+
   (def to-hoist (ordered/table/pairs references))
   (if (empty? to-hoist)
     expr
