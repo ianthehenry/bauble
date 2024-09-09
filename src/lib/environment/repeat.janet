@@ -13,8 +13,8 @@
     (if (= b.y 0) 0 (a.y / b.y))
     ]))
 
-(defmacro- make-tiler [name variable loop-body]
-  ~(defn- ,name [$index distance-field size limit sample-from sample-to] (sugar (jlsl/do
+(defmacro- make-tiler [name variable & loop-body]
+  ~(defn- ,name [$index distance-field other-field size limit sample-from sample-to] (sugar (jlsl/do
   (var size size)
   (var base-index (,variable | safe-div size | round))
   (var look-direction (,variable - (size * base-index) | sign))
@@ -29,22 +29,51 @@
   (var start (min start-logical end-logical))
   (var end (max start-logical end-logical))
 
-  (var result 1e20)
-  ,loop-body
-  result))))
+  ,;loop-body))))
 
 (make-tiler tile-distance-2d q
+  (var nearest 1e20)
   (for (var y start.y) (<= y end.y) (++ y)
     (for (var x start.x) (<= x end.x) (++ x)
       (with [$index [x y] q (- q (size * $index))]
-        (set result (min result distance-field))))))
+        (set nearest (min nearest distance-field)))))
+  nearest)
 
 (make-tiler tile-distance-3d p
+  (var nearest 1e20)
   (for (var z start.z) (<= z end.z) (++ z)
     (for (var y start.y) (<= y end.y) (++ y)
       (for (var x start.x) (<= x end.x) (++ x)
         (with [$index [x y z] p (- p (size * $index))]
-          (set result (min result distance-field)))))))
+          (set nearest (min nearest distance-field))))))
+  nearest)
+
+(make-tiler tile-other-2d q
+  (var nearest 1e20)
+  (var nearest-index [0 0])
+  (for (var y start.y) (<= y end.y) (++ y)
+    (for (var x start.x) (<= x end.x) (++ x)
+      (with [$index [x y] q (- q (size * $index))]
+        (var dist distance-field)
+        (if (< dist nearest) (do
+          (set nearest dist)
+          (set nearest-index $index))))))
+  (with [$index nearest-index q (- q (size * $index))]
+    other-field))
+
+(make-tiler tile-other-3d p
+  (var nearest 1e20)
+  (var nearest-index [0 0 0])
+  (for (var z start.z) (<= z end.z) (++ z)
+    (for (var y start.y) (<= y end.y) (++ y)
+      (for (var x start.x) (<= x end.x) (++ x)
+        (with [$index [x y z] p (- p (size * $index))]
+          (var dist distance-field)
+          (if (< dist nearest) (do
+            (set nearest dist)
+            (set nearest-index $index)))))))
+  (with [$index nearest-index p (- p (size * $index))]
+    other-field))
 
 (defn- simple-tile [coord $index expr size limit]
   (sugar (gl/let [size size]
@@ -56,21 +85,30 @@
               coord (- coord (size * $index))]
       expr))))
 
+(defn- tile-aux [shape $index size limit oversample sample-from sample-to]
+  (def size (typecheck size (shape/type shape)))
+  (def limit (if limit (typecheck limit (shape/type shape))))
+  (def [coord tile-distance tile-other default-sample-from default-sample-to]
+    (case (shape/type shape)
+      jlsl/type/vec2 [q tile-distance-2d tile-other-2d [0 0] [1 1]]
+      jlsl/type/vec3 [p tile-distance-3d tile-other-3d [0 0 0] [1 1 1]]))
+  (default sample-from default-sample-from)
+  (default sample-to default-sample-to)
+
+  (if oversample
+    (shape/map-fields shape (fn [name expr]
+      (case name
+        :distance (tile-distance $index expr nil size limit sample-from sample-to)
+        (tile-other $index (shape/distance shape) expr size limit sample-from sample-to))))
+    (shape/map shape (fn [expr]
+      (simple-tile coord $index expr size limit)))))
+
 # TODO: oversample should be a flag; you shouldn't have to pass a boolean?
-# TODO: callback
-# TODO: mapping function
 (defnamed tile [shape size :?limit :?oversample :?sample-from :?sample-to]
-  ```
+  ````
   Repeat the region of space `size` units around the origin. Pass `:limit` to constrain
-  the number of repetitions.
-
-  `shape` can be a single shape or a callback that returns a shape.
-
-  The callback takes the original shape and `index`, which is a vector of the same dimension
-  as the shape, i.e. in 3D, the shape at the origin has an index of `[0 0 0]` and the shape
-  above it has an index of `[0 1 0]`.
-
-  (Protip: you can use `(hash index)` in the callback to produce pseudorandom variations of shapes.)
+  the number of repetitions. See `tiled` or `tiled*` if you want to produce a shape that
+  varies as it repeats.
 
   To repeat space only along some axes, pass `0`. For example, `(tile (sphere 50) [0 100 0])` will
   only tile in the `y` direction.
@@ -89,22 +127,39 @@
   that it's very costly to increase these values. If you're tiling a 3D shape in all directions,
   the default `:oversample` parameters will do 8 distance field evaluations;
   `:sample-from [-1 -1 -1]` `:sample-to [1 1 1]` will do 27.
-  ```
-  (def size (typecheck size (shape/type shape)))
-  (def limit (if limit (typecheck limit (shape/type shape))))
-  (def [coord tile-function default-sample-from default-sample-to]
-    (case (shape/type shape)
-      jlsl/type/vec2 [q tile-distance-2d [0 0] [1 1]]
-      jlsl/type/vec3 [p tile-distance-3d [0 0 0] [1 1 1]]))
-  (default sample-from default-sample-from)
-  (default sample-to default-sample-to)
-
+  ````
   (def $index (jlsl/variable/new "index" (shape/type shape)))
+  (tile-aux shape $index size limit oversample sample-from sample-to))
 
-  (if oversample
-    (shape/map-fields shape (fn [name expr]
-      (case name
-        :distance (tile-function $index expr size limit sample-from sample-to)
-        (simple-tile coord $index expr size limit))))
-    (shape/map shape (fn [expr]
-      (simple-tile coord $index expr size limit)))))
+(defnamed tiled* [size get-shape :?limit :?oversample :?sample-from :?sample-to]
+  ````
+  Like `tile`, but the shape is a result of invoking `get-shape` with one argument,
+  a GLSL variable referring to the current index in space.
+
+  ```
+  (tiled* [10 10] (fn [$i] (circle 5 | color (hsv (hash $i) 0.5 1))))
+  ```
+
+  You can use this to generate different shapes or colors at every sampled tile. The index
+  will be a vector with integral components that represents  being considered. So for
+  example, in 3D, the shape at the origin has an index of `[0 0 0]` and the shape above
+  it has an index of `[0 1 0]`.
+  ````
+  (def size (jlsl/coerce-expr size))
+  (def $index (jlsl/variable/new "index" (jlsl/expr/type size)))
+  (def shape (get-shape $index))
+  (tile-aux shape $index size limit oversample sample-from sample-to))
+
+(defmacro tiled
+  ````
+  Like `tiled*`, but its first argument should be a form that will
+  become the body of the function. Basically, it's a way to create
+  a repeated shape where each instance of the shape varies, and it's
+  written in a way that makes it conveniently fit into a pipeline:
+
+  ```
+  (circle 5 | color (hsv (hash $i) 0.5 1) | tiled $i [10 10])
+  ```
+  ````
+  [shape $i & args]
+  ~(,tiled* ,;args (fn [,$i] ,shape)))

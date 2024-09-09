@@ -572,6 +572,18 @@
   | tile [60 60 60] :limit [1 1 1] :oversample true
   )
   `
+
+  "!tiled" `
+  (circle 5 | color (hsv (hash $i) 0.5 1) | tiled $i [10 10])
+  `
+
+  "!tile with oversampling picks the nearest color" `
+  (tiled* [20 20] :oversample true :sample-from [-1 -1] :sample-to [1 1] (fn [$i]
+    (isosceles-triangle [10 31]
+      | move (hash2 $i * 10)
+      | rotate (hash $i)
+      | color (hsv (hash $i) 0.8 1))))
+  `
 })
 
 (each filename (os/dir "./cases")

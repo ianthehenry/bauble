@@ -154,6 +154,20 @@
   [shape field]
   (in (in shape :fields) field))
 
+(defn distance
+  ```
+  Shorthand for `(shape/get-field shape :distance)`.
+  ```
+  [shape]
+  (get-field shape :distance))
+
+(defn color
+  ```
+  Shorthand for `(shape/get-field shape :color)`.
+  ```
+  [shape]
+  (get-field shape :color))
+
 (defn transplant
   ```
   Shorthand for `(shape/with dest-shape field (shape/get-field source-shape field))`.
