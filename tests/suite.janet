@@ -586,6 +586,26 @@
       | rotate (hash $i)
       | color (hsv (hash $i) 0.8 1))))
   `
+
+  "!ss overloads" `
+  (union
+    (rect 30
+    | color [(ss q.x [-30 30]) 0.1 0.1]
+    | move [-40 40]
+    )
+    (rect 30
+    | color [(ss q.x [30 -30]) 0.1 0.1]
+    | move [-40 -40]
+    )
+    (rect 30
+    | color [(ss q.x [-30 30] [0.5 2]) 0.1 0.1]
+    | move [40 40]
+    )
+    (rect 30
+    | color [(ss q.x [30 -30] [2 0.5]) 0.1 0.1]
+    | move [40 -40]
+    ))
+  `
 })
 
 (each filename (os/dir "./cases")

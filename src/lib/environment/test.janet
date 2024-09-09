@@ -296,6 +296,7 @@
     smoothstep @{}
     sphere @{:doc "(sphere radius)\n\nReturns a 3D shape."}
     sqrt @{}
+    ss @{:doc "(ss x &opt from-range to-range)\n\nThis is a wrapper around `smoothstep` with a different argument order, which also\nallows the input edges to occur in descending order.\n\nThere are several overloads:\n\n```\n(ss x)\n# becomes\n(smoothstep 0 1 x)\n```\n\n```\n(ss x [from-start from-end])\n# becomes\n(if (< from-start from-end)\n  (smoothstep from-start from-end x)\n  (1 - smoothstep from-end from-start x))\n``` \n\n```\n(ss x from [to-start to-end])\n# becomes\n(ss x from * (- to-end to-start) + to-start)\n```"}
     star @{:doc "(star outer-radius inner-radius [:r round])\n\nTODOC"}
     step @{}
     subject @{:doc "A variable that determines what Bauble will render.\n\nYou can set this variable explicitly to change your focus, or use the `view` macro to change your focus. If you don't set a subject, Bauble will render the last shape in your script."
@@ -503,3 +504,13 @@
 (test-macro (sugar
   (s + s | gl/let [s (sin t)] _))
   (gl/let [s (sin t)] (+ s s)))
+
+(test (jlsl/show (ss 10))
+  [smoothstep 0 1 10])
+(test (jlsl/show (ss 10 [1 2]))
+  [smoothstep 1 2 10])
+(test (jlsl/show (ss 10 [2 1]))
+  [- 1 [smoothstep 1 2 10]])
+(test (jlsl/show (ss 10 [2 1] [100 120]))
+  [+ [* [- 1 [smoothstep 1 2 10]] 20] 100])
+

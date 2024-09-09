@@ -232,3 +232,54 @@
 (setdyn '@- (table/getproto (dyn '-)))
 (setdyn '@* (table/getproto (dyn '*)))
 (setdyn '@/ (table/getproto (dyn '/)))
+
+(defn ss
+  ````
+  This is a wrapper around `smoothstep` with a different argument order, which also
+  allows the input edges to occur in descending order.
+
+  There are several overloads:
+
+  ```
+  (ss x)
+  # becomes
+  (smoothstep 0 1 x)
+  ```
+
+  ```
+  (ss x [from-start from-end])
+  # becomes
+  (if (< from-start from-end)
+    (smoothstep from-start from-end x)
+    (1 - smoothstep from-end from-start x))
+  ``` 
+
+  ```
+  (ss x from [to-start to-end])
+  # becomes
+  (ss x from * (- to-end to-start) + to-start)
+  ```
+  ````
+  [x &opt from-range to-range]
+  (when to-range
+    (def [to-start to-end] to-range)
+    (break
+      (cond
+        (@and (number? to-start) (= to-start 0)) (sugar (ss x from-range * to-end))
+        (@and (number? to-start) (number? to-end))
+          (sugar (ss x from-range * (to-end - to-start) + to-start))
+        (gl/let [to-start to-start]
+          (sugar (ss x from-range * (to-end - to-start) + to-start))))))
+  (when from-range
+    (def [from-start from-end] from-range)
+    (break (if (@and (number? from-start) (number? from-end))
+      # if these are both constants, we can decide right here what to do
+      (if (< from-start from-end)
+        (smoothstep from-start from-end x)
+        (- 1 (smoothstep from-end from-start x)))
+      (gl/let [from-start from-start from-end from-end]
+        (jlsl/do
+          (if (< from-start from-end)
+            (smoothstep from-start from-end x)
+            (- 1 (smoothstep from-end from-start x))))))))
+  (smoothstep 0 1 x))
