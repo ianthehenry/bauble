@@ -237,8 +237,9 @@
 
   (set free-var-accesses (fn impl/free-var-accesses [t]
     (def {:free-var-access-ref free-var-access-ref} t)
-    (when (= (ref/get free-var-access-ref) :computing)
-      (break @{}))
+    (def currently (ref/get free-var-access-ref))
+    (when (= currently :computing) (break @{}))
+    (when currently (break currently))
     (ref/set free-var-access-ref :computing)
     (def result (compute-free-var-accesses t))
     (ref/set free-var-access-ref result)
