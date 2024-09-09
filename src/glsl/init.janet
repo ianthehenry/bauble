@@ -4,10 +4,10 @@
 (use ./util)
 
 (defmodule- printer
-  (defn new []
+  (defn new [&opt capacity]
     @{:indent 0
       :indented false
-      :buf (buffer/new 256)})
+      :buf (buffer/new (or capacity 65535))})
 
   (defn indent [t]
     (repeat (t :indent)
@@ -111,12 +111,13 @@
 (varfn render-expression [p expression &named needs-parens?]
   (default needs-parens? false)
   (pat/match expression
-    [(and op (or '++ '--)) expr] (do
-      (printer/prin p op)
-      (render-expression p expr :needs-parens? true))
-    [(and op (or '_++ '_--)) expr] (do
+    |number? (printer/prin p (to-float expression))
+    |symbol? (printer/prin p (identifier expression))
+    |keyword? (printer/prin p expression)
+    |boolean? (printer/prin p (string expression))
+    ['. expr key] (do
       (render-expression p expr :needs-parens? true)
-      (printer/prin p (string/slice op 1)))
+      (printer/prin p "." (identifier key)))
     ['- expr]
       (wrap-when needs-parens?
         (printer/prin p "(")
@@ -127,19 +128,13 @@
             (printer/prin p "-")
             (render-expression p expr :needs-parens? true)))
         (printer/prin p ")"))
-    [(and op (or 'not 'bnot)) expr] (do
-      (def op (case op
-        'not "!"
-        'bnot "~"
-        (error "BUG")))
-      (printer/prin p op)
-      (render-expression p expr :needs-parens? true))
     ['/ expr] (render-expression p ~(/ 1 ,expr) :needs-parens? needs-parens?)
-    [(and op (or '+ '/ '- '* '%
-      'and 'or 'xor
-      'blshift 'brshift 'band 'bor 'bxor
+    [(and op (or '+ '/ '- '*
       '< '> '<= '>=
-      '= 'not=)) & args] (do
+      '= 'not=
+      'and 'or
+      '% 'xor
+      'blshift 'brshift 'band 'bor 'bxor)) & args] (do
       (def op (case op
         'blshift "<<"
         'brshift ">>"
@@ -158,6 +153,19 @@
           (render-expression p arg :needs-parens? true)
           (printer/prin p " " op " "))
         (printer/prin p ")")))
+    [(and op (or '++ '--)) expr] (do
+      (printer/prin p op)
+      (render-expression p expr :needs-parens? true))
+    [(and op (or '_++ '_--)) expr] (do
+      (render-expression p expr :needs-parens? true)
+      (printer/prin p (string/slice op 1)))
+    [(and op (or 'not 'bnot)) expr] (do
+      (def op (case op
+        'not "!"
+        'bnot "~"
+        (error "BUG")))
+      (printer/prin p op)
+      (render-expression p expr :needs-parens? true))
     ['if cond then else] (do
       (wrap-when needs-parens?
         (printer/prin p "(")
@@ -172,9 +180,6 @@
       (printer/prin p "[")
       (render-expression p key)
       (printer/prin p "]"))
-    ['. expr key] (do
-      (render-expression p expr :needs-parens? true)
-      (printer/prin p "." (identifier key)))
     ['.length expr] (do
       (render-expression p expr :needs-parens? true)
       (printer/prin p ".length()"))
@@ -184,10 +189,7 @@
         (render-expression p arg)
         (printer/prin p ", "))
       (printer/prin p ")"))
-    |symbol? (printer/prin p (identifier expression))
-    |keyword? (printer/prin p expression)
-    |boolean? (printer/prin p (string expression))
-    |number? (printer/prin p (to-float expression))))
+    ))
 
 (defn format-type [type]
   (if (and (ptuple? type) (= (length type) 2))
@@ -200,9 +202,14 @@
   (default one-line? false)
   (var semicolon? semicolon?)
   (pat/match statement
-    ['def type name value] (do
-      (printer/prin p "const " (format-type type) " " (identifier name) " = ")
-      (render-expression p value))
+    ['do & statements] (do
+      (printer/bracket-body p "{" "}"
+        (each statement statements
+          (render-statement p statement)))
+      (if newline-after-block?
+        (printer/newline p)
+        (printer/prin p " "))
+      (set semicolon? false))
     ['var type name] (do
       (printer/prin p (format-type type) " " (identifier name)))
     ['var type name value] (do
@@ -216,34 +223,6 @@
       (printer/prin p "return ")
       (render-expression p value))
     ['break] (printer/prin p "break")
-    ['continue] (printer/prin p "continue")
-    ['discard] (printer/prin p "discard")
-    [(and op (or
-      '+= '*= '/= '-= '%=
-      'blshift= 'brshift=
-      'bxor= 'band= 'bor=)) dest expr] (do
-      (def op (case op
-        'bxor= "^="
-        'band= "&="
-        'bor= "|="
-        'brshift= ">>="
-        'blshift= "<<="
-        op))
-      (render-expression p dest)
-      (printer/prin p " " op " ")
-      (render-expression p expr))
-    ['do & statements] (do
-      (printer/bracket-body p "{" "}"
-        (each statement statements
-          (render-statement p statement)))
-      (if newline-after-block?
-        (printer/newline p)
-        (printer/prin p " "))
-      (set semicolon? false))
-    ['upscope & statements] (do
-      (each statement statements
-        (render-statement p statement))
-      (set semicolon? false))
     ['if cond then & else] (do
       (assert (<= (length else) 1) "too many arguments to if")
       (printer/prin p "if (")
@@ -253,6 +232,16 @@
       (unless (empty? else)
         (printer/prin p "else ")
         (render-statement p (first else)))
+      (set semicolon? false))
+    ['for init check advance & body] (do
+      (printer/prin p "for (")
+      (render-statement p init :one-line? true)
+      (printer/prin p " ")
+      (render-expression p check)
+      (printer/prin p "; ")
+      (render-statement p advance :semicolon? false)
+      (printer/prin p ") ")
+      (render-statement p ~(do ,;body))
       (set semicolon? false))
     ['case value & cases] (do
       (printer/prin p "switch (")
@@ -270,6 +259,29 @@
         (render-statement p body))
       (printer/print p "}")
       (set semicolon? false))
+    [(and op (or
+      '+= '*= '/= '-= '%=
+      'blshift= 'brshift=
+      'bxor= 'band= 'bor=)) dest expr] (do
+      (def op (case op
+        'bxor= "^="
+        'band= "&="
+        'bor= "|="
+        'brshift= ">>="
+        'blshift= "<<="
+        op))
+      (render-expression p dest)
+      (printer/prin p " " op " ")
+      (render-expression p expr))
+    ['continue] (printer/prin p "continue")
+    ['discard] (printer/prin p "discard")
+    ['def type name value] (do
+      (printer/prin p "const " (format-type type) " " (identifier name) " = ")
+      (render-expression p value))
+    ['upscope & statements] (do
+      (each statement statements
+        (render-statement p statement))
+      (set semicolon? false))
     ['while cond & body] (do
       (printer/prin p "while (")
       (render-expression p cond)
@@ -282,16 +294,6 @@
       (printer/prin p "while (")
       (render-expression p cond)
       (printer/prin p ")"))
-    ['for init check advance & body] (do
-      (printer/prin p "for (")
-      (render-statement p init :one-line? true)
-      (printer/prin p " ")
-      (render-expression p check)
-      (printer/prin p "; ")
-      (render-statement p advance :semicolon? false)
-      (printer/prin p ") ")
-      (render-statement p ~(do ,;body))
-      (set semicolon? false))
     (render-expression p statement))
   (when semicolon?
     ((if one-line? printer/prin printer/print) p ";")))
