@@ -7,7 +7,7 @@ import {SyntaxNode} from '@lezer/common';
 import {tags} from '@lezer/highlight';
 import {janet} from 'codemirror-lang-janet';
 import {EditorState, EditorSelection, Transaction} from '@codemirror/state';
-import type {DefinitionVector} from 'bauble-runtime';
+import type {Definition} from 'bauble-runtime';
 import Big from 'big.js';
 import * as Storage from './storage';
 import janetAutocomplete from "./autocomplete";
@@ -76,7 +76,7 @@ interface EditorOptions {
   parent: HTMLElement,
   canSave: boolean,
   onChange: (() => void),
-  definitions: DefinitionVector,
+  definitions: Array<Definition>,
 }
 
 const highlightStyle = HighlightStyle.define([

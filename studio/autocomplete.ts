@@ -1,5 +1,5 @@
 import {CompletionContext, Completion} from "@codemirror/autocomplete";
-import type {Definition, DefinitionVector} from 'bauble-runtime';
+import type {Definition} from 'bauble-runtime';
 import {JanetLanguage} from 'codemirror-lang-janet';
 import {syntaxTree} from '@codemirror/language';
 import type {SyntaxNode} from '@lezer/common';
@@ -69,17 +69,8 @@ function renderDefinition(def: Definition): Completion {
   };
 }
 
-function renderDefinitions(defs: DefinitionVector) {
-  const rendered = [];
-  for (let i = 0; i < defs.size(); i++) {
-    rendered.push(renderDefinition(defs.get(i)));
-  }
-  defs.delete();
-  return rendered;
-}
-
-export default function janetAutocomplete(definitions: DefinitionVector) {
+export default function janetAutocomplete(definitions: Array<Definition>) {
   return JanetLanguage.data.of({
-    autocomplete: getCompletions(renderDefinitions(definitions)),
+    autocomplete: getCompletions(definitions.map(renderDefinition)),
   });
 }

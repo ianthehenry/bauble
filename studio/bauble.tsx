@@ -8,9 +8,9 @@ import * as Signal from './signals';
 import {mod, clamp} from './util';
 import {vec2} from 'gl-matrix';
 import type {Seconds} from './types';
-import type {BaubleModule} from 'bauble-runtime';
-import OutputChannel from './output-channel';
+import type {Definition} from 'bauble-runtime';
 import RenderLoop from './render-loop';
+import type Mailbox from './mailbox';
 import type {Property} from 'csstype';
 
 enum EvaluationState {
@@ -234,6 +234,34 @@ const ResizableArea = (props: {ref: any}) => {
   </>;
 };
 
+function assert(expr: boolean) {
+  if (!expr) {
+    throw new Error("assertion failure");
+  }
+}
+
+// a one-in-flight job scheduler
+class Throttle {
+  private currentJob : Promise<void> | undefined = undefined;
+  private nextJob : (() => Promise<void>) | undefined = undefined;
+
+  schedule(job : (() => Promise<void>)) {
+    if (this.currentJob == undefined) {
+      assert(this.nextJob === undefined);
+      this.currentJob = job().then(() => {
+        this.currentJob = undefined;
+        if (this.nextJob !== undefined) {
+          const nextJob = this.nextJob;
+          this.nextJob = undefined;
+          this.schedule(nextJob);
+        }
+      });
+    } else {
+      this.nextJob = job;
+    }
+  }
+}
+
 enum Interaction {
   Rotate,
   PanXY,
@@ -246,12 +274,13 @@ interface BaubleProps {
   initialScript: string,
   focusable: boolean,
   canSave: boolean,
-  runtime: BaubleModule,
-  outputChannel: OutputChannel,
+  definitions: Array<Definition>,
+  mailbox: Mailbox,
   size: {width: number, height: number},
 }
+
 const Bauble = (props: BaubleProps) => {
-  const {runtime, outputChannel} = props;
+  const {definitions, mailbox} = props;
   let canvasContainer: HTMLDivElement;
   let editorContainer: HTMLDivElement;
   let canvas: HTMLCanvasElement;
@@ -275,7 +304,6 @@ const Bauble = (props: BaubleProps) => {
   const zoom = Signal.create(defaultCamera.zoom);
   const rotation = Signal.create(defaultCamera.rotation);
   const origin = Signal.create(defaultCamera.origin);
-  const scriptDirty = Signal.create(true);
   const evaluationState = Signal.create(EvaluationState.Unknown);
   const isAnimation = Signal.create(false);
   const isVisible = Signal.create(false);
@@ -288,17 +316,62 @@ const Bauble = (props: BaubleProps) => {
     }
   });
 
+  let renderLoop : RenderLoop;
+  let renderer : Renderer;
+  const compileQueue = new Throttle();
+
+  const print = (line: string, isErr: boolean) => {
+    const span = document.createElement('span');
+    span.classList.toggle('err', isErr);
+    span.appendChild(document.createTextNode(line));
+    span.appendChild(document.createTextNode('\n'));
+    outputContainer.appendChild(span);
+  };
+
+  const recompile = () => {
+    compileQueue.schedule(() => {
+      Signal.set(evaluationState, EvaluationState.Unknown);
+      const request = {tag: 'compile', script: editor.state.doc.toString()};
+      return mailbox.send(request).then((result : any) => {
+        outputContainer.innerHTML = '';
+        for (let [line, isErr] of result.outputs) {
+          print(line, isErr);
+        }
+
+        if (result.isError) {
+          Signal.set(evaluationState, EvaluationState.EvaluationError);
+          console.error(result.error);
+        } else {
+          try {
+            //console.log(result.shaderSource);
+            renderer.recompileShader(result.shaderSource);
+            Signal.set(evaluationState, EvaluationState.Success);
+            Signal.set(isAnimation, result.isAnimated);
+          } catch (e: any) {
+            Signal.set(evaluationState, EvaluationState.ShaderCompilationError);
+            print(e.toString(), true);
+            if (e.cause != null) {
+              print(e.cause, true);
+            }
+          }
+        }
+        renderLoop.schedule();
+      })
+    });
+  };
+
   onMount(() => {
     intersectionObserver.observe(canvas);
+
     editor = installCodeMirror({
       initialScript: props.initialScript,
       parent: editorContainer,
       canSave: props.canSave,
-      onChange: () => Signal.set(scriptDirty, true),
-      definitions: runtime.getDefinitions(),
+      onChange: recompile,
+      definitions: definitions,
     });
     // TODO: these should really be named
-    const renderer = new Renderer(
+    renderer = new Renderer(
       canvas,
       timer.t,
       renderType,
@@ -310,7 +383,7 @@ const Bauble = (props: BaubleProps) => {
       canvasResolution,
     );
 
-    const renderLoop = new RenderLoop((elapsed) => batch(() => {
+    renderLoop = new RenderLoop((elapsed) => batch(() => {
       if (!Signal.get(isVisible)) {
         return;
       }
@@ -328,31 +401,6 @@ const Bauble = (props: BaubleProps) => {
           renderLoop.schedule();
         }
       }
-
-      if (Signal.get(scriptDirty)) {
-        outputContainer.innerHTML = '';
-        outputChannel.target = outputContainer;
-        const result = runtime.evaluateScript(editor.state.doc.toString());
-        Signal.set(scriptDirty, false);
-        if (result.isError) {
-          Signal.set(evaluationState, EvaluationState.EvaluationError);
-          console.error(result.error);
-        } else {
-          try {
-            console.log(result.shaderSource);
-            renderer.recompileShader(result.shaderSource);
-            Signal.set(evaluationState, EvaluationState.Success);
-            Signal.set(isAnimation, result.isAnimated);
-          } catch (e: any) {
-            Signal.set(evaluationState, EvaluationState.ShaderCompilationError);
-            outputChannel.print(e.toString(), true);
-            if (e.cause != null) {
-              outputChannel.print(e.cause, true);
-            }
-          }
-        }
-        outputChannel.target = null;
-      }
       renderer.draw();
     }));
 
@@ -361,7 +409,6 @@ const Bauble = (props: BaubleProps) => {
       rotation,
       origin,
       zoom,
-      scriptDirty,
       renderType,
       timer.state,
       timer.t,
@@ -370,6 +417,12 @@ const Bauble = (props: BaubleProps) => {
       canvasResolution,
     ], () => {
       renderLoop.schedule();
+    });
+    requestAnimationFrame(() => {
+      // onMount is called before the children have been mounted,
+      // apparently, which means that all of our refs are not
+      // actually set up yet, so we can't invoke this synchronously
+      recompile();
     });
   });
 

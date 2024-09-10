@@ -2,62 +2,69 @@ import * as Storage from './storage';
 import Bauble from './bauble';
 import { render as renderSolid } from 'solid-js/web';
 import InitializeWasm from 'bauble-runtime';
-import type {BaubleModule} from 'bauble-runtime';
-import OutputChannel from './output-channel';
+import type {BaubleModule, Definition} from 'bauble-runtime';
+import * as WasmWorker from './wasm-worker';
+import Mailbox from './mailbox';
 
-document.addEventListener("DOMContentLoaded", (_) => {
-  const outputChannel = new OutputChannel();
-  const baubleOpts = {
-    print: (x: string) => {
-      outputChannel.print(x, false);
-    },
-    printErr: (x: string) => {
-      outputChannel.print(x, true);
-    },
-  };
+// @ts-ignore
+const inWorker = typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope;
+
+(async function() {
+
+if (inWorker) {
+  WasmWorker.init();
+} else {
+  await new Promise<void>((resolve) => {
+    document.addEventListener("DOMContentLoaded", (_) => { resolve(); }, {once: true});
+  });
+
+  const worker = await new Promise<Worker>((resolve) => {
+    const worker = new Worker(import.meta.url);
+    worker.addEventListener('message', ((_) => { resolve(worker); }), {once: true});
+  });
+  const mailbox = new Mailbox(worker);
+
+  const definitions = await mailbox.send({tag: 'definitions'}) as Array<Definition>;
 
   switch (window.location.pathname) {
   case '/help/': {
-    InitializeWasm(baubleOpts).then((runtime: BaubleModule) => {
-      const intersectionObserver = new IntersectionObserver((entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) {
-            continue;
-          }
-          const placeholder = entry.target;
-          intersectionObserver.unobserve(entry.target);
-          const initialScript = placeholder.textContent ?? '';
-          placeholder.innerHTML = '';
-          renderSolid(() =>
-            <Bauble
-              runtime={runtime}
-              outputChannel={outputChannel}
-              initialScript={initialScript}
-              focusable={true}
-              canSave={false}
-              size={{width: 256, height: 256}}
-            />, placeholder);
+    const intersectionObserver = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) {
+          continue;
         }
-      });
-      for (const placeholder of document.querySelectorAll('.bauble-placeholder')) {
-        intersectionObserver.observe(placeholder);
+        const placeholder = entry.target;
+        intersectionObserver.unobserve(entry.target);
+        const initialScript = placeholder.textContent ?? '';
+        placeholder.innerHTML = '';
+        renderSolid(() =>
+          <Bauble
+            definitions={definitions}
+            mailbox={mailbox}
+            initialScript={initialScript}
+            focusable={true}
+            canSave={false}
+            size={{width: 256, height: 256}}
+          />, placeholder);
       }
-    }).catch(console.error);
+    });
+    for (const placeholder of document.querySelectorAll('.bauble-placeholder')) {
+      intersectionObserver.observe(placeholder);
+    }
     break;
   }
   case '/': {
-    InitializeWasm(baubleOpts).then((runtime: BaubleModule) => {
-      const initialScript = Storage.getScript() ?? runtime.FS.readFile('examples/intro.janet', {encoding: 'utf8'});
-      renderSolid(() => <Bauble
-        runtime={runtime}
-        outputChannel={outputChannel}
-        initialScript={initialScript}
-        focusable={false}
-        canSave={true}
-        size={{width: 512, height: 512}}
-      />, document.body);
-    }).catch(console.error);
-    break;
+    const initialScript = Storage.getScript() ?? await (mailbox.send({tag: 'read-file', 'path': 'examples/intro.janet'}) as Promise<string>);
+    renderSolid(() => <Bauble
+      definitions={definitions}
+      mailbox={mailbox}
+      initialScript={initialScript}
+      focusable={false}
+      canSave={true}
+      size={{width: 512, height: 512}}
+    />, document.body);
+  break;
   }
   }
-});
+}
+})();
