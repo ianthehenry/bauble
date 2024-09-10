@@ -26,6 +26,11 @@
 (import ./dynvars :prefix "" :export true)
 
 (defn remap+
-  "Remap a number in the range `[-1 1]` into the range `[0 1]`."
+  "Linearly transform a number in the range `[-1 1]` to `[0 1]`."
   [x]
   (+ 0.5 (* 0.5 x)))
+
+(defn remap-
+  "Linearly transform a number in the range `[-1 1]` to `[0 -1]`."
+  [x]
+  (- (remap+ x)))

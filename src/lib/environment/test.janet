@@ -101,6 +101,8 @@
     color @{:doc "(color shape color)\n\nSet a shape's color field."}
     cone @{:doc "(cone axis radius height)\n\nTODOC"}
     cos @{}
+    cos+ @{:doc "(cos+ x)\n\nLike `cos`, but returns a number in the range `0` to `1`."}
+    cos- @{:doc "(cos- x)\n\nLike `cos`, but returns a number in the range `0` to `-1`."}
     cosh @{}
     cross @{}
     cross-matrix @{:doc "(cross-matrix vec)\n\nReturns the matrix such that `(* (cross-matrix vec1) vec2)` = `(cross vec1 vec2)`."}
@@ -196,6 +198,8 @@
     offset @{:doc "(offset shape amount)\n\nOffsets the provided shape, rounding corners in the process.\n\nThis is the same as subtracting `amount` from the distance. It's more accurate\nto say that this \"moves between isosurfaces,\" so it may not actually\nround anything if the provided shape is not an exact distance field."}
     or @{}
     oriented-rect @{:doc "(oriented-rect start end width)\n\nTODOC"}
+    osc @{:doc "(osc &opt period lo hi)\n\nReturns a number that oscillates with the given period. There are several overloads:\n\n```\n# 0 to 1 to 0 every second\n(osc t)\n\n# 0 to 1 to 0 every 10 seconds\n(osc t 10)\n\n# 0 to 100 to 0 every 10 seconds\n(osc t 10 100)\n\n# 50 to 100 to 50 every 10 seconds\n(osc t 10 50 100)\n```"}
+    oss @{:doc "(oss &opt period lo hi)\n\nLike `osc`, but uses a sine wave instead of a cosine wave,\nso the output begins halfway between `lo` and `hi`."}
     outer-product @{}
     p @{:doc "The local point in 3D space. This is position of the current ray, with any transformations applied to it."
         :value [:var "p" :vec3]}
@@ -269,7 +273,8 @@
     rect @{:doc "(rect size [:r round])\n\nReturns a 2D shape, a rectangle with corners at `(- size)` and `size`. `size` will be coerced to a `vec2`.\n\nThink of `size` like the \"radius\" of the rect: a rect with `size.x = 50` will be `100` units wide."}
     reflect @{}
     refract @{}
-    remap+ @{:doc "(remap+ x)\n\nRemap a number in the range `[-1 1]` into the range `[0 1]`."}
+    remap+ @{:doc "(remap+ x)\n\nLinearly transform a number in the range `[-1 1]` to `[0 1]`."}
+    remap- @{:doc "(remap- x)\n\nLinearly transform a number in the range `[-1 1]` to `[0 -1]`."}
     resolution @{:doc "The size, in physical pixels, of the canvas being rendered. In quad view, this will be smaller than the physical canvas."
                  :value [:var "resolution" :vec2]}
     revolve @{:doc "(revolve shape axis &opt offset)\n\nRevolve a 2D shape around the given `axis` to return a 3D shape.\n\nYou can optionally supply an `offset` to move the shape away from the origin first (the default is `0`)."}
@@ -304,6 +309,8 @@
     shell @{:doc "(shell shape &opt thickness)\n\nReturns a hollow version of the provided shape (the absolute value of the distance field)."}
     sign @{}
     sin @{}
+    sin+ @{:doc "(sin+ x)\n\nLike `sin`, but returns a number in the range `0` to `1`."}
+    sin- @{:doc "(sin- x)\n\nLike `sin`, but returns a number in the range `0` to `-1`."}
     sinh @{}
     slice @{:doc "(slice shape axis &opt position)\n\nTake a 2D slice of a 3D shape at a given `position` along the supplied `axis`.\n\n`position` defaults to `0`."}
     slow @{:doc "(slow shape amount)\n\nScales distances around `shape`, causing the raymarcher to converge more slowly.\n\nThis is useful for raymarching distance fields that vary based on `p` -- shapes\nthat don't actually provide an accurate distance field unless you are very close\nto the surface.\n\nValues larger than 1 will give weird results, and this will slow the render down."}
