@@ -38,10 +38,7 @@
 
   (def subject (shape/map subject (partial unhoist env)))
 
-  # TODO: change the 2d default
-  (def aa-grid-size (jlsl/coerce-expr
-    (keyword (or (get-var env 'aa-grid-size)
-      (if (= (shape/type subject) jlsl/type/vec2) :3 :1)))))
+  (def aa-grid-size (jlsl/coerce-expr (keyword (or (get-var env 'aa-grid-size) :1))))
 
   (def program (sugar (program/new
     (precision highp float)
