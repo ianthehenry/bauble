@@ -66,11 +66,15 @@
     @length @{:doc "(length ds)\n\nReturns the length or count of a data structure in constant time as an integer. For structs and tables, returns the number of key-value pairs in the data structure."}
     @or @{:doc "(or & forms)\n\nEvaluates to the last argument if all preceding elements are falsey, otherwise\nevaluates to the first truthy element."
           :macro true}
+    Frag-Coord @{:doc "The center of the current pixel being rendered. Pixel centers are at `[0.5 0.5]`, so with no anti-aliasing this will have values like `[0.5 0.5]`, `[1.5 0.5]`, etc. If you are using multisampled antialiasing, this will have off-centered values like [0.3333 0.3333]."
+                 :value [:var "Frag-Coord" :vec2]}
     LightIncidence @{:doc "(LightIncidence color direction)\n\n"}
     P @{:doc "The global point in 3D space. This is the position of the current ray before any transformations are applied to it."
         :value [:var "P" :vec3]}
     Q @{:doc "The global point in 2D space."
         :value [:var "Q" :vec2]}
+    aa-grid-size @{:doc "The size of the grid used to sample a single pixel. The total samples per pixel will\nbe the square of this number. The default value is 1 (no anti-aliasing)."
+                   :ref @[nil]}
     abs @{}
     acos @{}
     acosh @{}
@@ -86,6 +90,8 @@
     bool @{}
     box @{:doc "(box size [:r round])\n\nReturns a 3D shape, a box with corners at `(- size)` and `size`. `size` will be coerced to a `vec3`.\n\nThink of `size` like the \"radius\" of the box: a box with `size.x = 50` will be `100` units wide."}
     box-frame @{:doc "(box-frame size thickness [:r round])\n\nReturns a 3D shape, the outline of a box."}
+    calculate-gradient @{:doc "(calculate-gradient expr)\n\nEvaluates the given 2D distance expression four times, and returns an approximation\nof the expression's gradient."}
+    calculate-normal @{:doc "(calculate-normal expr)\n\nEvaluates the given 3D distance expression four times, and returns an approximation\nof the expression's gradient."}
     cast-light-hard-shadow @{:doc "(cast-light-hard-shadow light-color light-position)\n\nTODOC"}
     cast-light-no-shadow @{:doc "(cast-light-no-shadow light-color light-position)\n\nTODOC"}
     cast-light-soft-shadow @{:doc "(cast-light-soft-shadow light-color light-position softness)\n\nTODOC"}
@@ -99,6 +105,7 @@
     cross @{}
     cross-matrix @{:doc "(cross-matrix vec)\n\nReturns the matrix such that `(* (cross-matrix vec1) vec2)` = `(cross vec1 vec2)`."}
     cut-disk @{:doc "(cut-disk radius bottom)\n\nTODOC"}
+    default-background-color @{:doc "(default-background-color expr)\n\nThe default background color, a gray gradient."}
     degrees @{}
     depth @{:doc "The distance that the current ray has marched, equal to `(distance ray-origin P)`. Not defined in 2D."
             :value [:var "depth" :float]}
@@ -119,6 +126,8 @@
     floor @{}
     fma @{}
     fract @{}
+    frag-coord @{:doc "The logical position of the current fragment being rendered, in the approximate\nrange `-0.5` to `0.5`, with `[0 0]` as the center of the screen. Note though that\nwe always shade pixel centers, so we never actual render `-0.5` or `0.5`, just\nnearby subpixel approximations depending on the antialiasing level.\n\nThis is equal to `(Frag-Coord - (resolution * 0.5) / max resolution)`."
+                 :value [:var "frag-coord" :vec2]}
     fresnel @{:doc "(fresnel subject [:color color] [:exponent exponent])\n\nTint a shape with an approximation of Fresnel reflectivity.\n\n`:color` defaults to `[1 1 1]`; `:exponent` defaults to `5`."}
     gl-frag-coord @{:value [:var "gl_FragCoord" :vec4]}
     gl-frag-depth @{:value [:var "gl_FragDepth" :float]}
@@ -130,6 +139,7 @@
               :macro true}
     gradient @{:doc "(Color only!) An approximation of the 2D distance field gradient at `Q`."
                :value [:var "gradient" :vec2]}
+    gradient-color @{:doc "(gradient-color )\n\nReturns a color that represents the visualization of the 2D gradient. This is\nthe default color used when rendering a 2D shape with no color field."}
     hash @{:doc "(hash v)\n\nReturn a pseudorandom float. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
     hash2 @{:doc "(hash2 v)\n\nReturn a pseudorandom `vec2`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
     hash3 @{:doc "(hash3 v)\n\nReturn a pseudorandom `vec3`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
@@ -176,6 +186,7 @@
     nearest-distance @{:doc "(nearest-distance)\n\nThis is the forward declaration of the function that will become the eventual\ndistance field for the shape we're rendering. This is used in the main raymarcher,\nas well as the shadow calculations. You can refer to this function to sample the\ncurrent distance field at the current value of `p` or `q`, for example to create\na custom ambient occlusion value."}
     normal @{:doc "(Color only!) A normalized vector that approximates the 3D distance field gradient at `P` (in other words, the surface normal for shading)."
              :value [:var "normal" :vec3]}
+    normal-color @{:doc "(normal-color )\n\nReturns a color that represents the visualization of the 3D normal. This is\nthe default color used when rendering a 3D shape with no color field."}
     normalize @{}
     not @{}
     not-equal @{}
@@ -192,6 +203,7 @@
     pentagon @{:doc "(pentagon radius [:r round])\n\nTODOC"}
     perlin @{:doc "(perlin point)\n\nReturns perlin noise ranging from `-1` to `1`. The input `point` can be a vector of any dimension.\n\nUse `perlin+` to return noise in the range `0` to `1`."}
     perlin+ @{:doc "(perlin+ point)\n\nPerlin noise in the range `0` to `1`."}
+    perspective @{:doc "(perspective fov size pos)\n\nTODOC"}
     pi @{:doc "I think it's around three.\n\nNote that there are also values like `pi/4` and `pi/6*5` and related helpers all the way up to `pi/12`. They don't show up in autocomplete because they're annoying, but they're there."
          :value 3.1415926535897931}
     pi/10 @{:value 0.31415926535897931}
@@ -258,6 +270,8 @@
     reflect @{}
     refract @{}
     remap+ @{:doc "(remap+ x)\n\nRemap a number in the range `[-1 1]` into the range `[0 1]`."}
+    resolution @{:doc "The size, in physical pixels, of the canvas being rendered. In quad view, this will be smaller than the physical canvas."
+                 :value [:var "resolution" :vec2]}
     revolve @{:doc "(revolve shape axis &opt offset)\n\nRevolve a 2D shape around the given `axis` to return a 3D shape.\n\nYou can optionally supply an `offset` to move the shape away from the origin first (the default is `0`)."}
     rhombus @{:doc "(rhombus size)\n\nReturns a 2D shape. It rhombs with a kite."}
     ring @{:doc "(ring radius angle thickness)\n\nTODOC"}
@@ -346,7 +360,7 @@
     tile @{:doc "(tile shape size [:limit limit] [:oversample oversample] [:sample-from sample-from] [:sample-to sample-to])\n\nRepeat the region of space `size` units around the origin. Pass `:limit` to constrain\nthe number of repetitions. See `tiled` or `tiled*` if you want to produce a shape that\nvaries as it repeats.\n\nTo repeat space only along some axes, pass `0`. For example, `(tile (sphere 50) [0 100 0])` will\nonly tile in the `y` direction.\n\nIf you're repeating a shape that is not symmetric, you can use `:oversample true` to evaluate\nmultiple instances at each pass, essentially considering the distance not only to this\ntile, but also to neighboring tiles.\n\nThe default oversampling is `:sample-from 0` `:sample-to 1`, which means looking at one adjacent\ntile, asymmetrically based on the location of the point (so when evaluating a point near\nthe right edge of a tile, it will look at the adjacent tile to the right, but not the tile\nto the left). By passing `:sample-from -1`, you can also look at the tile to the left.\nBy passing `:sample-from 0 :sample-to [2 1 1]`, it will look at two tiles to the right in the\n`x` direction, and one tile up/down/in/out.\n\nThis can be useful when raymarching a 3D space where each tile is quite different, but note\nthat it's very costly to increase these values. If you're tiling a 3D shape in all directions,\nthe default `:oversample` parameters will do 8 distance field evaluations;\n`:sample-from [-1 -1 -1]` `:sample-to [1 1 1]` will do 27."}
     tiled @{:doc "(tiled shape $i & args)\n\nLike `tiled*`, but its first argument should be a form that will\nbecome the body of the function. Basically, it's a way to create\na repeated shape where each instance of the shape varies, and it's\nwritten in a way that makes it conveniently fit into a pipeline:\n\n```\n(circle 5 | color (hsv (hash $i) 0.5 1) | tiled $i [10 10])\n```"
             :macro true}
-    tiled* @{:doc "(tiled* size get-shape [:limit limit] [:oversample oversample] [:sample-from sample-from] [:sample-to sample-to])\n\nLike `tile`, but the shape is a result of invoking `get-shape` with one argument,\na GLSL variable referring to the current index in space.\n\n```\n(tiled* [10 10] (fn [$i] (circle 5 | color (hsv (hash $i) 0.5 1))))\n```\n\nYou can use this to generate different shapes or colors at every sampled tile. The index\nwill be a vector with integral components that represents  being considered. So for\nexample, in 3D, the shape at the origin has an index of `[0 0 0]` and the shape above\nit has an index of `[0 1 0]`."}
+    tiled* @{:doc "(tiled* size get-shape [:limit limit] [:oversample oversample] [:sample-from sample-from] [:sample-to sample-to])\n\nLike `tile`, but the shape is a result of invoking `get-shape` with one argument,\na GLSL variable referring to the current index in space. Unlike `tile`, `size` must\nbe a vector that determines the dimension of the index variable.\n\n```\n(tiled* [10 10] (fn [$i] (circle 5 | color (hsv (hash $i) 0.5 1))))\n```\n\nYou can use this to generate different shapes or colors at every sampled tile. The index\nwill be a vector with integral components that represents  being considered. So for\nexample, in 3D, the shape at the origin has an index of `[0 0 0]` and the shape above\nit has an index of `[0 1 0]`."}
     torus @{:doc "(torus axis radius thickness)\n\nReturns a 3D shape, a torus around the provided `axis`."}
     trapezoid @{:doc "(trapezoid bottom-width top-width height [:r round])\n\nTODOC"}
     triangle @{:doc "(triangle a b c)\n\nTODOC"}
@@ -360,6 +374,8 @@
     vec4 @{}
     view @{:doc "(view subject)\n\nA shorthand for `(set subject _)` that fits nicely into pipe notation, e.g. `(sphere 50 | view)`."
            :macro true}
+    viewport @{:doc "You don't have to think about this value unless you're implementing a custom `main` function,\nwhich you probably aren't doing.\n\nThis represents the portion of the canvas currently being rendered. The `xy` components are the start\n(bottom left) and the `zw` coordinates are the size.\n\nNormally this will be equal to `[[0 0] resolution]`, but when rendering quad-view or a chunked render,\nit may have a different origin or resolution.\n\nYou can use `(gl_FragCoord.xy - viewport.xy)` in order to get the logical fragment position (the value\nexposed to a typical shader as `Frag-Coord`)."
+               :value [:var "viewport" :vec4]}
     with-lights @{:doc "(with-lights shape & lights)\n\nEvaluate `shape` with the `*lights*` dynamic variable set to the provided lights.\n\nThe argument order makes it easy to stick this in a pipeline. For example:\n\n```\n(sphere 50 | blinn-phong [1 0 0] | with-lights light1 light2)\n```"
                   :macro true}
     worley @{:doc "(worley point)\n\nWorley noise, also called cellular noise or voronoi noise.\nThe input `point` can be a `vec2` or a `vec3`.\n\nReturns the nearest distance to points distributed randomly within the tiles of a square or cubic grid."}

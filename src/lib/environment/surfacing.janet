@@ -252,3 +252,73 @@
   (default color [1 1 1])
   (default exponent 5)
   (shape/map-color subject |(+ $ (* color (fresnel-intensity exponent)))))
+
+(defhelper :vec3 normal-color []
+  ```
+  Returns a color that represents the visualization of the 3D normal. This is
+  the default color used when rendering a 3D shape with no color field.
+  ```
+  # TODO: this will change a lot of tests, but it's a nice look
+  #(return (+ (remap+ normal) (fresnel-intensity 5)))
+  (return (remap+ normal)))
+
+(defhelper :vec3 gradient-color []
+  ```
+  Returns a color that represents the visualization of the 2D gradient. This is
+  the default color used when rendering a 2D shape with no color field.
+  ```
+  (def line-every 10)
+  (def shadow-thickness 0.5)
+  (def boundary-thickness 2)
+
+  (var color (remap+ gradient))
+
+  (var inside (step dist 0))
+  (var isoline (smoothstep (1 - shadow-thickness) 1 (abs dist / line-every | fract)))
+  (var boundary-line (1 - (smoothstep 0 (boundary-thickness * 0.5) (abs dist))))
+
+  (return (mix
+    (pow [color inside] (mix 1 2 isoline) | clamp 0 1)
+    (vec3 1)
+    boundary-line)))
+
+# TODO: make this a dynamic var, or possibly
+# make it vary based on depth
+(def- NORMAL_OFFSET 0.005)
+
+# TODO: this should take a shape, not a distance
+(defn calculate-gradient
+  ```
+  Evaluates the given 2D distance expression four times, and returns an approximation
+  of the expression's gradient.
+  ```
+  [expr]
+  (def step (vec2 NORMAL_OFFSET 0))
+  (sugar (jlsl/do (normalize [
+    (with [q (q + step.xy)] expr - with [q (q - step.xy)] expr)
+    (with [q (q + step.yx)] expr - with [q (q - step.yx)] expr)
+    ]))))
+
+# TODO: this should take a shape, not a distance
+(defn calculate-normal
+  ```
+  Evaluates the given 3D distance expression four times, and returns an approximation
+  of the expression's gradient.
+  ```
+  [expr]
+  (def s [1 -1])
+  (sugar (jlsl/do (normalize (+
+    (s.xyy * with [p (s.xyy * NORMAL_OFFSET + p)] expr)
+    (s.yyx * with [p (s.yyx * NORMAL_OFFSET + p)] expr)
+    (s.yxy * with [p (s.yxy * NORMAL_OFFSET + p)] expr)
+    (s.xxx * with [p (s.xxx * NORMAL_OFFSET + p)] expr)
+    )))))
+
+(sugar (defn default-background-color
+  ```
+  The default background color, a gray gradient.
+  ```
+  [expr]
+  (def light (pow ([69 72 79] / 255) (vec3 2.2)))
+  (def dark (pow ([40 42 46] / 255) (vec3 2.2)))
+  (vec3 (mix dark light (Frag-Coord.x + Frag-Coord.y / (resolution.x + resolution.y))))))

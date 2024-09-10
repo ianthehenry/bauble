@@ -1,24 +1,23 @@
 (use judge)
 (import pat)
-(use ../util)
+(use ./util)
 (import ../../jlsl)
 (import ../../glsl)
-(import ../shape)
-(import ../dynvars)
-(import ./default-2d)
-(import ./default-3d)
 (import ../expression-hoister)
 (import ../../ordered)
+(use ./samplers)
+(import ../shape)
+(use ../environment)
 
 (defn unhoist [env expr]
-  (def hoisted-vars (in env expression-hoister/*hoisted-vars*))
+  (def hoisted-vars (@in env expression-hoister/*hoisted-vars*))
   (def references (ordered/table/new))
   (def seen @{})
   (defn visit [node]
     (when (seen node) (break))
     (put seen node true)
     (if (jlsl/variable? node)
-      (when-let [expr (in hoisted-vars node)]
+      (when-let [expr (@in hoisted-vars node)]
         (unless (ordered/table/has-key? references node)
           (ordered/table/put references node expr)))
       (pat/match node
@@ -31,32 +30,63 @@
     expr
     (jlsl/with-expr to-hoist [] expr "hoist")))
 
-(defn render-2d [env shape]
-  (default-2d/render env
-    (unhoist env (shape/get-field shape :distance))
-    (unhoist env (shape/get-field shape :color))))
-
-(defn render-3d [env shape]
-  (default-3d/render env
-    (unhoist env (shape/get-field shape :distance))
-    (unhoist env (shape/get-field shape :color))))
-
 (defn render [env glsl-version]
   (def subject (get-var env 'subject))
+  (def nearest-distance (get-env env 'nearest-distance))
   (unless subject (error "nothing to render"))
+  (assertf (shape/is? subject) "%q is not a shape" subject)
 
-  # so our subject is either 2D or 3D
-  (def program
-    (case (shape/type subject)
-      jlsl/type/vec2 (render-2d env subject)
-      jlsl/type/vec3 (render-3d env subject)
-      (errorf "whoa whoa whoa, what the heck is %q" subject)))
+  (def subject (shape/map subject (partial unhoist env)))
+
+  # TODO: change the 2d default
+  (def aa-grid-size (jlsl/coerce-expr
+    (keyword (or (get-var env 'aa-grid-size)
+      (if (= (shape/type subject) jlsl/type/vec2) :3 :1)))))
+
+  (def program (sugar (program/new
+    (precision highp float)
+    (uniform ,camera-origin)
+    (uniform ,camera-orientation)
+    (uniform ,render-type)
+    (uniform ,t)
+    (uniform ,viewport)
+    (out :vec4 frag-color)
+    (implement :float nearest-distance [] (return ,(@or (shape/distance subject) 0)))
+
+    ,(def sample
+      (case (shape/type subject)
+        jlsl/type/vec2 (make-sample-2d nearest-distance (shape/color subject))
+        jlsl/type/vec3 (make-sample-3d nearest-distance render-type (shape/color subject))
+        (error "BUG")))
+
+    (defn :void main []
+      (def gamma 2.2)
+      (var color [0 0 0])
+      (def aa-grid-size ,aa-grid-size)
+      (def aa-sample-width (/ (float (+ :1 aa-grid-size))))
+      (def pixel-origin [0.5 0.5])
+      (var local-frag-coord (gl-frag-coord.xy - viewport.xy))
+
+      (var rotation (rotation-matrix 0.2))
+      (for (var y :1) (<= y aa-grid-size) (++ y)
+        (for (var x :1) (<= x aa-grid-size) (++ x)
+          (var sample-offset (aa-sample-width * [(float x) (float y)] - pixel-origin))
+          (set sample-offset (* rotation sample-offset))
+          (set sample-offset (sample-offset + pixel-origin | fract - pixel-origin))
+          (with [Frag-Coord (local-frag-coord + sample-offset)
+                 resolution viewport.zw
+                 frag-coord (Frag-Coord - (0.5 * resolution) / max resolution)]
+            (+= color ((sample) | clamp 0 1)))
+          ))
+      (/= color (float (aa-grid-size * aa-grid-size)))
+
+      (set frag-color [(pow color (/ gamma)) 1])))))
 
   (def glsl (jlsl/render/program program))
 
   # TODO: we should probably just have a helper for this;
   # I don't like that this knows the representation of
   # program
-  [(truthy? (some |(= dynvars/t (jlsl/param/var $))
+  [(truthy? (some |(= t (jlsl/param/var $))
     (jlsl/function/implicit-params (in program :main))))
    (glsl/render-program glsl glsl-version)])

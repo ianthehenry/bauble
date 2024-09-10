@@ -146,7 +146,8 @@
 (defnamed tiled* [size get-shape :?limit :?oversample :?sample-from :?sample-to]
   ````
   Like `tile`, but the shape is a result of invoking `get-shape` with one argument,
-  a GLSL variable referring to the current index in space.
+  a GLSL variable referring to the current index in space. Unlike `tile`, `size` must
+  be a vector that determines the dimension of the index variable.
 
   ```
   (tiled* [10 10] (fn [$i] (circle 5 | color (hsv (hash $i) 0.5 1))))

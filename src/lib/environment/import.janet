@@ -1,6 +1,5 @@
 (import ./prelude :prefix "" :export true)
 (import ../../jlsl :export true)
-(import ../dynvars :prefix "" :export true)
 (import ./util :prefix "" :export true)
 (import ../shape :export true)
 (import ../../jlsl/prelude :prefix "" :export true)

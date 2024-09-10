@@ -212,13 +212,8 @@
     (def $outputs (gensym))
     (def $precisions (gensym))
 
-    (var defined-main? false)
-
     (def <statements>
       (seq [form :in body]
-        (pat/match form
-          ['defn _ 'main &] (set defined-main? true)
-          nil)
         (pat/match form
           ['uniform ['unquote variable]] ~(,array/push ,$uniforms ,variable)
           ['uniform type name] ~(,array/push ,$uniforms (def ,name (,variable/new ,(string name) ,(type/of-ast type))))
@@ -228,10 +223,8 @@
           ['declare & args] ~(as-macro ,jlsl/declare ,;args)
           ['implement & args] ~(as-macro ,jlsl/implement ,;args)
           ['struct & args] ~(as-macro ,jlsl/defstruct ,;args)
-          ['unquote & args] args
+          ['unquote args] args
           ['precision &] ~(,array/push ,$precisions ',form))))
-    (unless defined-main?
-      (error "program with no main function"))
     ~(do
       (def ,$uniforms @[])
       (def ,$inputs @[])
@@ -319,8 +312,6 @@
     (defn :void main [:float x]
       (return 10)))
     "main: no overload for arguments []")
-  (test-error (macex '(program/new))
-    "program with no main function")
   (test-error (program/new
     (defn :float main []
       (return 10)))

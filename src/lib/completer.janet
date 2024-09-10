@@ -30,13 +30,12 @@
 (defn get-definitions []
   (seq [[name binding] :pairs (table/proto-flatten (derive/new))
          :when (symbol? name)
-         :let [{:value value :doc docstring :macro macro} binding]
-         # lots of built-ins, like net/write, are nil in webassembly
-         :when (not (nil? value))
+         :let [{:value value :ref ref :doc docstring :macro macro} binding]
+         :let [value (if ref (ref 0) value)]
          :when (not (nil? docstring))
          ]
     (when (and (cfunction? value) macro)
-      (errorf "cfunction macro?? name"))
+      (errorf "cfunction macro?? %s" name))
     (if (functiony? value)
       [(string name) ;(parse-docstring name docstring) (if macro 2 1)]
       [(string name) "" docstring 0])))
