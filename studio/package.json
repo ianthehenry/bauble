@@ -11,7 +11,7 @@
     "remark": "^15.0.1",
     "remark-parse": "^11.0.0",
     "remark-rehype": "^11.1.0",
-    "solid-js": "^1.5.4",
+    "solid-js": "^1.8.22",
     "unified": "^11.0.5"
   },
   "devDependencies": {
