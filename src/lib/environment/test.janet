@@ -17,6 +17,8 @@
     # this is a hack so that we don't render the default lights...
     (when (array? (get-in t [:ref 0]))
       (put t :ref '<array>))
+    (when (t :value)
+      (put t :value (jlsl/show (t :value))))
     t)
   t))
 
@@ -86,7 +88,9 @@
     asinh @{}
     atan @{}
     atanh @{}
+    black @{:value [0.03 0.03 0.03]}
     blinn-phong @{:doc "(blinn-phong shape color [:s shininess] [:g glossiness])\n\nTODOC"}
+    blue @{:value [hsv 0.66666666666666663 0.98 1]}
     bool @{}
     box @{:doc "(box size [:r round])\n\nReturns a 3D shape, a box with corners at `(- size)` and `size`. `size` will be coerced to a `vec3`.\n\nThink of `size` like the \"radius\" of the box: a box with `size.x = 50` will be `100` units wide."}
     box-frame @{:doc "(box-frame size thickness [:r round])\n\nReturns a 3D shape, the outline of a box."}
@@ -107,6 +111,8 @@
     cross @{}
     cross-matrix @{:doc "(cross-matrix vec)\n\nReturns the matrix such that `(* (cross-matrix vec1) vec2)` = `(cross vec1 vec2)`."}
     cut-disk @{:doc "(cut-disk radius bottom)\n\nTODOC"}
+    cyan @{:value [hsv 0.5 0.98 1]}
+    dark-gray @{:value [0.25 0.25 0.25]}
     default-background-color @{:doc "(default-background-color expr)\n\nThe default background color, a gray gradient."}
     degrees @{}
     depth @{:doc "The distance that the current ray has marched, equal to `(distance ray-origin P)`. Not defined in 2D."
@@ -142,12 +148,15 @@
     gradient @{:doc "(Color only!) An approximation of the 2D distance field gradient at `Q`."
                :value [:var "gradient" :vec2]}
     gradient-color @{:doc "(gradient-color )\n\nReturns a color that represents the visualization of the 2D gradient. This is\nthe default color used when rendering a 2D shape with no color field."}
+    gray @{:value [0.5 0.5 0.5]}
+    green @{:value [hsv 0.33333333333333331 0.98 1]}
     hash @{:doc "(hash v)\n\nReturn a pseudorandom float. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
     hash2 @{:doc "(hash2 v)\n\nReturn a pseudorandom `vec2`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
     hash3 @{:doc "(hash3 v)\n\nReturn a pseudorandom `vec3`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
     hash4 @{:doc "(hash4 v)\n\nReturn a pseudorandom `vec4`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
     hexagon @{:doc "(hexagon radius [:r round])\n\nTODOC"}
     hexagram @{:doc "(hexagram radius [:r round])\n\nTODOC"}
+    hot-pink @{:value [hsv 0.91666666666666663 0.98 1]}
     hsl @{:doc "(hsl hue saturation lightness)\n\nReturns a color."}
     hsv @{:doc "(hsv hue saturation value)\n\nReturns a color."}
     in @{:doc "(in & args)\n\n"}
@@ -158,13 +167,16 @@
     inversesqrt @{}
     isosceles-triangle @{:doc "(isosceles-triangle size)\n\nTODOC"}
     length @{}
+    light-gray @{:value [0.75 0.75 0.75]}
     light/ambient @{:doc "(light/ambient color &opt offset)\n\nShorthand for `(light/point color (P + offset) nil)`.\n\nWith no offset, the ambient light will be completely directionless, so it won't\ncontribute to specular highlights. By offsetting by a multiple of the surface\nnormal, or by the surface normal plus some constant, you can create an ambient\nlight with specular highlights, which provides some depth in areas of your scene\nthat are in full shadow."}
     light/directional @{:doc "(light/directional color dir dist & shadow)\n\nA light that hits every point at the same angle.\n\nShorthand for `(light/point color (P - (dir * dist)) shadow)`."}
     light/point @{:doc "(light/point color position & shadow)\n\nReturns a new light, which can be used as an input to some shading functions.\n\nAlthough this is called a point light, the location of the \"point\" can vary\nwith a dynamic expression. A light that casts no shadows and is located at `P`\n(no matter where `P` is) is an ambient light. A light that is always located at\na fixed offset from `P` is a directional light.\n\n`shadow` can be `nil` to disable casting shadows, or a number that controls the\nsoftness of the shadows that the light casts. `0` means that shadows will have\nhard edges. The default value is `0.25`.\n\nLighting always occurs in the global coordinate space, so you should position lights\nrelative to `P`, not `p`. They will be the same at the time that lights are computed,\nso it doesn't *actually* matter, but it's just more accurate to use `P`, and there's\na chance that a future version of Bauble will support computing lights in local\ncoordinate spaces, where `p` might vary."}
     light? @{:doc "(light? t)\n\nReturns true if its argument is a light."}
+    lime @{:value [hsv 0.25 0.98 1]}
     line @{:doc "(line start end width)\n\nTODOC"}
     log @{}
     log2 @{}
+    magenta @{:value [hsv 0.83333333333333337 0.98 1]}
     map-distance @{:doc "(map-distance shape f)\n\n"}
     mat2 @{}
     mat2x2 @{}
@@ -197,6 +209,7 @@
     octahedron @{:doc "(octahedron radius)\n\nTODOC"}
     offset @{:doc "(offset shape amount)\n\nOffsets the provided shape, rounding corners in the process.\n\nThis is the same as subtracting `amount` from the distance. It's more accurate\nto say that this \"moves between isosurfaces,\" so it may not actually\nround anything if the provided shape is not an exact distance field."}
     or @{}
+    orange @{:value [hsv 0.083333333333333329 0.98 1]}
     oriented-rect @{:doc "(oriented-rect start end width)\n\nTODOC"}
     osc @{:doc "(osc &opt period lo hi)\n\nReturns a number that oscillates with the given period. There are several overloads:\n\n```\n# 0 to 1 to 0 every second\n(osc t)\n\n# 0 to 1 to 0 every 10 seconds\n(osc t 10)\n\n# 0 to 100 to 0 every 10 seconds\n(osc t 10 100)\n\n# 50 to 100 to 50 every 10 seconds\n(osc t 10 50 100)\n```"}
     oss @{:doc "(oss &opt period lo hi)\n\nLike `osc`, but uses a sine wave instead of a cosine wave,\nso the output begins halfway between `lo` and `hi`."}
@@ -249,6 +262,7 @@
             :macro true}
     pow @{}
     product @{:doc "(product v)\n\nMultiply the components of a vector."}
+    purple @{:value [hsv 0.75 0.98 1]}
     q @{:doc "The local point in 2D space. This is the position being shaded, with any transformations applied."
         :value [:var "q" :vec2]}
     quad-circle @{:doc "(quad-circle radius)\n\nReturns a 2D shape, an approximation of a circle out of quadratic bezier curves.\n\nIt's like a circle, but quaddier."}
@@ -271,6 +285,7 @@
                  :value [:var "ray-origin" :vec3]}
     recolor @{:doc "(recolor dest-shape source-shape)\n\nReplaces the color field on `dest-shape` with the color field on `source-shape`. Does not affect the distance field."}
     rect @{:doc "(rect size [:r round])\n\nReturns a 2D shape, a rectangle with corners at `(- size)` and `size`. `size` will be coerced to a `vec2`.\n\nThink of `size` like the \"radius\" of the rect: a rect with `size.x = 50` will be `100` units wide."}
+    red @{:value [hsv 0 0.98 1]}
     reflect @{}
     refract @{}
     remap+ @{:doc "(remap+ x)\n\nLinearly transform a number in the range `[-1 1]` to `[0 1]`."}
@@ -312,6 +327,7 @@
     sin+ @{:doc "(sin+ x)\n\nLike `sin`, but returns a number in the range `0` to `1`."}
     sin- @{:doc "(sin- x)\n\nLike `sin`, but returns a number in the range `0` to `-1`."}
     sinh @{}
+    sky @{:value [hsv 0.58333333333333337 0.98 1]}
     slice @{:doc "(slice shape axis &opt position)\n\nTake a 2D slice of a 3D shape at a given `position` along the supplied `axis`.\n\n`position` defaults to `0`."}
     slow @{:doc "(slow shape amount)\n\nScales distances around `shape`, causing the raymarcher to converge more slowly.\n\nThis is useful for raymarching distance fields that vary based on `p` -- shapes\nthat don't actually provide an accurate distance field unless you are very close\nto the surface.\n\nValues larger than 1 will give weird results, and this will slow the render down."}
     smoothstep @{}
@@ -364,6 +380,7 @@
     tau/8*6 @{:value 4.71238898038469}
     tau/8*7 @{:value 5.497787143782138}
     tau/9 @{:value 0.69813170079773179}
+    teal @{:value [hsv 0.41666666666666669 0.98 1]}
     tile @{:doc "(tile shape size [:limit limit] [:oversample oversample] [:sample-from sample-from] [:sample-to sample-to])\n\nRepeat the region of space `size` units around the origin. Pass `:limit` to constrain\nthe number of repetitions. See `tiled` or `tiled*` if you want to produce a shape that\nvaries as it repeats.\n\nTo repeat space only along some axes, pass `0`. For example, `(tile (sphere 50) [0 100 0])` will\nonly tile in the `y` direction.\n\nIf you're repeating a shape that is not symmetric, you can use `:oversample true` to evaluate\nmultiple instances at each pass, essentially considering the distance not only to this\ntile, but also to neighboring tiles.\n\nThe default oversampling is `:sample-from 0` `:sample-to 1`, which means looking at one adjacent\ntile, asymmetrically based on the location of the point (so when evaluating a point near\nthe right edge of a tile, it will look at the adjacent tile to the right, but not the tile\nto the left). By passing `:sample-from -1`, you can also look at the tile to the left.\nBy passing `:sample-from 0 :sample-to [2 1 1]`, it will look at two tiles to the right in the\n`x` direction, and one tile up/down/in/out.\n\nThis can be useful when raymarching a 3D space where each tile is quite different, but note\nthat it's very costly to increase these values. If you're tiling a 3D shape in all directions,\nthe default `:oversample` parameters will do 8 distance field evaluations;\n`:sample-from [-1 -1 -1]` `:sample-to [1 1 1]` will do 27."}
     tiled @{:doc "(tiled shape $i & args)\n\nLike `tiled*`, but its first argument should be a form that will\nbecome the body of the function. Basically, it's a way to create\na repeated shape where each instance of the shape varies, and it's\nwritten in a way that makes it conveniently fit into a pipeline:\n\n```\n(circle 5 | color (hsv (hash $i) 0.5 1) | tiled $i [10 10])\n```"
             :macro true}
@@ -383,6 +400,7 @@
            :macro true}
     viewport @{:doc "You don't have to think about this value unless you're implementing a custom `main` function,\nwhich you probably aren't doing.\n\nThis represents the portion of the canvas currently being rendered. The `xy` components are the start\n(bottom left) and the `zw` coordinates are the size.\n\nNormally this will be equal to `[[0 0] resolution]`, but when rendering quad-view or a chunked render,\nit may have a different origin or resolution.\n\nYou can use `(gl_FragCoord.xy - viewport.xy)` in order to get the logical fragment position (the value\nexposed to a typical shader as `Frag-Coord`)."
                :value [:var "viewport" :vec4]}
+    white @{:value [1 1 1]}
     with-lights @{:doc "(with-lights shape & lights)\n\nEvaluate `shape` with the `*lights*` dynamic variable set to the provided lights.\n\nThe argument order makes it easy to stick this in a pipeline. For example:\n\n```\n(sphere 50 | blinn-phong [1 0 0] | with-lights light1 light2)\n```"
                   :macro true}
     worley @{:doc "(worley point)\n\nWorley noise, also called cellular noise or voronoi noise.\nThe input `point` can be a `vec2` or a `vec3`.\n\nReturns the nearest distance to points distributed randomly within the tiles of a square or cubic grid."}
@@ -390,6 +408,7 @@
     x @{:doc "`[1 0 0]`" :value [1 0 0]}
     xor @{}
     y @{:doc "`[0 1 0]`" :value [0 1 0]}
+    yellow @{:value [hsv 0.16666666666666666 0.98 1]}
     z @{:doc "`[0 0 1]`" :value [0 0 1]}})
 
 (use .)

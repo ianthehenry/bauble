@@ -13,5 +13,6 @@
 (import ./camera :prefix "" :export true)
 (import ./repeat :prefix "" :export true)
 (import ./hash :prefix "" :export true)
+(import ./colors :prefix "" :export true)
 (import ../../jlsl/prelude :prefix "" :export true)
 (import ./operator-overloads :prefix "" :export true)
