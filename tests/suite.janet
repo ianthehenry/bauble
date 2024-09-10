@@ -767,7 +767,7 @@ img {
     legacy/shade/compile-shape))
   (def success2
     (if (string/has-prefix? "!" name)
-      (render name program camera-origin camera-orientation
+      (render name (string program "\n(set aa-grid-size 3)") camera-origin camera-orientation
         bauble/evaluator/evaluate
         bauble/shade/compile-shape "-new")
       true))
