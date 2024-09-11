@@ -128,6 +128,7 @@
     equilateral-triangle @{:doc "(equilateral-triangle radius [:r round])\n\nTODOC"}
     exp @{}
     exp2 @{}
+    expand @{:doc "(expand shape amount)\n\nExpands the provided shape, rounding corners in the process.\n\nThis is the same as subtracting `amount` from the distance field.\nIt's more accurate to say that this \"moves between isosurfaces,\" so\nit may not actually round anything if the provided shape is not an\nexact distance field."}
     extrude @{:doc "(extrude shape axis &opt distance)\n\nExtrude a 2D shape into 3D along the given `axis`.\n\n`distance` defaults to `0` and determines the width, length, or height of the final shape.\nYou can also pass `inf` to get an infinite extrusion (which is slightly cheaper to compute)."}
     faceforward @{}
     float @{}
@@ -207,7 +208,6 @@
     not= @{}
     octagon @{:doc "(octagon radius [:r round])\n\nTODOC"}
     octahedron @{:doc "(octahedron radius)\n\nTODOC"}
-    offset @{:doc "(offset shape amount)\n\nOffsets the provided shape, rounding corners in the process.\n\nThis is the same as subtracting `amount` from the distance. It's more accurate\nto say that this \"moves between isosurfaces,\" so it may not actually\nround anything if the provided shape is not an exact distance field."}
     or @{}
     orange @{:value [hsv 0.083333333333333329 0.98 1]}
     oriented-rect @{:doc "(oriented-rect start end width)\n\nTODOC"}

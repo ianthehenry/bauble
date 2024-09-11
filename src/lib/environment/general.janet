@@ -80,13 +80,14 @@ be the square of this number. The default value is 1 (no anti-aliasing).
   (default thickness 0)
   (shape/map-distance shape (fn [expr] (- (abs expr) (* thickness 0.5)))))
 
-(defn offset
+(defn expand
   ```
-  Offsets the provided shape, rounding corners in the process.
+  Expands the provided shape, rounding corners in the process.
 
-  This is the same as subtracting `amount` from the distance. It's more accurate
-  to say that this "moves between isosurfaces," so it may not actually
-  round anything if the provided shape is not an exact distance field.
+  This is the same as subtracting `amount` from the distance field.
+  It's more accurate to say that this "moves between isosurfaces," so
+  it may not actually round anything if the provided shape is not an
+  exact distance field.
   ```
   [shape amount]
   (shape/map-distance shape (fn [expr] (- expr amount))))

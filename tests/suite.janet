@@ -261,7 +261,7 @@
     (rect 50 | shell 10)
   | move [-25 -25])
   `
-  "!offset" `(rect 50 | offset 10)`
+  "!expand" `(rect 50 | expand 10)`
   "!map-distance" `(rect 50 | map-distance (fn [d] (abs d - 10)))`
   "!elongate 2d" `(circle 10 | elongate [50 60])`
   "!elongate 3d" `(sphere 10 | elongate [50 60 70])`
@@ -323,7 +323,7 @@
 
   (defn make [circles]
     (union
-      (circles | offset 10 | move [0 80])
+      (circles | expand 10 | move [0 80])
       (circles | move [0 20])
       (rect 40
       | recolor circles
@@ -346,7 +346,7 @@
   (defn make []
     (union
       (box [50 5 50])
-      (box 20 | move y 30 | offset 1)
+      (box 20 | move y 30 | expand 1)
     | blinn-phong [1 0.1 0.1]))
   (grid 60 2 2
     ((make) | with-lights (light/directional [0.9 0.9 0.9] [-1 -5 1] 100))
@@ -367,7 +367,7 @@
   (defn make []
     (union
       (box [50 5 50])
-      (box 20 | move y 30 | offset 1)
+      (box 20 | move y 30 | expand 1)
     | blinn-phong [1 0.1 0.1]))
   (def point-light (light/point [0.9 0.9 0.9] [0 200 0]))
   (grid 60 2 2 (make) (make) (make) (make)
@@ -385,7 +385,7 @@
   (defn make []
     (union
       (box [50 5 50])
-      (box 20 | move y 30 | offset 1)
+      (box 20 | move y 30 | expand 1)
     | blinn-phong [1 0.1 0.1]))
   (grid 60 2 2
     ((make) | with-lights)
