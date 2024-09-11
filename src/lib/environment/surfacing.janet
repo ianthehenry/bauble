@@ -318,7 +318,7 @@
   ```
   The default background color, a gray gradient.
   ```
-  (sugar (do (jlsl/do
+  (sugar (jlsl/do
     (def light (pow ([69 72 79] / 255) (vec3 2.2)))
     (def dark (pow ([40 42 46] / 255) (vec3 2.2)))
-    (vec3 (mix dark light (Frag-Coord.x + Frag-Coord.y / (resolution.x + resolution.y))))))))
+    (vec3 (mix dark light (Frag-Coord.x + Frag-Coord.y / (resolution.x + resolution.y)))))))

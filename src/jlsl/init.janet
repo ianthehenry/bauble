@@ -15,7 +15,7 @@
     x))
 
 (defmacro iife [& ast] (expr/of-ast ['iife ;ast]))
-(defmacro do [& ast] (expr/of-ast ['do ;ast]))
+(defmacro do [& ast] ['do (expr/of-ast ['do ;ast])])
 (defmacro let [bindings & ast]
   (expr/of-ast ['do
     ;(seq [[name val] :in (partition 2 bindings)]
