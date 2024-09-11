@@ -11,7 +11,7 @@
 
 # TODO: this should be somewhere else and called something else
 (def- MINIMUM_HIT_DISTANCE 0.01)
-(def- MAX_LIGHT_STEPS :256)
+(def- MAX_LIGHT_STEPS 256:u)
 
 (jlsl/jlsl/defstruct LightIncidence
   :vec3 color
@@ -64,7 +64,7 @@
   (var light-distance (length (target - light-position)))
   (var ray-dir (target - light-position / light-distance))
   (var depth 0)
-  (for (var i :0) (< i ,MAX_LIGHT_STEPS) (++ i)
+  (for (var i 0:u) (< i ,MAX_LIGHT_STEPS) (++ i)
     (var nearest (with [P (light-position + (ray-dir * depth)) p P] (nearest-distance)))
     (if (< nearest ,MINIMUM_HIT_DISTANCE) (break))
     (+= depth nearest))
@@ -92,7 +92,7 @@
   (var sharpness (softness * softness /))
   (var last-nearest 1e10)
   (var depth 0)
-  (for (var i :0) (< i ,MAX_LIGHT_STEPS) (++ i)
+  (for (var i 0:u) (< i ,MAX_LIGHT_STEPS) (++ i)
     (var nearest (with [P (light-position + (ray-dir * depth)) p P] (nearest-distance)))
     (if (< nearest ,MINIMUM_HIT_DISTANCE) (break))
     (var intersect-offset (nearest * nearest / (2 * last-nearest)))

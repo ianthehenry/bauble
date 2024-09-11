@@ -17,7 +17,7 @@
   (or (expr? arg) (variable? arg)))
 
 (defn- definitely-not-expr? [arg]
-  (or (string? arg) (symbol? arg)))
+  (or (string? arg) (symbol? arg) (keyword? arg)))
 
 (defn- none [f arg]
   (not (some f arg)))

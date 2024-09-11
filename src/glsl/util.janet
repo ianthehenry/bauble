@@ -52,3 +52,6 @@
 
 (defn ptuple? [x] (and (tuple? x) (= (tuple/type x) :parens)))
 (defn btuple? [x] (and (tuple? x) (= (tuple/type x) :brackets)))
+
+(defn int64? [x] (= (type x) :core/s64))
+(defn uint64? [x] (= (type x) :core/u64))

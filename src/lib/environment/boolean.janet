@@ -72,9 +72,9 @@
   (def surface-id
     (jlsl/iife "union-color-index"
       (var nearest 1e20)
-      (var nearest-index :-1)
+      (var nearest-index 0:u)
       ,;(seq [[i [_ d]] :pairs (reverse colors)]
-        (def i (keyword (- (@length colors) i 1)))
+        (def i (int/u64 (- (@length colors) i 1)))
         (jlsl/statement
           (var d ,d)
           (if (< d 0) (return i))
@@ -85,7 +85,7 @@
 
   (jlsl/iife "union-color"
     ,(jlsl/statement/case surface-id
-      (seq [[i [c _]] :pairs colors] [(jlsl/coerce-expr (keyword i)) (jlsl/statement (return ,c))]))
+      (seq [[i [c _]] :pairs colors] [(jlsl/coerce-expr (int/u64 i)) (jlsl/statement (return ,c))]))
     [0 0 0]))
 
 (defn- smooth-union-color [r colors]

@@ -225,14 +225,15 @@
 (test-error (sin [1]) "vector constructor needs at least two components")
 (typecheck (+ 10 20 [1 2]) [:float :float :vec2 -> :vec2])
 (typecheck (< [1 2] [3 4]) [:vec2 :vec2 -> :bvec2])
-(typecheck (< :1 :2) [:int :int -> :bool])
+(typecheck (< 1:s 2:s) [:int :int -> :bool])
+(typecheck (< 1:u 2:u) [:uint :uint -> :bool])
 (typecheck (< 1 2) [:float :float -> :bool])
 (typecheck (sin 10) [:float -> :float])
 (typecheck (sin [1 2 3]) [:vec3 -> :vec3])
 # TODO: maybe worth changing...
 (typecheck (sin [true false]) [:bvec2 -> :bvec2])
 
-(typecheck (float :1) [:int -> :float])
+(typecheck (float 1:s) [:int -> :float])
 (typecheck (vec3 1) [:float -> :vec3])
 (test-error (vec3 1 2) "vec3 expects 3 components, got 2")
 (typecheck (vec3 1 2 3) [:float :float :float -> :vec3])

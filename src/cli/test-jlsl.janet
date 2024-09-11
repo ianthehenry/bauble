@@ -9,7 +9,7 @@
 (cmd/defn test-jlsl "testing" []
   (init-jaylib)
 
-  (def MAX_STEPS :64)
+  (def MAX_STEPS 64:u)
   (def MINIMUM_HIT_DISTANCE 0.1)
   (def NORMAL_OFFSET 0.005)
   (def MAXIMUM_TRACE_DISTANCE (* 64 1024))
@@ -83,7 +83,7 @@
     (defn :vec3 march [:vec3 ray-origin :vec3 ray-direction]
       (var distance 0)
 
-      (for (var steps :0) (< steps MAX_STEPS) (++ steps)
+      (for (var steps 0:u) (< steps MAX_STEPS) (++ steps)
         (with [p (+ ray-origin (* distance ray-direction))]
           (var nearest (nearest-distance))
 

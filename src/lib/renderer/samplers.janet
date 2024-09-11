@@ -7,7 +7,7 @@
 (jlsl/jlsl/defdyn render-type :int "")
 
 # TODO: these should probably be somewhere else
-(def- MAX_STEPS :256)
+(def- MAX_STEPS 256:u)
 (def- MINIMUM_HIT_DISTANCE 0.1)
 (def- MAXIMUM_TRACE_DISTANCE (* 64 1024))
 
@@ -25,7 +25,7 @@
            gradient (calculate-gradient (nearest-distance))]
 
       (case render-type
-        :0 ,(if <color>
+        0:u ,(if <color>
           (jlsl/statement
             (if (<= dist 0)
               (return ,<color>)
@@ -35,10 +35,10 @@
         (return (gradient-color))))))
 
 (defn- make-march [nearest-distance]
-  (jlsl/fn :float march [[out :int] steps]
+  (jlsl/fn :float march [[out :uint] steps]
     (var ray-depth 0)
 
-    (for (set steps :0) (< steps MAX_STEPS) (++ steps)
+    (for (set steps 0:u) (< steps MAX_STEPS) (++ steps)
       (with [depth ray-depth
              P (+ ray-origin (* ray-depth ray-dir))
              p P]
@@ -66,7 +66,7 @@
       (perspective 45.0 resolution Frag-Coord)
       ))
 
-    (var steps :0)
+    (var steps 0:u)
 
     (with [ray-origin camera-origin
            ray-dir dir
@@ -76,20 +76,20 @@
            dist (nearest-distance)
            normal (calculate-normal (nearest-distance))]
       (case render-type
-        :0 (if (>= depth MAXIMUM_TRACE_DISTANCE)
+        0:s (if (>= depth MAXIMUM_TRACE_DISTANCE)
             (return default-background-color)
             (return ,(@or <color> (normal-color))))
         # ignore color field
-        :1 (if (>= depth MAXIMUM_TRACE_DISTANCE)
+        1:s (if (>= depth MAXIMUM_TRACE_DISTANCE)
             (return default-background-color)
             (return (normal-color)))
         # convergence debug view
-        :2
+        2:s
           (return (if (= steps MAX_STEPS)
             [1 0 1]
             (float steps / float MAX_STEPS | vec3)))
         # overshoot debug view
-        :3 (do
+        3:s (do
           (var overshoot (max (- dist) 0 / MINIMUM_HIT_DISTANCE))
           (var undershoot (max dist 0 / MINIMUM_HIT_DISTANCE))
           (return [overshoot (- 1 undershoot overshoot) (1 - (step 1 undershoot))]))))))

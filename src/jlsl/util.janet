@@ -67,3 +67,6 @@
   (tuple/slice (map ;args)))
 
 (defn const [x] (fn [&] x))
+
+(defn int64? [x] (= (type x) :core/s64))
+(defn uint64? [x] (= (type x) :core/u64))

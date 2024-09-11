@@ -79,7 +79,8 @@
 
 (varfn expr/of-ast [ast]
   (pat/match ast
-    |keyword? [expr/literal ['quote type/int] ast]
+    |int64? [expr/literal ['quote type/int] ast]
+    |uint64? [expr/literal ['quote type/uint] ast]
     |boolean? [expr/literal ['quote type/bool] ast]
     |number? [expr/literal ['quote type/float] ast]
     |symbol? [coerce-expr ast]

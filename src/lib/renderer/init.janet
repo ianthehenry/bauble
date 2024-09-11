@@ -47,7 +47,7 @@
 
   (def subject (shape/map subject (partial unhoist env)))
 
-  (def aa-grid-size (jlsl/coerce-expr (keyword (or (get-var env 'aa-grid-size) :1))))
+  (def aa-grid-size (jlsl/coerce-expr (int/u64 (or (get-var env 'aa-grid-size) 1))))
 
   (def program (sugar (program/new
     (precision highp float)
@@ -69,13 +69,13 @@
       (def gamma 2.2)
       (var color [0 0 0])
       (def aa-grid-size ,aa-grid-size)
-      (def aa-sample-width (/ (float (+ :1 aa-grid-size))))
+      (def aa-sample-width (/ (float (+ 1:u aa-grid-size))))
       (def pixel-origin [0.5 0.5])
       (var local-frag-coord (gl-frag-coord.xy - viewport.xy))
 
       (var rotation (rotation-matrix 0.2))
-      (for (var y :1) (<= y aa-grid-size) (++ y)
-        (for (var x :1) (<= x aa-grid-size) (++ x)
+      (for (var y 1:u) (<= y aa-grid-size) (++ y)
+        (for (var x 1:u) (<= x aa-grid-size) (++ x)
           (var sample-offset (aa-sample-width * [(float x) (float y)] - pixel-origin))
           (set sample-offset (* rotation sample-offset))
           (set sample-offset (sample-offset + pixel-origin | fract - pixel-origin))

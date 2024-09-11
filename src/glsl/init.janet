@@ -114,7 +114,8 @@
   (pat/match expression
     |number? (printer/prin p (to-float expression))
     |symbol? (printer/prin p (identifier expression))
-    |keyword? (printer/prin p expression)
+    |int64? (printer/prin p (string expression))
+    |uint64? (printer/prin p (string expression "u"))
     |boolean? (printer/prin p (string expression))
     ['. expr key] (do
       (render-expression p expr :needs-parens? true)
@@ -431,11 +432,11 @@
 
 (deftest "array access"
   (test-statements [
-    (def :float x (in lights :0))
-    (def :float x (in lights (+ i :1)))
+    (def :float x (in lights 0:u))
+    (def :float x (in lights (+ i 1:s)))
     ] `
     void main() {
-      const float x = lights[0];
+      const float x = lights[0u];
       const float x = lights[i + 1];
     }
     
@@ -455,12 +456,12 @@
   (test-statements [
     (def :float x (. foo xyz))
     (def :float x (. (f) xyz))
-    (def :float x (. (. (in lights :0) incidence) brightness))
+    (def :float x (. (. (in lights 0:u) incidence) brightness))
     ] `
     void main() {
       const float x = foo.xyz;
       const float x = f().xyz;
-      const float x = lights[0].incidence.brightness;
+      const float x = lights[0u].incidence.brightness;
     }
     
   `))
@@ -499,7 +500,7 @@
   (test-statements [
     (while (> i 10) (-- i))
     (do-while (> i 10) (-- i))
-    (for (var :int i :0) (< i :10) (++ i) (f))
+    (for (var :int i 0:s) (< i 10:s) (++ i) (f))
     ] `
     void main() {
       while (i > 10.0) {
@@ -592,14 +593,14 @@
 (deftest "assignment to arbitrary expression"
   (test-statements [
     (set (. foo x) 10)
-    (set (in foo :0) 10)
-    (+= (in foo :0) 10)
+    (set (in foo 0:u) 10)
+    (+= (in foo 0:u) 10)
     (*= (f foo) 10)
     ] `
     void main() {
       foo.x = 10.0;
-      foo[0] = 10.0;
-      foo[0] += 10.0;
+      foo[0u] = 10.0;
+      foo[0u] += 10.0;
       f(foo) *= 10.0;
     }
     
@@ -697,7 +698,7 @@
   (uniform vec4 viewport)
   (out vec4 frag_color)
 
-  (def :int MAX_STEPS :64)
+  (def :int MAX_STEPS 64:s)
   (def :float MINIMUM_HIT_DISTANCE 0.1)
   (def :float NORMAL_OFFSET 0.005)
   (def :float MAXIMUM_TRACE_DISTANCE (* 64 1024))

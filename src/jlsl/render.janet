@@ -717,7 +717,7 @@
     (jlsl/defn :float foo [:float x]
       (return (+ (+ free1 free2) (+ free3 free4)))) `
     float foo(float x, float free, float free1, float x1, float y) {
-      return (free1 + free) + (x1 + y);
+      return (free + free1) + (x1 + y);
     }
   `))
 
@@ -1134,7 +1134,7 @@
 (deftest "for loop"
   (test-function
     (jlsl/fn :float "distance" []
-      (for (var i :10) (< i :10) (_++ i)
+      (for (var i 10:s) (< i 10:s) (_++ i)
         (break))) `
     float distance() {
       for (int i = 10; i < 10; i++) {
@@ -1162,7 +1162,7 @@
   (test-function
     (jlsl/fn :float "foo" [(:float 10) foos]
       (var total 0)
-      (for (var i :0) (< i :10) (++ i)
+      (for (var i 0:s) (< i 10:s) (++ i)
         (+= total (in foos i)))
       (return total)) `
     float foo(float[10] foos) {

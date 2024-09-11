@@ -269,14 +269,14 @@
 (defn coerce-expr [value]
   (if (expr? value)
     value
-    # TODO: convert floats and tuples and variables and such into vectors
     (pat/match value
-      |keyword? (expr/literal type/int value)
-      |boolean? (expr/literal type/bool value)
       |number? (expr/literal type/float value)
       |variable? (expr/identifier value)
       |tuple? (let [args (map coerce-expr value)]
         (expr/call (builtins-prelude/resolve-vec-constructor nil "[]" (tmap expr/type args)) args))
+      |boolean? (expr/literal type/bool value)
+      |int64? (expr/literal type/int value)
+      |uint64? (expr/literal type/uint value)
       (errorf "Can't coerce %q into an expression" value)
       )))
 
