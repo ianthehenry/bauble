@@ -7,17 +7,16 @@
 (import ../../ordered)
 (use ./samplers)
 (import ../shape)
-(use ../environment)
 
 (defn unhoist [env expr]
-  (def hoisted-vars (@in env expression-hoister/*hoisted-vars*))
+  (def hoisted-vars (in env expression-hoister/*hoisted-vars*))
   (def references (ordered/table/new))
   (def seen @{})
   (defn visit [node]
     (when (seen node) (break))
     (put seen node true)
     (if (jlsl/variable? node)
-      (when-let [expr (@in hoisted-vars node)]
+      (when-let [expr (in hoisted-vars node)]
         (unless (ordered/table/has-key? references node)
           (ordered/table/put references node expr)))
       (pat/match node
@@ -29,6 +28,16 @@
   (if (empty? to-hoist)
     expr
     (jlsl/with-expr to-hoist [] expr "hoist")))
+
+(import ../environment/dynvars)
+# TODO: jlsl should probably just have a helper for this;
+# I don't like that this knows the representation of a
+# program
+(defn animated? [program]
+  (truthy? (some |(= dynvars/t (jlsl/param/var $))
+    (jlsl/function/implicit-params (in program :main)))))
+
+(use ../environment)
 
 (defn render [env glsl-version]
   (def subject (get-var env 'subject))
@@ -81,9 +90,4 @@
 
   (def glsl (jlsl/render/program program))
 
-  # TODO: we should probably just have a helper for this;
-  # I don't like that this knows the representation of
-  # program
-  [(truthy? (some |(= t (jlsl/param/var $))
-    (jlsl/function/implicit-params (in program :main))))
-   (glsl/render-program glsl glsl-version)])
+  [(animated? program) (glsl/render-program glsl glsl-version)])
