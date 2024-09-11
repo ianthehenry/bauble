@@ -3,7 +3,7 @@ import type {BaubleModule} from 'bauble-runtime';
 
 export function init() {
   let outputs: Array<[string, boolean]>;
-  InitializeWasm({
+  return InitializeWasm({
     print: (x: string) => { console.log(x); outputs.push([x, false]); },
     printErr: (x: string) => { console.error(x); outputs.push([x, true]); },
   }).then((runtime: BaubleModule) => {
@@ -33,7 +33,7 @@ export function init() {
       case 'read-file': {
         return runtime.FS.readFile(request.path, {encoding: 'utf8'});
       }
-      default: throw new Error("unknown request", request);
+      default: throw new Error("unknown request tag " + request.tag);
       }
     };
 
@@ -43,6 +43,5 @@ export function init() {
         response: getResponse(event.data.request),
       });
     });
-    self.postMessage('ready');
   });
 }

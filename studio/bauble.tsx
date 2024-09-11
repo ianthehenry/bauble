@@ -1,15 +1,15 @@
 import type {Component, JSX} from 'solid-js';
-import {batch, createMemo, createSelector, onMount, For, Switch, Match} from 'solid-js';
+import {batch, createEffect, createMemo, createSelector, onMount, For, Switch, Match} from 'solid-js';
 import {Timer, LoopMode, TimerState} from './timer';
 import installCodeMirror from './editor';
 import {EditorView} from '@codemirror/view';
-import Renderer from './renderer';
 import * as Signal from './signals';
 import {mod, clamp} from './util';
 import {vec2} from 'gl-matrix';
 import type {Seconds} from './types';
 import type {Definition} from 'bauble-runtime';
 import RenderLoop from './render-loop';
+import * as RenderState from './render-state';
 import type Mailbox from './mailbox';
 import type {Property} from 'csstype';
 
@@ -275,12 +275,28 @@ interface BaubleProps {
   focusable: boolean,
   canSave: boolean,
   definitions: Array<Definition>,
-  compiler: Mailbox,
+  wasmBox: Mailbox,
+  renderBox: Mailbox,
   size: {width: number, height: number},
 }
 
+class AsyncRenderer {
+  constructor(private mailbox: Mailbox, canvas: HTMLCanvasElement, state: RenderState.Accessors) {
+    const offscreenCanvas = canvas.transferControlToOffscreen();
+
+    const stateJoined = RenderState.accessAll(state);
+    createEffect(() => {
+      this.mailbox.send({tag: 'set', state: stateJoined()});
+    });
+    this.mailbox.send({tag: 'init', canvas: offscreenCanvas}, [offscreenCanvas]);
+  }
+  recompileShader(source: string) {
+    return this.mailbox.send({tag: 'shader', source: source});
+  }
+}
+
 const Bauble = (props: BaubleProps) => {
-  const {definitions, compiler} = props;
+  const {definitions, wasmBox, renderBox} = props;
   let canvasContainer: HTMLDivElement;
   let editorContainer: HTMLDivElement;
   let canvas: HTMLCanvasElement;
@@ -316,8 +332,12 @@ const Bauble = (props: BaubleProps) => {
     }
   });
 
-  let renderLoop : RenderLoop;
-  let renderer : Renderer;
+  // TODO: the whole timeAdvancer thing is pretty weird. This is
+  // fallout from the switch to asynchronous rendering. It made more
+  // sense when this was also driving the render loop. Now it just
+  // increments a timestamp... this could be cleaned up a lot.
+  let timeAdvancer : RenderLoop;
+  let renderer : AsyncRenderer;
   const compileQueue = new Throttle();
 
   const print = (line: string, isErr: boolean) => {
@@ -329,34 +349,32 @@ const Bauble = (props: BaubleProps) => {
   };
 
   const recompile = () => {
-    compileQueue.schedule(() => {
+    compileQueue.schedule(async () => {
       Signal.set(evaluationState, EvaluationState.Unknown);
       const request = {tag: 'compile', script: editor.state.doc.toString()};
-      return compiler.send(request).then((result : any) => {
-        outputContainer.innerHTML = '';
-        for (let [line, isErr] of result.outputs) {
-          print(line, isErr);
-        }
+      const result: any = await wasmBox.send(request);
+      outputContainer.innerHTML = '';
+      for (let [line, isErr] of result.outputs) {
+        print(line, isErr);
+      }
 
-        if (result.isError) {
-          Signal.set(evaluationState, EvaluationState.EvaluationError);
-          console.error(result.error);
-        } else {
-          try {
-            //console.log(result.shaderSource);
-            renderer.recompileShader(result.shaderSource);
-            Signal.set(evaluationState, EvaluationState.Success);
-            Signal.set(isAnimation, result.isAnimated);
-          } catch (e: any) {
-            Signal.set(evaluationState, EvaluationState.ShaderCompilationError);
-            print(e.toString(), true);
-            if (e.cause != null) {
-              print(e.cause, true);
-            }
+      if (result.isError) {
+        Signal.set(evaluationState, EvaluationState.EvaluationError);
+        console.error(result.error);
+      } else {
+        try {
+          //console.log(result.shaderSource);
+          await renderer.recompileShader(result.shaderSource);
+          Signal.set(evaluationState, EvaluationState.Success);
+          Signal.set(isAnimation, result.isAnimated);
+        } catch (e: any) {
+          Signal.set(evaluationState, EvaluationState.ShaderCompilationError);
+          print(e.toString(), true);
+          if (e.cause != null) {
+            print(e.cause, true);
           }
         }
-        renderLoop.schedule();
-      })
+      }
     });
   };
 
@@ -370,8 +388,9 @@ const Bauble = (props: BaubleProps) => {
       onChange: recompile,
       definitions: definitions,
     });
-    renderer = new Renderer(canvas, {
+    renderer = new AsyncRenderer(renderBox, canvas, {
       time: Signal.getter(timer.t),
+      isVisible: Signal.getter(isVisible),
       renderType: Signal.getter(renderType),
       rotation: Signal.getter(rotation),
       origin: Signal.getter(origin),
@@ -381,40 +400,29 @@ const Bauble = (props: BaubleProps) => {
       resolution: canvasResolution,
     });
 
-    renderLoop = new RenderLoop((elapsed) => batch(() => {
-      if (!Signal.get(isVisible)) {
-        return;
-      }
-      const isAnimation_ = Signal.get(isAnimation);
-      const isTimeAdvancing = isAnimation_ && Signal.get(timer.state) !== TimerState.Paused;
-      if (isTimeAdvancing) {
-        // If you hit the stop button, we want to redraw at zero,
-        // but we don't want to advance time forward by 16ms.
-        timer.tick(elapsed, isAnimation_);
-        // Normally the advancing of time is sufficient
-        // to reschedule the loop, but if you're just
-        // resuming after a stop the initial elapsed time
-        // is 0.
-        if (elapsed === 0) {
-          renderLoop.schedule();
-        }
-      }
-      renderer.draw();
+    timeAdvancer = new RenderLoop((elapsed) => batch(() => {
+     const isAnimation_ = Signal.get(isAnimation);
+     const isTimeAdvancing = isAnimation_ && Signal.get(timer.state) !== TimerState.Paused;
+     if (isTimeAdvancing) {
+       // If you hit the stop button, we want to redraw at zero,
+       // but we don't want to advance time forward by 16ms.
+       timer.tick(elapsed, isAnimation_);
+       // Normally the advancing of time is sufficient
+       // to reschedule the loop, but if you're just
+       // resuming after a stop the initial elapsed time
+       // is 0.
+       if (elapsed === 0) {
+         timeAdvancer.schedule();
+       }
+     }
     }));
 
     Signal.onEffect([
-      isVisible,
-      rotation,
-      origin,
-      zoom,
-      renderType,
       timer.state,
       timer.t,
-      quadView,
-      quadSplitPoint,
-      canvasResolution,
+      isAnimation,
     ], () => {
-      renderLoop.schedule();
+      timeAdvancer.schedule();
     });
     requestAnimationFrame(() => {
       // onMount is called before the children have been mounted,

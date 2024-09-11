@@ -80,7 +80,7 @@ export default class Renderer {
   private orthogonalXZ: vec3 = vec3.fromValues(0.5 * Math.PI, 0, 0);
   private orthogonalZY: vec3 = vec3.fromValues(0, 0.5 * Math.PI, 0);
 
-  constructor(canvas: HTMLCanvasElement, private state: RenderState.Accessors) {
+  constructor(canvas: OffscreenCanvas, private state: RenderState.Accessors) {
     const gl = canvas.getContext('webgl2', { antialias: false });
     if (!gl) {
       throw new Error("failed to create webgl2 context");

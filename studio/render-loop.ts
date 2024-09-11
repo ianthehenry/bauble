@@ -14,9 +14,9 @@ export default class RenderLoop {
     this.scheduled = true;
     requestAnimationFrame((nowMS) => {
       const nowSeconds = nowMS / 1000 as Seconds;
-      this.scheduled = false;
       const elapsed = this.then == null ? 0 : nowSeconds - this.then;
 
+      this.scheduled = false;
       this.f(elapsed as Seconds);
       if (this.scheduled) {
         this.then = nowSeconds;

@@ -4,6 +4,7 @@ import {batch, createMemo} from 'solid-js';
 
 export type T = {
   time: Seconds,
+  isVisible: boolean,
   renderType: number, // TODO: give this a type
   rotation: {x: number, y: number},
   origin: {x: number, y: number, z: number},
@@ -15,6 +16,7 @@ export type T = {
 
 export type Accessors = {
   time: Signal.Accessor<Seconds>,
+  isVisible: Signal.Accessor<boolean>,
   renderType: Signal.Accessor<number>,
   rotation: Signal.Accessor<{x: number, y: number}>,
   origin: Signal.Accessor<{x: number, y: number, z: number}>,
@@ -26,6 +28,7 @@ export type Accessors = {
 
 export type Signals = {
   time: Signal.T<Seconds>,
+  isVisible: Signal.T<boolean>,
   renderType: Signal.T<number>,
   rotation: Signal.T<{x: number, y: number}>,
   origin: Signal.T<{x: number, y: number, z: number}>,
@@ -35,10 +38,25 @@ export type Signals = {
   resolution: Signal.T<{width: number, height: number}>,
 };
 
+export function defaultSignals() {
+  return {
+    time: Signal.create(0 as Seconds),
+    isVisible: Signal.create(false),
+    renderType: Signal.create(0),
+    rotation: Signal.create({x: 0, y: 0}),
+    origin: Signal.create({x: 0, y: 0, z: 0}),
+    zoom: Signal.create(0),
+    quadView: Signal.create(false),
+    quadSplitPoint: Signal.create({x: 0.5, y: 0.5}),
+    resolution: Signal.create({width: 0, height: 0}),
+  };
+}
+
 export function accessAll(accessors: Accessors): Signal.Accessor<T> {
   return createMemo(() => {
     return {
       time: accessors.time(),
+      isVisible: accessors.isVisible(),
       renderType: accessors.renderType(),
       rotation: accessors.rotation(),
       origin: accessors.origin(),
@@ -50,9 +68,24 @@ export function accessAll(accessors: Accessors): Signal.Accessor<T> {
   });
 };
 
+export function getAll(signals: Signals): Accessors {
+  return {
+    time: Signal.getter(signals.time),
+    isVisible: Signal.getter(signals.isVisible),
+    renderType: Signal.getter(signals.renderType),
+    rotation: Signal.getter(signals.rotation),
+    origin: Signal.getter(signals.origin),
+    zoom: Signal.getter(signals.zoom),
+    quadView: Signal.getter(signals.quadView),
+    quadSplitPoint: Signal.getter(signals.quadSplitPoint),
+    resolution: Signal.getter(signals.resolution),
+  };
+};
+
 export function setAll(signals: Signals, value: T) {
   batch(() => {
     Signal.set(signals.time, value.time);
+    Signal.set(signals.isVisible, value.isVisible);
     Signal.set(signals.renderType, value.renderType);
     Signal.set(signals.rotation, value.rotation);
     Signal.set(signals.origin, value.origin);
