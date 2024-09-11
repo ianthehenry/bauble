@@ -275,12 +275,12 @@ interface BaubleProps {
   focusable: boolean,
   canSave: boolean,
   definitions: Array<Definition>,
-  mailbox: Mailbox,
+  compiler: Mailbox,
   size: {width: number, height: number},
 }
 
 const Bauble = (props: BaubleProps) => {
-  const {definitions, mailbox} = props;
+  const {definitions, compiler} = props;
   let canvasContainer: HTMLDivElement;
   let editorContainer: HTMLDivElement;
   let canvas: HTMLCanvasElement;
@@ -332,7 +332,7 @@ const Bauble = (props: BaubleProps) => {
     compileQueue.schedule(() => {
       Signal.set(evaluationState, EvaluationState.Unknown);
       const request = {tag: 'compile', script: editor.state.doc.toString()};
-      return mailbox.send(request).then((result : any) => {
+      return compiler.send(request).then((result : any) => {
         outputContainer.innerHTML = '';
         for (let [line, isErr] of result.outputs) {
           print(line, isErr);
@@ -370,18 +370,16 @@ const Bauble = (props: BaubleProps) => {
       onChange: recompile,
       definitions: definitions,
     });
-    // TODO: these should really be named
-    renderer = new Renderer(
-      canvas,
-      timer.t,
-      renderType,
-      rotation,
-      origin,
-      zoom,
-      quadView,
-      quadSplitPoint,
-      canvasResolution,
-    );
+    renderer = new Renderer(canvas, {
+      time: Signal.getter(timer.t),
+      renderType: Signal.getter(renderType),
+      rotation: Signal.getter(rotation),
+      origin: Signal.getter(origin),
+      zoom: Signal.getter(zoom),
+      quadView: Signal.getter(quadView),
+      quadSplitPoint: Signal.getter(quadSplitPoint),
+      resolution: canvasResolution,
+    });
 
     renderLoop = new RenderLoop((elapsed) => batch(() => {
       if (!Signal.get(isVisible)) {

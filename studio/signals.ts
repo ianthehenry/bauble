@@ -1,6 +1,7 @@
 import type {Accessor, Setter, Signal} from "solid-js";
 import {createSignal, createEffect, on} from "solid-js";
 
+export type {Accessor, Setter} from "solid-js";
 export type T<T> = Signal<T>;
 
 const create = createSignal;

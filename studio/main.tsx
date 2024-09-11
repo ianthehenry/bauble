@@ -22,9 +22,9 @@ if (inWorker) {
     const worker = new Worker(import.meta.url);
     worker.addEventListener('message', ((_) => { resolve(worker); }), {once: true});
   });
-  const mailbox = new Mailbox(worker);
+  const wasmMailbox = new Mailbox(worker);
 
-  const definitions = await mailbox.send({tag: 'definitions'}) as Array<Definition>;
+  const definitions = await wasmMailbox.send({tag: 'definitions'}) as Array<Definition>;
 
   switch (window.location.pathname) {
   case '/help/': {
@@ -40,7 +40,7 @@ if (inWorker) {
         renderSolid(() =>
           <Bauble
             definitions={definitions}
-            mailbox={mailbox}
+            compiler={wasmMailbox}
             initialScript={initialScript}
             focusable={true}
             canSave={false}
@@ -54,10 +54,10 @@ if (inWorker) {
     break;
   }
   case '/': {
-    const initialScript = Storage.getScript() ?? await (mailbox.send({tag: 'read-file', 'path': 'examples/intro.janet'}) as Promise<string>);
+    const initialScript = Storage.getScript() ?? await (wasmMailbox.send({tag: 'read-file', 'path': 'examples/intro.janet'}) as Promise<string>);
     renderSolid(() => <Bauble
       definitions={definitions}
-      mailbox={mailbox}
+      compiler={wasmMailbox}
       initialScript={initialScript}
       focusable={false}
       canSave={true}
