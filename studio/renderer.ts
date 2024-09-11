@@ -229,6 +229,7 @@ export default class Renderer {
     } else {
       this.drawSingleView();
     }
+    gl.finish();
   }
 
   recompileShader(fragmentShaderSource: string) {
