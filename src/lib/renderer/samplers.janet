@@ -23,12 +23,16 @@
            Q q
            dist (nearest-distance)
            gradient (calculate-gradient (nearest-distance))]
-      (return ,(if <color>
-        (jlsl/do "coloring"
-          (if (<= dist 0)
-            ,<color>
-            ,default-background-color))
-        (gradient-color))))))
+
+      (case render-type
+        :0 ,(if <color>
+          (jlsl/statement
+            (if (<= dist 0)
+              (return ,<color>)
+              (return ,default-background-color)))
+          (jlsl/statement
+            (return (gradient-color))))
+        (return (gradient-color))))))
 
 (defn- make-march [nearest-distance]
   (jlsl/fn :float march [[out :int] steps]
@@ -49,8 +53,7 @@
     (return ray-depth)))
 
 # TODO: okay, so, theoretically we have nearest-distance in the current environment already
-(defn make-sample-3d [nearest-distance render-type <color>]
-  (def render-type (jlsl/coerce-expr render-type))
+(defn make-sample-3d [nearest-distance <color>]
   (def march (make-march nearest-distance))
   (jlsl/fn :vec3 sample []
     # the "camera orientation" vector is really "what transformation do we make to
@@ -72,18 +75,21 @@
            p P
            dist (nearest-distance)
            normal (calculate-normal (nearest-distance))]
-      (case ,render-type
-        # default color field
+      (case render-type
         :0 (if (>= depth MAXIMUM_TRACE_DISTANCE)
             (return default-background-color)
             (return ,(@or <color> (normal-color))))
+        # ignore color field
+        :1 (if (>= depth MAXIMUM_TRACE_DISTANCE)
+            (return default-background-color)
+            (return (normal-color)))
         # convergence debug view
-        :1
+        :2
           (return (if (= steps MAX_STEPS)
             [1 0 1]
             (float steps / float MAX_STEPS | vec3)))
         # overshoot debug view
-        :2 (do
+        :3 (do
           (var overshoot (max (- dist) 0 / MINIMUM_HIT_DISTANCE))
           (var undershoot (max dist 0 / MINIMUM_HIT_DISTANCE))
           (return [overshoot (- 1 undershoot overshoot) (1 - (step 1 undershoot))]))))))

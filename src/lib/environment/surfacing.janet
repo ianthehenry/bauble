@@ -253,6 +253,7 @@
   (default exponent 5)
   (shape/map-color subject |(+ $ (* color (fresnel-intensity exponent)))))
 
+# TODO: why isn't this just an expression?
 (defhelper :vec3 normal-color []
   ```
   Returns a color that represents the visualization of the 3D normal. This is

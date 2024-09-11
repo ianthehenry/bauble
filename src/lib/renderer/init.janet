@@ -62,7 +62,7 @@
     ,(def sample
       (case (shape/type subject)
         jlsl/type/vec2 (make-sample-2d nearest-distance (shape/color subject))
-        jlsl/type/vec3 (make-sample-3d nearest-distance render-type (shape/color subject))
+        jlsl/type/vec3 (make-sample-3d nearest-distance (shape/color subject))
         (error "BUG")))
 
     (defn :void main []

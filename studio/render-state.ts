@@ -2,11 +2,12 @@ import * as Signal from './signals';
 import {Seconds} from './types';
 import {batch, createMemo} from 'solid-js';
 
-enum RenderType {
+export enum RenderType {
   Normal = 0,
-  Convergence = 1,
-  Distance = 2,
-}
+  Surfaceless = 1,
+  Convergence = 2,
+  Distance = 3,
+};
 
 export type T = {
   time: Seconds,

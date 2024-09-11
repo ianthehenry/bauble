@@ -134,8 +134,7 @@ const resetCamera = (
 };
 
 interface RenderToolbarProps {
-  // TODO: render type should be an enum
-  renderType: Signal.T<number>,
+  renderType: Signal.T<RenderState.RenderType>,
   quadView: Signal.T<boolean>,
   rotation: Signal.T<{x: number, y: number}>,
   origin: Signal.T<{x: number, y: number, z: number}>,
@@ -156,9 +155,10 @@ const RenderToolbar: Component<RenderToolbarProps> = (props) => {
     </button>
     <div class="spacer"></div>
     {choices(props.renderType, [
-      { value: 0, icon: "camera", title: "Render normally" },
-      { value: 1, icon: "magnet", title: "Debug number of raymarching steps" },
-      { value: 2, icon: "arrows-collapse", title: "Debug surface distance" },
+      { value: RenderState.RenderType.Normal, icon: "camera", title: "Render normally" },
+      { value: RenderState.RenderType.Surfaceless, icon: "circle", title: "Use default surface" },
+      { value: RenderState.RenderType.Convergence, icon: "magnet", title: "Debug number of raymarching steps" },
+      { value: RenderState.RenderType.Distance, icon: "arrows-collapse", title: "Debug surface distance" },
     ])}
   </div>;
 };
@@ -314,7 +314,7 @@ const Bauble = (props: BaubleProps) => {
     const size = Signal.get(canvasSize);
     return {width: dpr * size.width, height: dpr * size.height};
   });
-  const renderType = Signal.create(0);
+  const renderType = Signal.create(RenderState.RenderType.Normal);
   const quadView = Signal.create(false);
   const quadSplitPoint = Signal.create({x: 0.5, y: 0.5});
   const zoom = Signal.create(defaultCamera.zoom);
