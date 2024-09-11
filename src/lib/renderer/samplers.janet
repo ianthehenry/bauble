@@ -25,9 +25,9 @@
            gradient (calculate-gradient (nearest-distance))]
       (return ,(if <color>
         (jlsl/do "coloring"
-          (if (< dist 0)
+          (if (<= dist 0)
             ,<color>
-            [0 0 0]))
+            ,default-background-color))
         (gradient-color))))))
 
 (defn- make-march [nearest-distance]
@@ -53,8 +53,6 @@
   (def render-type (jlsl/coerce-expr render-type))
   (def march (make-march nearest-distance))
   (jlsl/fn :vec3 sample []
-    (var frag-coord Frag-Coord)
-
     # the "camera orientation" vector is really "what transformation do we make to
     # the vector [0 0 1]" to arrive at to the camera origin. but we want to point to
     # the actual origin, so we basically want to reverse this transformation.
@@ -62,7 +60,7 @@
       (rotation-z (- camera-orientation.z))
       (rotation-y (- camera-orientation.y))
       (rotation-x (- camera-orientation.x))
-      (perspective 45.0 resolution frag-coord)
+      (perspective 45.0 resolution Frag-Coord)
       ))
 
     (var steps :0)
@@ -77,11 +75,7 @@
       (case ,render-type
         # default color field
         :0 (if (>= depth MAXIMUM_TRACE_DISTANCE)
-            (do
-              (def light (pow ([69 72 79] / 255) (vec3 2.2)))
-              (def dark (pow ([40 42 46] / 255) (vec3 2.2)))
-              (return (vec3 (mix dark light
-                (frag-coord.x + frag-coord.y / (resolution.x + resolution.y))))))
+            (return default-background-color)
             (return ,(@or <color> (normal-color))))
         # convergence debug view
         :1

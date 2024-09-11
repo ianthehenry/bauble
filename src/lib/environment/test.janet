@@ -113,7 +113,8 @@
     cut-disk @{:doc "(cut-disk radius bottom)\n\nTODOC"}
     cyan @{:value [hsv 0.5 0.98 1]}
     dark-gray @{:value [0.25 0.25 0.25]}
-    default-background-color @{:doc "(default-background-color expr)\n\nThe default background color, a gray gradient."}
+    default-background-color @{:doc "The default background color, a gray gradient."
+                               :value [do]}
     degrees @{}
     depth @{:doc "The distance that the current ray has marched, equal to `(distance ray-origin P)`. Not defined in 2D."
             :value [:var "depth" :float]}

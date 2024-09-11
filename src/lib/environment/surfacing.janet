@@ -314,11 +314,11 @@
     (s.xxx * with [p (s.xxx * NORMAL_OFFSET + p)] expr)
     )))))
 
-(sugar (defn default-background-color
+(def default-background-color
   ```
   The default background color, a gray gradient.
   ```
-  [expr]
-  (def light (pow ([69 72 79] / 255) (vec3 2.2)))
-  (def dark (pow ([40 42 46] / 255) (vec3 2.2)))
-  (vec3 (mix dark light (Frag-Coord.x + Frag-Coord.y / (resolution.x + resolution.y))))))
+  (sugar (do (jlsl/do
+    (def light (pow ([69 72 79] / 255) (vec3 2.2)))
+    (def dark (pow ([40 42 46] / 255) (vec3 2.2)))
+    (vec3 (mix dark light (Frag-Coord.x + Frag-Coord.y / (resolution.x + resolution.y))))))))
