@@ -232,36 +232,36 @@ export default class Renderer {
     gl.finish();
   }
 
-  recompileShader(fragmentShaderSource: string) {
-    const { gl, program, currentFragmentShader, currentFragmentShaderSource } = this;
+  recompileShader(source: string) {
+    const {
+      gl,
+      program,
+      currentFragmentShader: oldFragmentShader,
+      currentFragmentShaderSource: oldFragmentShaderSource,
+    } = this;
 
-    if (fragmentShaderSource === currentFragmentShaderSource) {
+    if (source === oldFragmentShaderSource) {
       console.info("skipping shader compilation");
       return;
     }
 
-    if (currentFragmentShader) {
-      gl.detachShader(program, currentFragmentShader);
-      gl.deleteShader(currentFragmentShader);
+    const startTime = performance.now();
+    const newFragmentShader = compileShader(gl, gl.FRAGMENT_SHADER, source);
+    this.currentFragmentShader = newFragmentShader;
+    this.currentFragmentShaderSource = source;
+    if (oldFragmentShader) {
+      gl.detachShader(program, oldFragmentShader);
+      gl.deleteShader(oldFragmentShader);
     }
-    try {
-      const startTime = performance.now();
-      const fragmentShader = compileShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-      gl.attachShader(program, fragmentShader);
-      gl.linkProgram(program);
-      this._positionLocation = null;
-      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        const info = gl.getProgramInfoLog(program);
-        throw new Error("failed to link shader program", {cause: info});
-      }
-      gl.useProgram(program);
-      this.currentFragmentShader = fragmentShader;
-      this.currentFragmentShaderSource = fragmentShaderSource;
-      const endTime = performance.now();
-      console.log(`spent ${endTime - startTime}ms compiling shader`);
-    } catch (e) {
-      this.currentFragmentShader = null;
-      throw e;
+    gl.attachShader(program, newFragmentShader);
+    gl.linkProgram(program);
+    this._positionLocation = null;
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      const info = gl.getProgramInfoLog(program);
+      throw new Error("failed to link shader program", {cause: info});
     }
+    gl.useProgram(program);
+    const endTime = performance.now();
+    console.log(`spent ${endTime - startTime}ms compiling shader`);
   }
 }
