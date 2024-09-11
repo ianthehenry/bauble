@@ -101,7 +101,7 @@
           [nil bindings body]))
       (assert (> (length body) 0) "with expression cannot be empty")
       [with-expr (bindings-of-ast bindings) (statement/of-asts (drop -1 body)) (expr/of-ast (last body)) name])
-    ['unquote expr] expr
+    ['unquote expr] [coerce-expr expr]
     [(and op (or '++ '-- '_++ '_--)) expr] [expr/crement ['quote op] (expr/of-ast expr)]
     ['if cond then else] [if-expr (expr/of-ast cond) (expr/of-ast then) (expr/of-ast else)]
     [f & args] [call f (map expr/of-ast args)]
