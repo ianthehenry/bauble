@@ -2,10 +2,16 @@ import * as Signal from './signals';
 import {Seconds} from './types';
 import {batch, createMemo} from 'solid-js';
 
+enum RenderType {
+  Normal = 0,
+  Convergence = 1,
+  Distance = 2,
+}
+
 export type T = {
   time: Seconds,
   isVisible: boolean,
-  renderType: number, // TODO: give this a type
+  renderType: RenderType,
   rotation: {x: number, y: number},
   origin: {x: number, y: number, z: number},
   zoom: number, // TODO: give this a unique type
@@ -17,7 +23,7 @@ export type T = {
 export type Accessors = {
   time: Signal.Accessor<Seconds>,
   isVisible: Signal.Accessor<boolean>,
-  renderType: Signal.Accessor<number>,
+  renderType: Signal.Accessor<RenderType>,
   rotation: Signal.Accessor<{x: number, y: number}>,
   origin: Signal.Accessor<{x: number, y: number, z: number}>,
   zoom: Signal.Accessor<number>,
@@ -29,7 +35,7 @@ export type Accessors = {
 export type Signals = {
   time: Signal.T<Seconds>,
   isVisible: Signal.T<boolean>,
-  renderType: Signal.T<number>,
+  renderType: Signal.T<RenderType>,
   rotation: Signal.T<{x: number, y: number}>,
   origin: Signal.T<{x: number, y: number, z: number}>,
   zoom: Signal.T<number>,
@@ -42,7 +48,7 @@ export function defaultSignals() {
   return {
     time: Signal.create(0 as Seconds),
     isVisible: Signal.create(false),
-    renderType: Signal.create(0),
+    renderType: Signal.create(RenderType.Normal),
     rotation: Signal.create({x: 0, y: 0}),
     origin: Signal.create({x: 0, y: 0, z: 0}),
     zoom: Signal.create(0),
