@@ -3,7 +3,7 @@
 
 (defn split-axis [axis]
   (sugar (case axis
-    x [p.x p.yz]
+    x [p.x p.zy]
     y [p.y p.xz]
     z [p.z p.xy]
     (errorf "unknown axis %q" (jlsl/show axis)))))
@@ -40,7 +40,7 @@
   (var q [radius (- height)])
   (return (sqrt d * sign s)))
   (upscope
-    (as-macro @defshape/3d- cone-x [:float radius :float height] "TODOC" (var other-axes (unquote (quote (<1> dot (<1> identifier (<2> lexical <3> "p" (<4> vec (<5> float) 3))) yz)))) (var this-axis (unquote (quote (<1> dot (<1> identifier (<2> lexical <3> "p" (<4> vec (<5> float) 3))) x)))) (var q [radius (- height)]) (return (sqrt d * sign s)))
+    (as-macro @defshape/3d- cone-x [:float radius :float height] "TODOC" (var other-axes (unquote (quote (<1> dot (<1> identifier (<2> lexical <3> "p" (<4> vec (<5> float) 3))) zy)))) (var this-axis (unquote (quote (<1> dot (<1> identifier (<2> lexical <3> "p" (<4> vec (<5> float) 3))) x)))) (var q [radius (- height)]) (return (sqrt d * sign s)))
     (as-macro @defshape/3d- cone-y [:float radius :float height] "TODOC" (var other-axes (unquote (quote (<1> dot (<1> identifier (<2> lexical <3> "p" (<4> vec (<5> float) 3))) xz)))) (var this-axis (unquote (quote (<1> dot (<1> identifier (<2> lexical <3> "p" (<4> vec (<5> float) 3))) y)))) (var q [radius (- height)]) (return (sqrt d * sign s)))
     (as-macro @defshape/3d- cone-z [:float radius :float height] "TODOC" (var other-axes (unquote (quote (<1> dot (<1> identifier (<2> lexical <3> "p" (<4> vec (<5> float) 3))) xy)))) (var this-axis (unquote (quote (<1> dot (<1> identifier (<2> lexical <3> "p" (<4> vec (<5> float) 3))) z)))) (var q [radius (- height)]) (return (sqrt d * sign s)))
     (defn cone
