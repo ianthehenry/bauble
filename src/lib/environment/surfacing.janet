@@ -13,9 +13,11 @@
 (def- MINIMUM_HIT_DISTANCE 0.01)
 (def- MAX_LIGHT_STEPS 256:u)
 
+# TODO: docstring
 (jlsl/jlsl/defstruct LightIncidence
   :vec3 color
-  :vec3 direction)
+  :vec3 direction
+  :float intensity)
 
 (defhelper- :vec3 normalize-safe [:vec3 v]
   (return (if (= v (vec3 0)) v (normalize v))))
@@ -29,7 +31,7 @@
   ```
   TODOC
   ```
-  (return (LightIncidence light-color (normalize-safe (light-position - P)))))
+  (return (LightIncidence light-color (normalize-safe (light-position - P)) 1)))
 
 # TODO: I think that this should actually be a function that takes the distance
 # expression to march through. This would let us create a light that casts
@@ -40,7 +42,7 @@
   TODOC
   ```
   (if (= light-position P)
-    (return (LightIncidence light-color (vec3 0))))
+    (return (LightIncidence light-color (vec3 0) 1)))
   # because it can be so hard to converge exactly
   # to a point on a shape's surface, we actually
   # march the light to a point very near the surface.
@@ -49,7 +51,7 @@
   (var to-light (normalize (light-position - P)))
   # don't bother marching if the light won't contribute anything
   (if (= light-color (vec3 0))
-    (return (LightIncidence light-color to-light)))
+    (return (LightIncidence light-color to-light 0)))
   # If you're looking at a surface facing away from the light,
   # there's no need to march all the way to it. I mean,
   # theoretically you could have an infinitely-thin surface or
@@ -59,7 +61,7 @@
   # stopping as soon as you hit the volume behind you. But I think
   # it's more clear to march from the light to the surface.
   (if (< (dot to-light normal) 0)
-    (return (LightIncidence (vec3 0) to-light)))
+    (return (LightIncidence light-color to-light 0)))
   (var target (,MINIMUM_HIT_DISTANCE * normal + P))
   (var light-distance (length (target - light-position)))
   (var ray-dir (target - light-position / light-distance))
@@ -69,8 +71,8 @@
     (if (< nearest ,MINIMUM_HIT_DISTANCE) (break))
     (+= depth nearest))
   (if (>= depth light-distance)
-    (return (LightIncidence light-color to-light))
-    (return (LightIncidence (vec3 0) to-light)))))
+    (return (LightIncidence light-color to-light 1))
+    (return (LightIncidence light-color to-light 0)))))
 
 (thunk ~(as-macro ,defhelper- LightIncidence cast-light-soft-shadow [:vec3 light-color :vec3 light-position :float softness]
   ```
@@ -79,12 +81,12 @@
   (if (= softness 0)
     (return (cast-light-hard-shadow light-color light-position)))
   (if (= light-position P)
-    (return (LightIncidence light-color (vec3 0))))
+    (return (LightIncidence light-color (vec3 0) 1)))
   (var to-light (normalize (light-position - P)))
   (if (= light-color (vec3 0))
-    (return (LightIncidence light-color to-light)))
+    (return (LightIncidence light-color to-light 0)))
   (if (< (dot to-light normal) 0)
-    (return (LightIncidence (vec3 0) to-light)))
+    (return (LightIncidence light-color to-light 0)))
   (var target (,MINIMUM_HIT_DISTANCE * normal + P))
   (var light-distance (length (target - light-position)))
   (var ray-dir (target - light-position / light-distance))
@@ -102,8 +104,8 @@
     (set last-nearest nearest))
 
   (if (>= depth light-distance)
-    (return (LightIncidence (in-light * light-color) to-light))
-    (return (LightIncidence (vec3 0) to-light)))))
+    (return (LightIncidence light-color to-light in-light))
+    (return (LightIncidence light-color to-light 0)))))
 
 (def- light-tag (gensym))
 
@@ -180,27 +182,20 @@
     (light/ambient (vec3 0.03) :hoist true)
     (light/ambient (vec3 0.02) (* normal 0.1) :hoist true)]))
 
-(defhelper- :vec3 blinn-phong1 [:vec3 color :float shininess :float glossiness :vec3 light-color :vec3 light-dir]
-  (if (= light-dir (vec3 0))
-    (return (* color light-color)))
-  (var halfway-dir (light-dir - ray-dir | normalize))
+(defhelper- :vec3 blinn-phong1 [:vec3 color :float shininess :float glossiness LightIncidence light]
+  (if (= light.direction (vec3 0))
+    (return (* color light.color light.intensity)))
+  (var halfway-dir (light.direction - ray-dir | normalize))
   (var specular-strength (shininess * pow (max (dot normal halfway-dir) 0) (glossiness * glossiness)))
-  (var diffuse (max 0 (dot normal light-dir)))
-  (return (light-color * specular-strength + (* color diffuse light-color))))
+  (var diffuse (max 0 (dot normal light.direction)))
+  (return (light.color * light.intensity * specular-strength + (* color diffuse light.color light.intensity))))
 
 (defn- blinn-phong-color-expression [color shininess glossiness lights]
   (jlsl/do "blinn-phong"
     (var result (vec3 0))
     ,;(seq [light :in lights]
       (def light-incidence (light :expression))
-      # TODO hmmmmm okay wait a minute. can't we use the position of the light
-      # to just determine the incidence angle? why do we need to forward it? can
-      # the incidence just be a color and nothing else? unless we like... we don't
-      # distort this, right?
-      (jlsl/statement
-        (+= result (blinn-phong1 color shininess glossiness
-          (. light-incidence color)
-          (. light-incidence direction)))))
+      (jlsl/statement (+= result (blinn-phong1 color shininess glossiness light-incidence))))
     result))
 
 (defnamed blinn-phong [shape color :?s:shininess :?g:glossiness]

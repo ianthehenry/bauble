@@ -72,7 +72,7 @@
           :macro true}
     Frag-Coord @{:doc "The center of the current pixel being rendered. Pixel centers are at `[0.5 0.5]`, so with no anti-aliasing this will have values like `[0.5 0.5]`, `[1.5 0.5]`, etc. If you are using multisampled antialiasing, this will have off-centered values like [0.3333 0.3333]."
                  :value [:var "Frag-Coord" :vec2]}
-    LightIncidence @{:doc "(LightIncidence color direction)\n\n"}
+    LightIncidence @{:doc "(LightIncidence color direction intensity)\n\n"}
     P @{:doc "The global point in 3D space. This is the position of the current ray before any transformations are applied to it."
         :value [:var "P" :vec3]}
     Q @{:doc "The global point in 2D space."
