@@ -98,3 +98,5 @@
       (jlsl/with ,name [,variable ,new-position] (,'unquote ,$expr))))))
 
 (defmacro sugar [expr] (syntax/expand expr))
+
+(defn call [f & args] (f ;args))

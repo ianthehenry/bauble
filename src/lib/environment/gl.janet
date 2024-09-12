@@ -116,3 +116,72 @@
   ````
   [bindings & body]
   (make-let-macro false bindings body))
+
+(defmacro gl/do
+  ````
+  Execute a series of GLSL statements and return the final expression.
+
+  ```
+  (gl/do "optional-label"
+    (var c [1 0 1])
+    (for (var i 0:u) (< i 10:u) (++ i)
+      (+= c.g 0.01))
+    c)
+  ```
+
+  The body of this macro is not regular Janet code, but a special DSL
+  that is not really documented anywhere, making it pretty hard to use.
+  ````
+  [& body]
+  (call jlsl/do ;body))
+
+(defmacro gl/iife
+  ````
+  Like `gl/do`, except that you can explicitly return early.
+
+  ```
+  (gl/iife "optional-label"
+    (var c [1 0 1])
+    (if (< normal.y 0)
+      (return c))
+    (for (var i 0:u) (< i 10:u) (++ i)
+      (+= c.g 0.01))
+    c)
+  ```
+
+  ````
+  [& body]
+  (call jlsl/iife ;body))
+
+(defmacro gl/defn
+  ````
+  Defines a GLSL function. You must explicitly annotate the return type
+  and the type of all arguments. The body of the function uses the GLSL
+  DSL, i.e. it is not normal Janet code.
+
+  ```
+  (gl/defn :vec3 hsv [:float hue :float saturation :float value]
+    (var c (hue * 6 + [0 4 2] | mod 6 - 3 | abs))
+    (return (value * (mix (vec3 1) (c - 1 | clamp 0 1) saturation))))
+  ```
+  ````
+  [return-type name params & body]
+  (call jlsl/jlsl/defn return-type name params ;body))
+
+(defmacro gl/overload
+  ````
+  Overloads a previously defined function with an additional signature.
+
+  Note that the argument type must uniquely determine the return type of
+  a GLSL function, so you can't make an overload that only varies in
+  its return type.
+
+  ```
+  (gl/overload :float min [:float a :float b :float c]
+    (return (min (min a b) c)))
+  ```
+
+  You can overload any function, including built-in functions.
+  ````
+  [return-type name params & body]
+  (call jlsl/jlsl/overload return-type name params ;body))
