@@ -262,6 +262,6 @@ export default class Renderer {
     }
     gl.useProgram(program);
     const endTime = performance.now();
-    console.log(`spent ${endTime - startTime}ms compiling shader`);
+    return endTime - startTime;
   }
 }

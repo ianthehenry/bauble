@@ -12,14 +12,9 @@ export function init() {
       switch (request.tag) {
       case 'compile': {
         outputs = [];
-        const {isError, error, isAnimated, shaderSource} = runtime.evaluateScript(request.script);
-        return {
-          outputs: outputs,
-          isError: isError,
-          error: error,
-          isAnimated: isAnimated,
-          shaderSource: shaderSource,
-        };
+        const result = runtime.evaluateScript(request.script) as any;
+        result.outputs = outputs;
+        return result;
       }
       case 'definitions': {
         const definitionVector = runtime.getDefinitions();

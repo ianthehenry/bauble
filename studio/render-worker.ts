@@ -41,9 +41,9 @@ export function init() {
       break;
     }
     case 'shader': {
-      renderer!.recompileShader(request.source);
+      const duration = renderer!.recompileShader(request.source);
       renderLoop.schedule();
-      break;
+      return duration;
     }
     default: throw new Error("unknown request tag " + request.tag);
     }

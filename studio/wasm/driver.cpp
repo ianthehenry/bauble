@@ -17,6 +17,8 @@ struct CompilationResult {
   string shader_source;
   bool is_animated;
   string error;
+  double eval_time_ms;
+  double compile_time_ms;
 };
 
 CompilationResult compilation_error(string message) {
@@ -34,21 +36,21 @@ CompilationResult evaluate_script(string source) {
     return compilation_error("function uninitialized");
   }
 
-  long long start_time = emscripten_get_now();
+  double start_time = emscripten_get_now();
   Janet evaluation_result;
   const Janet args[1] = { janet_cstringv(source.c_str()) };
   if (!call_fn(janetfn_bauble_evaluate, 1, args, &evaluation_result)) {
     return compilation_error("evaluation error");
   }
 
-  long long done_evaluating = emscripten_get_now();
+  double done_evaluating = emscripten_get_now();
 
   const Janet *tuple = janet_unwrap_tuple(evaluation_result);
   const Janet compile_shape_args[3] = { tuple[0], tuple[1], janet_cstringv("300 es") };
   Janet compilation_result;
   bool compilation_success = call_fn(janetfn_compile_shape, 3, compile_shape_args, &compilation_result);
 
-  long long done_compiling_glsl = emscripten_get_now();
+  double done_compiling_glsl = emscripten_get_now();
   bool is_animated;
   const uint8_t *shader_source;
   if (compilation_success) {
@@ -66,13 +68,13 @@ CompilationResult evaluate_script(string source) {
     return compilation_error("compilation error");
   }
 
-  printf("eval: %lldms compile: %lldms\n", (done_evaluating - start_time), (done_compiling_glsl - done_evaluating));
-
   return (CompilationResult) {
    .is_error = false,
    .shader_source = string((const char *)shader_source),
    .is_animated = is_animated,
-   .error = ""
+   .error = "",
+   .eval_time_ms = (done_evaluating - start_time),
+   .compile_time_ms = (done_compiling_glsl - done_evaluating)
   };
 }
 
@@ -113,6 +115,8 @@ EMSCRIPTEN_BINDINGS(module) {
     .field("shaderSource", &CompilationResult::shader_source)
     .field("isAnimated", &CompilationResult::is_animated)
     .field("error", &CompilationResult::error)
+    .field("evalTimeMs", &CompilationResult::eval_time_ms)
+    .field("compileTimeMs", &CompilationResult::compile_time_ms)
     ;
   value_object<Definition>("Definition")
     .field("name", &Definition::name)

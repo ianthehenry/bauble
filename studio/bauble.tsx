@@ -348,27 +348,38 @@ const Bauble = (props: BaubleProps) => {
     outputContainer.appendChild(span);
   };
 
+  const flush = (outputs: Array<[string, boolean]>) => {
+    outputContainer.innerHTML = '';
+    for (let [line, isErr] of outputs) {
+      print(line, isErr);
+    }
+  };
+
   const recompile = () => {
     compileQueue.schedule(async () => {
       Signal.set(evaluationState, EvaluationState.Unknown);
       const request = {tag: 'compile', script: editor.state.doc.toString()};
       const result: any = await wasmBox.send(request);
-      outputContainer.innerHTML = '';
-      for (let [line, isErr] of result.outputs) {
-        print(line, isErr);
-      }
-
       if (result.isError) {
         Signal.set(evaluationState, EvaluationState.EvaluationError);
-        console.error(result.error);
+        flush(result.outputs);
       } else {
         try {
           //console.log(result.shaderSource);
-          await renderer.recompileShader(result.shaderSource);
+          const shaderRecompilationTimeMs = await renderer.recompileShader(result.shaderSource) as number | undefined;
           Signal.set(evaluationState, EvaluationState.Success);
           Signal.set(isAnimation, result.isAnimated);
+
+          flush(result.outputs);
+          // TODO: this isn't really the best way to surface this information
+          print(`eval ${result.evalTimeMs.toFixed(0)}ms glsl ${result.compileTimeMs.toFixed(0)}ms` +
+            (shaderRecompilationTimeMs
+              ? ` shader ${shaderRecompilationTimeMs.toFixed(0)}ms`
+              : ``)
+            , false);
         } catch (e: any) {
           Signal.set(evaluationState, EvaluationState.ShaderCompilationError);
+          flush(result.outputs);
           print(e.toString(), true);
           if (e.cause != null) {
             print(e.cause, true);

@@ -6,6 +6,8 @@ declare module 'bauble-runtime' {
     shaderSource: string,
     isAnimated: boolean,
     error: string,
+    evalTimeMs: number,
+    compileTimeMs: number,
   }
 
   export interface Definition {
