@@ -1,6 +1,7 @@
 (import ../../jlsl)
 (use ./util)
 (import ../shape)
+(import ../expression-hoister)
 (use ../../jlsl/prelude)
 
 (defn- make-let-macro [new-vars? bindings body]
@@ -185,3 +186,45 @@
   ````
   [return-type name params & body]
   (call jlsl/jlsl/overload return-type name params ;body))
+
+(defmacro gl/def
+  ````
+  You can use `gl/def` to create new top-level GLSL variables which will only
+  be evaluated once (per distance and color field evaluation). This is useful in
+  order to re-use an expensive value in multiple places, when that value only
+  depends on values that are available at the beginning of shading.
+
+  ```
+  (gl/def signal (perlin+ (p / 20)))
+  (shape/3d (signal * 0.5)
+  | intersect (sphere 50)
+  | color [signal (pow signal 2) 0])
+  ```
+
+  This is shorthand for `(def foo (hoist expression "foo"))`.
+
+  Note that since the signal is evaluated at the top-level, `p` will always be the
+  same as `P`. Consider this example:
+
+  ```
+  (gl/def signal (perlin+ (p / 20)))
+  (shape/3d (signal * 0.5)
+  | intersect (sphere 50)
+  | color [signal (pow signal 2) 0]
+  | move x (sin t * 100)
+  )
+  ```
+
+  Change the `gl/def` to a regular `def` to see some of the impliciations of hoisting
+  a computation.
+  ````
+  [name expression]
+  ~(def ,name (,expression-hoister/hoist ,(string name) ,expression)))
+
+(defmacro gl/hoist
+  ````
+  Return a hoisted version of the expression See the documentation for `gl/def`
+  for an explanation of this.
+  ````
+  [expression &opt name]
+  ~(,expression-hoister/hoist ,(string (or name "hoist")) ,expression))
