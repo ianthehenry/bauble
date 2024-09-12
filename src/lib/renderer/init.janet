@@ -17,6 +17,7 @@
     (put seen node true)
     (if (jlsl/variable? node)
       (when-let [expr (in hoisted-vars node)]
+        (visit expr)
         (unless (ordered/table/has-key? references node)
           (ordered/table/put references node expr)))
       (pat/match node
