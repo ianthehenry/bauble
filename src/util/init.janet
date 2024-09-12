@@ -132,8 +132,8 @@
 
 (defn defnamed-aux [def-flavor name params docstring & body]
   (assert (string? docstring) "docstring required")
-  (def [named-params positional-params] (true-false keyword? params))
-  (var named-params-ordered (seq [name :in (or named-params [])]
+  (def [named-params-spec positional-params-spec] (true-false keyword? params))
+  (var named-params-ordered (seq [name :in named-params-spec]
     (match (string/split ":" name)
       [short long] [(keyword (string/triml short "?")) (symbol long) (not (string/has-prefix? "?" short))]
       [short] (let [trimmed (string/triml short "?")]
@@ -146,13 +146,27 @@
   (when named-variadic-index
     (array/remove named-params-ordered named-variadic-index))
 
+  (def variadic-positional-param-index
+    (find-index (fn [k] (string/has-prefix? "&" k)) positional-params-spec))
+  (assert (or
+    (nil? variadic-positional-param-index)
+    (= variadic-positional-param-index (dec (length positional-params-spec))))
+    "variadic params must come last")
   (def variadic-positional-params-symbol
-    (if (and (not (empty? positional-params)) (string/has-prefix? "&" (last positional-params)))
-      (symbol (string/triml (last positional-params) "&"))))
+    (if variadic-positional-param-index
+      (symbol (string/triml (in positional-params-spec variadic-positional-param-index) "&"))))
+  (def first-optional-index (find-index (fn [k] (string/has-prefix? "?" k)) positional-params-spec))
+  (loop [i :range [(or first-optional-index (length positional-params-spec))
+                   (or variadic-positional-param-index (length positional-params-spec))]
+        :let [param (in positional-params-spec i)]]
+    (assert (string/has-prefix? "?" param) "optional arguments must come last"))
 
-  (def positional-params (if variadic-positional-params-symbol
-    (drop -1 positional-params)
-    positional-params))
+  (def required-positional-params (take (or first-optional-index variadic-positional-param-index (length positional-params-spec)) positional-params-spec))
+  (def optional-positional-params (map |(symbol (string/triml $ "?"))
+    (slice positional-params-spec
+     (or first-optional-index (length positional-params-spec))
+     (or variadic-positional-param-index (length positional-params-spec))
+     )))
 
   # even though this is a triple, from-pairs only looks at the first two arguments
   (def named-params (from-pairs named-params-ordered))
@@ -186,10 +200,11 @@
       (unless (has-key? named-args param-name)
         (errorf "%s: missing named argument %q" name param-name)))
     (cond
-      (< (length positional-args) (length positional-params))
+      (< (length positional-args) (length required-positional-params))
         (errorf "%s: not enough arguments, missing %s"
-          name (string/join (slice positional-params (length positional-args)) " "))
-      (and (nil? variadic-positional-params-symbol) (> (length positional-args) (length positional-params)))
+          name (string/join (slice required-positional-params (length positional-args)) " "))
+      (and (nil? variadic-positional-params-symbol)
+        (> (length positional-args) (+ (length required-positional-params) (length optional-positional-params))))
         (errorf "%s: too many arguments"name))
 
     [named-args ;(if variadic-named-args [variadic-named-args] []) ;positional-args])
@@ -199,7 +214,8 @@
       "("
       (string/join
         [name
-        ;positional-params
+        ;required-positional-params
+        ;(map |(string "[" $ "]") optional-positional-params)
         ;(if variadic-positional-params-symbol ['& variadic-positional-params-symbol] [])
         ;(map (fn [[k v required?]]
           (if required?
@@ -215,7 +231,8 @@
     ~(,def-flavor ,name ,(string signature "\n\n" docstring) (fn ,name [& ,$args]
       (def [,named-params
             ,;(if variadic-named-params-symbol [variadic-named-params-symbol] [])
-            ,;positional-params
+            ,;required-positional-params
+            ,;optional-positional-params
             ,;(if variadic-positional-params-symbol ['& variadic-positional-params-symbol] [])
             ] (,parse-params ,$args))
       ,;body))))
@@ -246,6 +263,9 @@
 
 (test-macro (defnamed foo [x :?y:something &rest :&foo] "docstring" (+ x 1))
   (def foo "(foo x & rest [:y something] :& foo)\n\ndocstring" (fn foo [& <1>] (def [@{:y something} foo x & rest] (@parse-params <1>)) (+ x 1))))
+
+(test-macro (defnamed foo [x ?y &z] "docstring" (+ x 1))
+  (def foo "(foo x [y] & z)\n\ndocstring" (fn foo [& <1>] (def [@{} x y & z] (@parse-params <1>)) (+ x 1))))
 
 (deftest "basic defnamed"
   (defnamed foo [x] "" (+ x 1))
@@ -287,6 +307,12 @@
 
 (deftest "variadic positional arguments"
   (defnamed foo [x y &rest] "" [x y rest])
+  (test (foo 1 2) [1 2 []])
+  (test (foo 1 2 3 4) [1 2 [3 4]]))
+
+(deftest "variadic and optional positional arguments"
+  (defnamed foo [x ?y &rest] "" [x y rest])
+  (test (foo 1) [1 nil []])
   (test (foo 1 2) [1 2 []])
   (test (foo 1 2 3 4) [1 2 [3 4]]))
 
