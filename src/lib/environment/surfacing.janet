@@ -1,7 +1,12 @@
 (use ./import)
 (import ../expression-hoister)
 
-(defdyn *lights* "The default lights used by surfacing functions like `blinn-phong`. You can manipulate this using `setdyn` or `with-dyns` like any other dynamic variable, but there is a dedicated `with-lights` function to set it in a way that fits nicely into a pipeline.")
+(defdyn *lights* ```
+The default lights used by surfacing functions like `blinn-phong`.
+You can manipulate this using `setdyn` or `with-dyns` like any other
+dynamic variable, but there is a dedicated `with-lights` function to
+set it in a way that fits nicely into a pipeline.
+```)
 
 (thunk ~(setdyn ,expression-hoister/*hoisted-vars* (table/weak-keys 8)))
 
@@ -14,7 +19,7 @@
 (def- MAX_LIGHT_STEPS 256:u)
 
 # TODO: docstring
-(jlsl/jlsl/defstruct LightIncidence
+(jlsl/jlsl/defstruct Light
   :vec3 color
   :vec3 direction
   :float intensity)
@@ -27,22 +32,22 @@
 # referenced by light/point below. We could attach some extra metadata to
 # purge this from the user environment... or we could just embrace making
 # it part of the API? I'm not sure.
-(defhelper LightIncidence cast-light-no-shadow [:vec3 light-color :vec3 light-position]
+(defhelper Light cast-light-no-shadow [:vec3 light-color :vec3 light-position]
   ```
   TODOC
   ```
-  (return (LightIncidence light-color (normalize-safe (light-position - P)) 1)))
+  (return (Light light-color (normalize-safe (light-position - P)) 1)))
 
 # TODO: I think that this should actually be a function that takes the distance
 # expression to march through. This would let us create a light that casts
 # shadows from a custom source, which would be cool and fun.
 
-(thunk ~(as-macro ,defhelper- LightIncidence cast-light-hard-shadow [:vec3 light-color :vec3 light-position]
+(thunk ~(as-macro ,defhelper- Light cast-light-hard-shadow [:vec3 light-color :vec3 light-position]
   ```
   TODOC
   ```
   (if (= light-position P)
-    (return (LightIncidence light-color (vec3 0) 1)))
+    (return (Light light-color (vec3 0) 1)))
   # because it can be so hard to converge exactly
   # to a point on a shape's surface, we actually
   # march the light to a point very near the surface.
@@ -51,7 +56,7 @@
   (var to-light (normalize (light-position - P)))
   # don't bother marching if the light won't contribute anything
   (if (= light-color (vec3 0))
-    (return (LightIncidence light-color to-light 0)))
+    (return (Light light-color to-light 0)))
   # If you're looking at a surface facing away from the light,
   # there's no need to march all the way to it. I mean,
   # theoretically you could have an infinitely-thin surface or
@@ -61,7 +66,7 @@
   # stopping as soon as you hit the volume behind you. But I think
   # it's more clear to march from the light to the surface.
   (if (< (dot to-light normal) 0)
-    (return (LightIncidence light-color to-light 0)))
+    (return (Light light-color to-light 0)))
   (var target (,MINIMUM_HIT_DISTANCE * normal + P))
   (var light-distance (length (target - light-position)))
   (var ray-dir (target - light-position / light-distance))
@@ -71,26 +76,26 @@
     (if (< nearest ,MINIMUM_HIT_DISTANCE) (break))
     (+= depth nearest))
   (if (>= depth light-distance)
-    (return (LightIncidence light-color to-light 1))
-    (return (LightIncidence light-color to-light 0)))))
+    (return (Light light-color to-light 1))
+    (return (Light light-color to-light 0)))))
 
-(thunk ~(as-macro ,defhelper- LightIncidence cast-light-soft-shadow [:vec3 light-color :vec3 light-position :float softness]
+(thunk ~(as-macro ,defhelper- Light cast-light-soft-shadow [:vec3 light-color :vec3 light-position :float softness]
   ```
   TODOC
   ```
   (if (= softness 0)
     (return (cast-light-hard-shadow light-color light-position)))
   (if (= light-position P)
-    (return (LightIncidence light-color (vec3 0) 1)))
+    (return (Light light-color (vec3 0) 1)))
   (var to-light (normalize (light-position - P)))
   (if (= light-color (vec3 0))
-    (return (LightIncidence light-color to-light 0)))
+    (return (Light light-color to-light 0)))
   (if (< (dot to-light normal) 0)
-    (return (LightIncidence light-color to-light 0)))
+    (return (Light light-color to-light 0)))
   (var target (,MINIMUM_HIT_DISTANCE * normal + P))
   (var light-distance (length (target - light-position)))
   (var ray-dir (target - light-position / light-distance))
-  (var in-light 1)
+  (var intensity 1)
   (var sharpness (softness * softness /))
   (var last-nearest 1e10)
   (var depth 0)
@@ -99,18 +104,14 @@
     (if (< nearest ,MINIMUM_HIT_DISTANCE) (break))
     (var intersect-offset (nearest * nearest / (2 * last-nearest)))
     (var intersect-distance (sqrt (nearest * nearest - (intersect-offset * intersect-offset))))
-    (set in-light (min in-light (sharpness * intersect-distance / (max 0 (light-distance - depth - intersect-offset)))))
+    (set intensity (min intensity (sharpness * intersect-distance / (max 0 (light-distance - depth - intersect-offset)))))
     (+= depth nearest)
     (set last-nearest nearest))
 
   (if (>= depth light-distance)
-    (return (LightIncidence light-color to-light in-light))
-    (return (LightIncidence light-color to-light 0)))))
+    (return (Light light-color to-light intensity))
+    (return (Light light-color to-light 0)))))
 
-(def- light-tag (gensym))
-
-# TODO: should we really have a named argument like this? maybe just a note that you probably
-# should hoist your lights? or should hoist be the default? i don't know.
 (thunk ~(as-macro ,defnamed light/point [color position :?shadow:softness :?hoist]
   ```
   Returns a new light, which can be used as an input to some shading functions.
@@ -127,17 +128,18 @@
   Shadow casting always occurs in the global coordinate space, so you should position
   lights relative to `P`, not `p`.
 
-  If you pass `:hoist true`, then the light computation will be hoisted to the top
-  of the color field and only calculated once. This is an optimization that's useful
+  By default light calculations are hoisted. This is an optimization that's helpful
   if you have a light that casts shadows that applies to multiple shaded surfaces that
   have been combined with a smooth `union` or `morph` or other shape combinator. Instead
   of computing shadows twice and mixing them together, the shadow calculation will be
   computed once at the top level of the shader. Note though that this will prevent you
   from referring to variables that don't exist at the top level -- e.g. anything defined
-  with `gl/let`, or the index argument of `tiled` shape.
+  with `gl/let`, or the index argument of `tiled` shape. If you want to make a light that
+  dynamically varies, pass `:hoist false`.
   ```
   (def color (,coerce-expr-to-type ',jlsl/type/vec3 vec3 color))
   (def position (,typecheck position ',jlsl/type/vec3))
+  (default hoist true)
   (def <expr> (case softness
     nil (cast-light-no-shadow color position)
     # the soft shadow calculation below has to handle this, because
@@ -147,8 +149,7 @@
     # at all. which... will never happen but whatever
     0 (cast-light-hard-shadow color position)
     (cast-light-soft-shadow color position (,typecheck softness ',jlsl/type/float))))
-  {:tag ',light-tag
-   :expression (if hoist (,expression-hoister/hoist "light" <expr>) <expr>)}))
+  (if hoist (,expression-hoister/hoist "light" <expr>) <expr>)))
 
 (thunk ~(as-macro ,defnamed light/ambient [color ?offset :?hoist]
   ```
@@ -171,16 +172,6 @@
   (def dir (,typecheck dir ',jlsl/type/vec3))
   (def dist (,typecheck dist ',jlsl/type/float))
   (light/point color (- P (* dir dist)) :shadow softness :hoist hoist)))
-
-(defn light?
-  "Returns true if its argument is a light."
-  [t]
-  (and (struct? t) (= (t :tag) light-tag)))
-
-(thunk ~(setdyn ,*lights*
-  @[(light/directional (vec3 0.95) (normalize [-2 -2 -1]) 512 :shadow 0.25 :hoist true)
-    (light/ambient (vec3 0.03) :hoist true)
-    (light/ambient (vec3 0.02) (* normal 0.1) :hoist true)]))
 
 # TODO: probably we should take a direction?
 (defn- make-calculate-occlusion [nearest-distance]
@@ -223,7 +214,13 @@
   (def <expr> (calculate-occlusion step-count dist dir))
   (if hoist (,expression-hoister/hoist "occlusion" <expr>) <expr>)))
 
-(defhelper- :vec3 blinn-phong1 [:vec3 color :float shininess :float glossiness LightIncidence light]
+# TODO: occlusion should alter shadowness, not light color
+(thunk ~(setdyn ,*lights*
+  @[(light/directional (vec3 0.95) (normalize [-2 -2 -1]) 512 :shadow 0.25)
+    (light/ambient (vec3 0.03))
+    (light/ambient (vec3 0.02) (* normal 0.1))]))
+
+(defhelper- :vec3 blinn-phong1 [:vec3 color :float shininess :float glossiness Light light]
   (if (= light.direction (vec3 0))
     (return (* color light.color light.intensity)))
   (var halfway-dir (light.direction - ray-dir | normalize))
@@ -235,8 +232,7 @@
   (jlsl/do "blinn-phong"
     (var result (vec3 0))
     ,;(seq [light :in lights]
-      (def light-incidence (light :expression))
-      (jlsl/statement (+= result (blinn-phong1 color shininess glossiness light-incidence))))
+      (jlsl/statement (+= result (blinn-phong1 color shininess glossiness light))))
     result))
 
 (defnamed blinn-phong [shape color :?s:shininess :?g:glossiness]

@@ -622,7 +622,7 @@
   "!unhoisted lights can refer to tile indices" `
   (sphere 20
   | blinn-phong [1 1 1]
-  | with-lights (light/point (hsv (hash $i) 1 1) [200 200 200] :shadow 0.50)
+  | with-lights (light/point (hsv (hash $i) 1 1) [200 200 200] :shadow 0.50 :hoist false)
   | tiled $i :limit 3 [70 70 70])
   `
 

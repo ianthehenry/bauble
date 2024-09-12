@@ -41,7 +41,7 @@
 (test (cleanse-environment (proto-flatten-to-root (derive/new)))
   @{% @{}
     * @{:doc "(- & xs)\n\nOverloaded to work with tuples, arrays, and expressions."}
-    *lights* @{:doc "The default lights used by surfacing functions like `blinn-phong`. You can manipulate this using `setdyn` or `with-dyns` like any other dynamic variable, but there is a dedicated `with-lights` function to set it in a way that fits nicely into a pipeline."
+    *lights* @{:doc "The default lights used by surfacing functions like `blinn-phong`.\nYou can manipulate this using `setdyn` or `with-dyns` like any other\ndynamic variable, but there is a dedicated `with-lights` function to\nset it in a way that fits nicely into a pipeline."
                :dyn true
                :value :lights}
     + @{:doc "(+ & xs)\n\nOverloaded to work with tuples, arrays, and expressions."}
@@ -72,7 +72,7 @@
           :macro true}
     Frag-Coord @{:doc "The center of the current pixel being rendered. Pixel centers are at `[0.5 0.5]`, so with no anti-aliasing this will have values like `[0.5 0.5]`, `[1.5 0.5]`, etc. If you are using multisampled antialiasing, this will have off-centered values like [0.3333 0.3333]."
                  :value [:var "Frag-Coord" :vec2]}
-    LightIncidence @{:doc "(LightIncidence color direction intensity)\n\n"}
+    Light @{:doc "(Light color direction intensity)\n\n"}
     P @{:doc "The global point in 3D space. This is the position of the current ray before any transformations are applied to it."
         :value [:var "P" :vec3]}
     Q @{:doc "The global point in 2D space."
@@ -195,8 +195,7 @@
     light-gray @{:value [0.75 0.75 0.75]}
     light/ambient @{:doc "(light/ambient color [offset] [:hoist hoist])\n\nShorthand for `(light/point color (P + offset))`.\n\nWith no offset, the ambient light will be completely directionless, so it won't\ncontribute to specular highlights. By offsetting by a multiple of the surface\nnormal, or by the surface normal plus some constant, you can create an ambient\nlight with specular highlights, which provides some depth in areas of your scene\nthat are in full shadow."}
     light/directional @{:doc "(light/directional color dir dist [:shadow softness] [:hoist hoist])\n\nA light that hits every point at the same angle.\n\nShorthand for `(light/point color (P - (dir * dist)))`."}
-    light/point @{:doc "(light/point color position [:shadow softness] [:hoist hoist])\n\nReturns a new light, which can be used as an input to some shading functions.\n\nAlthough this is called a point light, the location of the \"point\" can vary\nwith a dynamic expression. A light that casts no shadows and is located at `P`\n(no matter where `P` is) is an ambient light. A light that is always located at\na fixed offset from `P` is a directional light.\n\nBy default lights don't cast shadows, but you can change that by passing a\n`:shadow` argument. `0` will cast hard shadows, and any other expression will\ncast a soft shadow (`0.25` is a reasonable default softness).\n\nShadow casting always occurs in the global coordinate space, so you should position\nlights relative to `P`, not `p`.\n\nIf you pass `:hoist true`, then the light computation will be hoisted to the top\nof the color field and only calculated once. This is an optimization that's useful\nif you have a light that casts shadows that applies to multiple shaded surfaces that\nhave been combined with a smooth `union` or `morph` or other shape combinator. Instead\nof computing shadows twice and mixing them together, the shadow calculation will be\ncomputed once at the top level of the shader. Note though that this will prevent you\nfrom referring to variables that don't exist at the top level -- e.g. anything defined\nwith `gl/let`, or the index argument of `tiled` shape."}
-    light? @{:doc "(light? t)\n\nReturns true if its argument is a light."}
+    light/point @{:doc "(light/point color position [:shadow softness] [:hoist hoist])\n\nReturns a new light, which can be used as an input to some shading functions.\n\nAlthough this is called a point light, the location of the \"point\" can vary\nwith a dynamic expression. A light that casts no shadows and is located at `P`\n(no matter where `P` is) is an ambient light. A light that is always located at\na fixed offset from `P` is a directional light.\n\nBy default lights don't cast shadows, but you can change that by passing a\n`:shadow` argument. `0` will cast hard shadows, and any other expression will\ncast a soft shadow (`0.25` is a reasonable default softness).\n\nShadow casting always occurs in the global coordinate space, so you should position\nlights relative to `P`, not `p`.\n\nBy default light calculations are hoisted. This is an optimization that's helpful\nif you have a light that casts shadows that applies to multiple shaded surfaces that\nhave been combined with a smooth `union` or `morph` or other shape combinator. Instead\nof computing shadows twice and mixing them together, the shadow calculation will be\ncomputed once at the top level of the shader. Note though that this will prevent you\nfrom referring to variables that don't exist at the top level -- e.g. anything defined\nwith `gl/let`, or the index argument of `tiled` shape. If you want to make a light that\ndynamically varies, pass `:hoist false`."}
     lime @{:value [hsv 0.25 0.98 1]}
     line @{:doc "(line start end width)\n\nTODOC"}
     log @{}
