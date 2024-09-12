@@ -66,7 +66,7 @@
         (statement/return (iife (string name "-inner") return-type [;statements (statement/return last-expr)]))
         ])])))
 
-(defn- if-expr [cond then else]
+(defn if-expr [cond then else]
   (assertf (= (expr/type then) (expr/type else))
     "type error: if expressions must match, got %q and %q" (type/to-glsl (expr/type then)) (type/to-glsl (expr/type else)))
   (expr/if cond then else))

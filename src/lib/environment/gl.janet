@@ -228,3 +228,15 @@
   ````
   [expression &opt name]
   ~(,expression-hoister/hoist ,(string (or name "hoist")) ,expression))
+
+(defn gl/if
+  ````
+  A GLSL ternary conditional expression.
+
+  ```
+  (sphere 50
+  | color (gl/if (< normal.y 0) [1 0 0] [1 1 0]))
+  ```
+  ````
+  [condition then else]
+  (jlsl/if-expr (typecheck condition jlsl/type/bool) (jlsl/coerce-expr then) (jlsl/coerce-expr else)))
