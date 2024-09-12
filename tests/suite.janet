@@ -349,10 +349,10 @@
       (box 20 | move y 30 | expand 1)
     | blinn-phong [1 0.1 0.1]))
   (grid 60 2 2
-    ((make) | with-lights (light/directional [0.9 0.9 0.9] [-1 -5 1] 100))
-    ((make) | with-lights (light/directional [0.9 0.9 0.9] [-1 -5 1] 100 0))
-    ((make) | with-lights (light/directional [0.9 0.9 0.9] [-1 -5 1] 100 0.5))
-    ((make) | with-lights (light/directional [0.9 0.9 0.9] [-1 -5 1] 100 1))
+    ((make) | with-lights (light/directional [0.9 0.9 0.9] [-1 -5 1] 100 :shadow 0.25))
+    ((make) | with-lights (light/directional [0.9 0.9 0.9] [-1 -5 1] 100 :shadow 0))
+    ((make) | with-lights (light/directional [0.9 0.9 0.9] [-1 -5 1] 100 :shadow 0.5))
+    ((make) | with-lights (light/directional [0.9 0.9 0.9] [-1 -5 1] 100 :shadow 1))
     )
   `
 
@@ -369,7 +369,7 @@
       (box [50 5 50])
       (box 20 | move y 30 | expand 1)
     | blinn-phong [1 0.1 0.1]))
-  (def point-light (light/point [0.9 0.9 0.9] [0 200 0]))
+  (def point-light (light/point [0.9 0.9 0.9] [0 200 0] :shadow 0.25))
   (grid 60 2 2 (make) (make) (make) (make)
   | with-lights point-light)
   `
@@ -390,8 +390,8 @@
   (grid 60 2 2
     ((make) | with-lights)
     ((make) | with-lights (light/ambient [0.5 0.5 0.5]))
-    ((make) | with-lights (light/point [0.9 0.9 0.9] (+ P normal [0 10 0])))
-    ((make) | with-lights (light/point [0.9 0.9 0.9] (+ P normal))))
+    ((make) | with-lights (light/point [0.9 0.9 0.9] (+ P normal [0 10 0]) :shadow 0.25))
+    ((make) | with-lights (light/point [0.9 0.9 0.9] (+ P normal) :shadow 0.25)))
   `
 
   "!mirror 2d"
@@ -509,8 +509,8 @@
   "!shadow banding artifacts"
   [ortho-z `
   (union
-    (sphere 50 | blinn-phong [1 1 1] | with-lights (light/point [1 1 1] [500 -50 0]) | move y -50)
-    (sphere 50 | blinn-phong [1 1 1] | with-lights (light/directional [1 1 1] [-1 0 0] 500) | move y 50))
+    (sphere 50 | blinn-phong [1 1 1] | with-lights (light/point [1 1 1] [500 -50 0] :shadow 0.25) | move y -50)
+    (sphere 50 | blinn-phong [1 1 1] | with-lights (light/directional [1 1 1] [-1 0 0] 500 :shadow 0.25) | move y 50))
   `]
 
   "!raymarcher tries not to penetrate shape 1" `
@@ -617,6 +617,13 @@
   "!explicit isolines" `
   (rect 60 | color [1 0.5 0.5])
   (set background-color isolines)
+  `
+
+  "!unhoisted lights can refer to tile indices" `
+  (sphere 20
+  | blinn-phong [1 1 1]
+  | with-lights (light/point (hsv (hash $i) 1 1) [200 200 200] :shadow 0.50)
+  | tiled $i :limit 3 [70 70 70])
   `
 })
 

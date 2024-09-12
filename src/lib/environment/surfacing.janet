@@ -107,7 +107,9 @@
 
 (def- light-tag (gensym))
 
-(thunk ~(defn light/point
+# TODO: should we really have a named argument like this? maybe just a note that you probably
+# should hoist your lights? or should hoist be the default? i don't know.
+(thunk ~(as-macro ,defnamed light/point [color position :?shadow:softness :?hoist]
   ```
   Returns a new light, which can be used as an input to some shading functions.
 
@@ -116,36 +118,39 @@
   (no matter where `P` is) is an ambient light. A light that is always located at
   a fixed offset from `P` is a directional light.
 
-  `shadow` can be `nil` to disable casting shadows, or a number that controls the
-  softness of the shadows that the light casts. `0` means that shadows will have
-  hard edges. The default value is `0.25`.
+  By default lights don't cast shadows, but you can change that by passing a
+  `:shadow` argument. `0` will cast hard shadows, and any other expression will
+  cast a soft shadow (`0.25` is a reasonable default softness).
 
-  Lighting always occurs in the global coordinate space, so you should position lights
-  relative to `P`, not `p`. They will be the same at the time that lights are computed,
-  so it doesn't *actually* matter, but it's just more accurate to use `P`, and there's
-  a chance that a future version of Bauble will support computing lights in local
-  coordinate spaces, where `p` might vary.
+  Shadow casting always occurs in the global coordinate space, so you should position
+  lights relative to `P`, not `p`.
+
+  If you pass `:hoist true`, then the light computation will be hoisted to the top
+  of the color field and only calculated once. This is an optimization that's useful
+  if you have a light that casts shadows that applies to multiple shaded surfaces that
+  have been combined with a smooth `union` or `morph` or other shape combinator. Instead
+  of computing shadows twice and mixing them together, the shadow calculation will be
+  computed once at the top level of the shader. Note though that this will prevent you
+  from referring to variables that don't exist at the top level -- e.g. anything defined
+  with `gl/let`, or the index argument of `tiled` shape.
   ```
-  [color position & shadow]
-  (assert (<= (@length shadow) 1) "too many arguments")
-  (def shadow (if (empty? shadow) 0.25 (shadow 0)))
   (def color (,coerce-expr-to-type ',jlsl/type/vec3 vec3 color))
   (def position (,typecheck position ',jlsl/type/vec3))
+  (def <expr> (case softness
+    nil (cast-light-no-shadow color position)
+    # the soft shadow calculation below has to handle this, because
+    # shadow might be a dynamic expression that is only sometimes
+    # zero. but in the case that all lights have known constant zeroes,
+    # there's no need to compile and include the soft shadow function
+    # at all. which... will never happen but whatever
+    0 (cast-light-hard-shadow color position)
+    (cast-light-soft-shadow color position (,typecheck softness ',jlsl/type/float))))
   {:tag ',light-tag
-   :expression
-     (,expression-hoister/hoist "light" (case shadow
-        nil (cast-light-no-shadow color position)
-        # the soft shadow calculation below has to handle this, because
-        # shadow might be a dynamic expression that is only sometimes
-        # zero. but in the case that all lights have known constant zeroes,
-        # there's no need to compile and include the soft shadow function
-        # at all. which... will never happen but whatever
-        0 (cast-light-hard-shadow color position)
-        (cast-light-soft-shadow color position (,typecheck shadow ',jlsl/type/float))))}))
+   :expression (if hoist (,expression-hoister/hoist "light" <expr>) <expr>)}))
 
-(thunk ~(defn light/ambient
+(thunk ~(as-macro ,defnamed light/ambient [color ?offset :?hoist]
   ```
-  Shorthand for `(light/point color (P + offset) nil)`.
+  Shorthand for `(light/point color (P + offset))`.
 
   With no offset, the ambient light will be completely directionless, so it won't
   contribute to specular highlights. By offsetting by a multiple of the surface
@@ -153,19 +158,17 @@
   light with specular highlights, which provides some depth in areas of your scene
   that are in full shadow.
   ```
-  [color &opt offset]
-  (light/point color (if offset (+ P (,typecheck offset ',jlsl/type/vec3)) P) nil)))
+  (light/point color (if offset (+ P (,typecheck offset ',jlsl/type/vec3)) P) :hoist hoist)))
 
-(thunk ~(defn light/directional
+(thunk ~(as-macro ,defnamed light/directional [color dir dist :?shadow:softness :?hoist]
   ```
   A light that hits every point at the same angle.
 
-  Shorthand for `(light/point color (P - (dir * dist)) shadow)`.
+  Shorthand for `(light/point color (P - (dir * dist)))`.
   ```
-  [color dir dist & shadow]
   (def dir (,typecheck dir ',jlsl/type/vec3))
   (def dist (,typecheck dist ',jlsl/type/float))
-  (light/point color (- P (* dir dist)) ;shadow)))
+  (light/point color (- P (* dir dist)) :shadow softness :hoist hoist)))
 
 (defn light?
   "Returns true if its argument is a light."
@@ -173,9 +176,9 @@
   (and (struct? t) (= (t :tag) light-tag)))
 
 (thunk ~(setdyn ,*lights*
-  @[(light/directional (vec3 0.95) (normalize [-2 -2 -1]) 512)
-    (light/ambient (vec3 0.03))
-    (light/ambient (vec3 0.02) (* normal 0.1))]))
+  @[(light/directional (vec3 0.95) (normalize [-2 -2 -1]) 512 :shadow 0.25 :hoist true)
+    (light/ambient (vec3 0.03) :hoist true)
+    (light/ambient (vec3 0.02) (* normal 0.1) :hoist true)]))
 
 (defhelper- :vec3 blinn-phong1 [:vec3 color :float shininess :float glossiness :vec3 light-color :vec3 light-dir]
   (if (= light-dir (vec3 0))

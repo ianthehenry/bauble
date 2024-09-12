@@ -140,7 +140,7 @@
   the default `:oversample` parameters will do 8 distance field evaluations;
   `:sample-from [-1 -1 -1]` `:sample-to [1 1 1]` will do 27.
   ````
-  (def $index (jlsl/variable/new "index" (shape/type shape)))
+  (def $index (jlsl/variable/new "tile-index" (shape/type shape)))
   (tile-aux shape $index size limit oversample sample-from sample-to))
 
 (defnamed tiled* [size get-shape :?limit :?oversample :?sample-from :?sample-to]
@@ -159,7 +159,7 @@
   it has an index of `[0 1 0]`.
   ````
   (def size (jlsl/coerce-expr size))
-  (def $index (jlsl/variable/new "index" (jlsl/expr/type size)))
+  (def $index (jlsl/variable/new "tile-index" (jlsl/expr/type size)))
   (def shape (get-shape $index))
   (tile-aux shape $index size limit oversample sample-from sample-to))
 

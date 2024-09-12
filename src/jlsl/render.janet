@@ -717,7 +717,7 @@
     (jlsl/defn :float foo [:float x]
       (return (+ (+ free1 free2) (+ free3 free4)))) `
     float foo(float x, float free, float free1, float x1, float y) {
-      return (free + free1) + (x1 + y);
+      return (free1 + free) + (x1 + y);
     }
   `))
 
