@@ -253,35 +253,33 @@
   (default exponent 5)
   (shape/map-color subject |(+ $ (* color (fresnel-intensity exponent)))))
 
-# TODO: why isn't this just an expression?
-(defhelper :vec3 normal-color []
+(def normal+
   ```
-  Returns a color that represents the visualization of the 3D normal. This is
+  A color that represents the visualization of the 3D normal. This is
   the default color used when rendering a 3D shape with no color field.
   ```
-  # TODO: this will change a lot of tests, but it's a nice look
-  #(return (+ (remap+ normal) (fresnel-intensity 5)))
-  (return (remap+ normal)))
+  (remap+ normal))
 
-(defhelper :vec3 gradient-color []
+(def isolines
   ```
-  Returns a color that represents the visualization of the 2D gradient. This is
+  A color that represents the visualization of the 2D gradient. This is
   the default color used when rendering a 2D shape with no color field.
   ```
-  (def line-every 10)
-  (def shadow-thickness 0.5)
-  (def boundary-thickness 2)
+  (sugar (jlsl/do "isolines"
+    (def line-every 10)
+    (def shadow-thickness 0.5)
+    (def boundary-thickness 2)
 
-  (var color (remap+ gradient))
+    (var color (remap+ gradient))
 
-  (var inside (step dist 0))
-  (var isoline (smoothstep (1 - shadow-thickness) 1 (abs dist / line-every | fract)))
-  (var boundary-line (1 - (smoothstep 0 (boundary-thickness * 0.5) (abs dist))))
+    (var inside (step dist 0))
+    (var isoline (smoothstep (1 - shadow-thickness) 1 (abs dist / line-every | fract)))
+    (var boundary-line (1 - (smoothstep 0 (boundary-thickness * 0.5) (abs dist))))
 
-  (return (mix
-    (pow [color inside] (mix 1 2 isoline) | clamp 0 1)
-    (vec3 1)
-    boundary-line)))
+    (mix
+      (pow [color inside] (mix 1 2 isoline) | clamp 0 1)
+      (vec3 1)
+      boundary-line))))
 
 # TODO: make this a dynamic var, or possibly
 # make it vary based on depth
@@ -315,7 +313,7 @@
     (s.xxx * with [p (s.xxx * NORMAL_OFFSET + p)] expr)
     )))))
 
-(def default-background-color
+(def graydient
   ```
   The default background color, a gray gradient.
   ```

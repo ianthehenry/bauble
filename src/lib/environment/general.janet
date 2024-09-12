@@ -5,16 +5,6 @@
   [subject]
   ~(set subject ,subject))
 
-(thunk ~(var subject
-  "A variable that determines what Bauble will render.\n\nYou can set this variable explicitly to change your focus, or use the `view` macro to change your focus. If you don't set a subject, Bauble will render the last shape in your script."
-  nil))
-
-(thunk ~(var aa-grid-size ```
-The size of the grid used to sample a single pixel. The total samples per pixel will
-be the square of this number. The default value is 1 (no anti-aliasing).
-```
-  nil))
-
 # This is a minor convenience that lets us use the 3D vector
 # x/y/-x/-y vectors as arguments to move
 # TODO: should we just truncate the vector instead? That's... easier and maybe better?

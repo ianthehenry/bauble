@@ -19,6 +19,8 @@
       (put t :ref '<array>))
     (when (t :value)
       (put t :value (jlsl/show (t :value))))
+    (when (t :ref)
+      (put t :ref @[(jlsl/show (get-in t [:ref 0]))]))
     t)
   t))
 
@@ -88,6 +90,8 @@
     asinh @{}
     atan @{}
     atanh @{}
+    background-color @{:doc "A variable that determines the background color of the canvas.\n\nDefault is `graydient`."
+                       :ref @[[do]]}
     black @{:value [0.03 0.03 0.03]}
     blinn-phong @{:doc "(blinn-phong shape color [:s shininess] [:g glossiness])\n\nTODOC"}
     blue @{:value [hsv 0.66666666666666663 0.98 1]}
@@ -113,8 +117,10 @@
     cut-disk @{:doc "(cut-disk radius bottom)\n\nTODOC"}
     cyan @{:value [hsv 0.5 0.98 1]}
     dark-gray @{:value [0.25 0.25 0.25]}
-    default-background-color @{:doc "The default background color, a gray gradient."
-                               :value [do]}
+    default-2d-color @{:doc "A variable that determines the default color to use when rendering a 2D shape with no color field.\n\nDefault is `isolines`."
+                       :ref @[[isolines]]}
+    default-3d-color @{:doc "A variable that determines the default color to use when rendering a 3D shape with no color field.\n\nDefault is `normal+`."
+                       :ref @[[+ 0.5 [* 0.5 normal]]]}
     degrees @{}
     depth @{:doc "The distance that the current ray has marched, equal to `(distance ray-origin P)`. Not defined in 2D."
             :value [:var "depth" :float]}
@@ -149,8 +155,9 @@
               :macro true}
     gradient @{:doc "(Color only!) An approximation of the 2D distance field gradient at `Q`."
                :value [:var "gradient" :vec2]}
-    gradient-color @{:doc "(gradient-color )\n\nReturns a color that represents the visualization of the 2D gradient. This is\nthe default color used when rendering a 2D shape with no color field."}
     gray @{:value [0.5 0.5 0.5]}
+    graydient @{:doc "The default background color, a gray gradient."
+                :value [do]}
     green @{:value [hsv 0.33333333333333331 0.98 1]}
     hash @{:doc "(hash v)\n\nReturn a pseudorandom float. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
     hash2 @{:doc "(hash2 v)\n\nReturn a pseudorandom `vec2`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
@@ -167,6 +174,8 @@
     int @{}
     intersect @{:doc "(intersect & shapes [:r r] [:rs rs] [:distance distance] [:color color])\n\nIntersect two or more shapes. The named arguments here produce a smooth intersection,\nand are similar to the arguments to `union`.\n\nIf you're performing rounded intersections with surfaced shapes in 3D, the color\nfield produced by `:rs` might give more intuitive results. This is because\nthe color field of the first shape is only visible as a thin, two-dimensional\nsurface, and as soon as you start to blend it with the second shape it will be\novertaken.\n\nMeanwhile if you're working in 2D, or looking at the interior distance field of a 3D\nintersection (i.e. slicing into the intersection, or transplanting the color field),\nthe asymmetric `:r` rounding will probably be more intuitive."}
     inversesqrt @{}
+    isolines @{:doc "A color that represents the visualization of the 2D gradient. This is\nthe default color used when rendering a 2D shape with no color field."
+               :value [isolines]}
     isosceles-triangle @{:doc "(isosceles-triangle size)\n\nTODOC"}
     length @{}
     light-gray @{:value [0.75 0.75 0.75]}
@@ -202,7 +211,8 @@
     nearest-distance @{:doc "(nearest-distance)\n\nThis is the forward declaration of the function that will become the eventual\ndistance field for the shape we're rendering. This is used in the main raymarcher,\nas well as the shadow calculations. You can refer to this function to sample the\ncurrent distance field at the current value of `p` or `q`, for example to create\na custom ambient occlusion value."}
     normal @{:doc "(Color only!) A normalized vector that approximates the 3D distance field gradient at `P` (in other words, the surface normal for shading)."
              :value [:var "normal" :vec3]}
-    normal-color @{:doc "(normal-color )\n\nReturns a color that represents the visualization of the 3D normal. This is\nthe default color used when rendering a 3D shape with no color field."}
+    normal+ @{:doc "A color that represents the visualization of the 3D normal. This is\nthe default color used when rendering a 3D shape with no color field."
+              :value [+ 0.5 [* 0.5 normal]]}
     normalize @{}
     not @{}
     not-equal @{}
@@ -337,7 +347,7 @@
     ss @{:doc "(ss x &opt from-range to-range)\n\nThis is a wrapper around `smoothstep` with a different argument order, which also\nallows the input edges to occur in descending order.\n\nThere are several overloads:\n\n```\n(ss x)\n# becomes\n(smoothstep 0 1 x)\n```\n\n```\n(ss x [from-start from-end])\n# becomes\n(if (< from-start from-end)\n  (smoothstep from-start from-end x)\n  (1 - smoothstep from-end from-start x))\n``` \n\n```\n(ss x from [to-start to-end])\n# becomes\n(ss x from * (- to-end to-start) + to-start)\n```"}
     star @{:doc "(star outer-radius inner-radius [:r round])\n\nTODOC"}
     step @{}
-    subject @{:doc "A variable that determines what Bauble will render.\n\nYou can set this variable explicitly to change your focus, or use the `view` macro to change your focus. If you don't set a subject, Bauble will render the last shape in your script."
+    subject @{:doc "A variable that determines what Bauble will render.\n\nYou can set this variable explicitly to change your focus, or use\nthe `view` macro to change your focus. If you don't set a subject,\nBauble will render the last shape in your script."
               :ref @[nil]}
     subtract @{:doc "(subtract & shapes [:r r] [:rs rs] [:distance distance] [:color color])\n\nSubtract one or more shapes from a source shape. The named arguments\nhere produce a smooth subtraction, and are similar to the arguments to `union`.\n\nIf you're performing rounded subtractions with surfaced shapes in 3D, the color\nfield produced by `:rs` might give more intuitive results. This is because\nthe color field of the first shape is only visible as a thin, two-dimensional\nsurface, and as soon as you start to blend it with the second shape it will be\novertaken.\n\nMeanwhile if you're working in 2D, or looking at the interior distance field of a 3D\nsubtraction (i.e. slicing into the subtracting shape), the asymmetric `:r` rounding\nwill probably be more intuitive.\n"}
     sum @{:doc "(sum v)\n\nAdd the components of a vector."}

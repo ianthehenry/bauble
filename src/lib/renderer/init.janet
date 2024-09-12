@@ -42,10 +42,13 @@
 (defn render [env glsl-version]
   (def subject (get-var env 'subject))
   (def nearest-distance (get-env env 'nearest-distance))
-  (unless subject (error "nothing to render"))
-  (assertf (shape/is? subject) "%q is not a shape" subject)
+  (def default-2d-color (typecheck (get-var env 'default-2d-color) jlsl/type/vec3))
+  (def default-3d-color (typecheck (get-var env 'default-3d-color) jlsl/type/vec3))
+  (def background-color (typecheck (get-var env 'background-color) jlsl/type/vec3))
 
-  (def subject (shape/map subject (partial unhoist env)))
+  (def subject (if subject (do
+    (assertf (shape/is? subject) "%q is not a shape" subject)
+    (shape/map subject (partial unhoist env)))))
 
   (def aa-grid-size (jlsl/coerce-expr (int/u64 (or (get-var env 'aa-grid-size) 1))))
 
@@ -57,13 +60,15 @@
     (uniform ,t)
     (uniform ,viewport)
     (out :vec4 frag-color)
-    (implement :float nearest-distance [] (return ,(@or (shape/distance subject) 0)))
+    (implement :float nearest-distance [] (return ,(@or (@and subject (shape/distance subject)) 0)))
 
     ,(def sample
-      (case (shape/type subject)
-        jlsl/type/vec2 (make-sample-2d nearest-distance (shape/color subject))
-        jlsl/type/vec3 (make-sample-3d nearest-distance (shape/color subject))
-        (error "BUG")))
+      (if subject
+        (case (shape/type subject)
+          jlsl/type/vec2 (make-sample-2d nearest-distance background-color default-2d-color (shape/color subject))
+          jlsl/type/vec3 (make-sample-3d nearest-distance background-color default-3d-color (shape/color subject))
+          (error "BUG"))
+        (jlsl/fn :vec3 sample [] (return background-color))))
 
     (defn :void main []
       (def gamma 2.2)

@@ -606,6 +606,18 @@
     | move [40 -40]
     ))
   `
+
+  "!custom background color" `
+  (set background-color
+    [(Frag-Coord.x | floor | mod 10 | step 3 _) 
+     (Frag-Coord.y | floor | mod 10 | step 8 _)
+      (abs frag-coord | max | pow 2 * 2)])
+  `
+
+  "!explicit isolines" `
+  (rect 60 | color [1 0.5 0.5])
+  (set background-color isolines)
+  `
 })
 
 (each filename (os/dir "./cases")

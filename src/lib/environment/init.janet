@@ -14,5 +14,6 @@
 (import ./repeat :prefix "" :export true)
 (import ./hash :prefix "" :export true)
 (import ./colors :prefix "" :export true)
+(import ./variables :prefix "" :export true)
 (import ../../jlsl/prelude :prefix "" :export true)
 (import ./operator-overloads :prefix "" :export true)

@@ -15,7 +15,7 @@
   ~(as-macro ,sugar
     (as-macro ,jlsl/jlsl/fn ,t ,(string name) ,;rest)))
 
-(defn make-sample-2d [nearest-distance <color>]
+(defn make-sample-2d [nearest-distance <background-color> <default-color> <color-field>]
   (jlsl/fn :vec3 sample []
     # TODO: should vary by zoom amount
     # 384 is a better approximation of a 45° fov at the default zoom level
@@ -25,14 +25,14 @@
            gradient (calculate-gradient (nearest-distance))]
 
       (case render-type
-        0:u ,(if <color>
+        0:s ,(if <color-field>
           (jlsl/statement
             (if (<= dist 0)
-              (return ,<color>)
-              (return ,default-background-color)))
+              (return <color-field>)
+              (return <background-color>)))
           (jlsl/statement
-            (return (gradient-color))))
-        (return (gradient-color))))))
+            (return <default-color>)))
+        (return <default-color>)))))
 
 (defn- make-march [nearest-distance]
   (jlsl/fn :float march [[out :uint] steps]
@@ -53,7 +53,7 @@
     (return ray-depth)))
 
 # TODO: okay, so, theoretically we have nearest-distance in the current environment already
-(defn make-sample-3d [nearest-distance <color>]
+(defn make-sample-3d [nearest-distance <background-color> <default-color> <color-field>]
   (def march (make-march nearest-distance))
   (jlsl/fn :vec3 sample []
     # the "camera orientation" vector is really "what transformation do we make to
@@ -77,12 +77,12 @@
            normal (calculate-normal (nearest-distance))]
       (case render-type
         0:s (if (>= depth MAXIMUM_TRACE_DISTANCE)
-            (return default-background-color)
-            (return ,(@or <color> (normal-color))))
+            (return <background-color>)
+            (return ,(@or <color-field> <default-color>)))
         # ignore color field
         1:s (if (>= depth MAXIMUM_TRACE_DISTANCE)
-            (return default-background-color)
-            (return (normal-color)))
+            (return <background-color>)
+            (return <default-color>))
         # convergence debug view
         2:s
           (return (if (= steps MAX_STEPS)
