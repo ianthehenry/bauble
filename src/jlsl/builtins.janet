@@ -157,8 +157,8 @@
 (defbuiltin tan (partial resolve-generic 1))
 (defbuiltin asin (partial resolve-generic 1))
 (defbuiltin acos (partial resolve-generic 1))
-# TODO: 2-parameter atan overload
-(defbuiltin atan (partial resolve-generic 1))
+# TODO: atan should be one or two arguments, not one or more
+(defbuiltin atan (partial resolve-generic -1))
 (defbuiltin sinh (partial resolve-generic 1))
 (defbuiltin cosh (partial resolve-generic 1))
 (defbuiltin tanh (partial resolve-generic 1))
