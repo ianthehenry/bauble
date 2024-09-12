@@ -100,6 +100,7 @@
     box-frame @{:doc "(box-frame size thickness [:r round])\n\nReturns a 3D shape, the outline of a box."}
     calculate-gradient @{:doc "(calculate-gradient expr)\n\nEvaluates the given 2D distance expression four times, and returns an approximation\nof the expression's gradient."}
     calculate-normal @{:doc "(calculate-normal expr)\n\nEvaluates the given 3D distance expression four times, and returns an approximation\nof the expression's gradient."}
+    calculate-occlusion @{}
     cast-light-hard-shadow @{:doc "(cast-light-hard-shadow light-color light-position)\n\nTODOC"}
     cast-light-no-shadow @{:doc "(cast-light-no-shadow light-color light-position)\n\nTODOC"}
     cast-light-soft-shadow @{:doc "(cast-light-soft-shadow light-color light-position softness)\n\nTODOC"}
@@ -230,6 +231,7 @@
     not @{}
     not-equal @{}
     not= @{}
+    occlusion @{:doc "(occlusion [:steps step-count] [:dist dist] [:dir dir] [:hoist hoist])\n\nApproximate ambient occlusion by sampling the distance field at `:steps` positions\n(default 8) linearly spaced from 0 to `:dist` (default `10`). The result will range\nfrom 1 (completely unoccluded) to 0 (fully occluded).\n\nBy default the occlusion samples will be taken along the surface normal of the point\nbeing shaded, but you can pass a custom `:dir` expression to change that. You can use\nthis to e.g. add jitter to the sample direction, which can help to improve the\nquality.\n\nOcclusion is somewhat expensive to calculate, so by default the result will\nbe hoisted, so that it's only calculated once per iteration (without you having to\nexplicitly `gl/def` the result). However, this means that the occlusion calculation\nwon't take into account local normal adjustments, so you might want to pass\n`:hoist false`."}
     octagon @{:doc "(octagon radius [:r round])\n\nTODOC"}
     octahedron @{:doc "(octahedron radius)\n\nTODOC"}
     or @{}

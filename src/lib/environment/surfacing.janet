@@ -182,6 +182,47 @@
     (light/ambient (vec3 0.03) :hoist true)
     (light/ambient (vec3 0.02) (* normal 0.1) :hoist true)]))
 
+# TODO: probably we should take a direction?
+(defn- make-calculate-occlusion [nearest-distance]
+  (defhelper :float calculate-occlusion [:uint step-count :float max-distance :vec3 dir]
+    (var step-size (max-distance / float step-count))
+    (var baseline (nearest-distance))
+    (var occlusion 0)
+    (var step (dir * step-size))
+    (for (var i 1:u) (<= i step-count) (++ i)
+      (var expected-distance (float i * step-size + baseline))
+      # TODO: do I want the max 0 there?
+      (var actual-distance (with [P (float i * step + P) p P] ((nearest-distance) | max 0)))
+      (+= occlusion (actual-distance / expected-distance)))
+    (return (occlusion / float step-count | clamp 0 1)))
+  calculate-occlusion)
+
+(thunk ~(def calculate-occlusion (,make-calculate-occlusion nearest-distance)))
+(thunk ~(as-macro ,defnamed occlusion [:?steps:step-count :?dist :?dir :?hoist]
+  ```
+  Approximate ambient occlusion by sampling the distance field at `:steps` positions
+  (default 8) linearly spaced from 0 to `:dist` (default `10`). The result will range
+  from 1 (completely unoccluded) to 0 (fully occluded).
+
+  By default the occlusion samples will be taken along the surface normal of the point
+  being shaded, but you can pass a custom `:dir` expression to change that. You can use
+  this to e.g. add jitter to the sample direction, which can help to improve the
+  quality.
+
+  Occlusion is somewhat expensive to calculate, so by default the result will
+  be hoisted, so that it's only calculated once per iteration (without you having to
+  explicitly `gl/def` the result). However, this means that the occlusion calculation
+  won't take into account local normal adjustments, so you might want to pass
+  `:hoist false`.
+  ```
+  (default step-count 8)
+  (default dir normal)
+  (default dist 10)
+  (default hoist true)
+  (def step-count (if (number? step-count) (int/u64 step-count) step-count))
+  (def <expr> (calculate-occlusion step-count dist dir))
+  (if hoist (,expression-hoister/hoist "occlusion" <expr>) <expr>)))
+
 (defhelper- :vec3 blinn-phong1 [:vec3 color :float shininess :float glossiness LightIncidence light]
   (if (= light.direction (vec3 0))
     (return (* color light.color light.intensity)))

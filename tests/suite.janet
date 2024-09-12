@@ -609,7 +609,7 @@
 
   "!custom background color" `
   (set background-color
-    [(Frag-Coord.x | floor | mod 10 | step 3 _) 
+    [(Frag-Coord.x | floor | mod 10 | step 3 _)
      (Frag-Coord.y | floor | mod 10 | step 8 _)
       (abs frag-coord | max | pow 2 * 2)])
   `
@@ -624,6 +624,22 @@
   | blinn-phong [1 1 1]
   | with-lights (light/point (hsv (hash $i) 1 1) [200 200 200] :shadow 0.50)
   | tiled $i :limit 3 [70 70 70])
+  `
+
+  "!occlusion" `
+  (union
+    (sphere 30
+      | union (box [40 10 40] | move y -30)
+      | color (vec3 (occlusion))
+    | move [-100 0 0])
+    (sphere 30
+      | union (box [40 10 40] | move y -30)
+      | color (vec3 (occlusion :steps 32 :dist 50))
+    | move [0 0 0])
+    (sphere 30
+      | union (box [40 10 40] | move y -30)
+      | color (vec3 (occlusion :dir (normalize (perlin P * 0.5 + normal))))
+    | move [100 0 0]))
   `
 })
 
