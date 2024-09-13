@@ -60,8 +60,11 @@
 (defn typecheck [expr expected]
   (def expr (jlsl/coerce-expr expr))
   (def actual (jlsl/expr/type expr))
+  (def expected (jlsl/type/coerce expected))
   (assertf (= actual expected)
     "type mismatch: expected %q, got %q"
     (jlsl/show-type expected)
     (jlsl/show-type actual))
   expr)
+
+(defn typecheck? [expr expected] (if (nil? expr) expr (typecheck expr expected)))

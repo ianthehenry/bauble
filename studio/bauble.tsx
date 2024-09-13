@@ -128,6 +128,8 @@ const resetCamera = (
 
 interface RenderToolbarProps {
   renderType: Signal.T<RenderState.RenderType>,
+  usingFreeCamera: Signal.Accessor<boolean>,
+  freeCamera: Signal.T<boolean>,
   quadView: Signal.T<boolean>,
   rotation: Signal.T<vec2>,
   origin: Signal.T<vec3>,
@@ -138,9 +140,18 @@ const RenderToolbar: Component<RenderToolbarProps> = (props) => {
   const toggleQuadView = () => {
     Signal.update(props.quadView, (x) => !x);
   };
+  const toggleFreeCamera = () => {
+    Signal.update(props.freeCamera, (x) => !x);
+  };
 
   return <div class="toolbar">
-    <button title="Reset camera" onClick={() => resetCamera(props.rotation, props.origin, props.zoom)}>
+    <button title="Toggle free camera" onClick={toggleFreeCamera}>
+      <Icon name={props.usingFreeCamera() ? "camera-reels" : "camera-reels-fill"} />
+    </button>
+    <button title="Reset camera" onClick={() => {
+      Signal.set(props.freeCamera, true);
+      resetCamera(props.rotation, props.origin, props.zoom);
+      }}>
       <Icon name="box" />
     </button>
     <button title="Toggle quad view" onClick={toggleQuadView}>
@@ -308,14 +319,17 @@ const Bauble = (props: BaubleProps) => {
     return {width: dpr * size.width, height: dpr * size.height};
   });
   const renderType = Signal.create(RenderState.RenderType.Normal);
+  const freeCamera = Signal.create(false);
   const quadView = Signal.create(false);
   const quadSplitPoint = Signal.create(vec2.fromValues(0.5, 0.5));
   const zoom = Signal.create(defaultCamera.zoom);
   const rotation = Signal.create(defaultCamera.rotation);
   const origin = Signal.create(defaultCamera.origin);
   const evaluationState = Signal.create(EvaluationState.Unknown);
-  const isAnimation = Signal.create(false);
+  const hasCamera = Signal.create(false);
+  const isAnimated = Signal.create(false);
   const isVisible = Signal.create(false);
+  const usingFreeCamera = createMemo(() => Signal.get(freeCamera) || !Signal.get(hasCamera));
 
   const timer = new Timer();
 
@@ -361,7 +375,8 @@ const Bauble = (props: BaubleProps) => {
           //console.log(result.shaderSource);
           const shaderRecompilationTimeMs = await renderer.recompileShader(result.shaderSource) as number | undefined;
           Signal.set(evaluationState, EvaluationState.Success);
-          Signal.set(isAnimation, result.isAnimated);
+          Signal.set(isAnimated, result.isAnimated);
+          Signal.set(hasCamera, result.hasCamera);
 
           flush(result.outputs);
           // TODO: this isn't really the best way to surface this information
@@ -399,18 +414,19 @@ const Bauble = (props: BaubleProps) => {
       rotation: Signal.getter(rotation),
       origin: Signal.getter(origin),
       zoom: Signal.getter(zoom),
+      freeCamera: Signal.getter(freeCamera),
       quadView: Signal.getter(quadView),
       quadSplitPoint: Signal.getter(quadSplitPoint),
       resolution: canvasResolution,
     });
 
     timeAdvancer = new RenderLoop((elapsed) => batch(() => {
-     const isAnimation_ = Signal.get(isAnimation);
-     const isTimeAdvancing = isAnimation_ && Signal.get(timer.state) !== TimerState.Paused;
+     const isAnimated_ = Signal.get(isAnimated);
+     const isTimeAdvancing = isAnimated_ && Signal.get(timer.state) !== TimerState.Paused;
      if (isTimeAdvancing) {
        // If you hit the stop button, we want to redraw at zero,
        // but we don't want to advance time forward by 16ms.
-       timer.tick(elapsed, isAnimation_);
+       timer.tick(elapsed, isAnimated_);
        // Normally the advancing of time is sufficient
        // to reschedule the loop, but if you're just
        // resuming after a stop the initial elapsed time
@@ -424,7 +440,7 @@ const Bauble = (props: BaubleProps) => {
     Signal.onEffect([
       timer.state,
       timer.t,
-      isAnimation,
+      isAnimated,
     ], () => {
       timeAdvancer.schedule();
     });
@@ -448,14 +464,33 @@ const Bauble = (props: BaubleProps) => {
     return vec2.distance(splitPointPixels, [e.offsetX, e.offsetY]) < 10;
   };
 
-  const setCursorStyle = (e: PointerEvent) => {
-    if (interaction == null) {
-      canvas.style.cursor = Signal.get(quadView) && isOnSplitPoint(e) ? 'move' : 'grab';
-    } else if (interaction === Interaction.ResizeSplit) {
-      canvas.style.cursor = 'move';
+  const isOnCustomCamera = (e: MouseEvent) => {
+    let isInPerspective;
+    if (Signal.get(quadView)) {
+      const mouse = getRelativePoint(e);
+      const quadSplit = Signal.get(quadSplitPoint);
+      isInPerspective = mouse[0] < quadSplit[0] && mouse[1] < quadSplit[1];
     } else {
-      canvas.style.cursor = 'grabbing';
+      isInPerspective = true;
     }
+    return isInPerspective ? !usingFreeCamera() : false;
+  };
+
+  const getCursorStyle = (e: PointerEvent) => {
+    if (interaction == null) {
+      if (interactionPointer != null || isOnCustomCamera(e)) {
+        return 'default';
+      }
+      return Signal.get(quadView) && isOnSplitPoint(e) ? 'move' : 'grab';
+    } else if (interaction === Interaction.ResizeSplit) {
+      return 'move';
+    } else {
+      return 'grabbing';
+    }
+  }
+
+  const setCursorStyle = (e: PointerEvent) => {
+    canvas.style.cursor = getCursorStyle(e);
   };
 
   const getInteraction = (e: MouseEvent) => {
@@ -467,7 +502,11 @@ const Bauble = (props: BaubleProps) => {
         const splitPoint = Signal.get(quadSplitPoint);
         if (relativePoint[1] < splitPoint[1]) {
           if (relativePoint[0] < splitPoint[0]) {
-            return Interaction.Rotate;
+            if (usingFreeCamera()) {
+              return Interaction.Rotate;
+            } else {
+              return null;
+            }
           } else {
             return Interaction.PanXZ;
           }
@@ -479,8 +518,10 @@ const Bauble = (props: BaubleProps) => {
           }
         }
       }
-    } else {
+    } else if (usingFreeCamera()) {
       return Interaction.Rotate;
+    } else {
+      return null;
     }
   };
 
@@ -523,7 +564,9 @@ const Bauble = (props: BaubleProps) => {
       case Interaction.ResizeSplit: Signal.set(quadSplitPoint, vec2.fromValues(0.5, 0.5)); break;
       }
     } else {
-      resetCamera(rotation, origin, zoom);
+      if (usingFreeCamera()) {
+        resetCamera(rotation, origin, zoom);
+      }
     }
   };
 
@@ -645,7 +688,14 @@ const Bauble = (props: BaubleProps) => {
     '--canvas-height': `${Signal.get(canvasSize).height}px`,
   }}>
     <div class="canvas-container" ref={canvasContainer!}>
-      <RenderToolbar renderType={renderType} quadView={quadView} rotation={rotation} origin={origin} zoom={zoom} />
+      <RenderToolbar
+      renderType={renderType}
+      usingFreeCamera={usingFreeCamera}
+      freeCamera={freeCamera}
+      quadView={quadView}
+      rotation={rotation}
+      origin={origin}
+      zoom={zoom} />
       <canvas
         ref={canvas!}
         class="render-target"

@@ -5,6 +5,7 @@ declare module 'bauble-runtime' {
     isError: boolean,
     shaderSource: string,
     isAnimated: boolean,
+    hasCamera: boolean,
     error: string,
     evalTimeMs: number,
     compileTimeMs: number,

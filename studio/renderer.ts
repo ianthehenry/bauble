@@ -6,10 +6,11 @@ import type {Seconds} from './types';
 import type * as RenderState from './render-state';
 
 enum CameraType {
-  Free = 0,
-  Top = 1,
-  Front = 2,
-  Right = 3,
+  Custom = 0,
+  Free = 1,
+  Top = 2,
+  Front = 3,
+  Right = 4,
 }
 
 function rotateX(target: mat3, angle: number) {
@@ -143,7 +144,7 @@ export default class Renderer {
   private drawSingleView() {
     const {gl, program} = this;
     const uCameraType = gl.getUniformLocation(program, "camera_type");
-    gl.uniform1i(uCameraType, CameraType.Free);
+    gl.uniform1i(uCameraType, this.state.freeCamera() ? CameraType.Free : CameraType.Custom);
     const resolution = this.state.resolution();
     this.setViewport(0, 0, resolution.width, resolution.height);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -177,7 +178,7 @@ export default class Renderer {
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
     // top left: free camera
-    gl.uniform1i(uCameraType, CameraType.Free);
+    gl.uniform1i(uCameraType, this.state.freeCamera() ? CameraType.Free : CameraType.Custom);
     this.setViewport(0, bottomPaneHeight, leftPaneWidth, topPaneHeight);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 

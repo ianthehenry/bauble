@@ -1,5 +1,9 @@
 (use ../../jlsl)
 
+(jlsl/defstruct Ray
+  :vec3 origin
+  :vec3 dir)
+
 # available in distance or color fields:
 
 (jlsl/defdyn viewport :vec4 ```
@@ -28,8 +32,17 @@ This is equal to `(Frag-Coord - (resolution * 0.5) / max resolution)`.
 ```)
 
 (jlsl/defdyn t :float "The current time in seconds.")
-(jlsl/defdyn ray-origin :vec3 "A point in the global coordinate space that represents the origin of the ray -- in other words, the location of the camera.")
-(jlsl/defdyn ray-dir :vec3 "A normalized vector that represents the direction of the current ray.")
+(jlsl/defdyn ray Ray ```
+The current ray being used to march and shade the current fragment. This always represents
+the ray from the camera, even when raymarching for shadow casting.
+
+A ray has two components: an `origin` and a `dir`ection. `origin` is a point in the 
+global coordinate space, and you can intuitively think of it as "the location of the camera"
+when you're using the default perspective camera (orthographic cameras shoot rays from different
+origins).
+
+The direction is always normalized.
+```)
 (jlsl/defdyn depth :float "The distance that the current ray has marched, equal to `(distance ray-origin P)`. Not defined in 2D.")
 
 (jlsl/defdyn p :vec3 "The local point in 3D space. This is position of the current ray, with any transformations applied to it.")

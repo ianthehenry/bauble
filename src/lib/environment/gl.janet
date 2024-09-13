@@ -104,7 +104,7 @@
   ```
 
   You can -- if you really want -- use this to alter `P` or `Q` to not refer to the point in
-  global space, or use it to pretend that `ray-dir` is actually a different angle.
+  global space, or use it to pretend that the camera `ray` is actually coming at a different angle.
 
   The variables you change in `gl/with` will, by default, apply to all of the fields of a shape.
   You can pass a keyword as the first argument to only change a particular field. This allows you

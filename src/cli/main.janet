@@ -14,7 +14,7 @@
    --resolution (optional arg/resolution [512 512]) "default 512x512"]
   (def source (slurp infile))
   (def env (bauble/evaluator/evaluate source))
-  (def [animated? shader-source] (bauble/shade/compile-shape nil env "330"))
+  (def [animated? has-camera? shader-source] (bauble/shade/compile-shape nil env "330"))
   (init-jaylib)
   (def image (render-image shader-source
     :resolution resolution

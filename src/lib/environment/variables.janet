@@ -31,7 +31,6 @@ Default is `normal+`.
 ```
   normal+))
 
-
 # TODO: a little fresnel would be nice
 (thunk ~(var background-color ```
 A variable that determines the background color of the canvas.
@@ -39,3 +38,9 @@ A variable that determines the background color of the canvas.
 Default is `graydient`.
 ```
   graydient))
+
+(thunk ~(var camera
+```
+An expression for a `ray` that determines the position and direction of the camera.
+```
+  nil))

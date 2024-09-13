@@ -46,6 +46,7 @@
   (def default-2d-color (typecheck (get-var env 'default-2d-color) jlsl/type/vec3))
   (def default-3d-color (typecheck (get-var env 'default-3d-color) jlsl/type/vec3))
   (def background-color (typecheck (get-var env 'background-color) jlsl/type/vec3))
+  (def camera (typecheck? (get-var env 'camera) Ray))
 
   (def subject (if subject (do
     (assertf (shape/is? subject) "%q is not a shape" subject)
@@ -69,7 +70,7 @@
       (if subject
         (case (shape/type subject)
           jlsl/type/vec2 (make-sample-2d nearest-distance background-color default-2d-color (shape/color subject))
-          jlsl/type/vec3 (make-sample-3d nearest-distance background-color default-3d-color (shape/color subject))
+          jlsl/type/vec3 (make-sample-3d nearest-distance camera background-color default-3d-color (shape/color subject))
           (error "BUG"))
         (jlsl/fn :vec3 sample [] (return background-color))))
 
@@ -98,4 +99,6 @@
 
   (def glsl (jlsl/render/program program))
 
-  [(animated? program) (glsl/render-program glsl glsl-version)])
+  [(animated? program)
+   (not (nil? camera))
+   (glsl/render-program glsl glsl-version)])

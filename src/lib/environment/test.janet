@@ -77,6 +77,7 @@
         :value [:var "P" :vec3]}
     Q @{:doc "The global point in 2D space."
         :value [:var "Q" :vec2]}
+    Ray @{:doc "(Ray origin dir)\n\n"}
     aa-grid-size @{:doc "The size of the grid used to sample a single pixel. The total samples per pixel will\nbe the square of this number. The default value is 1 (no anti-aliasing)."
                    :ref @[nil]}
     abs @{}
@@ -101,6 +102,9 @@
     calculate-gradient @{:doc "(calculate-gradient expr)\n\nEvaluates the given 2D distance expression four times, and returns an approximation\nof the expression's gradient."}
     calculate-normal @{:doc "(calculate-normal expr)\n\nEvaluates the given 3D distance expression four times, and returns an approximation\nof the expression's gradient."}
     calculate-occlusion @{}
+    camera @{:doc "An expression for a `ray` that determines the position and direction of the camera."
+             :ref @[nil]}
+    camera/perspective @{:doc "(camera/perspective pos target [:fov fov])\n\nReturns a ray from a perspective camera located at `pos` and aiming towards `target`.\n\nYou can change the field of view by passing `:fov` with a number of degrees. The default is `60`, and\nthe default orbiting free camera uses `45`."}
     cast-light-hard-shadow @{:doc "(cast-light-hard-shadow light-color light-position)\n\nTODOC"}
     cast-light-no-shadow @{:doc "(cast-light-no-shadow light-color light-position)\n\nTODOC"}
     cast-light-soft-shadow @{:doc "(cast-light-soft-shadow light-color light-position softness)\n\nTODOC"}
@@ -165,7 +169,7 @@
              :macro true}
     gl/overload @{:doc "(gl/overload return-type name params & body)\n\nOverloads a previously defined function with an additional signature.\n\nNote that the argument type must uniquely determine the return type of\na GLSL function, so you can't make an overload that only varies in\nits return type.\n\n```\n(gl/overload :float min [:float a :float b :float c]\n  (return (min (min a b) c)))\n```\n\nYou can overload any function, including built-in functions."
                   :macro true}
-    gl/with @{:doc "(gl/with bindings & body)\n\nLike `gl/let`, but instead of creating a new binding, it alters the value of an existing\nvariable. You can use this to give new values to dynamic variables. For example:\n\n```\n# implement your own `move`\n(gl/with [p (- p [0 50 0])] (sphere 50))\n```\n\nYou can also use Bauble's underscore notation to fit this into a pipeline:\n\n```\n(sphere 50 | gl/with [p (- p [0 50 0])] _)\n```\n\nYou can -- if you really want -- use this to alter `P` or `Q` to not refer to the point in\nglobal space, or use it to pretend that `ray-dir` is actually a different angle.\n\nThe variables you change in `gl/with` will, by default, apply to all of the fields of a shape.\nYou can pass a keyword as the first argument to only change a particular field. This allows you\nto refer to variables that only exist in color expressions:\n\n```\n(gl/with :color [normal (normal + (perlin p * 0.1))]\n  (sphere 100 | blinn-phong [1 0 0] | move [-50 0 0]))\n```"
+    gl/with @{:doc "(gl/with bindings & body)\n\nLike `gl/let`, but instead of creating a new binding, it alters the value of an existing\nvariable. You can use this to give new values to dynamic variables. For example:\n\n```\n# implement your own `move`\n(gl/with [p (- p [0 50 0])] (sphere 50))\n```\n\nYou can also use Bauble's underscore notation to fit this into a pipeline:\n\n```\n(sphere 50 | gl/with [p (- p [0 50 0])] _)\n```\n\nYou can -- if you really want -- use this to alter `P` or `Q` to not refer to the point in\nglobal space, or use it to pretend that the camera `ray` is actually coming at a different angle.\n\nThe variables you change in `gl/with` will, by default, apply to all of the fields of a shape.\nYou can pass a keyword as the first argument to only change a particular field. This allows you\nto refer to variables that only exist in color expressions:\n\n```\n(gl/with :color [normal (normal + (perlin p * 0.1))]\n  (sphere 100 | blinn-phong [1 0 0] | move [-50 0 0]))\n```"
               :macro true}
     gradient @{:doc "(Color only!) An approximation of the 2D distance field gradient at `Q`."
                :value [:var "gradient" :vec2]}
@@ -249,7 +253,7 @@
     pentagon @{:doc "(pentagon radius [:r round])\n\nTODOC"}
     perlin @{:doc "(perlin point)\n\nReturns perlin noise ranging from `-1` to `1`. The input `point` can be a vector of any dimension.\n\nUse `perlin+` to return noise in the range `0` to `1`."}
     perlin+ @{:doc "(perlin+ point)\n\nPerlin noise in the range `0` to `1`."}
-    perspective @{:doc "(perspective fov size pos)\n\nTODOC"}
+    perspective-vector @{:doc "(perspective-vector fov)\n\nReturns a unit vector pointing in the `-z` direction for the\ngiven camera field-of-view (degrees)."}
     pi @{:doc "I think it's around three.\n\nNote that there are also values like `pi/4` and `pi/6*5` and related helpers all the way up to `pi/12`. They don't show up in autocomplete because they're annoying, but they're there."
          :value 3.1415926535897931}
     pi/10 @{:value 0.31415926535897931}
@@ -308,10 +312,8 @@
                  :tag <1>
                  :type [<3> vec [<4> float] 3]}}
     radians @{}
-    ray-dir @{:doc "A normalized vector that represents the direction of the current ray."
-              :value [:var "ray-dir" :vec3]}
-    ray-origin @{:doc "A point in the global coordinate space that represents the origin of the ray -- in other words, the location of the camera."
-                 :value [:var "ray-origin" :vec3]}
+    ray @{:doc "The current ray being used to march and shade the current fragment. This always represents\nthe ray from the camera, even when raymarching for shadow casting.\n\nA ray has two components: an `origin` and a `dir`ection. `origin` is a point in the \nglobal coordinate space, and you can intuitively think of it as \"the location of the camera\"\nwhen you're using the default perspective camera (orthographic cameras shoot rays from different\norigins).\n\nThe direction is always normalized."
+          :value [:var "ray" Ray]}
     recolor @{:doc "(recolor dest-shape source-shape)\n\nReplaces the color field on `dest-shape` with the color field on `source-shape`. Does not affect the distance field."}
     rect @{:doc "(rect size [:r round])\n\nReturns a 2D shape, a rectangle with corners at `(- size)` and `size`. `size` will be coerced to a `vec2`.\n\nThink of `size` like the \"radius\" of the rect: a rect with `size.x = 50` will be `100` units wide."}
     red @{:value [hsv 0 0.98 1]}
