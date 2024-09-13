@@ -566,6 +566,8 @@ const Bauble = (props: BaubleProps) => {
     } else {
       if (usingFreeCamera()) {
         resetCamera(rotation, origin, zoom);
+      } else {
+        Signal.set(freeCamera, true);
       }
     }
   };
