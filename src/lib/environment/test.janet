@@ -201,7 +201,8 @@
     log @{}
     log2 @{}
     magenta @{:value [hsv 0.83333333333333337 0.98 1]}
-    map-distance @{:doc "(map-distance shape f)\n\n"}
+    map-color @{:doc "(map-color shape f)\n\nApply a function `f` to the shape's color field. `f` should take and return a\n`:vec3` expression.\n\nThe returned shape has the same dimensions as the input.\n\nThis differs from `shape/map-color` in that the expression is wrapped in `gl/let`,\nso you can refer to it multiple times."}
+    map-distance @{:doc "(map-distance shape f)\n\nApply a function `f` to the shape's distance field. `f` should take and return a\n`:float` expression.\n\nThe returned shape has the same dimensions as the input.\n\nThis differs from `shape/map-distance` in that the expression is wrapped in `gl/let`,\nso you can refer to it multiple times."}
     mat2 @{}
     mat2x2 @{}
     mat2x3 @{}

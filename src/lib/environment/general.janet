@@ -95,14 +95,35 @@
   [shape amount]
   (shape/map-distance shape (fn [expr] (* expr amount))))
 
-(defn map-distance [shape f]
+(defn map-distance
   ```
-  Apply a function `f` to the shape's distance field. `f` should take and return an expression.
+  Apply a function `f` to the shape's distance field. `f` should take and return a
+  `:float` expression.
 
   The returned shape has the same dimensions as the input.
+
+  This differs from `shape/map-distance` in that the expression is wrapped in `gl/let`,
+  so you can refer to it multiple times.
   ```
+  [shape f]
   (shape/map-distance shape (fn [expr]
     (jlsl/do "map-distance"
+      (var dist expr)
+      (f dist)))))
+
+(defn map-color
+  ```
+  Apply a function `f` to the shape's color field. `f` should take and return a
+  `:vec3` expression.
+
+  The returned shape has the same dimensions as the input.
+
+  This differs from `shape/map-color` in that the expression is wrapped in `gl/let`,
+  so you can refer to it multiple times.
+  ```
+  [shape f]
+  (shape/map-color shape (fn [expr]
+    (jlsl/do "map-color"
       (var dist expr)
       (f dist)))))
 
