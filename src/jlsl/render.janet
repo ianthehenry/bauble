@@ -717,7 +717,7 @@
     (jlsl/defn :float foo [:float x]
       (return (+ (+ free1 free2) (+ free3 free4)))) `
     float foo(float x, float free, float free1, float x1, float y) {
-      return (free1 + free) + (x1 + y);
+      return (free + free1) + (x1 + y);
     }
   `))
 
@@ -1012,6 +1012,25 @@
     float main() {
       switch (1.0) {
       case 2.0: return 1.0;
+      default: return 2.0;
+      }
+    }
+  `))
+
+(deftest "case fallthrough"
+  (test-function
+    (jlsl/defn :float main []
+      (case 1:s
+        0:s (do)
+        1:s (upscope)
+        2:s (return 1)
+        (return 2))
+      ) `
+    float main() {
+      switch (1) {
+      case 0: {
+      }
+      case 1: case 2: return 1.0;
       default: return 2.0;
       }
     }

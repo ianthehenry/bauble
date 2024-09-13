@@ -590,6 +590,27 @@
     
   `))
 
+(deftest "switch fallthrough"
+  (test-statements [
+    (case x
+      0:s (do)
+      1:s (upscope)
+      2:s (break)
+      (do (h)))
+    ] `
+    void main() {
+      switch (x) {
+      case 0: {
+      }
+      case 1: case 2: break;
+      default: {
+        h();
+      }
+      }
+    }
+    
+  `))
+
 (deftest "assignment to arbitrary expression"
   (test-statements [
     (set (. foo x) 10)
