@@ -22,7 +22,34 @@ set it in a way that fits nicely into a pipeline.
 (jlsl/jlsl/defstruct Light
   :vec3 color
   :vec3 direction
-  :float intensity)
+  :float brightness)
+
+(defn light/map
+  ```
+  `f` takes and returns a `Light` expression.
+  ```
+  [light f]
+  (gl/let [light light] (f light)))
+
+(defn light/map-brightness
+  ```
+  `f` takes and returns a `:float` expression.
+  ```
+  [light f]
+  (sugar (jlsl/do
+    (var light light)
+    (set light.brightness (f light.brightness))
+    light)))
+
+(defn light/map-color
+  ```
+  `f` takes and returns a `:vec3` expression.
+  ```
+  [light f]
+  (sugar (jlsl/do
+    (var light light)
+    (set light.color (f light.color))
+    light)))
 
 (defhelper- :vec3 normalize-safe [:vec3 v]
   (return (if (= v (vec3 0)) v (normalize v))))
@@ -55,6 +82,8 @@ set it in a way that fits nicely into a pipeline.
   # smooth surfaces like spheres
   (var to-light (normalize (light-position - P)))
   # don't bother marching if the light won't contribute anything
+  # TODO: i feel like you're more likely to do this with falloff
+  # after the fact
   (if (= light-color (vec3 0))
     (return (Light light-color to-light 0)))
   # If you're looking at a surface facing away from the light,
@@ -90,12 +119,14 @@ set it in a way that fits nicely into a pipeline.
   (var to-light (normalize (light-position - P)))
   (if (= light-color (vec3 0))
     (return (Light light-color to-light 0)))
+  # TODO: i feel like you're more likely to do this with falloff
+  # after the fact
   (if (< (dot to-light normal) 0)
     (return (Light light-color to-light 0)))
   (var target (,MINIMUM_HIT_DISTANCE * normal + P))
   (var light-distance (length (target - light-position)))
   (var ray-dir (target - light-position / light-distance))
-  (var intensity 1)
+  (var brightness 1)
   (var sharpness (softness * softness /))
   (var last-nearest 1e10)
   (var depth 0)
@@ -104,15 +135,15 @@ set it in a way that fits nicely into a pipeline.
     (if (< nearest ,MINIMUM_HIT_DISTANCE) (break))
     (var intersect-offset (nearest * nearest / (2 * last-nearest)))
     (var intersect-distance (sqrt (nearest * nearest - (intersect-offset * intersect-offset))))
-    (set intensity (min intensity (sharpness * intersect-distance / (max 0 (light-distance - depth - intersect-offset)))))
+    (set brightness (min brightness (sharpness * intersect-distance / (max 0 (light-distance - depth - intersect-offset)))))
     (+= depth nearest)
     (set last-nearest nearest))
 
   (if (>= depth light-distance)
-    (return (Light light-color to-light intensity))
+    (return (Light light-color to-light brightness))
     (return (Light light-color to-light 0)))))
 
-(thunk ~(as-macro ,defnamed light/point [color position :?shadow:softness :?hoist]
+(thunk ~(as-macro ,defnamed light/point [color position :?shadow:softness :?brightness :?hoist]
   ```
   Returns a new light, which can be used as an input to some shading functions.
 
@@ -123,7 +154,10 @@ set it in a way that fits nicely into a pipeline.
 
   By default lights don't cast shadows, but you can change that by passing a
   `:shadow` argument. `0` will cast hard shadows, and any other expression will
-  cast a soft shadow (`0.25` is a reasonable default softness).
+  cast a soft shadow (it should be a number roughly in the range `0` to `1`).
+
+  Shadow casting affects the `brightness` of the light. You can also specify a baseline
+  `:brightness` explicitly, which defaults to `1`.
 
   Shadow casting always occurs in the global coordinate space, so you should position
   lights relative to `P`, not `p`.
@@ -149,9 +183,12 @@ set it in a way that fits nicely into a pipeline.
     # at all. which... will never happen but whatever
     0 (cast-light-hard-shadow color position)
     (cast-light-soft-shadow color position (,typecheck softness ',jlsl/type/float))))
+  (def <expr> (if brightness
+    (light/map-brightness <expr> (fn [b] (* b (,typecheck brightness ',jlsl/type/float))))
+    <expr>))
   (if hoist (,expression-hoister/hoist "light" <expr>) <expr>)))
 
-(thunk ~(as-macro ,defnamed light/ambient [color ?offset :?hoist]
+(thunk ~(as-macro ,defnamed light/ambient [color ?offset :?brightness :?hoist]
   ```
   Shorthand for `(light/point color (P + offset))`.
 
@@ -161,9 +198,11 @@ set it in a way that fits nicely into a pipeline.
   light with specular highlights, which provides some depth in areas of your scene
   that are in full shadow.
   ```
-  (light/point color (if offset (+ P (,typecheck offset ',jlsl/type/vec3)) P) :hoist hoist)))
+  (light/point color (if offset (+ P (,typecheck offset ',jlsl/type/vec3)) P)
+    :hoist hoist
+    :brightness brightness)))
 
-(thunk ~(as-macro ,defnamed light/directional [color dir dist :?shadow:softness :?hoist]
+(thunk ~(as-macro ,defnamed light/directional [color dir dist :?shadow:softness :?brightness :?hoist]
   ```
   A light that hits every point at the same angle.
 
@@ -171,7 +210,10 @@ set it in a way that fits nicely into a pipeline.
   ```
   (def dir (,typecheck dir ',jlsl/type/vec3))
   (def dist (,typecheck dist ',jlsl/type/float))
-  (light/point color (- P (* dir dist)) :shadow softness :hoist hoist)))
+  (light/point color (- P (* dir dist))
+    :shadow softness
+    :hoist hoist
+    :brightness brightness)))
 
 # TODO: probably we should take a direction?
 (defn- make-calculate-occlusion [nearest-distance]
@@ -222,11 +264,11 @@ set it in a way that fits nicely into a pipeline.
 
 (defhelper- :vec3 blinn-phong1 [:vec3 color :float shininess :float glossiness Light light]
   (if (= light.direction (vec3 0))
-    (return (* color light.color light.intensity)))
+    (return (* color light.color light.brightness)))
   (var halfway-dir (light.direction - ray-dir | normalize))
   (var specular-strength (shininess * pow (max (dot normal halfway-dir) 0) (glossiness * glossiness)))
   (var diffuse (max 0 (dot normal light.direction)))
-  (return (light.color * light.intensity * specular-strength + (* color diffuse light.color light.intensity))))
+  (return (light.color * light.brightness * specular-strength + (* color diffuse light.color light.brightness))))
 
 (defn- blinn-phong-color-expression [color shininess glossiness lights]
   (jlsl/do "blinn-phong"
