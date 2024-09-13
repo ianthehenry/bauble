@@ -1,6 +1,7 @@
 import * as Signal from './signals';
 import {Seconds} from './types';
 import {batch, createMemo} from 'solid-js';
+import {vec2, vec3} from 'gl-matrix';
 
 export enum RenderType {
   Normal = 0,
@@ -13,11 +14,11 @@ export type T = {
   time: Seconds,
   isVisible: boolean,
   renderType: RenderType,
-  rotation: {x: number, y: number},
-  origin: {x: number, y: number, z: number},
+  rotation: vec2,
+  origin: vec3,
   zoom: number, // TODO: give this a unique type
   quadView: boolean,
-  quadSplitPoint: {x: number, y: number},
+  quadSplitPoint: vec2,
   resolution: {width: number, height: number},
 };
 
@@ -25,11 +26,11 @@ export type Accessors = {
   time: Signal.Accessor<Seconds>,
   isVisible: Signal.Accessor<boolean>,
   renderType: Signal.Accessor<RenderType>,
-  rotation: Signal.Accessor<{x: number, y: number}>,
-  origin: Signal.Accessor<{x: number, y: number, z: number}>,
+  rotation: Signal.Accessor<vec2>,
+  origin: Signal.Accessor<vec3>,
   zoom: Signal.Accessor<number>,
   quadView: Signal.Accessor<boolean>,
-  quadSplitPoint: Signal.Accessor<{x: number, y: number}>,
+  quadSplitPoint: Signal.Accessor<vec2>,
   resolution: Signal.Accessor<{width: number, height: number}>,
 };
 
@@ -37,11 +38,11 @@ export type Signals = {
   time: Signal.T<Seconds>,
   isVisible: Signal.T<boolean>,
   renderType: Signal.T<RenderType>,
-  rotation: Signal.T<{x: number, y: number}>,
-  origin: Signal.T<{x: number, y: number, z: number}>,
+  rotation: Signal.T<vec2>,
+  origin: Signal.T<vec3>,
   zoom: Signal.T<number>,
   quadView: Signal.T<boolean>,
-  quadSplitPoint: Signal.T<{x: number, y: number}>,
+  quadSplitPoint: Signal.T<vec2>,
   resolution: Signal.T<{width: number, height: number}>,
 };
 
@@ -50,11 +51,11 @@ export function defaultSignals() {
     time: Signal.create(0 as Seconds),
     isVisible: Signal.create(false),
     renderType: Signal.create(RenderType.Normal),
-    rotation: Signal.create({x: 0, y: 0}),
-    origin: Signal.create({x: 0, y: 0, z: 0}),
+    rotation: Signal.create(vec2.fromValues(0, 0)),
+    origin: Signal.create(vec3.fromValues(0, 0, 0)),
     zoom: Signal.create(0),
     quadView: Signal.create(false),
-    quadSplitPoint: Signal.create({x: 0.5, y: 0.5}),
+    quadSplitPoint: Signal.create(vec2.fromValues(0.5, 0.5)),
     resolution: Signal.create({width: 0, height: 0}),
   };
 }

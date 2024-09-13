@@ -55,8 +55,10 @@
 
   (def program (sugar (program/new
     (precision highp float)
-    (uniform ,camera-origin)
-    (uniform ,camera-orientation)
+    (uniform ,camera-type)
+    (uniform ,free-camera-target)
+    (uniform ,free-camera-orbit)
+    (uniform ,free-camera-zoom)
     (uniform ,render-type)
     (uniform ,t)
     (uniform ,viewport)

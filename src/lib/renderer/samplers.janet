@@ -2,9 +2,13 @@
 (import ../../jlsl)
 (use ./util)
 
-(jlsl/jlsl/defdyn camera-origin :vec3 "")
-(jlsl/jlsl/defdyn camera-orientation :vec3 "")
+# TODO: this should not be a uniform
 (jlsl/jlsl/defdyn render-type :int "")
+
+(jlsl/jlsl/defdyn camera-type :int "")
+(jlsl/jlsl/defdyn free-camera-target :vec3 "")
+(jlsl/jlsl/defdyn free-camera-orbit :vec2 "")
+(jlsl/jlsl/defdyn free-camera-zoom :float "")
 
 # TODO: these should probably be somewhere else
 (def- MAX_STEPS 256:u)
@@ -56,20 +60,36 @@
 (defn make-sample-3d [nearest-distance <background-color> <default-color> <color-field>]
   (def march (make-march nearest-distance))
   (jlsl/fn :vec3 sample []
-    # the "camera orientation" vector is really "what transformation do we make to
-    # the vector [0 0 1]" to arrive at to the camera origin. but we want to point to
-    # the actual origin, so we basically want to reverse this transformation.
-    (var dir (*
-      (rotation-z (- camera-orientation.z))
-      (rotation-y (- camera-orientation.y))
-      (rotation-x (- camera-orientation.x))
-      (perspective 45.0 resolution Frag-Coord)
-      ))
+    (def base-zoom-distance 512)
+    (def ortho-distance 1024)
+    (var ray-dir* [0 0 0])
+    (var ray-origin* [0 0 0])
+    (var ortho [ortho-distance (frag-coord.x * base-zoom-distance * free-camera-zoom) (frag-coord.y * base-zoom-distance * free-camera-zoom)])
+    (case camera-type
+      0:s (do
+        (var camera-rotation-matrix
+          (* (rotation-y (* tau free-camera-orbit.x))
+             (rotation-x (* tau free-camera-orbit.y))))
+        (set ray-origin* (* camera-rotation-matrix [0 0 (base-zoom-distance * free-camera-zoom)]))
+        (set ray-dir* (* camera-rotation-matrix (perspective 45.0 resolution Frag-Coord)))
+        (break))
+      1:s (do # XZ
+        (set ray-dir* [0 -1 0])
+        (set ray-origin* (ortho.yxz + free-camera-target))
+        (break))
+      2:s (do # XY
+        (set ray-dir* [0 0 -1])
+        (set ray-origin* (ortho.yzx + free-camera-target))
+        (break))
+      3:s (do # ZY
+        (set ray-dir* [-1 0 0])
+        (set ray-origin* (ortho.xzy + free-camera-target))
+        (break)))
 
     (var steps 0:u)
 
-    (with [ray-origin camera-origin
-           ray-dir dir
+    (with [ray-origin ray-origin*
+           ray-dir ray-dir*
            depth (march steps)
            P (+ ray-origin (* ray-dir depth))
            p P

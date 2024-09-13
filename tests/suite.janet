@@ -11,10 +11,8 @@
 
 (def zoom 0.75)
 
-(def ortho-z [(map |(* $ zoom) [0 0 512]) [0 0 0]])
-(def isometric [
-  (map |(* $ zoom) [256 362 256])
-  [(* 0.125 math/pi 2) (* -0.125 math/pi 2) 0]])
+(def ortho-z [0 0])
+(def isometric [0.125 -0.125])
 
 (defn string/remove-suffix [str suffix]
   (if (string/has-suffix? suffix str)
@@ -658,7 +656,7 @@ img {
 (defn ms [start end]
   (string/format "%.1fms" (* (- end start) 1000)))
 
-(defn render [name program camera-origin camera-orientation eval-function compile-function]
+(defn render [name program camera-orbit eval-function compile-function]
   (gccollect)
   (var success true)
   (try (do
@@ -669,9 +667,8 @@ img {
     (def after-compile-before-render (os/clock :monotonic))
     (def image (render-image shader-source
       :resolution physical-resolution
-      :camera-origin camera-origin
-      :camera-orientation camera-orientation
-      ))
+      :orbit camera-orbit
+      :zoom 0.75))
     (def after-render-before-export (os/clock :monotonic))
     (def temporary-file-name "snapshots/tmp.png")
     (jaylib/export-image image temporary-file-name)
@@ -730,7 +727,7 @@ img {
 
 (var failing-tests 0)
 (each [name program] (sort (pairs test-cases) (fn [[name1 _] [name2 _]] (< name1 name2)))
-  (def [[camera-origin camera-orientation] program]
+  (def [camera-orbit program]
     (if (tuple? program) program [isometric program]))
 
   (def program (string/trim program))
@@ -739,7 +736,7 @@ img {
   (printf `<h1>%s</h1>` (html-escape name))
   (printf `<pre>%s</pre>` (html-escape program))
   (def success
-    (render name (string program "\n(set aa-grid-size 3)") camera-origin camera-orientation
+    (render name (string program "\n(set aa-grid-size 3)") camera-orbit
       bauble/evaluator/evaluate
       bauble/shade/compile-shape))
   (unless success (++ failing-tests))

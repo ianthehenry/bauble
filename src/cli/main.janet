@@ -20,8 +20,7 @@
   (init-jaylib)
   (def image (render-image shader-source
     :resolution resolution
-    :camera-origin [256 362 256]
-    :camera-orientation [(* 0.125 math/pi 2) (* -0.125 math/pi 2) 0]))
+    :orbit [0.125 -0.125]))
   (jaylib/export-image image outfile))
 
 (cmd/defn print-source "print fragment shader source to stdout"

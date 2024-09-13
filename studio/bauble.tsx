@@ -5,7 +5,7 @@ import installCodeMirror from './editor';
 import {EditorView} from '@codemirror/view';
 import * as Signal from './signals';
 import {mod, clamp} from './util';
-import {vec2} from 'gl-matrix';
+import {vec2, vec3} from 'gl-matrix';
 import type {Seconds} from './types';
 import type {Definition} from 'bauble-runtime';
 import RenderLoop from './render-loop';
@@ -21,15 +21,8 @@ enum EvaluationState {
 }
 
 const defaultCamera = {
-  origin: {
-    x: 0,
-    y: 0,
-    z: 0,
-  },
-  rotation: {
-    x: 0.125,
-    y: -0.125,
-  },
+  origin: vec3.fromValues(0, 0, 0),
+  rotation: vec2.fromValues(0.125, -0.125),
   zoom: 1.0,
 };
 
@@ -122,8 +115,8 @@ const EditorToolbar: Component<{state: EvaluationState}> = (props) => {
 };
 
 const resetCamera = (
-  rotation: Signal.T<{x: number, y: number}>,
-  origin: Signal.T<{x: number, y: number, z: number}>,
+  rotation: Signal.T<vec2>,
+  origin: Signal.T<vec3>,
   zoom: Signal.T<number>,
 ) => {
   batch(() => {
@@ -136,8 +129,8 @@ const resetCamera = (
 interface RenderToolbarProps {
   renderType: Signal.T<RenderState.RenderType>,
   quadView: Signal.T<boolean>,
-  rotation: Signal.T<{x: number, y: number}>,
-  origin: Signal.T<{x: number, y: number, z: number}>,
+  rotation: Signal.T<vec2>,
+  origin: Signal.T<vec3>,
   zoom: Signal.T<number>,
 }
 
@@ -316,7 +309,7 @@ const Bauble = (props: BaubleProps) => {
   });
   const renderType = Signal.create(RenderState.RenderType.Normal);
   const quadView = Signal.create(false);
-  const quadSplitPoint = Signal.create({x: 0.5, y: 0.5});
+  const quadSplitPoint = Signal.create(vec2.fromValues(0.5, 0.5));
   const zoom = Signal.create(defaultCamera.zoom);
   const rotation = Signal.create(defaultCamera.rotation);
   const origin = Signal.create(defaultCamera.origin);
@@ -447,14 +440,10 @@ const Bauble = (props: BaubleProps) => {
   let interactionPointer: number | null = null;
   let interaction: Interaction | null = null;
 
-  const getRelativePoint = (e: MouseEvent) => ({
-    x: e.offsetX / canvas.offsetWidth,
-    y: e.offsetY / canvas.offsetHeight,
-  });
+  const getRelativePoint = (e: MouseEvent) => vec2.fromValues(e.offsetX / canvas.offsetWidth, e.offsetY / canvas.offsetHeight);
   const isOnSplitPoint = (e: MouseEvent) => {
-    const splitPoint = Signal.get(quadSplitPoint);
     const size = vec2.fromValues(canvas.offsetWidth, canvas.offsetHeight);
-    const splitPointPixels = vec2.fromValues(splitPoint.x, splitPoint.y);
+    const splitPointPixels = vec2.clone(Signal.get(quadSplitPoint));
     vec2.mul(splitPointPixels, splitPointPixels, size);
     return vec2.distance(splitPointPixels, [e.offsetX, e.offsetY]) < 10;
   };
@@ -476,14 +465,14 @@ const Bauble = (props: BaubleProps) => {
       } else {
         const relativePoint = getRelativePoint(e);
         const splitPoint = Signal.get(quadSplitPoint);
-        if (relativePoint.y < splitPoint.y) {
-          if (relativePoint.x < splitPoint.x) {
+        if (relativePoint[1] < splitPoint[1]) {
+          if (relativePoint[0] < splitPoint[0]) {
             return Interaction.Rotate;
           } else {
             return Interaction.PanXZ;
           }
         } else {
-          if (relativePoint.x < splitPoint.x) {
+          if (relativePoint[0] < splitPoint[0]) {
             return Interaction.PanXY;
           } else {
             return Interaction.PanZY;
@@ -528,10 +517,10 @@ const Bauble = (props: BaubleProps) => {
           Signal.set(zoom, defaultCamera.zoom);
         });
         break;
-      case Interaction.PanXY: Signal.update(origin, ({z}) => ({x: defaultCamera.origin.x, y: defaultCamera.origin.y, z: z})); break;
-      case Interaction.PanZY: Signal.update(origin, ({x}) => ({x: x, y: defaultCamera.origin.y, z: defaultCamera.origin.z})); break;
-      case Interaction.PanXZ: Signal.update(origin, ({y}) => ({x: defaultCamera.origin.x, y: y, z: defaultCamera.origin.z})); break;
-      case Interaction.ResizeSplit: Signal.set(quadSplitPoint, {x: 0.5, y: 0.5}); break;
+      case Interaction.PanXY: Signal.update(origin, (old) => vec3.fromValues(defaultCamera.origin[0], defaultCamera.origin[1], old[2])); break;
+      case Interaction.PanZY: Signal.update(origin, (old) => vec3.fromValues(old[0], defaultCamera.origin[1], defaultCamera.origin[2])); break;
+      case Interaction.PanXZ: Signal.update(origin, (old) => vec3.fromValues(defaultCamera.origin[0], old[1], defaultCamera.origin[2])); break;
+      case Interaction.ResizeSplit: Signal.set(quadSplitPoint, vec2.fromValues(0.5, 0.5)); break;
       }
     } else {
       resetCamera(rotation, origin, zoom);
@@ -563,43 +552,32 @@ const Bauble = (props: BaubleProps) => {
 
     switch (interaction!) {
     case Interaction.Rotate: {
-      Signal.update(rotation, ({x, y}) => ({
-        x: mod(x - deltaX * cameraRotateSpeed, 1.0),
-        y: mod(y - deltaY * cameraRotateSpeed, 1.0),
-      }));
+      Signal.update(rotation, (old) =>
+        vec2.fromValues(
+          mod(old[0] - deltaX * cameraRotateSpeed, 1.0),
+          mod(old[1] - deltaY * cameraRotateSpeed, 1.0)));
       break;
     }
     case Interaction.PanXY: {
-      Signal.update(origin, ({x, y, z}) => ({
-        x: x - deltaX * panRate,
-        y: y + deltaY * panRate,
-        z: z,
-      }));
+      Signal.update(origin, (old) =>
+        vec3.fromValues(old[0] - deltaX * panRate, old[1] + deltaY * panRate, old[2]));
       break;
     }
     case Interaction.PanZY: {
-      Signal.update(origin, ({x, y, z}) => ({
-        x: x,
-        y: y + deltaY * panRate,
-        z: z - deltaX * panRate,
-      }));
+      Signal.update(origin, (old) =>
+        vec3.fromValues(old[0], old[1] + deltaY * panRate, old[2] - deltaX * panRate));
       break;
     }
     case Interaction.PanXZ: {
-      Signal.update(origin, ({x, y, z}) => ({
-        x: x - deltaX * panRate,
-        y: y,
-        z: z - deltaY * panRate,
-      }));
+      Signal.update(origin, (old) =>
+        vec3.fromValues(old[0] - deltaX * panRate, old[1], old[2] + deltaY * panRate));
       break;
     }
     case Interaction.ResizeSplit: {
       const deltaX = (canvasPointerAt[0] - pointerWasAt[0]) / canvas.clientWidth;
       const deltaY = (canvasPointerAt[1] - pointerWasAt[1]) / canvas.clientHeight;
-      Signal.update(quadSplitPoint, ({x, y}) => ({
-        x: x + deltaX,
-        y: y + deltaY,
-      }));
+      Signal.update(quadSplitPoint, (old) =>
+        vec2.fromValues(old[0] + deltaX, old[1] + deltaY));
       break;
     }
     }

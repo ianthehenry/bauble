@@ -5,7 +5,12 @@ import {clamp, TAU} from './util';
 import type {Seconds} from './types';
 import type * as RenderState from './render-state';
 
-const baseCameraDistance = 512;
+enum CameraType {
+  Free = 0,
+  Top = 1,
+  Front = 2,
+  Right = 3,
+}
 
 function rotateX(target: mat3, angle: number) {
   const s = Math.sin(angle);
@@ -69,10 +74,6 @@ export default class Renderer {
   private vertexBuffer: WebGLBuffer;
   private vertexData: Float32Array;
 
-  private cameraDirty = true;
-  private cameraOrientation: vec3 = vec3.create();
-  private cameraOrigin: vec3 = vec3.create();
-
   // TODO: the perspective is actually calculated
   // in the shader, not here, so this is actually a
   // "perspective XY" view
@@ -107,10 +108,6 @@ export default class Renderer {
     this.program = program;
     this.vertexBuffer = vertexBuffer;
     this.vertexData = vertexData;
-
-    Signal.onEffect([state.rotation, state.origin, state.zoom], () => {
-      this.cameraDirty = true;
-    });
   }
 
   private get positionLocation(): number {
@@ -119,21 +116,6 @@ export default class Renderer {
       this._positionLocation = gl.getAttribLocation(program, "position");
     }
     return this._positionLocation;
-  }
-
-  private calculateCameraMatrix() {
-    const {x, y} = this.state.rotation();
-    // x and y here are in "screen" coordinates, where dragging left/right
-    // actually rotates around the Y axis, and dragging up/down rotates along
-    // the X axis. Hence the strange inversion here.
-    vec3.set(this.cameraOrientation, -y * TAU, -x * TAU, 0);
-    const cameraMatrix = mat3.create();
-    rotateXY(cameraMatrix, this.cameraOrientation[0], this.cameraOrientation[1]);
-    vec3.set(this.cameraOrigin, 0, 0, baseCameraDistance * this.state.zoom());
-    vec3.transformMat3(this.cameraOrigin, this.cameraOrigin, cameraMatrix);
-    const target = this.state.origin();
-    vec3.add(this.cameraOrigin, this.cameraOrigin, [target.x, target.y, target.z]);
-    this.cameraDirty = false;
   }
 
   private setViewport(left: number, bottom: number, width: number, height: number) {
@@ -147,20 +129,21 @@ export default class Renderer {
     const {gl, program} = this;
     const uT = gl.getUniformLocation(program, "t");
     const uRenderType = gl.getUniformLocation(program, "render_type");
+    const uCameraTarget = gl.getUniformLocation(program, "free_camera_target");
+    const uCameraOrbit = gl.getUniformLocation(program, "free_camera_orbit");
+    const uCameraZoom = gl.getUniformLocation(program, "free_camera_zoom");
 
     gl.uniform1f(uT, this.state.time());
     gl.uniform1i(uRenderType, this.state.renderType());
+    gl.uniform3fv(uCameraTarget, this.state.origin());
+    gl.uniform2fv(uCameraOrbit, this.state.rotation());
+    gl.uniform1f(uCameraZoom, this.state.zoom());
   }
 
   private drawSingleView() {
     const {gl, program} = this;
-    const uCameraOrientation = gl.getUniformLocation(program, "camera_orientation");
-    const uCameraOrigin = gl.getUniformLocation(program, "camera_origin");
-    if (this.cameraDirty) {
-      this.calculateCameraMatrix();
-    }
-    gl.uniform3fv(uCameraOrigin, this.cameraOrigin);
-    gl.uniform3fv(uCameraOrientation, this.cameraOrientation);
+    const uCameraType = gl.getUniformLocation(program, "camera_type");
+    gl.uniform1i(uCameraType, CameraType.Free);
     const resolution = this.state.resolution();
     this.setViewport(0, 0, resolution.width, resolution.height);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -168,15 +151,14 @@ export default class Renderer {
 
   private drawQuadView() {
     const {gl, program} = this;
-    const uCameraOrientation = gl.getUniformLocation(program, "camera_orientation");
-    const uCameraOrigin = gl.getUniformLocation(program, "camera_origin");
+    const uCameraType = gl.getUniformLocation(program, "camera_type");
 
     const splitPoint = this.state.quadSplitPoint();
     const resolution = this.state.resolution();
     const minPanelSize = 64;
     const freePaneSize = [
-      clamp(Math.round(splitPoint.x * resolution.width), minPanelSize, resolution.width - minPanelSize),
-      clamp(Math.round(splitPoint.y * resolution.height), minPanelSize, resolution.height - minPanelSize),
+      clamp(Math.round(splitPoint[0] * resolution.width), minPanelSize, resolution.width - minPanelSize),
+      clamp(Math.round(splitPoint[1] * resolution.height), minPanelSize, resolution.height - minPanelSize),
     ];
 
     const leftPaneWidth = freePaneSize[0];
@@ -184,32 +166,23 @@ export default class Renderer {
     const rightPaneWidth = resolution.width - freePaneSize[0];
     const bottomPaneHeight = resolution.height - freePaneSize[1];
 
-    const zoom = this.state.zoom();
-    const target = this.state.origin();
     // bottom left: XY
-    gl.uniform3fv(uCameraOrigin, [target.x, target.y, target.z + baseCameraDistance * zoom]);
-    gl.uniform3fv(uCameraOrientation, this.orthogonalXY);
+    gl.uniform1i(uCameraType, CameraType.Front);
     this.setViewport(0, 0, leftPaneWidth, bottomPaneHeight);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
     // bottom right: ZY
-    gl.uniform3fv(uCameraOrigin, [target.x - baseCameraDistance * zoom, target.y, target.z]);
-    gl.uniform3fv(uCameraOrientation, this.orthogonalZY);
+    gl.uniform1i(uCameraType, CameraType.Right);
     this.setViewport(leftPaneWidth, 0, rightPaneWidth, bottomPaneHeight);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
     // top left: free camera
-    if (this.cameraDirty) {
-      this.calculateCameraMatrix();
-    }
-    gl.uniform3fv(uCameraOrigin, this.cameraOrigin);
-    gl.uniform3fv(uCameraOrientation, this.cameraOrientation);
+    gl.uniform1i(uCameraType, CameraType.Free);
     this.setViewport(0, bottomPaneHeight, leftPaneWidth, topPaneHeight);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
     // top right: top-down
-    gl.uniform3fv(uCameraOrigin, [target.x, target.y + baseCameraDistance * zoom, target.z]);
-    gl.uniform3fv(uCameraOrientation, this.orthogonalXZ);
+    gl.uniform1i(uCameraType, CameraType.Top);
     this.setViewport(leftPaneWidth, bottomPaneHeight, rightPaneWidth, topPaneHeight);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
