@@ -694,7 +694,11 @@ img {
 .images .new .underlay {
   position: absolute;
 }
-.images .new .underlay:hover {
+.images .new:hover .underlay {
+  visibility: hidden;
+}
+.images .new:active .underlay {
+  visibility: visible;
   mix-blend-mode: difference;
 }
 </style>`)

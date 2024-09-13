@@ -258,9 +258,10 @@ set it in a way that fits nicely into a pipeline.
 
 # TODO: occlusion should alter shadowness, not light color
 (thunk ~(setdyn ,*lights*
-  @[(light/directional (vec3 0.95) (normalize [-2 -2 -1]) 512 :shadow 0.25)
-    (light/ambient (vec3 0.03))
-    (light/ambient (vec3 0.02) (* normal 0.1))]))
+  (let [default-occlusion (occlusion)]
+    @[(light/directional (vec3 0.95) (normalize [-2 -2 -1]) 512 :shadow 0.25)
+      (light/ambient (vec3 0.03) :brightness default-occlusion)
+      (light/ambient (vec3 0.02) (* normal 0.1) :brightness default-occlusion)])))
 
 (defhelper- :vec3 blinn-phong1 [:vec3 color :float shininess :float glossiness Light light]
   (if (= light.direction (vec3 0))
