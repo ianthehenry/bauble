@@ -62,7 +62,7 @@ Overloaded to work with tuples, arrays, and expressions.
 Overloaded to work with tuples, arrays, and expressions.
 `
 (make-variadic jlsl// 1))
-(def * `(- & xs)
+(def * `(* & xs)
 
 Overloaded to work with tuples, arrays, and expressions.
 `
