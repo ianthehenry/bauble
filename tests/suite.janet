@@ -1,7 +1,6 @@
 (import jaylib)
 (use sh)
 (use ../src/cli/helpers)
-(import ../src/legacy)
 (import ../src/lib :as bauble)
 
 (init-jaylib)

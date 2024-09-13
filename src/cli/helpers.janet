@@ -1,15 +1,9 @@
 (import jaylib)
 (use module)
-(import ../legacy :as bauble)
 (import ./ray)
 (import ../glsl)
 
 (defdyn *verbose*)
-
-(defn compile-shader [source]
-  (let [[expr env] (bauble/bauble-evaluator/evaluate source)
-        [animated? shader-source] (bauble/shade/compile-shape expr env "330")]
-    shader-source))
 
 (defn init-jaylib []
   (jaylib/set-trace-log-level :warning)
