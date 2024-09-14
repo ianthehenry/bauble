@@ -76,7 +76,7 @@
     align @{:doc "(align target from to)\n\nAlign a shape or a vector to another vector. Both the `from` and `to` vectors must have unit length.\n\nThis function is useful for \"pointing\" one shape towards another. For example:\n\n```\n(def pos [(sin (t * 2) * 50) (sin (t * 3) * 100) (cos (t * 5) * 50)])\n(union\n  (cone y 10 80 | align y (normalize pos))\n  (box 10 | move pos))\n```\n\nThe tip of the cone points towards the moving target. In this case the `from` vector is equal to the\naxis of the cone.\n\nIf `from` = `(- to)`, the result is undefined: there are infinitely many rotation matrices that reverse\na vector's direction."}
     alignment-matrix @{:doc "(alignment-matrix from to)\n\nReturn a 3D rotation matrix that aligns one normalized vector to another.\n\nBoth input vectors must have a unit length!\n\nIf `from` = `(- to)`, the result is undefined."}
     and @{}
-    arc @{:doc "(arc radius angle thickness)\n\nTODOC"}
+    arc @{:doc "(arc radius angle thickness)\n\n```example\n(arc 60 (osc t 5 tau) (osc t 2 5 20))\n```"}
     asin @{}
     asinh @{}
     atan @{}
@@ -99,7 +99,7 @@
     cast-light-no-shadow @{:doc "(cast-light-no-shadow light-color light-position)\n\nTODOC"}
     cast-light-soft-shadow @{:doc "(cast-light-soft-shadow light-color light-position softness)\n\nTODOC"}
     ceil @{}
-    circle @{:doc "(circle radius)\n\nReturns a 2D shape."}
+    circle @{:doc "(circle radius)\n\nReturns a 2D shape.\n\n```example\n(circle 50)\n```"}
     clamp @{}
     color @{:doc "(color shape color)\n\nSet a shape's color field."}
     cone @{:doc "(cone axis radius height)\n\nTODOC"}
@@ -109,7 +109,7 @@
     cosh @{}
     cross @{}
     cross-matrix @{:doc "(cross-matrix vec)\n\nReturns the matrix such that `(* (cross-matrix vec1) vec2)` = `(cross vec1 vec2)`."}
-    cut-disk @{:doc "(cut-disk radius bottom)\n\nTODOC"}
+    cut-disk @{:doc "(cut-disk radius bottom)\n\nReturns a 2D shape.\n\n```example\n(cut-disk 50 (sin t * 40))\n```"}
     cyan @{:value [hsv 0.5 0.98 1]}
     dark-gray @{:value [0.25 0.25 0.25]}
     default-2d-color @{:doc "A variable that determines the default color to use when rendering a 2D shape with no color field.\n\nDefault is `isolines`."
@@ -144,7 +144,7 @@
     gl-frag-depth @{:value [:var "gl_FragDepth" :float]}
     gl-front-facing @{:value [:var "gl_FrontFacing" :bool]}
     gl-point-coord @{:value [:var "gl_PointCoord" :vec2]}
-    gl/def @{:doc "(gl/def name expression)\n\nYou can use `gl/def` to create new top-level GLSL variables which will only\nbe evaluated once (per distance and color field evaluation). This is useful in\norder to re-use an expensive value in multiple places, when that value only\ndepends on values that are available at the beginning of shading.\n\n```\n(gl/def signal (perlin+ (p / 20)))\n(shape/3d (signal * 0.5)\n| intersect (sphere 50)\n| color [signal (pow signal 2) 0])\n```\n\nThis is shorthand for `(def foo (hoist expression \"foo\"))`.\n\nNote that since the signal is evaluated at the top-level, `p` will always be the\nsame as `P`. Consider this example:\n\n```\n(gl/def signal (perlin+ (p / 20)))\n(shape/3d (signal * 0.5)\n| intersect (sphere 50)\n| color [signal (pow signal 2) 0]\n| move x (sin t * 100)\n)\n```\n\nChange the `gl/def` to a regular `def` to see some of the impliciations of hoisting\na computation."
+    gl/def @{:doc "(gl/def name expression)\n\nYou can use `gl/def` to create new top-level GLSL variables which will only\nbe evaluated once (per distance and color field evaluation). This is useful in\norder to re-use an expensive value in multiple places, when that value only\ndepends on values that are available at the beginning of shading.\n\n```example\n(gl/def signal (perlin+ (p / 20)))\n(shape/3d (signal * 0.5)\n| intersect (sphere 100)\n| color [signal (pow signal 2) 0])\n```\n\nThis is shorthand for `(def foo (hoist expression \"foo\"))`.\n\nNote that since the signal is evaluated at the top-level, `p` will always be the\nsame as `P`. Consider this example:\n\n```example\n(gl/def signal (perlin+ (p / 20)))\n(shape/3d (signal * 0.5)\n| intersect (sphere 100)\n| color [signal (pow signal 2) 0]\n| move x (sin t * 100)\n)\n```\n\nChange the `gl/def` to a regular `def` to see some of the impliciations of hoisting\na computation."
              :macro true}
     gl/defn @{:doc "(gl/defn return-type name params & body)\n\nDefines a GLSL function. You must explicitly annotate the return type\nand the type of all arguments. The body of the function uses the GLSL\nDSL, i.e. it is not normal Janet code.\n\n```\n(gl/defn :vec3 hsv [:float hue :float saturation :float value]\n  (var c (hue * 6 + [0 4 2] | mod 6 - 3 | abs))\n  (return (value * (mix (vec3 1) (c - 1 | clamp 0 1) saturation))))\n```"
               :macro true}
@@ -152,14 +152,14 @@
             :macro true}
     gl/hoist @{:doc "(gl/hoist expression &opt name)\n\nReturn a hoisted version of the expression See the documentation for `gl/def`\nfor an explanation of this."
                :macro true}
-    gl/if @{:doc "(gl/if condition then else)\n\nA GLSL ternary conditional expression.\n\n```\n(sphere 50\n| color (gl/if (< normal.y 0) [1 0 0] [1 1 0]))\n```"}
+    gl/if @{:doc "(gl/if condition then else)\n\nA GLSL ternary conditional expression.\n\n```example\n(sphere 100\n| color (gl/if (< normal.y 0) [1 0 0] [1 1 0]))\n```"}
     gl/iife @{:doc "(gl/iife & body)\n\nLike `gl/do`, except that you can explicitly return early.\n\n```\n(gl/iife \"optional-label\"\n  (var c [1 0 1])\n  (if (< normal.y 0)\n    (return c))\n  (for (var i 0:u) (< i 10:u) (++ i)\n    (+= c.g 0.01))\n  c)\n```\n"
               :macro true}
-    gl/let @{:doc "(gl/let bindings & body)\n\nLike `let`, but creates GLSL bindings instead of a Janet bindings. You can use this\nto reference an expression multiple times while only evaluating it once in the resulting\nshader.\n\nFor example:\n\n```\n(let [s (sin t)]\n  (+ s s))\n```\n\nProduces GLSL code like this:\n\n```\nsin(t) + sin(t)\n```\n\nBecause `s` refers to the GLSL *expression* `(sin t)`.\n\nMeanwhile:\n\n```\n(gl/let [s (sin t)]\n  (+ s s))\n```\n\nProduces GLSL code like this:\n\n```\nfloat let(float s) {\n  return s + s;\n}\n\nlet(sin(t))\n```\n\nOr something equivalent. Note that the variable is hoisted into an immediately-invoked function\nbecause it's the only way to introduce a new identifier in a GLSL expression context.\n\nYou can also use Bauble's underscore notation to fit this into a pipeline:\n\n```\n(s + s | gl/let [s (sin t)] _)\n```\n\nIf the body of the `gl/let` returns a shape, the bound variable will be available in all of its\nfields. If you want to refer to variables or expressions that are only available in color fields,\npass a keyword as the first argument:\n\n```\n(gl/let :color [banding (sin depth)]\n  (sphere 100 | blinn-phong [1 banding 0]))\n```"
+    gl/let @{:doc "(gl/let bindings & body)\n\nLike `let`, but creates GLSL bindings instead of a Janet bindings. You can use this\nto reference an expression multiple times while only evaluating it once in the resulting\nshader.\n\nFor example:\n\n```\n(let [s (sin t)]\n  (+ s s))\n```\n\nProduces GLSL code like this:\n\n```\nsin(t) + sin(t)\n```\n\nBecause `s` refers to the GLSL *expression* `(sin t)`.\n\nMeanwhile:\n\n```\n(gl/let [s (sin t)]\n  (+ s s))\n```\n\nProduces GLSL code like this:\n\n```\nfloat let(float s) {\n  return s + s;\n}\n\nlet(sin(t))\n```\n\nOr something equivalent. Note that the variable is hoisted into an immediately-invoked function\nbecause it's the only way to introduce a new identifier in a GLSL expression context.\n\nYou can also use Bauble's underscore notation to fit this into a pipeline:\n\n```\n(s + s | gl/let [s (sin t)] _)\n```\n\nIf the body of the `gl/let` returns a shape, the bound variable will be available in all of its\nfields. If you want to refer to variables or expressions that are only available in color fields,\npass a keyword as the first argument:\n\n```example\n(gl/let :color [banding (sin+ (10 * t + depth))]\n  (box 100 | blinn-phong [1 banding 0]))\n```"
              :macro true}
     gl/overload @{:doc "(gl/overload return-type name params & body)\n\nOverloads a previously defined function with an additional signature.\n\nNote that the argument type must uniquely determine the return type of\na GLSL function, so you can't make an overload that only varies in\nits return type.\n\n```\n(gl/overload :float min [:float a :float b :float c]\n  (return (min (min a b) c)))\n```\n\nYou can overload any function, including built-in functions."
                   :macro true}
-    gl/with @{:doc "(gl/with bindings & body)\n\nLike `gl/let`, but instead of creating a new binding, it alters the value of an existing\nvariable. You can use this to give new values to dynamic variables. For example:\n\n```\n# implement your own `move`\n(gl/with [p (- p [0 50 0])] (sphere 50))\n```\n\nYou can also use Bauble's underscore notation to fit this into a pipeline:\n\n```\n(sphere 50 | gl/with [p (- p [0 50 0])] _)\n```\n\nYou can -- if you really want -- use this to alter `P` or `Q` to not refer to the point in\nglobal space, or use it to pretend that the camera `ray` is actually coming at a different angle.\n\nThe variables you change in `gl/with` will, by default, apply to all of the fields of a shape.\nYou can pass a keyword as the first argument to only change a particular field. This allows you\nto refer to variables that only exist in color expressions:\n\n```\n(gl/with :color [normal (normal + (perlin p * 0.1))]\n  (sphere 100 | blinn-phong [1 0 0] | move [-50 0 0]))\n```"
+    gl/with @{:doc "(gl/with bindings & body)\n\nLike `gl/let`, but instead of creating a new binding, it alters the value of an existing\nvariable. You can use this to give new values to dynamic variables. For example:\n\n```example\n# implement your own `move`\n(gl/with [p (- p [0 (sin t * 50) 0])] (sphere 100))\n```\n\nYou can also use Bauble's underscore notation to fit this into a pipeline:\n\n```example\n(sphere 100 | gl/with [p (- p [0 (sin t * 50) 0])] _)\n```\n\nYou can -- if you really want -- use this to alter `P` or `Q` to not refer to the point in\nglobal space, or use it to pretend that the camera `ray` is actually coming at a different angle.\n\nThe variables you change in `gl/with` will, by default, apply to all of the fields of a shape.\nYou can pass a keyword as the first argument to only change a particular field. This allows you\nto refer to variables that only exist in color expressions:\n\n```example\n(gl/with :color [normal (normal + (perlin p * 0.1))]\n  (sphere 100 | blinn-phong [1 0 0] | move [-50 0 0]))\n```"
               :macro true}
     gradient @{:doc "(Color only!) An approximation of the 2D distance field gradient at `Q`."
                :value [:var "gradient" :vec2]}
@@ -171,8 +171,8 @@
     hash2 @{:doc "(hash2 v)\n\nReturn a pseudorandom `vec2`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
     hash3 @{:doc "(hash3 v)\n\nReturn a pseudorandom `vec3`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
     hash4 @{:doc "(hash4 v)\n\nReturn a pseudorandom `vec4`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
-    hexagon @{:doc "(hexagon radius [:r round])\n\nTODOC"}
-    hexagram @{:doc "(hexagram radius [:r round])\n\nTODOC"}
+    hexagon @{:doc "(hexagon radius [:r round])\n\n```example\n(hexagon 50 :r (osc t 2 20))\n```"}
+    hexagram @{:doc "(hexagram radius [:r round])\n\n```example\n(hexagram 50 :r (osc t 2 20))\n```"}
     hot-pink @{:value [hsv 0.91666666666666663 0.98 1]}
     hsl @{:doc "(hsl hue saturation lightness)\n\nReturns a color."}
     hsv @{:doc "(hsv hue saturation value)\n\nReturns a color."}
@@ -229,7 +229,7 @@
     not-equal @{}
     not= @{}
     occlusion @{:doc "(occlusion [:steps step-count] [:dist dist] [:dir dir] [:hoist hoist])\n\nApproximate ambient occlusion by sampling the distance field at `:steps` positions\n(default 8) linearly spaced from 0 to `:dist` (default `10`). The result will range\nfrom 1 (completely unoccluded) to 0 (fully occluded).\n\nBy default the occlusion samples will be taken along the surface normal of the point\nbeing shaded, but you can pass a custom `:dir` expression to change that. You can use\nthis to e.g. add jitter to the sample direction, which can help to improve the\nquality.\n\nOcclusion is somewhat expensive to calculate, so by default the result will\nbe hoisted, so that it's only calculated once per iteration (without you having to\nexplicitly `gl/def` the result). However, this means that the occlusion calculation\nwon't take into account local normal adjustments, so you might want to pass\n`:hoist false`."}
-    octagon @{:doc "(octagon radius [:r round])\n\nTODOC"}
+    octagon @{:doc "(octagon radius [:r round])\n\n```example\n(octagon 50 :r (osc t 2 20))\n```"}
     octahedron @{:doc "(octahedron radius)\n\nTODOC"}
     or @{}
     orange @{:value [hsv 0.083333333333333329 0.98 1]}
@@ -239,8 +239,8 @@
     outer-product @{}
     p @{:doc "The local point in 3D space. This is position of the current ray, with any transformations applied to it."
         :value [:var "p" :vec3]}
-    parallelogram @{:doc "(parallelogram size skew)\n\nReturns a 2D shape. `size.x` is the width of the top and bottom edges, and `size.y` \nis the height of the parellogram.\n\n```\ntest\n```\n\nfoo\n\n```example\n(parallelogram [30 40] 10)\n```\n\n`skew` is how far the pallorelogram leans in the `x` direction, so the total\nwidth of the prellogram is `(size.x + skew) * 2`. A `skew` of `0` gives the\nsame shape as `rect`."}
-    pentagon @{:doc "(pentagon radius [:r round])\n\nTODOC"}
+    parallelogram @{:doc "(parallelogram size skew)\n\nReturns a 2D shape. `size.x` is the width of the top and bottom edges, and `size.y` \nis the height of the parellogram.\n\n```example\n(parallelogram [40 50] (sin t * 50))\n```\n\n`skew` is how far the pallorelogram leans in the `x` direction, so the total\nwidth of the prellogram is `(size.x + skew) * 2`. A `skew` of `0` gives the\nsame shape as `rect`."}
+    pentagon @{:doc "(pentagon radius [:r round])\n\n```example\n(pentagon 50 :r (osc t 2 20))\n```"}
     perlin @{:doc "(perlin point)\n\nReturns perlin noise ranging from `-1` to `1`. The input `point` can be a vector of any dimension.\n\nUse `perlin+` to return noise in the range `0` to `1`."}
     perlin+ @{:doc "(perlin+ point)\n\nPerlin noise in the range `0` to `1`."}
     perspective-vector @{:doc "(perspective-vector fov)\n\nReturns a unit vector pointing in the `-z` direction for the\ngiven camera field-of-view (degrees)."}
@@ -280,7 +280,7 @@
     pi/8*6 @{:value 2.3561944901923448}
     pi/8*7 @{:value 2.748893571891069}
     pi/9 @{:value 0.3490658503988659}
-    pie @{:doc "(pie radius angle)\n\nTODOC"}
+    pie @{:doc "(pie radius angle)\n\nReturns a 2D shape, something like a pie slice or a pacman depending on `angle`.\n\n```example\n(pie 50 (osc t 5 tau))\n```"}
     pivot @{:doc "(pivot (operation subject & args) point)\n\nApply a transformation with a different pivot point. You can combine this with any\noperation, but it's probably most useful with `rotate` and `scale`.\n\nThis is a syntactic transformation, so it requires a particular kind of invocation.\nIt's designed to fit into a pipeline, immediately after the operation you want to apply:\n\n```\n# rotate around one corner\n(rect 30 | rotate t | pivot [30 30])\n```\n\nThis essentially rewrites its argument to:\n\n```\n(gl/let [$pivot [30 30]]\n  (rect 30 | move (- $pivot) | rotate t | move $pivot))\n```"
             :macro true}
     pow @{}
@@ -288,7 +288,7 @@
     purple @{:value [hsv 0.75 0.98 1]}
     q @{:doc "The local point in 2D space. This is the position being shaded, with any transformations applied."
         :value [:var "q" :vec2]}
-    quad-circle @{:doc "(quad-circle radius)\n\nReturns a 2D shape, an approximation of a circle out of quadratic bezier curves.\n\nIt's like a circle, but quaddier."}
+    quad-circle @{:doc "(quad-circle radius)\n\nReturns a 2D shape, an approximation of a circle out of quadratic bezier curves.\n\n```example\n(quad-circle 50)\n```\n\nIt's like a circle, but quaddier."}
     r2 @{:doc "A 2D shape with zero distance everywhere."
          :value {:fields {:distance [<2>
                                      literal
@@ -307,7 +307,7 @@
     ray @{:doc "The current ray being used to march and shade the current fragment. This always represents\nthe ray from the camera, even when raymarching for shadow casting.\n\nA ray has two components: an `origin` and a `dir`ection. `origin` is a point in the \nglobal coordinate space, and you can intuitively think of it as \"the location of the camera\"\nwhen you're using the default perspective camera (orthographic cameras shoot rays from different\norigins).\n\nThe direction is always normalized."
           :value [:var "ray" Ray]}
     recolor @{:doc "(recolor dest-shape source-shape)\n\nReplaces the color field on `dest-shape` with the color field on `source-shape`. Does not affect the distance field."}
-    rect @{:doc "(rect size [:r round])\n\nReturns a 2D shape, a rectangle with corners at `(- size)` and `size`. `size` will be coerced to a `vec2`.\n\nThink of `size` like the \"radius\" of the rect: a rect with `size.x = 50` will be `100` units wide."}
+    rect @{:doc "(rect size [:r radius])\n\nReturns a 2D shape, a rectangle with corners at `(- size)` and `size`. `size` will be coerced to a `vec2`.\n\nThink of `size` like the \"radius\" of the rect: a rect with `size.x = 50` will be `100` units wide.\n\n`radii` can be a single radius or a `vec4` of `[top-left` `top-right` `bottom-right` `bottom-left]`.\n\n```example\n(union\n  (rect 30 | move [-40 40])\n  (rect 30 :r 10 | move [40 40])\n  (rect 30 :r [0 10 20 30] | move [-40 -40])\n  (rect 30 :r [0 30 0 30] | move [40 -40]))\n```"}
     red @{:value [hsv 0 0.98 1]}
     reflect @{}
     refract @{}
@@ -316,8 +316,8 @@
     resolution @{:doc "The size, in physical pixels, of the canvas being rendered. In quad view, this will be smaller than the physical canvas."
                  :value [:var "resolution" :vec2]}
     revolve @{:doc "(revolve shape axis &opt offset)\n\nRevolve a 2D shape around the given `axis` to return a 3D shape.\n\nYou can optionally supply an `offset` to move the shape away from the origin first (the default is `0`)."}
-    rhombus @{:doc "(rhombus size)\n\nReturns a 2D shape. It rhombs with a kite."}
-    ring @{:doc "(ring radius angle thickness)\n\nTODOC"}
+    rhombus @{:doc "(rhombus size)\n\nReturns a 2D shape. It rhombs with a kite.\n\n```example\n(rhombus [50 (osc t 3 20 80)])\n```"}
+    ring @{:doc "(ring radius angle thickness)\n\n```example\n(ring 60 (osc t 5 tau) (osc t 2 5 20))\n```"}
     rotate @{:doc "(rotate target & args)\n\nRotate a shape or a vector. Positive angles are counter-clockwise rotations.\n\nIn 3D, the arguments should be pairs of `axis angle`. For example:\n\n```\n(rotate (box 50) x 0.1 y 0.2)\n```\n\nAll `axis` arguments must be unit vectors. There are built-in axis variables `x`/`+y`/`-z`\nfor the cardinal directions, and these produce optimized rotation matrices. But you can\nrotate around an arbitrary axis:\n\n```\n(rotate (box 50) (normalize [1 1 1]) t)\n```\n\nThe order of the arguments is significant, as rotations are not commutative.\n\nIn 2D, the arguments should just be angles; no axis is allowed."}
     rotation-around @{:doc "(rotation-around axis angle)\n\nA rotation matrix about an arbitrary axis. More expensive to compute than the axis-aligned rotation matrices."}
     rotation-matrix @{:doc "(rotation-matrix & args)\n\nReturn a rotation matrix. Takes the same arguments as `rotate`, minus the initial thing to rotate."}
@@ -326,7 +326,6 @@
     rotation-z @{:doc "(rotation-z angle)\n\nA rotation matrix about the Z axis."}
     round @{}
     round-even @{}
-    round-rect @{:doc "(round-rect size radii)\n\nLike `rect`, but rounded. `radii` can be a single radius or a `vec4` of `[top-left top-right bottom-right bottom-left]`.`"}
     scale @{:doc "(scale shape factor)\n\nScale a shape. If the scale factor is a float, this will produce an exact\ndistance field. If it's a vector, space will be distorted by the smallest\ncomponent of the vector."}
     shape/2d @{:doc "(shape/2d distance)\n\nReturns a new 2D shape with the given distance field."}
     shape/3d @{:doc "(shape/3d distance)\n\nReturns a new 3D shape with the given distance field."}
@@ -357,7 +356,7 @@
     sphere @{:doc "(sphere radius)\n\nReturns a 3D shape."}
     sqrt @{}
     ss @{:doc "(ss x &opt from-range to-range)\n\nThis is a wrapper around `smoothstep` with a different argument order, which also\nallows the input edges to occur in descending order.\n\nThere are several overloads:\n\n```\n(ss x)\n# becomes\n(smoothstep 0 1 x)\n```\n\n```\n(ss x [from-start from-end])\n# becomes\n(if (< from-start from-end)\n  (smoothstep from-start from-end x)\n  (1 - smoothstep from-end from-start x))\n``` \n\n```\n(ss x from [to-start to-end])\n# becomes\n(ss x from * (- to-end to-start) + to-start)\n```"}
-    star @{:doc "(star outer-radius inner-radius [:r round])\n\nTODOC"}
+    star @{:doc "(star outer-radius inner-radius [:r round])\n\n```example\n(star 50 30 :r (osc t 2 20))\n```"}
     step @{}
     subject @{:doc "A variable that determines what Bauble will render.\n\nYou can set this variable explicitly to change your focus, or use\nthe `view` macro to change your focus. If you don't set a subject,\nBauble will render the last shape in your script."
               :ref @[nil]}
@@ -409,11 +408,11 @@
             :macro true}
     tiled* @{:doc "(tiled* size get-shape [:limit limit] [:oversample oversample] [:sample-from sample-from] [:sample-to sample-to])\n\nLike `tile`, but the shape is a result of invoking `get-shape` with one argument,\na GLSL variable referring to the current index in space. Unlike `tile`, `size` must\nbe a vector that determines the dimension of the index variable.\n\n```\n(tiled* [10 10] (fn [$i] (circle 5 | color (hsv (hash $i) 0.5 1))))\n```\n\nYou can use this to generate different shapes or colors at every sampled tile. The index\nwill be a vector with integral components that represents  being considered. So for\nexample, in 3D, the shape at the origin has an index of `[0 0 0]` and the shape above\nit has an index of `[0 1 0]`."}
     torus @{:doc "(torus axis radius thickness)\n\nReturns a 3D shape, a torus around the provided `axis`."}
-    trapezoid @{:doc "(trapezoid bottom-width top-width height [:r round])\n\nTODOC"}
-    triangle @{:doc "(triangle a b c)\n\nTODOC"}
+    trapezoid @{:doc "(trapezoid bottom-width top-width height [:r round])\n\nReturns a 2D shape.\n\n```example\n(trapezoid (osc t 3 20 50) (oss t 2 50 20) 50)\n```"}
+    triangle-points @{:doc "(triangle-points a b c)\n\nTODOC"}
     trunc @{}
     uint @{}
-    uneven-capsule @{:doc "(uneven-capsule bottom-radius top-radius height)\n\nTODOC"}
+    uneven-capsule @{:doc "(uneven-capsule bottom-radius top-radius height)\n\n```example\n(uneven-capsule 30 (osc t 2 20 40) (osc t 3 20 50))\n```"}
     union @{:doc "(union & shapes [:r r] [:rs rs] [:distance distance] [:color color])\n\nUnion two or more shapes together. Pass `:r` or `:rs` to produce a smooth union.\n\n`:r` and `:rs` combine color fields differently. `:rs` is a symmetric union, where\nthe color field is based on the nearest shape, regardless of the order that they're\nspecified. `:r` is an asymmetric union where the order matters, and later shapes will\nbe considered \"on top of\" previous shapes.\n\nThese produce identical colors on the surface, but different interior color fields.\nIt's easy to see the difference in 2D, while in 3D the difference only matters if\nyou're cutting into a shape, or transplanting the color field from one shape to another.\n\nYou can also pass `:distance` or `:color` to specify a different smoothing radius for\nthe separate fields. For example, to produce a smooth symmetric color union with a sharp\ndistance field, pass `(union :rs 10 :distance 0 ;shapes)`."}
     vec @{}
     vec2 @{}

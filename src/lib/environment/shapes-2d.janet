@@ -6,28 +6,48 @@
   (shape/2d (jlsl/coerce-expr 0)))
 
 (defshape/2d circle [:float radius]
-  "Returns a 2D shape."
+  ````
+  Returns a 2D shape.
+
+  ```example
+  (circle 50)
+  ```
+  ````
   (return (length q - radius)))
 
-# TODO: we should make an overload that lets you
-# pass a vec4 for the round arguments
-(defshape/2d rect [:vec2 !size]
-  ```
-  Returns a 2D shape, a rectangle with corners at `(- size)` and `size`. `size` will be coerced to a `vec2`.
-
-  Think of `size` like the "radius" of the rect: a rect with `size.x = 50` will be `100` units wide.
-  ```
+(defshape/2d- symmetric-rect [:vec2 !size] ""
   (var d (abs q - size))
   (return (max d 0 | length + min (max d) 0)))
 
-(defshape/2d round-rect [:vec2 size :vec4 radii]
-  ```
-  Like `rect`, but rounded. `radii` can be a single radius or a `vec4` of `[top-left top-right bottom-right bottom-left]`.`
-  ```
+(defshape/2d- asymmetric-rect [:vec2 size :vec4 radii] ""
   (var r (if (< q.x 0) radii.xw radii.yz))
   (var r (if (> q.y 0) r.x r.y))
   (var q (abs q - size + r))
   (return (min (max q) 0 + length (max q 0) - r)))
+
+(defnamed rect [size :?r:radius]
+  ````
+  Returns a 2D shape, a rectangle with corners at `(- size)` and `size`. `size` will be coerced to a `vec2`.
+
+  Think of `size` like the "radius" of the rect: a rect with `size.x = 50` will be `100` units wide.
+
+  `radii` can be a single radius or a `vec4` of `[top-left` `top-right` `bottom-right` `bottom-left]`.
+
+  ```example
+  (union
+    (rect 30 | move [-40 40])
+    (rect 30 :r 10 | move [40 40])
+    (rect 30 :r [0 10 20 30] | move [-40 -40])
+    (rect 30 :r [0 30 0 30] | move [40 -40]))
+  ```
+  ````
+  (if radius
+    (let [radius (jlsl/coerce-expr radius)]
+      (case (jlsl/expr/type radius)
+        jlsl/type/float (symmetric-rect size :r radius)
+        jlsl/type/vec4 (asymmetric-rect size radius)
+        (error "type mismatch: expected float or vec3")))
+    (symmetric-rect size)))
 
 (defhelper- :float ndot [:vec2 a :vec2 b]
   (return ((* a.x b.x) - (* a.y b.y))))
@@ -35,7 +55,13 @@
 # TODO: rounding this is tricky because we need to subtract
 # r from the short side and 2r from the long side
 (defshape/2d rhombus [:vec2 size]
-  "Returns a 2D shape. It rhombs with a kite."
+  ````
+  Returns a 2D shape. It rhombs with a kite.
+
+  ```example
+  (rhombus [50 (osc t 3 20 80)])
+  ```
+  ````
   (var q (abs q))
   (var h (size - (2 * q) | ndot size / (dot size size) | clamp -1 1))
   (var d (q - (0.5 * size * [(1 - h) (1 + h)]) | length))
@@ -48,14 +74,8 @@
   Returns a 2D shape. `size.x` is the width of the top and bottom edges, and `size.y` 
   is the height of the parellogram.
 
-  ```
-  test
-  ```
-
-  foo
-
   ```example
-  (parallelogram [30 40] 10)
+  (parallelogram [40 50] (sin t * 50))
   ```
   
   `skew` is how far the pallorelogram leans in the `x` direction, so the total
@@ -75,11 +95,15 @@
   (return (sqrt d.x * sign d.y * -1)))
 
 (defshape/2d quad-circle [:float radius]
+  ````
+  Returns a 2D shape, an approximation of a circle made out of quadratic bezier curves.
+
+  ```example
+  (quad-circle 50)
   ```
-  Returns a 2D shape, an approximation of a circle out of quadratic bezier curves.
 
   It's like a circle, but quaddier.
-  ```
+  ````
   (var q (abs q / radius))
   (if (> q.y q.x)
     (set q q.yx))
@@ -100,6 +124,7 @@
   (var w ([(- t) t] + 0.75 - (t * t) - q))
   (return (radius * length w * sign (a * a * 0.5 + b - 1.5))))
 
+# TODO: this should maybe just be a "line cap" option?
 (defshape/2d oriented-rect [:vec2 start :vec2 end :float width]
   ```
   TODOC
@@ -121,9 +146,13 @@
   (return (length (q-start - (end-start * h)) - (width * 0.5))))
 
 (defshape/2d trapezoid [:float !bottom-width :float !top-width :float !height]
+  ````
+  Returns a 2D shape.
+
+  ```example
+  (trapezoid (osc t 3 20 50) (oss t 2 50 20) 50)
   ```
-  TODOC
-  ```
+  ````
   (var k1 [top-width height])
   (var k2 [(top-width - bottom-width) (2 * height)])
   (var q [(abs q.x) q.y])
@@ -157,7 +186,7 @@
   (return (sqrt d * sign s)))
 
 # TODO: I *think* we can round this, maybe?
-(defshape/2d triangle [:vec2 a :vec2 b :vec2 c]
+(defshape/2d triangle-points [:vec2 a :vec2 b :vec2 c]
   ```
   TODOC
   ```
@@ -178,9 +207,11 @@
   (return (* -1 (sqrt d.x) (sign d.y))))
 
 (defshape/2d uneven-capsule [:float bottom-radius :float top-radius :float height]
+  ````
+  ```example
+  (uneven-capsule 30 (osc t 2 20 40) (osc t 3 20 50))
   ```
-  TODOC
-  ```
+  ````
   (var q [(abs q.x) q.y])
   (var b (bottom-radius - top-radius / height))
   (var a (sqrt (1 - (b * b))))
@@ -192,9 +223,11 @@
   (return (dot q [a b] - bottom-radius)))
 
 (defshape/2d pentagon [:float !radius]
+  ````
+  ```example
+  (pentagon 50 :r (osc t 2 20))
   ```
-  TODOC
-  ```
+  ````
   (def angle (math/pi / 5))
   (def k [(cos angle) (sin angle) (tan angle)])
   (var q [(abs q.x) (- q.y)])
@@ -204,9 +237,11 @@
   (return (length q * sign q.y)))
 
 (defshape/2d hexagon [:float !radius]
+  ````
+  ```example
+  (hexagon 50 :r (osc t 2 20))
   ```
-  TODOC
-  ```
+  ````
   (def angle (math/pi / 6))
   (def k [(- (cos angle)) (sin angle) (tan angle)])
   (var q (abs q))
@@ -215,9 +250,11 @@
   (return (length q * sign q.y)))
 
 (defshape/2d octagon [:float !radius]
+  ````
+  ```example
+  (octagon 50 :r (osc t 2 20))
   ```
-  TODOC
-  ```
+  ````
   (def angle (math/pi / 8))
   (def k [(- (cos angle)) (sin angle) (tan angle)])
   (var q (abs q))
@@ -227,9 +264,11 @@
   (return (length q * sign q.y)))
 
 (defshape/2d hexagram [:float !radius]
+  ````
+  ```example
+  (hexagram 50 :r (osc t 2 20))
   ```
-  TODOC
-  ```
+  ````
   (def angle (math/pi / 6))
   (def k [(- (sin angle)) (cos angle) (tan angle) (sqrt 3)])
   (var q (abs q))
@@ -240,9 +279,11 @@
   (return (length q * sign q.y)))
 
 (defshape/2d star [:float !outer-radius :float !inner-radius]
+  ````
+  ```example
+  (star 50 30 :r (osc t 2 20))
   ```
-  TODOC
-  ```
+  ````
   (def angle (math/pi / 5))
   (def k1 [(cos angle) (- (sin angle))])
   (def k2 [(- k1.x) k1.y])
@@ -258,9 +299,14 @@
 
 # TODO: kinda tricky to round because it's centered at the origin
 (defshape/2d pie [:float radius :float angle]
+  ````
+  Returns a 2D shape, something like a pie slice or a pacman depending on `angle`.
+
+  ```example
+  (pie 50 (osc t 5 tau))
   ```
-  TODOC
-  ```
+  ````
+  (var angle (angle * 0.5))
   (var c [(sin angle) (cos angle)])
   (var q [(abs q.x) q.y])
   (var l (length q - radius))
@@ -270,9 +316,13 @@
 # TODO: in order to round this, we have to subtract from
 # radius but add to bottom
 (defshape/2d cut-disk [:float radius :float bottom]
+  ````
+  Returns a 2D shape.
+
+  ```example
+  (cut-disk 50 (sin t * 40))
   ```
-  TODOC
-  ```
+  ````
   (var w (sqrt (radius * radius - (bottom * bottom))))
   (var q [(abs q.x) q.y])
   (var s (max (bottom - radius * q.x * q.x + (w * w * (bottom + radius - (2 * q.y)))) (bottom * q.x - (w * q.y))))
@@ -281,9 +331,12 @@
   (return (length (q - [w bottom]))))
 
 (defshape/2d arc [:float radius :float angle :float thickness]
+  ````
+  ```example
+  (arc 60 (osc t 5 tau) (osc t 2 5 20))
   ```
-  TODOC
-  ```
+  ````
+  (var angle (angle * 0.5))
   (var sc [(sin angle) (cos angle)])
   (var q [(abs q.x) q.y])
   (return (if (> (sc.y * q.x) (sc.x * q.y))
@@ -291,10 +344,12 @@
     (abs (length q - radius)) - (thickness * 0.5))))
 
 (defshape/2d ring [:float radius :float angle :float thickness]
+  ````
+  ```example
+  (ring 60 (osc t 5 tau) (osc t 2 5 20))
   ```
-  TODOC
-  ```
-  (var q (rotate [(abs q.x) q.y] angle))
+  ````
+  (var q (rotate [(abs q.x) q.y] (angle * 0.5)))
   (return (max
     (abs (length q - radius) - (thickness * 0.5))
     (length [q.x (max 0 (abs (radius - q.y) - (thickness * 0.5)))] * sign q.x))))

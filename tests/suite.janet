@@ -141,8 +141,8 @@
     (box 40 | rotate x 0.3 y 0.5 | move [80 0 80])
     (box 40 | rotate (normalize [1 0 1]) 1 | move [-80 0 -80]))`
 
-  "round rect same" `(round-rect 80 20)`
-  "round rect different" `(round-rect [60 80] [10 20 30 40])`
+  "round rect same" `(rect 80 :r 20)`
+  "round rect different" `(rect [60 80] :r [10 20 30 40])`
 
   "lines and rects" `
   (union
@@ -159,7 +159,7 @@
   (union
     (equilateral-triangle 30 | move [-50 50])
     (isosceles-triangle [40 40] | move [50 50])
-    (triangle [-20 -5] [45 17] [-16 -77]))
+    (triangle-points [-20 -5] [45 17] [-16 -77]))
   `
 
   "gons and grams" `
@@ -172,7 +172,7 @@
   `
 
   "uneven capsule" `(uneven-capsule 39 32 37)`
-  "pie" `(union ;(seq [i :range [1 5]] (pie 30 (math/pi / i - 0.3) | move y (i * 40 - 100))))`
+  "pie" `(union ;(seq [i :range [1 5]] (pie 30 (tau / i - 0.6) | move y (i * 40 - 100))))`
   "cut disk" `
   (union
     (cut-disk 50 -40 | move y 60)
@@ -180,10 +180,10 @@
   `
   "arc and ring" `
   (union
-    (arc 60 2.3 10 | move [-30 0])
-    (ring 60 2.3 10 | move [0 0])
-    (arc 60 0.8 10 | move [30 -30])
-    (ring 60 0.8 10 | move [30 -60]))
+    (arc 60 tau/4*3 10 | move [-30 0])
+    (ring 60 tau/4*3 10 | move [0 0])
+    (arc 60 tau/4 10 | move [30 -30])
+    (ring 60 tau/4 10 | move [30 -60]))
   `
 
   "shell" `

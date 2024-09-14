@@ -79,9 +79,9 @@
   fields. If you want to refer to variables or expressions that are only available in color fields,
   pass a keyword as the first argument:
 
-  ```
-  (gl/let :color [banding (sin depth)]
-    (sphere 100 | blinn-phong [1 banding 0]))
+  ```example
+  (gl/let :color [banding (sin+ (10 * t + depth))]
+    (box 100 | blinn-phong [1 banding 0]))
   ```
   ````
   [bindings & body]
@@ -92,15 +92,15 @@
   Like `gl/let`, but instead of creating a new binding, it alters the value of an existing
   variable. You can use this to give new values to dynamic variables. For example:
 
-  ```
+  ```example
   # implement your own `move`
-  (gl/with [p (- p [0 50 0])] (sphere 50))
+  (gl/with [p (- p [0 (sin t * 50) 0])] (sphere 100))
   ```
 
   You can also use Bauble's underscore notation to fit this into a pipeline:
 
-  ```
-  (sphere 50 | gl/with [p (- p [0 50 0])] _)
+  ```example
+  (sphere 100 | gl/with [p (- p [0 (sin t * 50) 0])] _)
   ```
 
   You can -- if you really want -- use this to alter `P` or `Q` to not refer to the point in
@@ -110,7 +110,7 @@
   You can pass a keyword as the first argument to only change a particular field. This allows you
   to refer to variables that only exist in color expressions:
 
-  ```
+  ```example
   (gl/with :color [normal (normal + (perlin p * 0.1))]
     (sphere 100 | blinn-phong [1 0 0] | move [-50 0 0]))
   ```
@@ -194,10 +194,10 @@
   order to re-use an expensive value in multiple places, when that value only
   depends on values that are available at the beginning of shading.
 
-  ```
+  ```example
   (gl/def signal (perlin+ (p / 20)))
   (shape/3d (signal * 0.5)
-  | intersect (sphere 50)
+  | intersect (sphere 100)
   | color [signal (pow signal 2) 0])
   ```
 
@@ -206,10 +206,10 @@
   Note that since the signal is evaluated at the top-level, `p` will always be the
   same as `P`. Consider this example:
 
-  ```
+  ```example
   (gl/def signal (perlin+ (p / 20)))
   (shape/3d (signal * 0.5)
-  | intersect (sphere 50)
+  | intersect (sphere 100)
   | color [signal (pow signal 2) 0]
   | move x (sin t * 100)
   )
@@ -233,8 +233,8 @@
   ````
   A GLSL ternary conditional expression.
 
-  ```
-  (sphere 50
+  ```example
+  (sphere 100
   | color (gl/if (< normal.y 0) [1 0 0] [1 1 0]))
   ```
   ````

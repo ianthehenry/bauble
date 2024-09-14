@@ -129,7 +129,7 @@
       (string/format `https://github.com/ianthehenry/bauble/blob/%s/src/%s#L%d`
         commit-hash file line)))
     (printf ```<h%d class="help-entry" id="%s">`%s`%s</h2>``` (+ depth 2) name (or signature name)
-      (if source-link (string/format ` <a href="%s" class="source-link">view source</a>` source-link) ""))
+      (if source-link (string/format ` <a href="%s" class="source-link">source</a>` source-link) ""))
     (print)
 
     (print docstring)
@@ -188,32 +188,32 @@
       3D shapes
         8 values
       2D shapes
-        23 values
+        22 values
       Shape combinators
         7 values
+      Shape functions
+        4 values
       Lower-level shape stuff
-        16 values
+        14 values
     Transformations
       10 values
     Dynamic variables
       15 values
+    Bauble variables
+      7 values
     Shading
       23 values
     Repetition
       3 values
     Noise
       8 values
-    Camera
-      2 values
     GLSL helpers
       9 values
-    Helpers
-      26 values
+    Camera
+      2 values
     Rotation
       7 values
-    Hard to categorize
-      11 values
-    Settable variables
-      7 values
+    Uncategorized
+      35 values
   `))
 
