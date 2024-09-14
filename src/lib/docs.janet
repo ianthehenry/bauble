@@ -11,22 +11,24 @@
 (defn category-order [category]
   (case category
     :shapes 0
-      :2d 1
       :3d 0
+      :2d 1
       :combinators 2
-      :shape 3
+      :functions 3
+      :shape 4
     :transforms 1
     :dynvars 2
+    :variables 2.5
     :surfacing 3
     :repeat 4
     :noise 5
-    #:variables 0
     #:colors 0
     #:camera 0
-    #:gl 0
     #:rotation 0
     #:helpers 0
     #:unknown 0
+    :gl 99
+    :misc 200
     100
     #(errorf "unknown category %q" category)
     ))
@@ -52,33 +54,39 @@
     :repeat "Repetition"
     :noise "Noise"
     :transforms "Transformations"
-    :variables "Settable variables"
+    :variables "Bauble variables"
     :dynvars "Dynamic variables"
     :surfacing "Shading"
     :rotation "Rotation"
-    :helpers "Helpers"
-    :unknown "Hard to categorize"
+    :functions "Shape functions"
+    :misc "Uncategorized"
+    :unknown "TODO"
     (errorf "unnamed category %q" category)
     ))
 
 (defn categorize [name filename]
-  (cond
-    (= filename "lib/shape.janet") [:shapes :shape]
-    (nil? filename) [:unknown]
-    (string/has-prefix? "lib/environment/" filename)
-      (let [basename (slice filename (length "lib/environment/") (- (length filename) (length ".janet")))]
-        (case basename
-          "boolean" [:shapes :combinators]
-          "dimensions" [:shapes :combinators]
-          "operator-overloads" [:unknown]
-          "forward-declarations" [:unknown]
-          "rotate" [:transforms :rotate]
-          "prelude" [:helpers]
-          "general" [:helpers]
-          "shapes-2d" [:shapes :2d]
-          "shapes-3d" [:shapes :3d]
-          [(keyword basename)]))
-    [:unknown]))
+  (or
+    ('{map-distance [:shapes :functions]
+       map-color [:shapes :functions]
+       shape/2d [:shapes :functions]
+       shape/3d [:shapes :functions]} name)
+    (cond
+      (= filename "lib/shape.janet") [:shapes :shape]
+      (nil? filename) [:misc]
+      (string/has-prefix? "lib/environment/" filename)
+        (let [basename (slice filename (length "lib/environment/") (- (length filename) (length ".janet")))]
+          (case basename
+            "boolean" [:shapes :combinators]
+            "dimensions" [:shapes :combinators]
+            "operator-overloads" [:misc]
+            "forward-declarations" [:misc]
+            "rotate" [:transforms :rotate]
+            "prelude" [:misc]
+            "general" [:misc]
+            "shapes-2d" [:shapes :2d]
+            "shapes-3d" [:shapes :3d]
+            [(keyword basename)]))
+      [:misc])))
 
 # [name usage tag]
 # where tag=0 for value, tag=1 for functions, tag=2 for macros
@@ -120,7 +128,7 @@
     (def source-link (if-let [[file line col] source-map]
       (string/format `https://github.com/ianthehenry/bauble/blob/%s/src/%s#L%d`
         commit-hash file line)))
-    (printf ```<h%d id="%s">`%s`%s</h2>``` (+ depth 2) name (or signature name)
+    (printf ```<h%d class="help-entry" id="%s">`%s`%s</h2>``` (+ depth 2) name (or signature name)
       (if source-link (string/format ` <a href="%s" class="source-link">view source</a>` source-link) ""))
     (print)
 

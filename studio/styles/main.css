@@ -114,8 +114,17 @@ main > *+pre {
   margin-top: 1rem;
 }
 
-main .source-link {
-  font-size: initial;
+main .help-entry {
+  position: relative;
+  &::before {
+    content: "# ";
+    color: var(--comment);
+    position: absolute;
+    left: -1rem;
+  }
+ .source-link {
+    font-size: initial;
+  }
 }
 
 header {

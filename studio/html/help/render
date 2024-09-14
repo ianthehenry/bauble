@@ -7,4 +7,4 @@ cd $(dirname "$0")
   echo
   cd ../../../build
   janet -i docs.jimage $(git rev-parse HEAD)
-) | pandoc --from markdown --to html --wrap=preserve
+) | pandoc --from markdown-auto_identifiers --to html --wrap=preserve
