@@ -52,6 +52,13 @@
     (assertf (shape/is? subject) "%q is not a shape" subject)
     (shape/map subject (partial unhoist env)))))
 
+  (def dimension (if subject
+    (case (shape/type subject)
+      jlsl/type/vec2 2
+      jlsl/type/vec3 3
+      (error "BUG"))
+    0))
+
   (def aa-grid-size (jlsl/coerce-expr (int/u64 (or (get-var env 'aa-grid-size) 1))))
 
   (def program (sugar (program/new
@@ -60,6 +67,7 @@
     (uniform ,free-camera-target)
     (uniform ,free-camera-orbit)
     (uniform ,free-camera-zoom)
+    (uniform ,origin-2d)
     (uniform ,render-type)
     (uniform ,t)
     (uniform ,viewport)
@@ -99,6 +107,7 @@
 
   (def glsl (jlsl/render/program program))
 
-  [(animated? program)
-   (not (nil? camera))
-   (glsl/render-program glsl glsl-version)])
+  [(glsl/render-program glsl glsl-version)
+   dimension
+   (animated? program)
+   (not (nil? camera))])

@@ -15,8 +15,9 @@ static JanetFunction *janetfn_get_definitions = NULL;
 struct CompilationResult {
   bool is_error;
   string shader_source;
+  int dimension;
   bool is_animated;
-  bool has_camera;
+  bool has_custom_camera;
   string error;
   double eval_time_ms;
   double compile_time_ms;
@@ -26,9 +27,12 @@ CompilationResult compilation_error(string message) {
   return (CompilationResult) {
     .is_error = true,
     .shader_source = "",
+    .dimension = -1,
     .is_animated = false,
-    .has_camera = false,
+    .has_custom_camera = false,
     .error = message,
+    .eval_time_ms = 0.0,
+    .compile_time_ms = 0.0,
   };
 }
 
@@ -53,15 +57,17 @@ CompilationResult evaluate_script(string source) {
   bool compilation_success = call_fn(janetfn_compile_shape, 3, compile_shape_args, &compilation_result);
 
   double done_compiling_glsl = emscripten_get_now();
-  bool is_animated;
-  bool has_camera;
   const uint8_t *shader_source;
+  int dimension;
+  bool is_animated;
+  bool has_custom_camera;
   if (compilation_success) {
     if (janet_checktype(compilation_result, JANET_TUPLE)) {
       const Janet *tuple = janet_unwrap_tuple(compilation_result);
-      is_animated = janet_unwrap_boolean(tuple[0]);
-      has_camera = janet_unwrap_boolean(tuple[1]);
-      shader_source = janet_unwrap_string(tuple[2]);
+      shader_source = janet_unwrap_string(tuple[0]);
+      dimension = janet_unwrap_integer(tuple[1]);
+      is_animated = janet_unwrap_boolean(tuple[2]);
+      has_custom_camera = janet_unwrap_boolean(tuple[3]);
     } else if (janet_checktype(compilation_result, JANET_KEYWORD)) {
       return compilation_error("invalid value");
     } else {
@@ -75,8 +81,9 @@ CompilationResult evaluate_script(string source) {
   return (CompilationResult) {
    .is_error = false,
    .shader_source = string((const char *)shader_source),
+   .dimension = dimension,
    .is_animated = is_animated,
-   .has_camera = has_camera,
+   .has_custom_camera = has_custom_camera,
    .error = "",
    .eval_time_ms = (done_evaluating - start_time),
    .compile_time_ms = (done_compiling_glsl - done_evaluating)
@@ -118,8 +125,9 @@ EMSCRIPTEN_BINDINGS(module) {
   value_object<CompilationResult>("CompilationResult")
     .field("isError", &CompilationResult::is_error)
     .field("shaderSource", &CompilationResult::shader_source)
+    .field("dimension", &CompilationResult::dimension)
     .field("isAnimated", &CompilationResult::is_animated)
-    .field("hasCamera", &CompilationResult::has_camera)
+    .field("hasCustomCamera", &CompilationResult::has_custom_camera)
     .field("error", &CompilationResult::error)
     .field("evalTimeMs", &CompilationResult::eval_time_ms)
     .field("compileTimeMs", &CompilationResult::compile_time_ms)

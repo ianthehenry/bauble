@@ -660,7 +660,8 @@ img {
     (def before-eval (os/clock :monotonic))
     (def eval-result (eval-function program))
     (def after-eval-before-compile (os/clock :monotonic))
-    (def [animated? has-camera? shader-source] (compile-function ;(if (indexed? eval-result) eval-result [nil eval-result]) "330"))
+    (def [shader-source dimension animated? has-custom-camera?]
+      (compile-function ;(if (indexed? eval-result) eval-result [nil eval-result]) "330"))
     (def after-compile-before-render (os/clock :monotonic))
     (def image (render-image shader-source
       :resolution physical-resolution

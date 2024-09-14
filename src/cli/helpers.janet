@@ -72,6 +72,7 @@
   (set-uniform "free_camera_origin" :vec3 origin)
   (set-uniform "free_camera_orbit" :vec2 orbit)
   (set-uniform "free_camera_zoom" :float zoom)
+  (set-uniform "origin_2d" :vec2 [0 0])
   (set-uniform "camera_type" :int 0)
 
   (set-uniform "t" :float 0)

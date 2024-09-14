@@ -10,6 +10,8 @@
 (jlsl/jlsl/defdyn free-camera-orbit :vec2 "")
 (jlsl/jlsl/defdyn free-camera-zoom :float "")
 
+(jlsl/jlsl/defdyn origin-2d :vec2 "")
+
 # TODO: these should probably be somewhere else
 (def- MAX_STEPS 256:u)
 (def- MINIMUM_HIT_DISTANCE 0.1)
@@ -20,11 +22,11 @@
     (as-macro ,jlsl/jlsl/fn ,t ,(string name) ,;rest)))
 
 (defn make-sample-2d [nearest-distance <background-color> <default-color> <color-field>]
+  # 384 is a better approximation of a 45° fov at the default zoom level
+  (def base-zoom-distance 256)
   (jlsl/fn :vec3 sample []
-    # TODO: should vary by zoom amount
-    # 384 is a better approximation of a 45° fov at the default zoom level
-    (with [q (frag-coord * 256)
-           Q q
+    (with [Q (frag-coord * free-camera-zoom * base-zoom-distance + origin-2d)
+           q Q
            dist (nearest-distance)
            gradient (calculate-gradient (nearest-distance))]
 
@@ -59,10 +61,10 @@
 # TODO: okay, so, theoretically we have nearest-distance in the current environment already
 (defn make-sample-3d [nearest-distance <camera> <background-color> <default-color> <color-field>]
   (def march (make-march nearest-distance))
+  (def base-zoom-distance 512)
+  (def ortho-distance 1024)
 
   (jlsl/fn :vec3 sample []
-    (def base-zoom-distance 512)
-    (def ortho-distance 1024)
     (var ray* (Ray [0 0 0] [0 0 1]))
     (var ortho [ortho-distance (frag-coord.x * base-zoom-distance * free-camera-zoom) (frag-coord.y * base-zoom-distance * free-camera-zoom)])
     (case camera-type

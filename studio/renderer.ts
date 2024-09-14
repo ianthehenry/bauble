@@ -144,7 +144,9 @@ export default class Renderer {
   private drawSingleView() {
     const {gl, program} = this;
     const uCameraType = gl.getUniformLocation(program, "camera_type");
-    gl.uniform1i(uCameraType, this.state.freeCamera() ? CameraType.Free : CameraType.Custom);
+    const uOrigin2D = gl.getUniformLocation(program, "origin_2d");
+    gl.uniform1i(uCameraType, this.state.prefersFreeCamera() ? CameraType.Free : CameraType.Custom);
+    gl.uniform2fv(uOrigin2D, this.state.origin2D());
     const resolution = this.state.resolution();
     this.setViewport(0, 0, resolution.width, resolution.height);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -153,7 +155,9 @@ export default class Renderer {
   private drawQuadView() {
     const {gl, program} = this;
     const uCameraType = gl.getUniformLocation(program, "camera_type");
+    const uOrigin2D = gl.getUniformLocation(program, "origin_2d");
 
+    const origin = this.state.origin();
     const splitPoint = this.state.quadSplitPoint();
     const resolution = this.state.resolution();
     const minPanelSize = 64;
@@ -169,21 +173,25 @@ export default class Renderer {
 
     // bottom left: XY
     gl.uniform1i(uCameraType, CameraType.Front);
+    gl.uniform2fv(uOrigin2D, [origin[0], origin[1]]);
     this.setViewport(0, 0, leftPaneWidth, bottomPaneHeight);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
     // bottom right: ZY
     gl.uniform1i(uCameraType, CameraType.Right);
+    gl.uniform2fv(uOrigin2D, [origin[2], origin[1]]);
     this.setViewport(leftPaneWidth, 0, rightPaneWidth, bottomPaneHeight);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
     // top left: free camera
-    gl.uniform1i(uCameraType, this.state.freeCamera() ? CameraType.Free : CameraType.Custom);
+    gl.uniform1i(uCameraType, this.state.prefersFreeCamera() ? CameraType.Free : CameraType.Custom);
+    gl.uniform2fv(uOrigin2D, this.state.origin2D());
     this.setViewport(0, bottomPaneHeight, leftPaneWidth, topPaneHeight);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
     // top right: top-down
     gl.uniform1i(uCameraType, CameraType.Top);
+    gl.uniform2fv(uOrigin2D, [origin[0], origin[2]]);
     this.setViewport(leftPaneWidth, bottomPaneHeight, rightPaneWidth, topPaneHeight);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }

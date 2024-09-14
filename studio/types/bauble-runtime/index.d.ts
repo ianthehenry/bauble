@@ -4,8 +4,9 @@ declare module 'bauble-runtime' {
   export interface EvaluationResult {
     isError: boolean,
     shaderSource: string,
+    dimension: number,
     isAnimated: boolean,
-    hasCamera: boolean,
+    hasCustomCamera: boolean,
     error: string,
     evalTimeMs: number,
     compileTimeMs: number,
