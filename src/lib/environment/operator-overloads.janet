@@ -52,16 +52,19 @@
 Overloaded to work with tuples, arrays, and expressions.
 `
 (make-variadic jlsl/+ 0))
+
 (def - `(- & xs)
 
 Overloaded to work with tuples, arrays, and expressions.
 `
 (make-variadic jlsl/- 0))
+
 (def / `(/ & xs)
 
 Overloaded to work with tuples, arrays, and expressions.
 `
 (make-variadic jlsl// 1))
+
 (def * `(* & xs)
 
 Overloaded to work with tuples, arrays, and expressions.

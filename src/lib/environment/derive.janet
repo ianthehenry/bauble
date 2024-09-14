@@ -53,7 +53,10 @@
     (each [thunk source-map] *thunks*
       (eval thunk)
       (pat/match thunk
-        [(or 'var 'def) name &] (put (dyn name) :source-map source-map)
+        (or
+          [(or 'var 'def) name &]
+          ['upscope [(or 'var 'def) name &] &])
+         (put (dyn name) :source-map source-map)
         nil)))
   (def env (make-env thunk-env))
   env)

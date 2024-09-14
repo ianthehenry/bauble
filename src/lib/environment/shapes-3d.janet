@@ -1,6 +1,10 @@
 (use ./import)
 (use ./axis-helpers)
 
+(def r3
+  ```A 2D shape with zero distance everywhere.```
+  (shape/3d (jlsl/coerce-expr 0)))
+
 (defshape/3d sphere [:float radius]
   "Returns a 3D shape."
   (return (length p - radius)))

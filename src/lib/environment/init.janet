@@ -2,7 +2,8 @@
 
 (import ./prelude :prefix "" :export true)
 (import ./general :prefix "" :export true)
-(import ./rotate :prefix "" :export true)
+(import ./transforms :prefix "" :export true)
+(import ./rotation :prefix "" :export true)
 (import ./noise :prefix "" :export true)
 (import ../shape :prefix "shape/" :export true)
 (import ./shapes-2d :prefix "" :export true)
@@ -12,7 +13,6 @@
 (import ./surfacing :prefix "" :export true)
 (import ./camera :prefix "" :export true)
 (import ./repeat :prefix "" :export true)
-(import ./hash :prefix "" :export true)
 (import ./colors :prefix "" :export true)
 (import ./variables :prefix "" :export true)
 (import ../../jlsl/prelude :prefix "" :export true)

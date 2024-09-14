@@ -1,5 +1,5 @@
 (use ./import)
-(use ./rotate)
+(use ./rotation)
 
 (defhelper :vec3 perspective-vector [:float fov]
   ```

@@ -62,7 +62,9 @@ if (inWorker) {
         const placeholder = entry.target;
         intersectionObserver.unobserve(entry.target);
         const initialScript = placeholder.textContent ?? '';
-        placeholder.innerHTML = '';
+        const container = document.createElement('div');
+        container.classList.add('bauble-placeholder');
+        placeholder.replaceWith(container);
         renderSolid(() =>
           <Bauble
             definitions={definitions}
@@ -72,10 +74,10 @@ if (inWorker) {
             focusable={true}
             canSave={false}
             size={{width: 256, height: 256}}
-          />, placeholder);
+          />, container);
       }
     });
-    for (const placeholder of document.querySelectorAll('.bauble-placeholder')) {
+    for (const placeholder of document.querySelectorAll('pre.example')) {
       intersectionObserver.observe(placeholder);
     }
     break;

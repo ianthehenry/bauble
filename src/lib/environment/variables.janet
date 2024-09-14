@@ -10,6 +10,11 @@ Bauble will render the last shape in your script.
 ```
   nil))
 
+(defmacro view
+  "A shorthand for `(set subject _)` that fits nicely into pipe notation, e.g. `(sphere 50 | view)`."
+  [subject]
+  ~(set subject ,subject))
+
 (thunk ~(var aa-grid-size ```
 The size of the grid used to sample a single pixel. The total samples per pixel will
 be the square of this number. The default value is 1 (no anti-aliasing).

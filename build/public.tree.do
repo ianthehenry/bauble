@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-redo-ifchange main.css{,.checksum} all.js{,.checksum}
+redo-ifchange main.css{,.checksum} all.js{,.checksum} docs.jimage
 
 css=$(< main.css.checksum)
 js=$(< all.js.checksum)

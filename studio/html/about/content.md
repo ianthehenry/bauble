@@ -6,9 +6,10 @@ My name is [Ian Henry](https://ianthehenry.com), and Bauble is a little toy that
 
 If you're having fun playing with it, please get in touch, and let me know what you're using it for. It will inspire me to work more on it, and will help me to prioritize what comes next.
 
+- [Discord](https://discord.gg/NzR375gJH6)
 - <a href="mailto:ianthehenry@gmail.com?subject=Let's talk about Bauble">Email</a>
 - [Twitter](https://twitter.com/ianthehenry)
-- [GitHub](https://github.com/ianthehenry/bauble.studio/discussions)
+- [GitHub](https://github.com/ianthehenry/bauble/discussions)
 
 # Acknowledgments
 
@@ -22,12 +23,17 @@ And of course Bauble would be a lot less fun without [Janet](https://janet-lang.
 
 # Roadmap
 
-There's a lot that I'd like to add to Bauble when I find the time. In rough order of priority:
+There's a lot that I'd like to add to Bauble when I find the time. But time is scarce. In no particular order:
 
+- UI to export shapes as a triangle mesh, for 3D printing
+- Better mouse editing, including editing vectors using the quad view
+- Custom uniforms
+- Embeddable Bauble. Embauble. Embeddabauble
 - Export to [Shadertoy](https://www.shadertoy.com)
-- Documentation of any kind
-- 2D SDFs (and extrusion / revolution functions)
-- Export images, gifs, and videos
-- Change resolution
+- Integrate a built-in [Graphtoy](https://graphtoy.com/)
+- Record some video tutorials
+- Custom resolution and aspect ratio
+- Export high-res images
+- Export videos
 
 And probably a hundred more things that I'm forgetting right now.

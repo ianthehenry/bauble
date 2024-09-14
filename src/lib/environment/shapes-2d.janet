@@ -1,5 +1,9 @@
 (use ./import)
-(use ./rotate)
+(use ./transforms)
+
+(def r2
+  ```A 2D shape with zero distance everywhere.```
+  (shape/2d (jlsl/coerce-expr 0)))
 
 (defshape/2d circle [:float radius]
   "Returns a 2D shape."
@@ -40,12 +44,24 @@
 # TODO: rounding this is kinda complex because because skew
 # needs to change by some complex factor
 (defshape/2d parallelogram [:vec2 size :float skew]
+  ````
+  Returns a 2D shape. `size.x` is the width of the top and bottom edges, and `size.y` 
+  is the height of the parellogram.
+
   ```
-  Returns a 2D shape. `size.x` is the width of the top and bottom edges, and `size.y` is the height of the parellogram.
+  test
+  ```
+
+  foo
+
+  ```example
+  (parallelogram [30 40] 10)
+  ```
   
-  `skew` is how far the pallorelogram leans in the `x` direction, so the total width of the prellogram is `(size.x + skew) * 2`.
-  A `skew` of `0` gives the same shape as `rect`."
-  ```
+  `skew` is how far the pallorelogram leans in the `x` direction, so the total
+  width of the prellogram is `(size.x + skew) * 2`. A `skew` of `0` gives the
+  same shape as `rect`.
+  ````
   (var e [skew size.y])
   (var q (if (< q.y 0) (- q) q))
   (var w (q - e))

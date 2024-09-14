@@ -56,6 +56,9 @@ code {
 
 h1,h2,h3,h4,h5,h6 {
   font-weight: normal;
+  & > code {
+    white-space: pre-wrap;
+  }
 }
 
 body {
@@ -101,10 +104,18 @@ ul ul {
 main > *+h1,
 main > *+h2,
 main > *+h3,
+main > *+h4,
+main > *+h5,
+main > *+h6,
 main > *+p,
 main > *+ul,
-main > *+div {
-  margin-top: 1em;
+main > *+div,
+main > *+pre {
+  margin-top: 1rem;
+}
+
+main .source-link {
+  font-size: initial;
 }
 
 header {
@@ -156,14 +167,12 @@ header .image-link {
   align-items: center;
 }
 
-.bauble-placeholder {
+.bauble-placeholder, pre.example {
   height: 256px;
   border-radius: 2px;
   overflow: hidden;
-}
-
-.bauble-placeholder > .script {
-  display: none;
+  border: solid 2px var(--window);
+  box-sizing: border-box;
 }
 
 .bauble-placeholder .canvas-container, .bauble-placeholder .code-container {
@@ -202,9 +211,6 @@ header .image-link {
   opacity: 0;
   visibility: hidden;
   transition: visibility 0s 450ms, opacity 150ms 300ms;
-}
-.bauble-placeholder {
-  border: solid 2px var(--window);
 }
 
 body.main-page {

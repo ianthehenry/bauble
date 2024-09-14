@@ -28,19 +28,9 @@
   (tabseq [[k v] :pairs t :when (symbol? k) :when (table? v)]
     k (cleanse-environment-entry v)))
 
-(defn proto-flatten-to-root-aux [t result]
-  (unless (nil? (table/getproto t))
-    (proto-flatten-to-root-aux (table/getproto t) result)
-    (eachp [k v] t (put result k v))))
-
-(defn proto-flatten-to-root [t]
-  (def result @{})
-  (proto-flatten-to-root-aux t result)
-  result)
-
 (test (cleanse-environment (proto-flatten-to-root (derive/new)))
   @{% @{}
-    * @{:doc "(- & xs)\n\nOverloaded to work with tuples, arrays, and expressions."}
+    * @{:doc "(* & xs)\n\nOverloaded to work with tuples, arrays, and expressions."}
     *lights* @{:doc "The default lights used by surfacing functions like `blinn-phong`.\nYou can manipulate this using `setdyn` or `with-dyns` like any other\ndynamic variable, but there is a dedicated `with-lights` function to\nset it in a way that fits nicely into a pipeline."
                :dyn true
                :value :lights}
@@ -249,7 +239,7 @@
     outer-product @{}
     p @{:doc "The local point in 3D space. This is position of the current ray, with any transformations applied to it."
         :value [:var "p" :vec3]}
-    parallelogram @{:doc "(parallelogram size skew)\n\nReturns a 2D shape. `size.x` is the width of the top and bottom edges, and `size.y` is the height of the parellogram.\n\n`skew` is how far the pallorelogram leans in the `x` direction, so the total width of the prellogram is `(size.x + skew) * 2`.\nA `skew` of `0` gives the same shape as `rect`.\""}
+    parallelogram @{:doc "(parallelogram size skew)\n\nReturns a 2D shape. `size.x` is the width of the top and bottom edges, and `size.y` \nis the height of the parellogram.\n\n```\ntest\n```\n\nfoo\n\n```example\n(parallelogram [30 40] 10)\n```\n\n`skew` is how far the pallorelogram leans in the `x` direction, so the total\nwidth of the prellogram is `(size.x + skew) * 2`. A `skew` of `0` gives the\nsame shape as `rect`."}
     pentagon @{:doc "(pentagon radius [:r round])\n\nTODOC"}
     perlin @{:doc "(perlin point)\n\nReturns perlin noise ranging from `-1` to `1`. The input `point` can be a vector of any dimension.\n\nUse `perlin+` to return noise in the range `0` to `1`."}
     perlin+ @{:doc "(perlin+ point)\n\nPerlin noise in the range `0` to `1`."}
@@ -299,13 +289,15 @@
     q @{:doc "The local point in 2D space. This is the position being shaded, with any transformations applied."
         :value [:var "q" :vec2]}
     quad-circle @{:doc "(quad-circle radius)\n\nReturns a 2D shape, an approximation of a circle out of quadratic bezier curves.\n\nIt's like a circle, but quaddier."}
-    r2 @{:value {:fields {:distance [<2>
+    r2 @{:doc "A 2D shape with zero distance everywhere."
+         :value {:fields {:distance [<2>
                                      literal
                                      [<3> primitive [<4> float]]
                                      0]}
                  :tag <1>
                  :type [<3> vec [<4> float] 2]}}
-    r3 @{:value {:fields {:distance [<2>
+    r3 @{:doc "A 2D shape with zero distance everywhere."
+         :value {:fields {:distance [<2>
                                      literal
                                      [<3> primitive [<4> float]]
                                      0]}

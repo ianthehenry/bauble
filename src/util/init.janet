@@ -332,3 +332,13 @@
   (test-error (foo :x 1 :x 2) "foo: duplicate named argument :x")
   (test-error (foo :x 1 :y 2) "foo: unknown named argument :y")
   (test-error (foo :y 2) "foo: unknown named argument :y"))
+
+(defn proto-flatten-to-root-aux [t result]
+  (unless (nil? (table/getproto t))
+    (proto-flatten-to-root-aux (table/getproto t) result)
+    (eachp [k v] t (put result k v))))
+
+(defn proto-flatten-to-root [t]
+  (def result @{})
+  (proto-flatten-to-root-aux t result)
+  result)
