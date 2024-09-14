@@ -12,7 +12,7 @@
 (import ./boolean :prefix "" :export true)
 (import ./surfacing :prefix "" :export true)
 (import ./camera :prefix "" :export true)
-(import ./repeat :prefix "" :export true)
+(import ./repetition :prefix "" :export true)
 (import ./colors :prefix "" :export true)
 (import ./variables :prefix "" :export true)
 (import ../../jlsl/prelude :prefix "" :export true)

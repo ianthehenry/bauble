@@ -20,7 +20,7 @@
     :dynvars 2
     :variables 2.5
     :surfacing 3
-    :repeat 4
+    :repetition 4
     :noise 5
     #:colors 0
     #:camera 0
@@ -51,7 +51,7 @@
     :camera "Camera"
     :combinators "Shape combinators"
     :gl "GLSL helpers"
-    :repeat "Repetition"
+    :repetition "Repetition"
     :noise "Noise"
     :transforms "Transformations"
     :variables "Bauble variables"
