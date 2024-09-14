@@ -1,3 +1,4 @@
+(import pat)
 (use ./util)
 (import ./forward-declarations)
 (use ./deferred-evaluation)
@@ -49,7 +50,10 @@
     (assert (= thunks-realized (length *thunks*)) "ian the number of realized thunks changed from one environment creation to the next, which means you introduced some terrible bug that's causing the default environment to fall out of the module cache")
     (set thunks-realized (length *thunks*)))
   (with-env thunk-env
-    (each thunk *thunks*
-      (eval thunk)))
+    (each [thunk source-map] *thunks*
+      (eval thunk)
+      (pat/match thunk
+        [(or 'var 'def) name &] (put (dyn name) :source-map source-map)
+        nil)))
   (def env (make-env thunk-env))
   env)

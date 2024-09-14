@@ -16,5 +16,5 @@
 # gathered up into this array, and then evaluated every time we build a new user
 # environment.
 (def *thunks* @[])
-(defn thunk [expr]
-  (array/push *thunks* (macex expr)))
+(defmacro thunk [expr]
+  ~(,array/push ',*thunks* [(macex ,expr) [,(dyn :current-file) ;',(tuple/sourcemap expr)]]))
