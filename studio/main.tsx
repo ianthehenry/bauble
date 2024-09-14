@@ -48,19 +48,18 @@ if (inWorker) {
   });
 
   const wasmBox = await newMailbox(WhichWorker.Wasm);
-  const renderBox = await newMailbox(WhichWorker.Render);
-
   const definitions = await wasmBox.send({tag: 'definitions'}) as Array<Definition>;
 
   switch (window.location.pathname) {
   case '/help/': {
-    const intersectionObserver = new IntersectionObserver((entries) => {
+    const intersectionObserver = new IntersectionObserver(async (entries) => {
       for (const entry of entries) {
         if (!entry.isIntersecting) {
           continue;
         }
         const placeholder = entry.target;
         intersectionObserver.unobserve(entry.target);
+        const renderBox = await newMailbox(WhichWorker.Render);
         const initialScript = placeholder.textContent ?? '';
         const container = document.createElement('div');
         container.classList.add('bauble-placeholder');
@@ -84,6 +83,7 @@ if (inWorker) {
   }
   case '/': {
     const initialScript = Storage.getScript() ?? await (wasmBox.send({tag: 'read-file', 'path': 'examples/intro.janet'}) as Promise<string>);
+    const renderBox = await newMailbox(WhichWorker.Render);
     renderSolid(() => <Bauble
       definitions={definitions}
       wasmBox={wasmBox}
