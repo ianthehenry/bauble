@@ -212,8 +212,8 @@
     Camera
       2 values
     Rotation
-      7 values
+      6 values
     Uncategorized
-      35 values
+      36 values
   `))
 

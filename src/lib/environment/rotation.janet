@@ -27,13 +27,6 @@
     (- s) c 0
     0 0 1)))
 
-(defhelper :mat3 cross-matrix [:vec3 vec]
-  "Returns the matrix such that `(* (cross-matrix vec1) vec2)` = `(cross vec1 vec2)`."
-  (return (mat3
-    0 vec.z (- vec.y)
-    (- vec.z) 0 vec.x
-    vec.y (- vec.x) 0)))
-
 (defhelper :mat3 rotation-around [:vec3 axis :float angle]
   "A rotation matrix about an arbitrary axis. More expensive to compute than the axis-aligned rotation matrices."
   (return (+

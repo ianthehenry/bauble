@@ -67,3 +67,10 @@
     (jlsl/do "map-color"
       (var dist expr)
       (f dist)))))
+
+(defhelper :mat3 cross-matrix [:vec3 vec]
+  "Returns the matrix such that `(* (cross-matrix vec1) vec2)` = `(cross vec1 vec2)`."
+  (return (mat3
+    0 vec.z (- vec.y)
+    (- vec.z) 0 vec.x
+    vec.y (- vec.x) 0)))
