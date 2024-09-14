@@ -49,9 +49,15 @@
   (return (max d 0 | length + min (max d) 0)))
 
 (defshape/3d box-frame [:vec3 !size :float !thickness]
-  ```
+  ````
   Returns a 3D shape, the outline of a box.
+
+  ```example
+  (union
+    (box-frame 100 5 :r (osc t 3 5))
+    (box-frame [(osc t 4 30 100) (osc t 5 30 100) (oss t 6 30 100)] 1))
   ```
+  ````
   (var p (abs p - size))
   (var q (abs (p + thickness) - thickness))
   (return (min (min
@@ -60,16 +66,24 @@
     ((max [q.x q.y p.z] 0 | length) + (min (max q.x (max q.y p.z)) 0)))))
 
 (deforiented torus [:float radius :float thickness]
-  ```
+  ````
   Returns a 3D shape, a torus around the provided `axis`.
+
+  ```example
+  (torus z 100 10)
   ```
+  ````
   (return (length [(length other-axes - radius) this-axis] - thickness)))
 
 # TODO: pretty complicated to round correctly
 (deforiented cone [:float radius :float height]
+  ````
+  Returns a 3D shape. The `height` is the extent in only a single direction.
+
+  ```example
+  (cone y 50 (sin t * 150))
   ```
-  TODOC
-  ```
+  ````
   (var q [radius (- height)])
   (var w [(length other-axes) (this-axis - height)])
   (var a (w - (q * (dot w q / dot q | clamp 0 1))))
@@ -82,9 +96,13 @@
 # TODO: subtracting from the radius does *something*, but it's not what
 # i would expect
 (defshape/3d octahedron [:float radius]
+  ````
+  Returns a 3D shape.
+
+  ```example
+  (octahedron 100 | rotate x t)
   ```
-  TODOC
-  ```
+  ````
   (var p (abs p))
   (var m (p.x + p.y + p.z - radius))
 

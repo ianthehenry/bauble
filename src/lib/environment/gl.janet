@@ -80,7 +80,7 @@
   pass a keyword as the first argument:
 
   ```example
-  (gl/let :color [banding (sin+ (10 * t + depth))]
+  (gl/let :color [banding (dist * 10)]
     (box 100 | blinn-phong [1 banding 0]))
   ```
   ````
@@ -112,7 +112,7 @@
 
   ```example
   (gl/with :color [normal (normal + (perlin p * 0.1))]
-    (ball 100 | blinn-phong [1 0 0] | move [-50 0 0]))
+    (ball 100 | blinn-phong [1 0 0]))
   ```
   ````
   [bindings & body]
@@ -122,12 +122,12 @@
   ````
   Execute a series of GLSL statements and return the final expression.
 
-  ```
-  (gl/do "optional-label"
+  ```example
+  (ball 100 | color (gl/do "optional-label"
     (var c [1 0 1])
     (for (var i 0:u) (< i 10:u) (++ i)
       (+= c.g 0.01))
-    c)
+    c))
   ```
 
   The body of this macro is not regular Janet code, but a special DSL

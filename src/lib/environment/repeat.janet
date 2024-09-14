@@ -129,7 +129,14 @@
 
   If you're repeating a shape that is not symmetric, you can use `:oversample true` to evaluate
   multiple instances at each pass, essentially considering the distance not only to this
-  tile, but also to neighboring tiles.
+  tile, but also to neighboring tiles. Compare these two distance fields:
+
+  ```example
+  (rect 30 | rotate 0.3 | tile [80 80] :oversample false)
+  ```
+  ```example
+  (rect 30 | rotate 0.3 | tile [80 80] :oversample true)
+  ```
 
   The default oversampling is `:sample-from 0` `:sample-to 1`, which means looking at one adjacent
   tile, asymmetrically based on the location of the point (so when evaluating a point near
@@ -141,7 +148,7 @@
   This can be useful when raymarching a 3D space where each tile is quite different, but note
   that it's very costly to increase these values. If you're tiling a 3D shape in all directions,
   the default `:oversample` parameters will do 8 distance field evaluations;
-  `:sample-from [-1 -1 -1]` `:sample-to [1 1 1]` will do 27.
+  `:sample-from -1` `:sample-to 1` will do 27.
   ````
   (def $index (jlsl/variable/new "tile-index" (shape/type shape)))
   (tile-aux shape $index size limit oversample sample-from sample-to))
@@ -153,7 +160,9 @@
   be a vector that determines the dimension of the index variable.
 
   ```example
-  (tiled* [10 10] (fn [$i] (circle 5 | color (hsv (hash $i) 0.5 1))))
+  (tiled* [10 10] (fn [$i] 
+    (circle 5 
+    | color (hsv (hash $i) 0.5 1))))
   ```
 
   You can use this to generate different shapes or colors at every sampled tile. The index
@@ -173,8 +182,10 @@
   a repeated shape where each instance of the shape varies, and it's
   written in a way that makes it conveniently fit into a pipeline:
 
-  ```
-  (circle 5 | color (hsv (hash $i) 0.5 1) | tiled $i [10 10])
+  ```example
+  (circle 5 
+  | color (hsv (hash $i) 0.5 1) 
+  | tiled $i [10 10])
   ```
   ````
   [shape $i & args]

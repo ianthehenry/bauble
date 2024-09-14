@@ -299,7 +299,11 @@ set it in a way that fits nicely into a pipeline.
   The argument order makes it easy to stick this in a pipeline. For example:
 
   ```example
-  (ball 50 | blinn-phong [1 0 0] | with-lights light1 light2)
+  (ball 50
+  | blinn-phong [1 0 0]
+  | with-lights
+    (light/point 0.5 [100 100 0])
+    (light/ambient 0.5))
   ```
   ````
   [shape & lights]
