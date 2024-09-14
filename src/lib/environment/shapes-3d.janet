@@ -5,9 +5,39 @@
   ```A 2D shape with zero distance everywhere.```
   (shape/3d (jlsl/coerce-expr 0)))
 
-(defshape/3d sphere [:float radius]
-  "Returns a 3D shape."
+(defshape/3d- sphere [:float radius] ""
   (return (length p - radius)))
+
+(defshape/3d- ellipsoid [:vec3 size] ""
+  (var k0 (length (p / size)))
+  (var k1 (length (p / (size * size))))
+  (return (k0 * (k0 - 1) / k1)))
+
+(defn ball
+  ````
+  Returns a 3D shape, which is either a sphere or an ellipsoid, depending on the type of `size`.
+
+  ```example
+  (ball 100)
+  ```
+
+  ```example
+  (ball [50 80 120])
+  ```
+
+  Ellipsoids do not have correct distance fields. Their distance field is only a bound, and
+  it has strange isosurfaces that can make it combine with other shapes oddly:
+
+  ```example
+  (ball [30 50 80] | slice y)
+  ```
+  ````
+  [size]
+  (def size (jlsl/coerce-expr size))
+  (case (jlsl/expr/type size)
+    jlsl/type/float (sphere size)
+    jlsl/type/vec3 (ellipsoid size)
+    (error "unknown overload: ball expects a float or vec3")))
 
 (defshape/3d box [:vec3 !size]
   ```
@@ -28,19 +58,6 @@
     ((max [p.x q.y q.z] 0 | length) + (min (max p.x (max q.y q.z)) 0))
     ((max [q.x p.y q.z] 0 | length) + (min (max q.x (max p.y q.z)) 0)))
     ((max [q.x q.y p.z] 0 | length) + (min (max q.x (max q.y p.z)) 0)))))
-
-(defshape/3d ellipsoid [:vec3 size]
-  ```
-  Returns a 3D shape **with an incorrect distance field**.
-
-  The distance is a bound.
-
-  This means that some operations, like a smooth union, will not behave
-  correctly on ellipsoids. Soft shadows will also appear too soft.
-  ```
-  (var k0 (length (p / size)))
-  (var k1 (length (p / (size * size))))
-  (return (k0 * (k0 - 1) / k1)))
 
 (deforiented torus [:float radius :float thickness]
   ```

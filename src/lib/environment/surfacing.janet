@@ -298,8 +298,8 @@ set it in a way that fits nicely into a pipeline.
 
   The argument order makes it easy to stick this in a pipeline. For example:
 
-  ```
-  (sphere 50 | blinn-phong [1 0 0] | with-lights light1 light2)
+  ```example
+  (ball 50 | blinn-phong [1 0 0] | with-lights light1 light2)
   ```
   ````
   [shape & lights]

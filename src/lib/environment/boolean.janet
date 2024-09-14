@@ -228,10 +228,10 @@
 
   ```
   # 50% box, 50% sphere
-  (box 50 | morph (sphere 50))
+  (box 50 | morph (ball 50))
 
   # 75% box, 25% sphere
-  (box 50 | morph 0.25 (sphere 50))
+  (box 50 | morph 0.25 (ball 50))
   ```
 
   Concretely this means that it returns a new shape whose individual fields
@@ -241,7 +241,7 @@
 
   ```
   # distance is a 50% blend, but the color is 90% red
-  (box 50 | color [1 0 0] | morph :color 0.1 (sphere 50 | color [0 1 0]))
+  (box 50 | color [1 0 0] | morph :color 0.1 (ball 50 | color [0 1 0]))
   ```
   ````
   (def field-coefficients @{})

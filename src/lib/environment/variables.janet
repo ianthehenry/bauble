@@ -11,7 +11,7 @@ Bauble will render the last shape in your script.
   nil))
 
 (defmacro view
-  "A shorthand for `(set subject _)` that fits nicely into pipe notation, e.g. `(sphere 50 | view)`."
+  "A shorthand for `(set subject _)` that fits nicely into pipe notation, e.g. `(ball 50 | view)`."
   [subject]
   ~(set subject ,subject))
 

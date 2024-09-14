@@ -16,7 +16,7 @@
     (errorf "suffix not found in %s" str)))
 
 (def test-cases @{
-  "morph" `(morph (box 100) (sphere 100) 0.5)`
+  "morph" `(morph (box 100) (ball 100) 0.5)`
 
   "wiggler" `
   (torus z 60 30
@@ -29,7 +29,7 @@
 
   # TODO: restore once we have radial symmetry again
   # "balloon" [ortho-z `
-  # (ellipsoid [100 100 50]
+  # (ball [100 100 50]
   # | union :r 50 (cylinder :y 25 50 | move [0 -100 0])
   # | scale :y (ss p.y -100 100 1 0.8)
   # | radial :y 20 0
@@ -37,16 +37,16 @@
   # | fresnel 1)
   # `]
 
-  "spatial noise" `(sphere (perlin (p * 0.05) * 10 + 100) | slow 0.9)`
-  "spatial noise extreme" `(sphere (perlin (p * 0.05) * 30 + 80) | slow 0.5)`
+  "spatial noise" `(ball (perlin (p * 0.05) * 10 + 100) | slow 0.9)`
+  "spatial noise extreme" `(ball (perlin (p * 0.05) * 30 + 80) | slow 0.5)`
 
   # TODO: restore this op
-  #"onion" `(sphere 100 | onion 5 | intersect (half-space :-z))`
+  #"onion" `(ball 100 | onion 5 | intersect (half-space :-z))`
   "cylinder" `(box 50 | subtract (cylinder :z 30 100))`
-  "rotations" `(subtract :r 30 (box 50 | rotate y tau/8 z tau/8) (sphere 50 | move x 50))`
+  "rotations" `(subtract :r 30 (box 50 | rotate y tau/8 z tau/8) (ball 50 | move x 50))`
   # TODO: rounded cone
   # "cone rounded" `(cone z 50 100 :r 10)`
-  #"line" `(union :r 50 (line [-50 0 0] [50 0 0] 10) (sphere 50 | move :x 100 | mirror :x))`
+  #"line" `(union :r 50 (line [-50 0 0] [50 0 0] 10) (ball 50 | move :x 100 | mirror :x))`
 
   # TODO: do i want to preserve any of these ops?
   # "twist" `(box 80 | twist :y 0.010 | slow 0.5)`
@@ -115,14 +115,14 @@
   "color after move" `(circle 100 | move [50 0] | color [(q.x / 100 * 0.5 + 0.5) 1 0.5])`
   "rect" `(rect 75)`
   "rotation is counter-clockwise" `(rect 70 | rotate 0.1)`
-  "perlin2" `(sphere 100 | color (vec3 (perlin+ (p.xy / 10))))`
-  "perlin3" `(sphere 100 | color (vec3 (perlin+ (p / 10))))`
-  "perlin4" `(sphere 100 | color (vec3 (perlin+ (vec4 (p / 10) 0))))`
+  "perlin2" `(ball 100 | color (vec3 (perlin+ (p.xy / 10))))`
+  "perlin3" `(ball 100 | color (vec3 (perlin+ (p / 10))))`
+  "perlin4" `(ball 100 | color (vec3 (perlin+ (vec4 (p / 10) 0))))`
 
-  "worley-2d" `(sphere 100 | color (vec3 (worley (p.xy / 30))))`
-  "worley2-2d" `(sphere 100 | color (vec3 0 (worley2 (p.xy / 30))))`
-  "worley-3d" `(sphere 100 | color (vec3 (worley (p / 30))))`
-  "worley2-3d" `(sphere 100 | color (vec3 0 (worley2 (p / 30))))`
+  "worley-2d" `(ball 100 | color (vec3 (worley (p.xy / 30))))`
+  "worley2-2d" `(ball 100 | color (vec3 0 (worley2 (p.xy / 30))))`
+  "worley-3d" `(ball 100 | color (vec3 (worley (p / 30))))`
+  "worley2-3d" `(ball 100 | color (vec3 0 (worley2 (p / 30))))`
 
   "extrude" `(rect 30 | union (circle 30 | move x 30) | extrude x 100)`
   "extrude defaults to zero" `(rect 30 | union (circle 30 | move x 30) | extrude z)`
@@ -195,7 +195,7 @@
   "expand" `(rect 50 | expand 10)`
   "map-distance" `(rect 50 | map-distance (fn [d] (abs d - 10)))`
   "elongate 2d" `(circle 10 | elongate [50 60])`
-  "elongate 3d" `(sphere 10 | elongate [50 60 70])`
+  "elongate 3d" `(ball 10 | elongate [50 60 70])`
 
   "torus" `
   (union
@@ -213,9 +213,9 @@
 
   "ellipsoid" `
   (union
-    (ellipsoid [100 40 40])
-    (ellipsoid [40 40 100])
-    (ellipsoid [40 100 40]))
+    (ball [100 40 40])
+    (ball [40 40 100])
+    (ball [40 100 40]))
   `
 
   "align" `
@@ -223,7 +223,7 @@
   (union
     (cone y 10 80 | align y (normalize target))
     (box 10 | move target)
-    (sphere 10 | move (align [0 0 100] z (normalize target))))
+    (ball 10 | move (align [0 0 100] z (normalize target))))
   `
 
   "octahedron" `(octahedron 120 | rotate x pi/4)`
@@ -332,7 +332,7 @@
 
   "mirror 3d"
   `
-  (sphere 50 | move [20 20 20] | mirror x z)
+  (ball 50 | move [20 20 20] | mirror x z)
   `
 
   "morph"
@@ -340,7 +340,7 @@
   (box 50
   | blinn-phong [1 0 0]
   | morph :color 0.1 :distance 0.25
-    (sphere 50 | blinn-phong [0 1 0]))
+    (ball 50 | blinn-phong [0 1 0]))
   `
 
   "round 2d shapes"
@@ -361,7 +361,7 @@
 
   "boolean union"
   `
-  (def green-sphere (sphere 40 | blinn-phong [0.05 0.95 0.05]))
+  (def green-sphere (ball 40 | blinn-phong [0.05 0.95 0.05]))
   (def red-box (box 30 | blinn-phong [0.95 0.05 0.05]))
   (union
     (union green-sphere red-box | move [-40 0 0])
@@ -379,7 +379,7 @@
 
   "boolean intersect"
   `
-  (def green-sphere (sphere 40 | blinn-phong [0.05 0.95 0.05]))
+  (def green-sphere (ball 40 | blinn-phong [0.05 0.95 0.05]))
   (def red-box (box 30 | blinn-phong [0.95 0.05 0.05]))
   (union
     (intersect green-sphere red-box | move [-40 0 0])
@@ -397,7 +397,7 @@
 
   "boolean subtract"
   `
-  (def green-sphere (sphere 40 | blinn-phong [0.05 0.95 0.05]))
+  (def green-sphere (ball 40 | blinn-phong [0.05 0.95 0.05]))
   (def red-box (box 30 | blinn-phong [0.95 0.05 0.05]))
   (union
     (subtract green-sphere red-box | move [-40 0 0])
@@ -414,7 +414,7 @@
   `
 
   "boolean union interior color fields" `
-  (def green-sphere (sphere 44 | color [0.05 0.95 0.05]))
+  (def green-sphere (ball 44 | color [0.05 0.95 0.05]))
   (def red-box (box 40 | color [0.95 0.05 0.05]))
   (union
     (union :r 10 green-sphere red-box | move [-50 -50 0])
@@ -426,7 +426,7 @@
   `
 
   "boolean intersect interior color fields" `
-  (def green-sphere (sphere 44 | color [0.05 0.95 0.05]))
+  (def green-sphere (ball 44 | color [0.05 0.95 0.05]))
   (def red-box (box 40 | color [0.95 0.05 0.05]))
   (union
     (intersect :r 10 green-sphere red-box | move [-50 -50 0])
@@ -439,18 +439,18 @@
 
   "shadow banding artifacts" `
   (union
-    (sphere 50 | blinn-phong [1 1 1] | with-lights (light/point [1 1 1] [500 -50 0] :shadow 0.25) | move y -50)
-    (sphere 50 | blinn-phong [1 1 1] | with-lights (light/directional [1 1 1] [-1 0 0] 500 :shadow 0.25) | move y 50))
+    (ball 50 | blinn-phong [1 1 1] | with-lights (light/point [1 1 1] [500 -50 0] :shadow 0.25) | move y -50)
+    (ball 50 | blinn-phong [1 1 1] | with-lights (light/directional [1 1 1] [-1 0 0] 500 :shadow 0.25) | move y 50))
   (set camera (camera/perspective [0 0 384] [0 0 0] :fov 45))
   `
 
   "raymarcher tries not to penetrate shape 1" `
-  (sphere 50
+  (ball 50
     | morph 2 (box 50)
     | blinn-phong [1 1 1])
   `
   "raymarcher tries not to penetrate shape 2" `
-  (sphere 50
+  (ball 50
     | morph 2 (box 50)
     | blinn-phong [1 1 1])
   (set camera (camera/perspective [0 0 384] [0 0 0] :fov 45))
@@ -475,14 +475,14 @@
   "gl with color fields" `
   (union
     (gl/with :color [normal (normal + (perlin p * 0.1))]
-      (sphere 100 | blinn-phong [1 0 0] | move [-50 0 0]))
-    (sphere 100 | blinn-phong [1 0 0] | move [50 0 0]
+      (ball 100 | blinn-phong [1 0 0] | move [-50 0 0]))
+    (ball 100 | blinn-phong [1 0 0] | move [50 0 0]
     | gl/with :color [normal (normal + (perlin p * 0.1))] _)
   )
   `
 
   "tile" `
-  (sphere 30 | tile [80 80 80] :limit [2 3 4])
+  (ball 30 | tile [80 80 80] :limit [2 3 4])
   `
 
   "tile 2d with asymmetric shape, no oversampling" `
@@ -552,7 +552,7 @@
   `
 
   "unhoisted lights can refer to tile indices" `
-  (sphere 20
+  (ball 20
   | blinn-phong [1 1 1]
   | with-lights (light/point (hsv (hash $i) 1 1) [200 200 200] :shadow 0.50 :hoist false)
   | tiled $i :limit 3 [70 70 70])
@@ -560,15 +560,15 @@
 
   "occlusion" `
   (union
-    (sphere 30
+    (ball 30
       | union (box [40 10 40] | move y -30)
       | color (vec3 (occlusion))
     | move [-100 0 0])
-    (sphere 30
+    (ball 30
       | union (box [40 10 40] | move y -30)
       | color (vec3 (occlusion :steps 32 :dist 50))
     | move [0 0 0])
-    (sphere 30
+    (ball 30
       | union (box [40 10 40] | move y -30)
       | color (vec3 (occlusion :dir (normalize (perlin P * 0.5 + normal))))
     | move [100 0 0]))

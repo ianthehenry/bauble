@@ -83,6 +83,7 @@
     atanh @{}
     background-color @{:doc "A variable that determines the background color of the canvas.\n\nDefault is `graydient`."
                        :ref @[[do]]}
+    ball @{:doc "(ball size)\n\nReturns a 3D shape, which is either a sphere or an ellipsoid, depending on the type of `size`.\n\n```example\n(ball 100)\n```\n\n```example\n(ball [50 80 120])\n```\n\nEllipsoids do not have correct distance fields. Their distance field is only a bound, and\nit has strange isosurfaces that can make it combine with other shapes oddly:\n\n```example\n(ball [30 50 80] | slice y)\n```"}
     black @{:value [0.03 0.03 0.03]}
     blinn-phong @{:doc "(blinn-phong shape color [:s shininess] [:g glossiness])\n\nTODOC"}
     blue @{:value [hsv 0.66666666666666663 0.98 1]}
@@ -124,7 +125,6 @@
     distance @{}
     dot @{}
     double @{}
-    ellipsoid @{:doc "(ellipsoid size)\n\nReturns a 3D shape **with an incorrect distance field**.\n\nThe distance is a bound.\n\nThis means that some operations, like a smooth union, will not behave\ncorrectly on ellipsoids. Soft shadows will also appear too soft."}
     elongate @{:doc "(elongate shape size)\n\nStretch a shape."}
     equal @{}
     equilateral-triangle @{:doc "(equilateral-triangle radius [:r round])\n\nTODOC"}
@@ -144,7 +144,7 @@
     gl-frag-depth @{:value [:var "gl_FragDepth" :float]}
     gl-front-facing @{:value [:var "gl_FrontFacing" :bool]}
     gl-point-coord @{:value [:var "gl_PointCoord" :vec2]}
-    gl/def @{:doc "(gl/def name expression)\n\nYou can use `gl/def` to create new top-level GLSL variables which will only\nbe evaluated once (per distance and color field evaluation). This is useful in\norder to re-use an expensive value in multiple places, when that value only\ndepends on values that are available at the beginning of shading.\n\n```example\n(gl/def signal (perlin+ (p / 20)))\n(shape/3d (signal * 0.5)\n| intersect (sphere 100)\n| color [signal (pow signal 2) 0])\n```\n\nThis is shorthand for `(def foo (hoist expression \"foo\"))`.\n\nNote that since the signal is evaluated at the top-level, `p` will always be the\nsame as `P`. Consider this example:\n\n```example\n(gl/def signal (perlin+ (p / 20)))\n(shape/3d (signal * 0.5)\n| intersect (sphere 100)\n| color [signal (pow signal 2) 0]\n| move x (sin t * 100)\n)\n```\n\nChange the `gl/def` to a regular `def` to see some of the impliciations of hoisting\na computation."
+    gl/def @{:doc "(gl/def name expression)\n\nYou can use `gl/def` to create new top-level GLSL variables which will only\nbe evaluated once (per distance and color field evaluation). This is useful in\norder to re-use an expensive value in multiple places, when that value only\ndepends on values that are available at the beginning of shading.\n\n```example\n(gl/def signal (perlin+ (p / 20)))\n(shape/3d (signal * 0.5)\n| intersect (ball 100)\n| color [signal (pow signal 2) 0])\n```\n\nThis is shorthand for `(def foo (hoist expression \"foo\"))`.\n\nNote that since the signal is evaluated at the top-level, `p` will always be the\nsame as `P`. Consider this example:\n\n```example\n(gl/def signal (perlin+ (p / 20)))\n(shape/3d (signal * 0.5)\n| intersect (ball 100)\n| color [signal (pow signal 2) 0]\n| move x (sin t * 100)\n)\n```\n\nChange the `gl/def` to a regular `def` to see some of the impliciations of hoisting\na computation."
              :macro true}
     gl/defn @{:doc "(gl/defn return-type name params & body)\n\nDefines a GLSL function. You must explicitly annotate the return type\nand the type of all arguments. The body of the function uses the GLSL\nDSL, i.e. it is not normal Janet code.\n\n```\n(gl/defn :vec3 hsv [:float hue :float saturation :float value]\n  (var c (hue * 6 + [0 4 2] | mod 6 - 3 | abs))\n  (return (value * (mix (vec3 1) (c - 1 | clamp 0 1) saturation))))\n```"
               :macro true}
@@ -152,14 +152,14 @@
             :macro true}
     gl/hoist @{:doc "(gl/hoist expression &opt name)\n\nReturn a hoisted version of the expression See the documentation for `gl/def`\nfor an explanation of this."
                :macro true}
-    gl/if @{:doc "(gl/if condition then else)\n\nA GLSL ternary conditional expression.\n\n```example\n(sphere 100\n| color (gl/if (< normal.y 0) [1 0 0] [1 1 0]))\n```"}
+    gl/if @{:doc "(gl/if condition then else)\n\nA GLSL ternary conditional expression.\n\n```example\n(ball 100\n| color (gl/if (< normal.y 0) [1 0 0] [1 1 0]))\n```"}
     gl/iife @{:doc "(gl/iife & body)\n\nLike `gl/do`, except that you can explicitly return early.\n\n```\n(gl/iife \"optional-label\"\n  (var c [1 0 1])\n  (if (< normal.y 0)\n    (return c))\n  (for (var i 0:u) (< i 10:u) (++ i)\n    (+= c.g 0.01))\n  c)\n```\n"
               :macro true}
     gl/let @{:doc "(gl/let bindings & body)\n\nLike `let`, but creates GLSL bindings instead of a Janet bindings. You can use this\nto reference an expression multiple times while only evaluating it once in the resulting\nshader.\n\nFor example:\n\n```\n(let [s (sin t)]\n  (+ s s))\n```\n\nProduces GLSL code like this:\n\n```\nsin(t) + sin(t)\n```\n\nBecause `s` refers to the GLSL *expression* `(sin t)`.\n\nMeanwhile:\n\n```\n(gl/let [s (sin t)]\n  (+ s s))\n```\n\nProduces GLSL code like this:\n\n```\nfloat let(float s) {\n  return s + s;\n}\n\nlet(sin(t))\n```\n\nOr something equivalent. Note that the variable is hoisted into an immediately-invoked function\nbecause it's the only way to introduce a new identifier in a GLSL expression context.\n\nYou can also use Bauble's underscore notation to fit this into a pipeline:\n\n```\n(s + s | gl/let [s (sin t)] _)\n```\n\nIf the body of the `gl/let` returns a shape, the bound variable will be available in all of its\nfields. If you want to refer to variables or expressions that are only available in color fields,\npass a keyword as the first argument:\n\n```example\n(gl/let :color [banding (sin+ (10 * t + depth))]\n  (box 100 | blinn-phong [1 banding 0]))\n```"
              :macro true}
     gl/overload @{:doc "(gl/overload return-type name params & body)\n\nOverloads a previously defined function with an additional signature.\n\nNote that the argument type must uniquely determine the return type of\na GLSL function, so you can't make an overload that only varies in\nits return type.\n\n```\n(gl/overload :float min [:float a :float b :float c]\n  (return (min (min a b) c)))\n```\n\nYou can overload any function, including built-in functions."
                   :macro true}
-    gl/with @{:doc "(gl/with bindings & body)\n\nLike `gl/let`, but instead of creating a new binding, it alters the value of an existing\nvariable. You can use this to give new values to dynamic variables. For example:\n\n```example\n# implement your own `move`\n(gl/with [p (- p [0 (sin t * 50) 0])] (sphere 100))\n```\n\nYou can also use Bauble's underscore notation to fit this into a pipeline:\n\n```example\n(sphere 100 | gl/with [p (- p [0 (sin t * 50) 0])] _)\n```\n\nYou can -- if you really want -- use this to alter `P` or `Q` to not refer to the point in\nglobal space, or use it to pretend that the camera `ray` is actually coming at a different angle.\n\nThe variables you change in `gl/with` will, by default, apply to all of the fields of a shape.\nYou can pass a keyword as the first argument to only change a particular field. This allows you\nto refer to variables that only exist in color expressions:\n\n```example\n(gl/with :color [normal (normal + (perlin p * 0.1))]\n  (sphere 100 | blinn-phong [1 0 0] | move [-50 0 0]))\n```"
+    gl/with @{:doc "(gl/with bindings & body)\n\nLike `gl/let`, but instead of creating a new binding, it alters the value of an existing\nvariable. You can use this to give new values to dynamic variables. For example:\n\n```example\n# implement your own `move`\n(gl/with [p (- p [0 (sin t * 50) 0])] (ball 100))\n```\n\nYou can also use Bauble's underscore notation to fit this into a pipeline:\n\n```example\n(ball 100 | gl/with [p (- p [0 (sin t * 50) 0])] _)\n```\n\nYou can -- if you really want -- use this to alter `P` or `Q` to not refer to the point in\nglobal space, or use it to pretend that the camera `ray` is actually coming at a different angle.\n\nThe variables you change in `gl/with` will, by default, apply to all of the fields of a shape.\nYou can pass a keyword as the first argument to only change a particular field. This allows you\nto refer to variables that only exist in color expressions:\n\n```example\n(gl/with :color [normal (normal + (perlin p * 0.1))]\n  (ball 100 | blinn-phong [1 0 0] | move [-50 0 0]))\n```"
               :macro true}
     gradient @{:doc "(Color only!) An approximation of the 2D distance field gradient at `Q`."
                :value [:var "gradient" :vec2]}
@@ -217,7 +217,7 @@
     mirror @{:doc "(mirror shape & axes [:r r])\n\nMirror a shape across one or more axes. Normally this takes the absolute value\nof the coordinates, but if you supply `:r` it will take a biased square root to\ngive a smooth mirror effect."}
     mix @{}
     mod @{}
-    morph @{:doc "(morph shape1 amount shape2 [:distance amount] [:color amount])\n\nMorph linearly interpolates between two shapes.\n\n```\n# 50% box, 50% sphere\n(box 50 | morph (sphere 50))\n\n# 75% box, 25% sphere\n(box 50 | morph 0.25 (sphere 50))\n```\n\nConcretely this means that it returns a new shape whose individual fields\nare linear interpolations of its inputs. With an anonymous `amount` coefficient,\nboth the distance and color fields will be interpolated with the same value.\nBut you can also specify per-field overrides:\n\n```\n# distance is a 50% blend, but the color is 90% red\n(box 50 | color [1 0 0] | morph :color 0.1 (sphere 50 | color [0 1 0]))\n```"}
+    morph @{:doc "(morph shape1 amount shape2 [:distance amount] [:color amount])\n\nMorph linearly interpolates between two shapes.\n\n```\n# 50% box, 50% sphere\n(box 50 | morph (ball 50))\n\n# 75% box, 25% sphere\n(box 50 | morph 0.25 (ball 50))\n```\n\nConcretely this means that it returns a new shape whose individual fields\nare linear interpolations of its inputs. With an anonymous `amount` coefficient,\nboth the distance and color fields will be interpolated with the same value.\nBut you can also specify per-field overrides:\n\n```\n# distance is a 50% blend, but the color is 90% red\n(box 50 | color [1 0 0] | morph :color 0.1 (ball 50 | color [0 1 0]))\n```"}
     move @{:doc "(move shape & args)\n\nTranslate a shape. Usually you'd use this with a vector offset:\n\n```\n(move (box 50) [0 100 0])\n```\n\nBut you can also provide a vector and a scalar:\n\n```\n(move (box 50) y 100)\n```\n\nWhich is the same as `(move (box 50) (y * 100))`.\n\nIf you provide multiple vector-scalar pairs, their sum is the final offset:\n\n```\n(move (box 50) x 100 y 100 -z 20)\n```\n\nThat is the same as `(move (box 50) (+ (x * 100) (y * 100) (-z * 100)))`."}
     nearest-distance @{:doc "(nearest-distance)\n\nThis is the forward declaration of the function that will become the eventual\ndistance field for the shape we're rendering. This is used in the main raymarcher,\nas well as the shadow calculations. You can refer to this function to sample the\ncurrent distance field at the current value of `p` or `q`, for example to create\na custom ambient occlusion value."}
     normal @{:doc "(Color only!) A normalized vector that approximates the 3D distance field gradient at `P` (in other words, the surface normal for shading)."
@@ -288,7 +288,7 @@
     purple @{:value [hsv 0.75 0.98 1]}
     q @{:doc "The local point in 2D space. This is the position being shaded, with any transformations applied."
         :value [:var "q" :vec2]}
-    quad-circle @{:doc "(quad-circle radius)\n\nReturns a 2D shape, an approximation of a circle out of quadratic bezier curves.\n\n```example\n(quad-circle 50)\n```\n\nIt's like a circle, but quaddier."}
+    quad-circle @{:doc "(quad-circle radius)\n\nReturns a 2D shape, an approximation of a circle made out of quadratic bezier curves.\n\n```example\n(quad-circle 50)\n```\n\nIt's like a circle, but quaddier."}
     r2 @{:doc "A 2D shape with zero distance everywhere."
          :value {:fields {:distance [<2>
                                      literal
@@ -353,7 +353,6 @@
     slice @{:doc "(slice shape axis &opt position)\n\nTake a 2D slice of a 3D shape at a given `position` along the supplied `axis`.\n\n`position` defaults to `0`."}
     slow @{:doc "(slow shape amount)\n\nScales distances around `shape`, causing the raymarcher to converge more slowly.\n\nThis is useful for raymarching distance fields that vary based on `p` -- shapes\nthat don't actually provide an accurate distance field unless you are very close\nto the surface.\n\nValues larger than 1 will give weird results, and this will slow the render down."}
     smoothstep @{}
-    sphere @{:doc "(sphere radius)\n\nReturns a 3D shape."}
     sqrt @{}
     ss @{:doc "(ss x &opt from-range to-range)\n\nThis is a wrapper around `smoothstep` with a different argument order, which also\nallows the input edges to occur in descending order.\n\nThere are several overloads:\n\n```\n(ss x)\n# becomes\n(smoothstep 0 1 x)\n```\n\n```\n(ss x [from-start from-end])\n# becomes\n(if (< from-start from-end)\n  (smoothstep from-start from-end x)\n  (1 - smoothstep from-end from-start x))\n``` \n\n```\n(ss x from [to-start to-end])\n# becomes\n(ss x from * (- to-end to-start) + to-start)\n```"}
     star @{:doc "(star outer-radius inner-radius [:r round])\n\n```example\n(star 50 30 :r (osc t 2 20))\n```"}
@@ -403,10 +402,10 @@
     tau/8*7 @{:value 5.497787143782138}
     tau/9 @{:value 0.69813170079773179}
     teal @{:value [hsv 0.41666666666666669 0.98 1]}
-    tile @{:doc "(tile shape size [:limit limit] [:oversample oversample] [:sample-from sample-from] [:sample-to sample-to])\n\nRepeat the region of space `size` units around the origin. Pass `:limit` to constrain\nthe number of repetitions. See `tiled` or `tiled*` if you want to produce a shape that\nvaries as it repeats.\n\nTo repeat space only along some axes, pass `0`. For example, `(tile (sphere 50) [0 100 0])` will\nonly tile in the `y` direction.\n\nIf you're repeating a shape that is not symmetric, you can use `:oversample true` to evaluate\nmultiple instances at each pass, essentially considering the distance not only to this\ntile, but also to neighboring tiles.\n\nThe default oversampling is `:sample-from 0` `:sample-to 1`, which means looking at one adjacent\ntile, asymmetrically based on the location of the point (so when evaluating a point near\nthe right edge of a tile, it will look at the adjacent tile to the right, but not the tile\nto the left). By passing `:sample-from -1`, you can also look at the tile to the left.\nBy passing `:sample-from 0 :sample-to [2 1 1]`, it will look at two tiles to the right in the\n`x` direction, and one tile up/down/in/out.\n\nThis can be useful when raymarching a 3D space where each tile is quite different, but note\nthat it's very costly to increase these values. If you're tiling a 3D shape in all directions,\nthe default `:oversample` parameters will do 8 distance field evaluations;\n`:sample-from [-1 -1 -1]` `:sample-to [1 1 1]` will do 27."}
+    tile @{:doc "(tile shape size [:limit limit] [:oversample oversample] [:sample-from sample-from] [:sample-to sample-to])\n\nRepeat the region of space `size` units around the origin. Pass `:limit` to constrain\nthe number of repetitions. See `tiled` or `tiled*` if you want to produce a shape that\nvaries as it repeats.\n\nTo repeat space only along some axes, pass `0`. For example, to only tile in the `y` direction:\n\n```example\n(tile (ball 50) [0 100 0])\n```\n\nIf you're repeating a shape that is not symmetric, you can use `:oversample true` to evaluate\nmultiple instances at each pass, essentially considering the distance not only to this\ntile, but also to neighboring tiles.\n\nThe default oversampling is `:sample-from 0` `:sample-to 1`, which means looking at one adjacent\ntile, asymmetrically based on the location of the point (so when evaluating a point near\nthe right edge of a tile, it will look at the adjacent tile to the right, but not the tile\nto the left). By passing `:sample-from -1`, you can also look at the tile to the left.\nBy passing `:sample-from 0 :sample-to [2 1 1]`, it will look at two tiles to the right in the\n`x` direction, and one tile up/down/in/out.\n\nThis can be useful when raymarching a 3D space where each tile is quite different, but note\nthat it's very costly to increase these values. If you're tiling a 3D shape in all directions,\nthe default `:oversample` parameters will do 8 distance field evaluations;\n`:sample-from [-1 -1 -1]` `:sample-to [1 1 1]` will do 27."}
     tiled @{:doc "(tiled shape $i & args)\n\nLike `tiled*`, but its first argument should be a form that will\nbecome the body of the function. Basically, it's a way to create\na repeated shape where each instance of the shape varies, and it's\nwritten in a way that makes it conveniently fit into a pipeline:\n\n```\n(circle 5 | color (hsv (hash $i) 0.5 1) | tiled $i [10 10])\n```"
             :macro true}
-    tiled* @{:doc "(tiled* size get-shape [:limit limit] [:oversample oversample] [:sample-from sample-from] [:sample-to sample-to])\n\nLike `tile`, but the shape is a result of invoking `get-shape` with one argument,\na GLSL variable referring to the current index in space. Unlike `tile`, `size` must\nbe a vector that determines the dimension of the index variable.\n\n```\n(tiled* [10 10] (fn [$i] (circle 5 | color (hsv (hash $i) 0.5 1))))\n```\n\nYou can use this to generate different shapes or colors at every sampled tile. The index\nwill be a vector with integral components that represents  being considered. So for\nexample, in 3D, the shape at the origin has an index of `[0 0 0]` and the shape above\nit has an index of `[0 1 0]`."}
+    tiled* @{:doc "(tiled* size get-shape [:limit limit] [:oversample oversample] [:sample-from sample-from] [:sample-to sample-to])\n\nLike `tile`, but the shape is a result of invoking `get-shape` with one argument,\na GLSL variable referring to the current index in space. Unlike `tile`, `size` must\nbe a vector that determines the dimension of the index variable.\n\n```example\n(tiled* [10 10] (fn [$i] (circle 5 | color (hsv (hash $i) 0.5 1))))\n```\n\nYou can use this to generate different shapes or colors at every sampled tile. The index\nwill be a vector with integral components that represents  being considered. So for\nexample, in 3D, the shape at the origin has an index of `[0 0 0]` and the shape above\nit has an index of `[0 1 0]`."}
     torus @{:doc "(torus axis radius thickness)\n\nReturns a 3D shape, a torus around the provided `axis`."}
     trapezoid @{:doc "(trapezoid bottom-width top-width height [:r round])\n\nReturns a 2D shape.\n\n```example\n(trapezoid (osc t 3 20 50) (oss t 2 50 20) 50)\n```"}
     triangle-points @{:doc "(triangle-points a b c)\n\nTODOC"}
@@ -418,12 +417,12 @@
     vec2 @{}
     vec3 @{}
     vec4 @{}
-    view @{:doc "(view subject)\n\nA shorthand for `(set subject _)` that fits nicely into pipe notation, e.g. `(sphere 50 | view)`."
+    view @{:doc "(view subject)\n\nA shorthand for `(set subject _)` that fits nicely into pipe notation, e.g. `(ball 50 | view)`."
            :macro true}
     viewport @{:doc "You don't have to think about this value unless you're implementing a custom `main` function,\nwhich you probably aren't doing.\n\nThis represents the portion of the canvas currently being rendered. The `xy` components are the start\n(bottom left) and the `zw` coordinates are the size.\n\nNormally this will be equal to `[[0 0] resolution]`, but when rendering quad-view or a chunked render,\nit may have a different origin or resolution.\n\nYou can use `(gl_FragCoord.xy - viewport.xy)` in order to get the logical fragment position (the value\nexposed to a typical shader as `Frag-Coord`)."
                :value [:var "viewport" :vec4]}
     white @{:value [1 1 1]}
-    with-lights @{:doc "(with-lights shape & lights)\n\nEvaluate `shape` with the `*lights*` dynamic variable set to the provided lights.\n\nThe argument order makes it easy to stick this in a pipeline. For example:\n\n```\n(sphere 50 | blinn-phong [1 0 0] | with-lights light1 light2)\n```"
+    with-lights @{:doc "(with-lights shape & lights)\n\nEvaluate `shape` with the `*lights*` dynamic variable set to the provided lights.\n\nThe argument order makes it easy to stick this in a pipeline. For example:\n\n```example\n(ball 50 | blinn-phong [1 0 0] | with-lights light1 light2)\n```"
                   :macro true}
     worley @{:doc "(worley point)\n\nWorley noise, also called cellular noise or voronoi noise.\nThe input `point` can be a `vec2` or a `vec3`.\n\nReturns the nearest distance to points distributed randomly within the tiles of a square or cubic grid."}
     worley2 @{:doc "(worley2 point)\n\nLike `worley`, but returns the nearest distance in `x` and the second-nearest distance in `y`."}
@@ -463,7 +462,7 @@
   (test-error (rotate (box 10) x 10 [1 2] 3) "rotation-around: no overload for arguments [:vec2 :float]"))
 
 (deftest "morph coefficient defaults to 0.5"
-  (test-shape (morph (box 10) (sphere 10))
+  (test-shape (morph (box 10) (ball 10))
     {:fields {:distance [mix
                          [sdf-box [vec3 10]]
                          [sdf-sphere 10]
@@ -472,7 +471,7 @@
      :type [<2> vec [<3> float] 3]}))
 
 (deftest "morph coefficient can appear in any position"
-  (test-shape (morph 0.25 (box 10) (sphere 10))
+  (test-shape (morph 0.25 (box 10) (ball 10))
     {:fields {:distance [mix
                          [sdf-box [vec3 10]]
                          [sdf-sphere 10]
@@ -480,7 +479,7 @@
      :tag <1>
      :type [<2> vec [<3> float] 3]})
 
-  (test-shape (morph (box 10) 0.25 (sphere 10))
+  (test-shape (morph (box 10) 0.25 (ball 10))
     {:fields {:distance [mix
                          [sdf-box [vec3 10]]
                          [sdf-sphere 10]
@@ -488,7 +487,7 @@
      :tag <1>
      :type [<2> vec [<3> float] 3]})
 
-  (test-shape (morph (box 10) (sphere 10) 0.25)
+  (test-shape (morph (box 10) (ball 10) 0.25)
     {:fields {:distance [mix
                          [sdf-box [vec3 10]]
                          [sdf-sphere 10]
@@ -499,7 +498,7 @@
 
 (deftest "morph will evaluate its coefficient argument multiple times if it has more than two shapes"
   # this is bad, but it's not easy to fix and no one will ever do this anyway
-  (test-shape (morph (sin t) (box 10) (sphere 10) (box 20))
+  (test-shape (morph (sin t) (box 10) (ball 10) (box 20))
     {:fields {:distance [mix
                          [mix
                           [sdf-box [vec3 10]]
@@ -512,7 +511,7 @@
 
 (deftest "morph with per-field coefficients"
   # this is bad, but it's not easy to fix and no one will ever do this anyway
-  (test-shape (morph :distance 0.9 (box 10 | color [1 1 0]) (sphere 10 | color [1 0 1]))
+  (test-shape (morph :distance 0.9 (box 10 | color [1 1 0]) (ball 10 | color [1 0 1]))
     {:fields {:color [mix [vec3 1 1 0] [vec3 1 0 1] 0.5]
               :distance [mix
                          [sdf-box [vec3 10]]
@@ -523,7 +522,7 @@
 
 (deftest "morph with nonsense coefficients"
   # eh it would be nice to error but i don't really care
-  (test-shape (morph :foo 0.9 (box 10 | color [1 1 0]) (sphere 10 | color [1 0 1]))
+  (test-shape (morph :foo 0.9 (box 10 | color [1 1 0]) (ball 10 | color [1 0 1]))
     {:fields {:color [mix [vec3 1 1 0] [vec3 1 0 1] 0.5]
               :distance [mix
                          [sdf-box [vec3 10]]

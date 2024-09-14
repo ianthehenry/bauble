@@ -121,8 +121,11 @@
   the number of repetitions. See `tiled` or `tiled*` if you want to produce a shape that
   varies as it repeats.
 
-  To repeat space only along some axes, pass `0`. For example, `(tile (sphere 50) [0 100 0])` will
-  only tile in the `y` direction.
+  To repeat space only along some axes, pass `0`. For example, to only tile in the `y` direction:
+
+  ```example
+  (tile (ball 50) [0 100 0])
+  ```
 
   If you're repeating a shape that is not symmetric, you can use `:oversample true` to evaluate
   multiple instances at each pass, essentially considering the distance not only to this
@@ -149,7 +152,7 @@
   a GLSL variable referring to the current index in space. Unlike `tile`, `size` must
   be a vector that determines the dimension of the index variable.
 
-  ```
+  ```example
   (tiled* [10 10] (fn [$i] (circle 5 | color (hsv (hash $i) 0.5 1))))
   ```
 

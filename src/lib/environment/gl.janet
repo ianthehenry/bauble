@@ -94,13 +94,13 @@
 
   ```example
   # implement your own `move`
-  (gl/with [p (- p [0 (sin t * 50) 0])] (sphere 100))
+  (gl/with [p (- p [0 (sin t * 50) 0])] (ball 100))
   ```
 
   You can also use Bauble's underscore notation to fit this into a pipeline:
 
   ```example
-  (sphere 100 | gl/with [p (- p [0 (sin t * 50) 0])] _)
+  (ball 100 | gl/with [p (- p [0 (sin t * 50) 0])] _)
   ```
 
   You can -- if you really want -- use this to alter `P` or `Q` to not refer to the point in
@@ -112,7 +112,7 @@
 
   ```example
   (gl/with :color [normal (normal + (perlin p * 0.1))]
-    (sphere 100 | blinn-phong [1 0 0] | move [-50 0 0]))
+    (ball 100 | blinn-phong [1 0 0] | move [-50 0 0]))
   ```
   ````
   [bindings & body]
@@ -197,7 +197,7 @@
   ```example
   (gl/def signal (perlin+ (p / 20)))
   (shape/3d (signal * 0.5)
-  | intersect (sphere 100)
+  | intersect (ball 100)
   | color [signal (pow signal 2) 0])
   ```
 
@@ -209,7 +209,7 @@
   ```example
   (gl/def signal (perlin+ (p / 20)))
   (shape/3d (signal * 0.5)
-  | intersect (sphere 100)
+  | intersect (ball 100)
   | color [signal (pow signal 2) 0]
   | move x (sin t * 100)
   )
@@ -234,7 +234,7 @@
   A GLSL ternary conditional expression.
 
   ```example
-  (sphere 100
+  (ball 100
   | color (gl/if (< normal.y 0) [1 0 0] [1 1 0]))
   ```
   ````
