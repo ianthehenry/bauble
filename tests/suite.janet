@@ -30,7 +30,7 @@
   # TODO: restore once we have radial symmetry again
   # "balloon" [ortho-z `
   # (ball [100 100 50]
-  # | union :r 50 (cylinder :y 25 50 | move [0 -100 0])
+  # | union :r 50 (cyl :y 25 50 | move [0 -100 0])
   # | scale :y (ss p.y -100 100 1 0.8)
   # | radial :y 20 0
   # | move [0 40 0]
@@ -42,7 +42,7 @@
 
   # TODO: restore this op
   #"onion" `(ball 100 | onion 5 | intersect (half-space :-z))`
-  "cylinder" `(box 50 | subtract (cylinder :z 30 100))`
+  "cylinder" `(box 50 | subtract (cyl z 30 100))`
   "rotations" `(subtract :r 30 (box 50 | rotate y tau/8 z tau/8) (ball 50 | move x 50))`
   # TODO: rounded cone
   # "cone rounded" `(cone z 50 100 :r 10)`

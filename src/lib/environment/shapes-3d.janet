@@ -93,6 +93,21 @@
   (var s (max (k * (w.x * q.y - (w.y * q.x))) (k * (w.y - q.y))))
   (return (sqrt d * sign s)))
 
+(deforiented cyl [:float !radius :float !height]
+  ````
+  Returns a 3D shape, a cylinder oriented along the given `axis`.
+
+  ```example
+  (cyl y 50 100)
+  ```
+
+  ```example
+  (cyl z 100 50 :r (osc t 2 0 10))
+  ```
+  ````
+  (var d ((abs [(length other-axes) this-axis]) - [radius height]))
+  (return (min (max d) 0 + length (max d 0))))
+
 # TODO: subtracting from the radius does *something*, but it's not what
 # i would expect
 (defshape/3d octahedron [:float radius]

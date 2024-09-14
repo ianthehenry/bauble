@@ -112,6 +112,7 @@
     cross-matrix @{:doc "(cross-matrix vec)\n\nReturns the matrix such that `(* (cross-matrix vec1) vec2)` = `(cross vec1 vec2)`."}
     cut-disk @{:doc "(cut-disk radius bottom)\n\nReturns a 2D shape.\n\n```example\n(cut-disk 50 (sin t * 40))\n```"}
     cyan @{:value [hsv 0.5 0.98 1]}
+    cyl @{:doc "(cyl axis radius height [:r round])\n\nReturns a 3D shape, a cylinder oriented along the given `axis`.\n\n```example\n(cyl y 50 100)\n```\n\n```example\n(cyl z 100 50 :r (osc t 2 0 10))\n```"}
     dark-gray @{:value [0.25 0.25 0.25]}
     default-2d-color @{:doc "A variable that determines the default color to use when rendering a 2D shape with no color field.\n\nDefault is `isolines`."
                        :ref @[[isolines]]}
