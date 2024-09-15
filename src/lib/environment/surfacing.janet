@@ -284,7 +284,7 @@ set it in a way that fits nicely into a pipeline.
   TODOC
   ```
   (default shininess 0.25)
-  (default glossiness 5)
+  (default glossiness 10)
   (shape/with shape :color (blinn-phong-color-expression color shininess glossiness (dyn :lights))))
 
 (defn recolor

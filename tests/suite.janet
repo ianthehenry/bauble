@@ -305,8 +305,7 @@
   | with-lights point-light)
   `
 
-  "ambient lights and other weird lights"
-  `
+  "ambient lights and other weird lights" `
   (defn grid [size xs zs & shapes]
     (union
       ;(seq [[i shape] :pairs shapes]
@@ -317,7 +316,7 @@
     (union
       (box [50 5 50])
       (box 20 | move y 30 | expand 1)
-    | blinn-phong [1 0.1 0.1]))
+    | blinn-phong [1 0.1 0.1] :g 5))
   (grid 60 2 2
     ((make) | with-lights)
     ((make) | with-lights (light/ambient [0.5 0.5 0.5]))
