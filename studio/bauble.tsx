@@ -28,7 +28,8 @@ const defaultCamera = {
 
 const cameraRotateSpeed = 1 / 512;
 const cameraZoomSpeed = 0.01;
-const cameraPanSpeed = 1.5;
+// where 45 is the free camera FOV
+const cameraPanSpeed = 2 * Math.tan(Math.PI * 45 / 180 / 2);
 
 interface GestureEvent extends TouchEvent {
   scale: number
@@ -592,7 +593,10 @@ const Bauble = (props: BaubleProps) => {
     const size = Signal.get(canvasSize);
     const deltaX = (canvasPointerAt[0] - pointerWasAt[0]) * (size.width / canvas.clientWidth);
     const deltaY = (canvasPointerAt[1] - pointerWasAt[1]) * (size.height / canvas.clientHeight);
-    const panRate = Signal.get(zoom) * cameraPanSpeed;
+
+    // TODO: panRate should take the size of the viewport you're panning into account,
+    // instead of assuming a half quad
+    const panRate = Signal.get(zoom) * cameraPanSpeed * (Signal.get(quadView) ? 2 : 1);
 
     switch (interaction!) {
     case Interaction.Rotate: {

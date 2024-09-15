@@ -349,7 +349,7 @@ set it in a way that fits nicely into a pipeline.
   the default color used when rendering a 2D shape with no color field.
   ```
   (sugar (jlsl/do "isolines"
-    (def line-every 10)
+    (def line-every 12)
     (def shadow-thickness 0.5)
     (def boundary-thickness 2)
 

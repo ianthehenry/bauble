@@ -1,6 +1,7 @@
 (use ../environment)
 (import ../../jlsl)
 (use ./util)
+(use judge)
 
 # TODO: this should not be a uniform
 (jlsl/jlsl/defdyn render-type :int "")
@@ -17,15 +18,30 @@
 (def- MINIMUM_HIT_DISTANCE 0.1)
 (def- MAXIMUM_TRACE_DISTANCE (* 64 1024))
 
+(def- base-zoom-distance 512)
+(def- free-camera-fov 45)
+
+# think of base zoom distance as the apothem of a triangle.
+# we want to know the length of the opposite edge of this triangle.
+#
+#      -----
+#  \   |   /
+#   \  |  /
+#    \ | /
+#     \|/
+#
+# tan(45 / 2) = (x / base-zoom-distance)
+
+(def- ortho-base-zoom-distance (* 2 base-zoom-distance (math/tan (/ (* tau (/ free-camera-fov 360)) 2))))
+(test ortho-base-zoom-distance 424.15468787004937)
+
 (defmacro jlsl/fn [t name & rest]
   ~(as-macro ,sugar
     (as-macro ,jlsl/jlsl/fn ,t ,(string name) ,;rest)))
 
 (defn make-sample-2d [nearest-distance <background-color> <default-color> <color-field>]
-  # 384 is a better approximation of a 45° fov at the default zoom level
-  (def base-zoom-distance 256)
   (jlsl/fn :vec3 sample []
-    (with [Q (frag-coord * free-camera-zoom * base-zoom-distance + origin-2d)
+    (with [Q (frag-coord * ortho-base-zoom-distance * free-camera-zoom + origin-2d)
            q Q
            dist (nearest-distance)
            gradient (calculate-gradient (nearest-distance))]
@@ -61,12 +77,11 @@
 # TODO: okay, so, theoretically we have nearest-distance in the current environment already
 (defn make-sample-3d [nearest-distance <camera> <background-color> <default-color> <color-field>]
   (def march (make-march nearest-distance))
-  (def base-zoom-distance 512)
   (def ortho-distance 1024)
 
   (jlsl/fn :vec3 sample []
     (var ray* (Ray [0 0 0] [0 0 1]))
-    (var ortho [ortho-distance (frag-coord.x * base-zoom-distance * free-camera-zoom) (frag-coord.y * base-zoom-distance * free-camera-zoom)])
+    (var ortho [ortho-distance (* frag-coord ortho-base-zoom-distance free-camera-zoom)])
     (case camera-type
       0:s ,(if <camera>
         (jlsl/statement (set ray* <camera>) (break))
@@ -79,7 +94,7 @@
              (rotation-x (* tau free-camera-orbit.y))))
         (set ray* (Ray
           (camera-rotation-matrix * [0 0 (base-zoom-distance * free-camera-zoom)] + free-camera-target)
-          (camera-rotation-matrix * perspective-vector 45)))
+          (camera-rotation-matrix * perspective-vector free-camera-fov)))
         (break))
       2:s (do # XZ
         (set ray* (Ray (ortho.yxz + free-camera-target) [0 -1 0]))

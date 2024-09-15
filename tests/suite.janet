@@ -146,13 +146,13 @@
 
   "lines and rects" `
   (union
-    (rect [100 5])
-    (oriented-rect [0 -30] [100 -30] 10)
-    (line [0 30] [100 30] 10)
+    (rect [100 10])
+    (oriented-rect [0 -30] [100 -30] 20)
+    (line [0 30] [100 30] 20)
 
-    (rect [100 5])
-    (oriented-rect [-100 -40] [100 -80] 10)
-    (line [-100 40] [100 80] 10))
+    (rect [100 10])
+    (oriented-rect [-100 -40] [100 -80] 20)
+    (line [-100 40] [100 80] 20))
   `
 
   "triangles" `
@@ -180,10 +180,10 @@
   `
   "arc and ring" `
   (union
-    (arc 60 tau/4*3 10 | move [-30 0])
-    (ring 60 tau/4*3 10 | move [0 0])
-    (arc 60 tau/4 10 | move [30 -30])
-    (ring 60 tau/4 10 | move [30 -60]))
+    (arc 80 tau/4*3 20 | move [-40 0])
+    (ring 80 tau/4*3 20 | move [0 0])
+    (arc 80 tau/4 20 | move [40 -40])
+    (ring 80 tau/4 20 | move [40 -80]))
   `
 
   "shell" `
@@ -508,7 +508,7 @@
   `
 
   "tiled" `
-  (circle 5 | color (hsv (hash $i) 0.5 1) | tiled $i [10 10])
+  (circle 6 | color (hsv (hash $i) 0.5 1) | tiled $i [12 12])
   `
 
   "tile with oversampling picks the nearest color" `
