@@ -80,6 +80,7 @@
     asin @{}
     asinh @{}
     atan @{}
+    atan2 @{:doc "(atan2 y x)\n\nReturns a value in the range `[0, tau)` representing the angle\nbetween the (2D) `+x` axis and the point `[x y]`.\n\nThis is an alternative to the built-in `atan`'s two argument\noverload that is well-defined when `x = 0`."}
     atanh @{}
     background-color @{:doc "A variable that determines the background color of the canvas.\n\nDefault is `graydient`."
                        :ref @[[do]]}
@@ -290,6 +291,7 @@
     q @{:doc "The local point in 2D space. This is the position being shaded, with any transformations applied."
         :value [:var "q" :vec2]}
     quad-circle @{:doc "(quad-circle radius)\n\nReturns a 2D shape, an approximation of a circle made out of quadratic bezier curves.\n\n```example\n(quad-circle 50)\n```\n\nIt's like a circle, but quaddier."}
+    quantize @{:doc "(quantize value count)\n\nRounds a value to the nearest multiple of `count`."}
     r2 @{:doc "A 2D shape with zero distance everywhere."
          :value {:fields {:distance [<2>
                                      literal

@@ -1,26 +1,5 @@
 (use ./import)
 
-(defhelper :float sum [:vec2 v]
-  "Add the components of a vector."
-  (return (+ v.x v.y)))
-(overload :float sum [:vec3 v] (return (+ v.x v.y v.z)))
-(overload :float sum [:vec4 v] (return (+ v.x v.y v.z v.w)))
-
-(defhelper :float product [:vec2 v]
-  "Multiply the components of a vector."
-  (return (* v.x v.y)))
-(overload :float product [:vec3 v] (return (* v.x v.y v.z)))
-(overload :float product [:vec4 v] (return (* v.x v.y v.z v.w)))
-
-(def pi "I think it's around three.\n\nNote that there are also values like `pi/4` and `pi/6*5` and related helpers all the way up to `pi/12`. They don't show up in autocomplete because they're annoying, but they're there." math/pi)
-(def tau "Bigger than six, but smaller than seven.\n\nNote that there are also values like `tau/4` and `tau/6*5` and related helpers all the way up to `tau/12`.  They don't show up in autocomplete because they're annoying, but they're there." (* 2 math/pi))
-(loop [i :range-to [2 12]]
-  (put (curenv) (symbol "pi/" i) @{:value (/ pi i)})
-  (put (curenv) (symbol "tau/" i) @{:value (/ tau i)}))
-(loop [i :in [3 4 6 8 12] j :range [2 i]]
-  (put (curenv) (symbol "pi/" i "*" j) @{:value (* (/ pi i) j)})
-  (put (curenv) (symbol "tau/" i "*" j) @{:value (* (/ tau i) j)}))
-
 (deftransform color [shape color]
   "Set a shape's color field."
   (shape/with shape :color (typecheck color jlsl/type/vec3)))

@@ -26,6 +26,27 @@
 (import ./gl :prefix "" :export true)
 (import ./dynvars :prefix "" :export true)
 
+(defhelper :float sum [:vec2 v]
+  "Add the components of a vector."
+  (return (+ v.x v.y)))
+(overload :float sum [:vec3 v] (return (+ v.x v.y v.z)))
+(overload :float sum [:vec4 v] (return (+ v.x v.y v.z v.w)))
+
+(defhelper :float product [:vec2 v]
+  "Multiply the components of a vector."
+  (return (* v.x v.y)))
+(overload :float product [:vec3 v] (return (* v.x v.y v.z)))
+(overload :float product [:vec4 v] (return (* v.x v.y v.z v.w)))
+
+(def pi "I think it's around three.\n\nNote that there are also values like `pi/4` and `pi/6*5` and related helpers all the way up to `pi/12`. They don't show up in autocomplete because they're annoying, but they're there." math/pi)
+(def tau "Bigger than six, but smaller than seven.\n\nNote that there are also values like `tau/4` and `tau/6*5` and related helpers all the way up to `tau/12`.  They don't show up in autocomplete because they're annoying, but they're there." (* 2 math/pi))
+(loop [i :range-to [2 12]]
+  (put (curenv) (symbol "pi/" i) @{:value (/ pi i)})
+  (put (curenv) (symbol "tau/" i) @{:value (/ tau i)}))
+(loop [i :in [3 4 6 8 12] j :range [2 i]]
+  (put (curenv) (symbol "pi/" i "*" j) @{:value (* (/ pi i) j)})
+  (put (curenv) (symbol "tau/" i "*" j) @{:value (* (/ tau i) j)}))
+
 (defn remap+
   "Linearly transform a number in the range `[-1 1]` to `[0 1]`."
   [x]
@@ -35,6 +56,30 @@
   "Linearly transform a number in the range `[-1 1]` to `[0 -1]`."
   [x]
   (- (remap+ x)))
+
+(defhelper :float atan2 [:float y :float x]
+  ```
+  Returns a value in the range `[0, tau)` representing the angle
+  between the (2D) `+x` axis and the point `[x y]`.
+
+  This is an alternative to the built-in `atan`'s two argument
+  overload that is well-defined when `x = 0`.
+  ```
+  # The built-in atan is undefined when x = 0, and while
+  # I would assume this means "it might be positive
+  # or negative pi," I don't know if I can count on that.
+  (var signed-angle (if (= x 0)
+    (0.5 * pi * sign y)
+    (atan y x)))
+  (if (< signed-angle 0)
+    (return (tau + signed-angle))
+    (return signed-angle)))
+
+(defhelper :float quantize [:float value :float count]
+  ```
+  Rounds a value to the nearest multiple of `count`.
+  ```
+  (return (value * count | round / count)))
 
 (defn map-distance
   ```
