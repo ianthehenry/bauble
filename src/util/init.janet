@@ -130,6 +130,12 @@
   (def {true trues false falses} (group-by |(truthy? (f $)) list))
   [(or trues @[]) (or falses @[])])
 
+(defmacro _++ [x]
+  (with-syms [$x]
+    ~(let [,$x ,x]
+      (set ,x (+ ,x 1))
+      ,$x)))
+
 (defn defnamed-aux [def-flavor name params docstring & body]
   (assert (string? docstring) "docstring required")
   (def [named-params-spec positional-params-spec] (true-false keyword? params))
@@ -155,18 +161,10 @@
   (def variadic-positional-params-symbol
     (if variadic-positional-param-index
       (symbol (string/triml (in positional-params-spec variadic-positional-param-index) "&"))))
-  (def first-optional-index (find-index (fn [k] (string/has-prefix? "?" k)) positional-params-spec))
-  (loop [i :range [(or first-optional-index (length positional-params-spec))
-                   (or variadic-positional-param-index (length positional-params-spec))]
-        :let [param (in positional-params-spec i)]]
-    (assert (string/has-prefix? "?" param) "optional arguments must come last"))
 
-  (def required-positional-params (take (or first-optional-index variadic-positional-param-index (length positional-params-spec)) positional-params-spec))
-  (def optional-positional-params (map |(symbol (string/triml $ "?"))
-    (slice positional-params-spec
-     (or first-optional-index (length positional-params-spec))
-     (or variadic-positional-param-index (length positional-params-spec))
-     )))
+  (def positional-params (seq [name :in positional-params-spec :until (string/has-prefix? "&" name)]
+    [(symbol (string/triml name "?")) (not (string/has-prefix? "?" name))]))
+  (def required-positional-arg-count (count 1 positional-params))
 
   # even though this is a triple, from-pairs only looks at the first two arguments
   (def named-params (from-pairs named-params-ordered))
@@ -200,22 +198,36 @@
       (unless (has-key? named-args param-name)
         (errorf "%s: missing named argument %q" name param-name)))
     (cond
-      (< (length positional-args) (length required-positional-params))
+      (< (length positional-args) required-positional-arg-count)
         (errorf "%s: not enough arguments, missing %s"
-          name (string/join (slice required-positional-params (length positional-args)) " "))
+          name (string/join (slice (keep |(if ($ 1) ($ 0)) positional-params) (length positional-args)) " "))
       (and (nil? variadic-positional-params-symbol)
-        (> (length positional-args) (+ (length required-positional-params) (length optional-positional-params))))
+           (> (length positional-args) (length positional-params)))
         (errorf "%s: too many arguments"name))
 
-    [named-args ;(if variadic-named-args [variadic-named-args] []) ;positional-args])
+    (var optional-args-to-allocate (- (length positional-args) required-positional-arg-count))
+    (var i 0)
+    (def inflated-positional-args (seq [[param required?] :in positional-params]
+      (if required?
+        (in positional-args (_++ i))
+        (if (> optional-args-to-allocate 0)
+          (do
+            (-- optional-args-to-allocate)
+            (in positional-args (_++ i)))
+          nil))))
+    (while (< i (length positional-args))
+      (array/push inflated-positional-args (in positional-args (_++ i))))
+    [named-args
+     ;(if variadic-named-args [variadic-named-args] [])
+     ;inflated-positional-args])
 
   (def signature
     (string
       "("
       (string/join
         [name
-        ;required-positional-params
-        ;(map |(string "[" $ "]") optional-positional-params)
+        ;(seq ([k required?] :in positional-params)
+          (if required? k (string "[" k "]")))
         ;(if variadic-positional-params-symbol ['& variadic-positional-params-symbol] [])
         ;(map (fn [[k v required?]]
           (if required?
@@ -231,8 +243,7 @@
     ~(,def-flavor ,name ,(string signature "\n\n" docstring) (fn ,name [& ,$args]
       (def [,named-params
             ,;(if variadic-named-params-symbol [variadic-named-params-symbol] [])
-            ,;required-positional-params
-            ,;optional-positional-params
+            ,;(map 0 positional-params)
             ,;(if variadic-positional-params-symbol ['& variadic-positional-params-symbol] [])
             ] (,parse-params ,$args))
       ,;body))))
@@ -266,6 +277,9 @@
 
 (test-macro (defnamed foo [x ?y &z] "docstring" (+ x 1))
   (def foo "(foo x [y] & z)\n\ndocstring" (fn foo [& <1>] (def [@{} x y & z] (@parse-params <1>)) (+ x 1))))
+
+(test-macro (defnamed foo [x ?y z &w] "docstring" (+ x 1))
+  (def foo "(foo x [y] z & w)\n\ndocstring" (fn foo [& <1>] (def [@{} x y z & w] (@parse-params <1>)) (+ x 1))))
 
 (deftest "basic defnamed"
   (defnamed foo [x] "" (+ x 1))
@@ -309,6 +323,20 @@
   (defnamed foo [x y &rest] "" [x y rest])
   (test (foo 1 2) [1 2 []])
   (test (foo 1 2 3 4) [1 2 [3 4]]))
+
+(deftest "intermediate optional positional arguments"
+  (defnamed foo [x ?y z] "" [x y z])
+  (test-error (foo 1) "foo: not enough arguments, missing z")
+  (test (foo 1 2) [1 nil 2])
+  (test (foo 1 2 3) [1 2 3])
+  (test-error (foo 1 2 3 4) "foo: too many arguments"))
+
+(deftest "intermediate optional positional arguments and variadic arguments"
+  (defnamed foo [x ?y z &w] "" [x y z w])
+  (test-error (foo 1) "foo: not enough arguments, missing z")
+  (test (foo 1 2) [1 nil 2 []])
+  (test (foo 1 2 3) [1 2 3 []])
+  (test (foo 1 2 3 4) [1 2 3 [4]]))
 
 (deftest "variadic and optional positional arguments"
   (defnamed foo [x ?y &rest] "" [x y rest])
