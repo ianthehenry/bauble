@@ -18,12 +18,6 @@ set it in a way that fits nicely into a pipeline.
 (def- MINIMUM_HIT_DISTANCE 0.01)
 (def- MAX_LIGHT_STEPS 256:u)
 
-# TODO: docstring
-(jlsl/jlsl/defstruct Light
-  :vec3 color
-  :vec3 direction
-  :float brightness)
-
 (defn light/map
   ```
   `f` takes and returns a `Light` expression.

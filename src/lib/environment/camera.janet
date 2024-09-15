@@ -10,15 +10,6 @@
   (var z (* -0.5 cot-half-fov))
   (return (normalize [frag-coord z])))
 
-(defn camera?
-  ```
-  Returns `true` if its value is a GLSL expression with type `Ray`.
-  ```
-  [value]
-  (if-let [expr (jlsl/try-coerce-expr x)]
-    (= (jlsl/type/coerce Ray) (jlsl/expr/type expr))
-    false))
-
 (sugar (defnamed camera/perspective [pos target :?fov]
   ```
   Returns a ray from a perspective camera located at `pos` and aiming towards `target`.

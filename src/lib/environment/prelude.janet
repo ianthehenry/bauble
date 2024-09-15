@@ -24,6 +24,7 @@
 
 (import ../../jlsl/prelude :prefix "" :export true)
 (import ./gl :prefix "" :export true)
+(import ./types :prefix "" :export true)
 (import ./dynvars :prefix "" :export true)
 
 (defhelper :float sum [:vec2 v]
@@ -119,3 +120,23 @@
     0 vec.z (- vec.y)
     (- vec.z) 0 vec.x
     vec.y (- vec.x) 0)))
+
+(defn camera?
+  ```
+  Returns `true` if `value` is a GLSL expression with type `Ray`.
+  ```
+  [value]
+  (if-let [expr (jlsl/try-coerce-expr value)]
+    (= (jlsl/type/coerce Ray) (jlsl/expr/type expr))
+    false))
+
+(defn light?
+  ```
+  Returns `true` if `value` is a GLSL expression with type `Light`.
+  ```
+  [value]
+  (if-let [expr (jlsl/try-coerce-expr value)]
+    (= (jlsl/type/coerce Light) (jlsl/expr/type expr))
+    false))
+
+(put (curenv) 'shape? (table/setproto @{:private false} (dyn 'shape/shape?)))

@@ -97,7 +97,7 @@
     camera @{:doc "An expression for a `ray` that determines the position and direction of the camera."
              :ref @[nil]}
     camera/perspective @{:doc "(camera/perspective pos target [:fov fov])\n\nReturns a ray from a perspective camera located at `pos` and aiming towards `target`.\n\nYou can change the field of view by passing `:fov` with a number of degrees. The default is `60`, and\nthe default orbiting free camera uses `45`."}
-    camera? @{:doc "(camera? value)\n\nReturns `true` if its value is a GLSL expression with type `Ray`."}
+    camera? @{:doc "(camera? value)\n\nReturns `true` if `value` is a GLSL expression with type `Ray`."}
     cast-light-hard-shadow @{:doc "(cast-light-hard-shadow light-color light-position)\n\nTODOC"}
     cast-light-no-shadow @{:doc "(cast-light-no-shadow light-color light-position)\n\nTODOC"}
     cast-light-soft-shadow @{:doc "(cast-light-soft-shadow light-color light-position softness)\n\nTODOC"}
@@ -196,6 +196,7 @@
     light/map-brightness @{:doc "(light/map-brightness light f)\n\n`f` takes and returns a `:float` expression."}
     light/map-color @{:doc "(light/map-color light f)\n\n`f` takes and returns a `:vec3` expression."}
     light/point @{:doc "(light/point color position [:shadow softness] [:brightness brightness] [:hoist hoist])\n\nReturns a new light, which can be used as an input to some shading functions.\n\nAlthough this is called a point light, the location of the \"point\" can vary\nwith a dynamic expression. A light that casts no shadows and is located at `P`\n(no matter where `P` is) is an ambient light. A light that is always located at\na fixed offset from `P` is a directional light.\n\nBy default lights don't cast shadows, but you can change that by passing a\n`:shadow` argument. `0` will cast hard shadows, and any other expression will\ncast a soft shadow (it should be a number roughly in the range `0` to `1`).\n\nShadow casting affects the `brightness` of the light. You can also specify a baseline\n`:brightness` explicitly, which defaults to `1`.\n\nShadow casting always occurs in the global coordinate space, so you should position\nlights relative to `P`, not `p`.\n\nBy default light calculations are hoisted. This is an optimization that's helpful\nif you have a light that casts shadows that applies to multiple shaded surfaces that\nhave been combined with a smooth `union` or `morph` or other shape combinator. Instead\nof computing shadows twice and mixing them together, the shadow calculation will be\ncomputed once at the top level of the shader. Note though that this will prevent you\nfrom referring to variables that don't exist at the top level -- e.g. anything defined\nwith `gl/let`, or the index argument of `tiled` shape. If you want to make a light that\ndynamically varies, pass `:hoist false`."}
+    light? @{:doc "(light? value)\n\nReturns `true` if `value` is a GLSL expression with type `Light`."}
     lime @{:value [hsv 0.25 0.98 1]}
     line @{:doc "(line start end width)\n\nTODOC"}
     log @{}
@@ -221,7 +222,7 @@
     mix @{}
     mod @{}
     morph @{:doc "(morph shape1 amount shape2 [:distance amount] [:color amount])\n\nMorph linearly interpolates between two shapes.\n\n```\n# 50% box, 50% sphere\n(box 50 | morph (ball 50))\n\n# 75% box, 25% sphere\n(box 50 | morph 0.25 (ball 50))\n```\n\nConcretely this means that it returns a new shape whose individual fields\nare linear interpolations of its inputs. With an anonymous `amount` coefficient,\nboth the distance and color fields will be interpolated with the same value.\nBut you can also specify per-field overrides:\n\n```\n# distance is a 50% blend, but the color is 90% red\n(box 50 | color [1 0 0] | morph :color 0.1 (ball 50 | color [0 1 0]))\n```"}
-    move @{:doc "(move shape & args)\n\nTranslate a shape. Usually you'd use this with a vector offset:\n\n```\n(move (box 50) [0 100 0])\n```\n\nBut you can also provide a vector and a scalar:\n\n```\n(move (box 50) y 100)\n```\n\nWhich is the same as `(move (box 50) (y * 100))`.\n\nIf you provide multiple vector-scalar pairs, their sum is the final offset:\n\n```\n(move (box 50) x 100 y 100 -z 20)\n```\n\nThat is the same as `(move (box 50) (+ (x * 100) (y * 100) (-z * 100)))`."}
+    move @{:doc "(move subject & args)\n\nTranslate a shape. Usually you'd use this with a vector offset:\n\n```\n(move (box 50) [0 100 0])\n```\n\nBut you can also provide a vector and a scalar:\n\n```\n(move (box 50) y 100)\n```\n\nWhich is the same as `(move (box 50) (y * 100))`.\n\nIf you provide multiple vector-scalar pairs, their sum is the final offset:\n\n```\n(move (box 50) x 100 y 100 -z 20)\n```\n\nThat is the same as `(move (box 50) (+ (x * 100) (y * 100) (-z * 100)))`.\n\n`move` can take a shape, a vector, or a camera."}
     nearest-distance @{:doc "(nearest-distance)\n\nThis is the forward declaration of the function that will become the eventual\ndistance field for the shape we're rendering. This is used in the main raymarcher,\nas well as the shadow calculations. You can refer to this function to sample the\ncurrent distance field at the current value of `p` or `q`, for example to create\na custom ambient occlusion value."}
     normal @{:doc "(Color only!) A normalized vector that approximates the 3D distance field gradient at `P` (in other words, the surface normal for shading)."
              :value [:var "normal" :vec3]}
@@ -340,7 +341,6 @@
     shape/color @{:doc "(color shape)\n\nShorthand for `(shape/get-field shape :color)`."}
     shape/distance @{:doc "(distance shape)\n\nShorthand for `(shape/get-field shape :distance)`."}
     shape/get-field @{:doc "(get-field shape field)\n\nLook up a single field on a shape. If the field does not exist, this will return `nil`."}
-    shape/is? @{:doc "(is? x)\n\nReturns `true` if its argument is a shape."}
     shape/map @{:doc "(map shape f &opt type)\n\nAlter the fields on a shape, optionally changing its dimension in the process.\n\n`f` will be called with the value of the field. If you want to do something different\nfor each field, use `shape/map-fields`."}
     shape/map-color @{:doc "(map-color shape f)\n\nShorthand for `(shape/map-field shape :color f)`."}
     shape/map-distance @{:doc "(map-distance shape f)\n\nShorthand for `(shape/map-field shape :distance f)`."}
@@ -348,9 +348,11 @@
     shape/map-fields @{:doc "(map-fields shape f &opt type)\n\nLike `shape/map`, but `f` will be called with two arguments: the field name (as a keyword) and its value."}
     shape/merge @{:doc "(merge shapes f)\n\nMerge multiple shapes together. `shapes` should be a list of shapes that all\nhave the same dimension.\n\n`f` will be called with an array of all of the fields from each shape, and\nshould return a struct with the fields for the new shape.\n\n`merge` returns a new shape with the same dimension as its inputs."}
     shape/new @{:doc "(new type & fields)\n\nReturns a new shape with the given type and fields.\n\n```\n# red circle with radius 10\n(shape/new jlsl/type/vec2\n  :distance (length q - 10)\n  :color [1 0 0])\n```"}
+    shape/shape? @{:doc "(shape? value)\n\nReturns `true` if `value` is a shape."}
     shape/transplant @{:doc "(transplant dest-shape field source-shape)\n\nShorthand for `(shape/with dest-shape field (shape/get-field source-shape field))`."}
     shape/type @{:doc "(type shape)\n\nReturns the dimension of a shape, as a JLSL type equal to the dimension of a point\nin the shape -- either `vec2` or `vec3`."}
     shape/with @{:doc "(with shape & new-kvs)\n\nReplace arbitrary fields on a shape.\n\nYou probably don't want to use this. Theoretically shapes\nin Bauble are collections of arbitrary fields, but in practice\n`:color` and `:distance` are the only fields that are really\nsupported in a meaningful way.\n\nBut you could associate other fields with shapes, and use that to\nmodel, for example, analytic normals. But none of the existing\ninfrastructure will understand you if you do this."}
+    shape? @{:doc "(shape? value)\n\nReturns `true` if `value` is a shape."}
     shell @{:doc "(shell shape &opt thickness)\n\nReturns a hollow version of the provided shape (the absolute value of the distance field)."}
     sign @{}
     sin @{}
@@ -562,7 +564,7 @@
     (def <1> (@coerce-expr (typecheck r jlsl/type/float)))
     (def r (@new "r" (@expr/type <1>)))
     (def <2> (do (map-axes shape axes (fn [x] (sqrt (+ (* x x) (* r r)))))))
-    (if (@is? <2>)
+    (if (@shape? <2>)
       (@map <2> (fn [<3>] (@with-expr @[[r <1>]] [] <3> "let")))
       (@with-expr @[[r <1>]] [] (@coerce-expr <2>) "let"))))
 

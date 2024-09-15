@@ -23,7 +23,7 @@
     (bad-compile msg nil where line col))
   [(string/slice buf 0 -2) macro-fiber])
 
-(defn can-be-subject? [x] (shape/is? x))
+(defn can-be-subject? [x] (shape/shape? x))
 
 # this returns the resulting environment
 (defn evaluate [script]
@@ -66,7 +66,7 @@
 (import ../jlsl)
 (defn- make-presentable [entry]
   (def value (or (in entry :value) (in (in entry :ref) 0)))
-  (if (shape/is? value)
+  (if (shape/shape? value)
     (shape/map value jlsl/show)
     value))
 

@@ -377,3 +377,6 @@
   (def result @{})
   (proto-flatten-to-root-aux t result)
   result)
+
+(defmacro steal [module sym]
+  ~(def- ,sym (get-in ',(require (string module)) [',sym :value])))

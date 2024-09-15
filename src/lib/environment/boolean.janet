@@ -252,7 +252,7 @@
   (while (not= key nil)
     (var arg (@in args key))
     (cond
-      (shape/is? arg) (array/push shapes arg)
+      (shape? arg) (array/push shapes arg)
       (keyword? arg) (do
         (set key (next args key))
         (assertf (not= key nil) "no value for %q" arg)

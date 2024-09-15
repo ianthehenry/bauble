@@ -2,10 +2,8 @@
 (use ./rotation)
 (use ./camera)
 
-(defmacro- steal [sym]
-  ~(def- ,sym (get-in ',(require "./rotation") [',sym :value])))
-(steal rotation-matrix-2d)
-(steal rotation-matrix-3d)
+(steal ./rotation rotation-matrix-2d)
+(steal ./rotation rotation-matrix-3d)
 
 (defn- rotate-shape [shape args]
   (case (shape/type shape)
@@ -62,7 +60,7 @@
   [subject & args]
   (assert (> (@length args) 0) "not enough arguments")
   (cond
-    (shape/is? subject) (rotate-shape subject args)
+    (shape? subject) (rotate-shape subject args)
     (camera? subject) (rotate-camera subject args)
     (rotate-vector subject args)))
 
@@ -86,7 +84,7 @@
   a vector's direction.
   ````
   [target from to]
-  (if (shape/is? target)
+  (if (shape? target)
     (align-shape target from to)
     (align-vector target from to)))
 
@@ -135,17 +133,26 @@
   ```
 
   That is the same as `(move (box 50) (+ (x * 100) (y * 100) (-z * 100)))`.
+
+  `move` can take a shape, a vector, or a camera.
   ````
-  [shape & args]
-  (def shape (if (shape/is? shape) shape (jlsl/coerce-expr shape)))
-  (def dimension (if (shape/is? shape) (shape/type shape) (jlsl/expr/type shape)))
+  [subject & args]
+  (def subject (if (shape? subject) subject (jlsl/coerce-expr subject)))
+  (def dimension (cond
+   (shape? subject) (shape/type subject)
+   (camera? subject) jlsl/type/vec3
+   (jlsl/expr/type subject)))
   (def offset (sum-scaled-vectors dimension args))
-  (if (shape/is? shape)
-    (case dimension
-      jlsl/type/vec2 (transform shape "move" q (- q offset))
-      jlsl/type/vec3 (transform shape "move" p (- p offset))
+  (cond
+    (shape? subject) (case dimension
+      jlsl/type/vec2 (transform subject "move" q (- q offset))
+      jlsl/type/vec3 (transform subject "move" p (- p offset))
       (error "BUG"))
-    (+ shape offset)))
+    (camera? subject) (sugar (gl/do
+      (var camera subject)
+      (+= camera.origin offset)
+      camera))
+    (+ subject offset)))
 
 (defn- map-axes [shape axes f]
   (def mask @[false false false])

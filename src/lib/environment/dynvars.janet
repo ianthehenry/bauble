@@ -1,8 +1,5 @@
 (use ../../jlsl)
-
-(jlsl/defstruct Ray
-  :vec3 origin
-  :vec3 dir)
+(use ./types)
 
 # available in distance or color fields:
 

@@ -66,10 +66,16 @@
 
 (defn categorize [name filename]
   (or
-    ('{map-distance [:shapes :functions]
-       map-color [:shapes :functions]
-       shape/2d [:shapes :functions]
-       shape/3d [:shapes :functions]} name)
+    ('{map-distance (:shapes :functions)
+       map-color (:shapes :functions)
+       shape/2d (:shapes :functions)
+       shape/3d (:shapes :functions)
+       shape? (:shapes :functions)
+       camera? (:camera)
+       Ray (:camera)
+       light? (:surfacing)
+       Light (:surfacing)
+       } name)
     (cond
       (= filename "lib/shape.janet") [:shapes :shape]
       (nil? filename) [:misc]
@@ -192,17 +198,17 @@
       Shape combinators
         7 values
       Shape functions
-        4 values
+        5 values
       Lower-level shape stuff
         14 values
     Transformations
       10 values
     Dynamic variables
-      15 values
+      14 values
     Bauble variables
       7 values
     Shading
-      23 values
+      24 values
     Repetition
       6 values
     Noise
@@ -210,7 +216,7 @@
     GLSL helpers
       9 values
     Camera
-      3 values
+      4 values
     Rotation
       6 values
     Uncategorized

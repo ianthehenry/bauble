@@ -605,7 +605,6 @@
   "radial 3D colors asymmetric" `
     (cone y 50 100 | blinn-phong (hsv (hash $i) 0.5 1) | move x 89 | radial: $i z 12 :oversample true :sample-from -1 :sample-to 1)
   `
-
 })
 
 (each filename (os/dir "./cases")

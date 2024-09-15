@@ -87,7 +87,7 @@
 (defmacro deftransform [name bindings docstring & body]
   (assert (string? docstring))
   ~(defn ,name ,docstring ,bindings
-    (as-macro ,assertf (,shape/is? ,(first bindings)) "first argument to %s should be a shape, got %q" ,(string name) ,(first bindings))
+    (as-macro ,assertf (,shape/shape? ,(first bindings)) "first argument to %s should be a shape, got %q" ,(string name) ,(first bindings))
     ,;(seq [param :in (drop 1 bindings)]
       ~(def ,param (,jlsl/coerce-expr ,param)))
     ,;(syntax/expand body)))

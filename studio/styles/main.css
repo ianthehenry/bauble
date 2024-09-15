@@ -181,7 +181,7 @@ header .image-link {
   border-radius: 2px;
   overflow: hidden;
   border: solid 2px var(--window);
-  box-sizing: border-box;
+  box-sizing: content-box; /* This is important because the canvas is exactly 256px tall */
 }
 
 .bauble-placeholder .canvas-container, .bauble-placeholder .code-container {

@@ -19,10 +19,10 @@
         [])])
     (def ,$subject (do ,;body))
     ,;(if field
-      [~(as-macro ,assertf (,shape/is? ,$subject) "%q is not a shape" ,$subject)
+      [~(as-macro ,assertf (,shape/shape? ,$subject) "%q is not a shape" ,$subject)
        ~(,shape/map-field ,$subject ,field (fn [,$field]
          (,jlsl/with-expr ,<with-bindings> [] ,$field ,with-name)))]
-      [~(if (,shape/is? ,$subject)
+      [~(if (,shape/shape? ,$subject)
         (,shape/map ,$subject (fn [,$field]
           (,jlsl/with-expr ,<with-bindings> [] ,$field ,with-name)))
         (,jlsl/with-expr ,<with-bindings> [] (,jlsl/coerce-expr ,$subject) ,with-name))])

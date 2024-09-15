@@ -49,7 +49,7 @@
   (def camera (typecheck? (get-var env 'camera) Ray))
 
   (def subject (if subject (do
-    (assertf (shape/is? subject) "%q is not a shape" subject)
+    (assertf (shape? subject) "%q is not a shape" subject)
     (shape/map subject (partial unhoist env)))))
 
   (def dimension (if subject

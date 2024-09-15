@@ -64,10 +64,10 @@
 (test (map-struct |(* $ 2) {:foo 1 :bar 2}) {:bar 4 :foo 2})
 (test (map-structp |[$0 (* $1 2)] {:foo 1 :bar 2}) {:bar [:bar 4] :foo [:foo 2]})
 
-(defn is?
-  "Returns `true` if its argument is a shape."
-  [x]
-  (and (struct? x) (= (x :tag) tag)))
+(defn shape?
+  "Returns `true` if `value` is a shape."
+  [value]
+  (and (struct? value) (= (value :tag) tag)))
 
 (defn merge
   ```
