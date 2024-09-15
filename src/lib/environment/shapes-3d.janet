@@ -101,6 +101,9 @@
   (cyl y 50 100)
   ```
 
+  The second argument is twice the length of the cylinder. Like many shapes,
+  you can round it with `:r`.
+
   ```example
   (cyl z 100 50 :r (osc t 2 0 10))
   ```

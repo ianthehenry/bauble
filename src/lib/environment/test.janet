@@ -97,6 +97,7 @@
     camera @{:doc "An expression for a `ray` that determines the position and direction of the camera."
              :ref @[nil]}
     camera/perspective @{:doc "(camera/perspective pos target [:fov fov])\n\nReturns a ray from a perspective camera located at `pos` and aiming towards `target`.\n\nYou can change the field of view by passing `:fov` with a number of degrees. The default is `60`, and\nthe default orbiting free camera uses `45`."}
+    camera? @{:doc "(camera? value)\n\nReturns `true` if its value is a GLSL expression with type `Ray`."}
     cast-light-hard-shadow @{:doc "(cast-light-hard-shadow light-color light-position)\n\nTODOC"}
     cast-light-no-shadow @{:doc "(cast-light-no-shadow light-color light-position)\n\nTODOC"}
     cast-light-soft-shadow @{:doc "(cast-light-soft-shadow light-color light-position softness)\n\nTODOC"}
@@ -113,7 +114,7 @@
     cross-matrix @{:doc "(cross-matrix vec)\n\nReturns the matrix such that `(* (cross-matrix vec1) vec2)` = `(cross vec1 vec2)`."}
     cut-disk @{:doc "(cut-disk radius bottom)\n\nReturns a 2D shape.\n\n```example\n(cut-disk 50 (sin t * 40))\n```"}
     cyan @{:value [hsv 0.5 0.98 1]}
-    cyl @{:doc "(cyl axis radius height [:r round])\n\nReturns a 3D shape, a cylinder oriented along the given `axis`.\n\n```example\n(cyl y 50 100)\n```\n\n```example\n(cyl z 100 50 :r (osc t 2 0 10))\n```"}
+    cyl @{:doc "(cyl axis radius height [:r round])\n\nReturns a 3D shape, a cylinder oriented along the given `axis`.\n\n```example\n(cyl y 50 100)\n```\n\nThe second argument is twice the length of the cylinder. Like many shapes,\nyou can round it with `:r`.\n\n```example\n(cyl z 100 50 :r (osc t 2 0 10))\n```"}
     dark-gray @{:value [0.25 0.25 0.25]}
     default-2d-color @{:doc "A variable that determines the default color to use when rendering a 2D shape with no color field.\n\nDefault is `isolines`."
                        :ref @[[isolines]]}
@@ -325,7 +326,7 @@
     revolve @{:doc "(revolve shape axis &opt offset)\n\nRevolve a 2D shape around the given `axis` to return a 3D shape.\n\nYou can optionally supply an `offset` to move the shape away from the origin first (the default is `0`)."}
     rhombus @{:doc "(rhombus size)\n\nReturns a 2D shape. It rhombs with a kite.\n\n```example\n(rhombus [50 (osc t 3 20 80)])\n```"}
     ring @{:doc "(ring radius angle thickness)\n\n```example\n(ring 60 (osc t 5 tau) (osc t 2 5 20))\n```"}
-    rotate @{:doc "(rotate target & args)\n\nRotate a shape or a vector. Positive angles are counter-clockwise rotations.\n\nIn 3D, the arguments should be pairs of `axis angle`. For example:\n\n```\n(rotate (box 50) x 0.1 y 0.2)\n```\n\nAll `axis` arguments must be unit vectors. There are built-in axis variables `x`/`+y`/`-z`\nfor the cardinal directions, and these produce optimized rotation matrices. But you can\nrotate around an arbitrary axis:\n\n```\n(rotate (box 50) (normalize [1 1 1]) t)\n```\n\nThe order of the arguments is significant, as rotations are not commutative.\n\nIn 2D, the arguments should just be angles; no axis is allowed."}
+    rotate @{:doc "(rotate subject & args)\n\nRotate a shape or a vector. Positive angles are counter-clockwise rotations.\n\nIn 3D, the arguments should be pairs of `axis angle`. For example:\n\n```example\n(rotate (box 50) x 0.1 y 0.2)\n```\n\nAll `axis` arguments must be unit vectors. There are built-in axis variables `x`/`+y`/`-z`\nfor the cardinal directions, and these produce optimized rotation matrices. But you can\nrotate around an arbitrary axis:\n\n```example\n(rotate (box 50) (normalize [1 1 1]) t)\n```\n\nThe order of the arguments is significant, as rotations are not commutative.\n\nThe first argument to `rotate` can be a shape, vector, or camera.\n\nIn 2D, the arguments should just be angles; no axis is allowed."}
     rotation-around @{:doc "(rotation-around axis angle)\n\nA rotation matrix about an arbitrary axis. More expensive to compute than the axis-aligned rotation matrices."}
     rotation-matrix @{:doc "(rotation-matrix & args)\n\nReturn a rotation matrix. Takes the same arguments as `rotate`, minus the initial thing to rotate."}
     rotation-x @{:doc "(rotation-x angle)\n\nA rotation matrix about the X axis."}

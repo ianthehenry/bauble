@@ -210,7 +210,7 @@
     GLSL helpers
       9 values
     Camera
-      2 values
+      3 values
     Rotation
       6 values
     Uncategorized

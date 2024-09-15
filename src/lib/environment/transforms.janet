@@ -1,5 +1,6 @@
 (use ./import)
 (use ./rotation)
+(use ./camera)
 
 (defmacro- steal [sym]
   ~(def- ,sym (get-in ',(require "./rotation") [',sym :value])))
@@ -18,6 +19,15 @@
     jlsl/type/vec3 (* (rotation-matrix-3d 1 args) v)
     (errorf "I don't know how to rotate %q" (jlsl/expr/to-sexp v))))
 
+(defn- rotate-camera [camera args]
+  # this is goofy, but all arguments to functions in jlsl
+  # notation must be jlsl expressions, and args is not
+  (sugar (gl/let [camera camera]
+    (def new-dir (rotate-vector camera.dir args))
+    (gl/do
+      (set camera.dir new-dir)
+      camera))))
+
 (defn- align-shape [shape from to]
   (transform shape "align" p (* (alignment-matrix to from) p)))
 
@@ -31,7 +41,7 @@
 
   In 3D, the arguments should be pairs of `axis angle`. For example:
 
-  ```
+  ```example
   (rotate (box 50) x 0.1 y 0.2)
   ```
 
@@ -39,19 +49,22 @@
   for the cardinal directions, and these produce optimized rotation matrices. But you can
   rotate around an arbitrary axis:
 
-  ```
+  ```example
   (rotate (box 50) (normalize [1 1 1]) t)
   ```
 
   The order of the arguments is significant, as rotations are not commutative.
 
+  The first argument to `rotate` can be a shape, vector, or camera.
+
   In 2D, the arguments should just be angles; no axis is allowed.
   ````
-  [target & args]
+  [subject & args]
   (assert (> (@length args) 0) "not enough arguments")
-  (if (shape/is? target)
-    (rotate-shape target args)
-    (rotate-vector target args)))
+  (cond
+    (shape/is? subject) (rotate-shape subject args)
+    (camera? subject) (rotate-camera subject args)
+    (rotate-vector subject args)))
 
 (defn align
   ````

@@ -266,19 +266,23 @@
   )
 
 (import ./builtins-prelude)
-(defn coerce-expr [value]
+(defn try-coerce-expr [value]
   (if (expr? value)
     value
     (pat/match value
       |number? (expr/literal type/float value)
       |variable? (expr/identifier value)
-      |tuple? (let [args (map coerce-expr value)]
-        (expr/call (builtins-prelude/resolve-vec-constructor nil "[]" (tmap expr/type args)) args))
+      |tuple? (let [args (map try-coerce-expr value)]
+        (if (some nil? args)
+          nil
+          (expr/call (builtins-prelude/resolve-vec-constructor nil "[]" (tmap expr/type args)) args)))
       |boolean? (expr/literal type/bool value)
       |int64? (expr/literal type/int value)
       |uint64? (expr/literal type/uint value)
-      (errorf "Can't coerce %q into an expression" value)
-      )))
+      nil)))
+
+(defn coerce-expr [value]
+  (assert (try-coerce-expr value) (errorf "Can't coerce %q into an expression" value)))
 
 (def- multifunction-proto @{:type 'function})
 (defn multifunction? [t] (and (table? t) (= (table/getproto t) multifunction-proto)))
