@@ -507,12 +507,12 @@
   )
   `
 
-  "tiled" `
-  (circle 6 | color (hsv (hash $i) 0.5 1) | tiled $i [12 12])
+  "tile-colon" `
+  (circle 6 | color (hsv (hash $i) 0.5 1) | tile: $i [12 12])
   `
 
   "tile with oversampling picks the nearest color" `
-  (tiled* [20 20] :oversample true :sample-from [-1 -1] :sample-to [1 1] (fn [$i]
+  (tile* [20 20] :oversample true :sample-from [-1 -1] :sample-to [1 1] (fn [$i]
     (isosceles-triangle [10 31]
       | move (hash2 $i * 10)
       | rotate (hash $i)
@@ -555,7 +555,7 @@
   (ball 20
   | blinn-phong [1 1 1]
   | with-lights (light/point (hsv (hash $i) 1 1) [200 200 200] :shadow 0.50 :hoist false)
-  | tiled $i :limit 3 [70 70 70])
+  | tile: $i :limit 3 [70 70 70])
   `
 
   "occlusion" `
@@ -584,10 +584,26 @@
   (rect 20 | rotate 0.25 | move x 100 | radial 12 :oversample true)
   `
   "radial 2D colors" `
-  (circle 12 | color (hsv (hash $i) 0.5 1) | move x 100 | radialed $i 24)
+  (circle 12 | color (hsv (hash $i) 0.5 1) | move x 100 | radial: $i 24)
   `
   "radial 2D colors asymmetric" `
-    (isosceles-triangle [10 73] | color (hsv (hash $i) 0.5 1) | move x 89 | radialed $i 12 :oversample true :sample-from -1 :sample-to 1)
+    (isosceles-triangle [10 73] | color (hsv (hash $i) 0.5 1) | move x 89 | radial: $i 12 :oversample true :sample-from -1 :sample-to 1)
+  `
+
+  "radial 3D" `
+  (box 20 | move x 100 | radial z 12)
+  `
+  "radial 3D no oversample" `
+  (box 20 | rotate (normalize [1 1 1]) 0.25 | move x 100 | radial z 12 :oversample false)
+  `
+  "radial 3D oversample" `
+  (box 20 | rotate (normalize [1 1 1]) 0.25 | move x 100 | radial z 12 :oversample true)
+  `
+  "radial 3D colors" `
+  (box 12 | blinn-phong (hsv (hash $i) 0.5 1) | move x 100 | radial: $i z 24)
+  `
+  "radial 3D colors asymmetric" `
+    (cone y 50 100 | blinn-phong (hsv (hash $i) 0.5 1) | move x 89 | radial: $i z 12 :oversample true :sample-from -1 :sample-to 1)
   `
 
 })
