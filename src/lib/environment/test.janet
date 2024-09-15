@@ -306,8 +306,8 @@
                                      0]}
                  :tag <1>
                  :type [<3> vec [<4> float] 3]}}
-    radial @{:doc "(radial shape [axis] count [:oversample oversample] [:sample-from sample-from] [:sample-to sample-to])\n\nTODOC"}
-    radial* @{:doc "(radial* [axis] count get-shape [:oversample oversample] [:sample-from sample-from] [:sample-to sample-to])\n\nTODOC"}
+    radial @{:doc "(radial shape [axis] count [offset] [:oversample oversample] [:sample-from sample-from] [:sample-to sample-to])\n\nTODOC"}
+    radial* @{:doc "(radial* [axis] count [offset] get-shape [:oversample oversample] [:sample-from sample-from] [:sample-to sample-to])\n\nTODOC"}
     radial: @{:doc "(radial: shape $i & args)\n\nTODOC"
               :macro true}
     radians @{}

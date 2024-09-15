@@ -576,6 +576,9 @@
   "radial 2D" `
   (rect 20 | move x 100 | radial 12)
   `
+  "radial 2D offset" `
+  (rect 20 | radial 12 100)
+  `
   "radial 2D no oversample" `
   (rect 20 | rotate 0.25 | move x 100 | radial 12 :oversample false)
   `
@@ -591,6 +594,9 @@
 
   "radial 3D" `
   (box 20 | move x 100 | radial z 12)
+  `
+  "radial 3D offset" `
+  (box 20 | radial y 12 100)
   `
   "radial 3D no oversample" `
   (box 20 | rotate (normalize [1 1 1]) 0.25 | move x 100 | radial z 12 :oversample false)

@@ -251,23 +251,28 @@
 
 (defn- split-axis [axis]
   (sugar (case axis
-    x [p.x p.yz]
-    y [p.y p.zx]
-    z [p.z p.xy]
+    x [y p.yz]
+    y [z p.zx]
+    z [x p.xy]
     (errorf "unknown axis %q" (jlsl/show axis)))))
 
-(defn- radial-aux [shape axis $index count oversample sample-from sample-to]
-  (def size (typecheck count jlsl/type/float))
-  (def [coord plane rotate radial-distance radial-other]
+(defn- radial-aux [shape axis $index count offset oversample sample-from sample-to]
+  (def [coord plane offset count rotate radial-distance radial-other]
     (case (shape/type shape)
       jlsl/type/vec2 (do
-        (assert (nil? axis) "cannot supply an axis with a 2D shape")
-        [q q rotate radial-distance-2d radial-other-2d])
+        (def actual-count (if (nil? axis) count axis))
+        (def actual-offset (if (nil? axis) nil (typecheck count jlsl/type/float)))
+        (assert (nil? offset) "cannot supply an axis with a 2D shape")
+        [q q (if actual-offset [actual-offset 0]) actual-count rotate radial-distance-2d radial-other-2d])
       jlsl/type/vec3 (do
-        (def [this-axis other-axes] (split-axis axis))
-        [p other-axes (fn [p angle] (rotate p axis angle)) radial-distance-3d radial-other-3d])))
+        (def [offset-axis other-axes] (split-axis axis))
+        [p other-axes (if offset (* (typecheck offset jlsl/type/float) offset-axis)) count
+         (fn [p angle] (rotate p axis angle)) radial-distance-3d radial-other-3d])))
+  (def count (typecheck count jlsl/type/float))
   (def sample-from (typecheck (or sample-from 0) jlsl/type/float))
   (def sample-to (typecheck (or sample-to 1) jlsl/type/float))
+
+  (def shape (if offset (move shape offset) shape))
 
   (if oversample
     (shape/map-fields shape (fn [name expr]
@@ -277,20 +282,20 @@
     (shape/map shape (fn [expr]
       (simple-radial coord plane rotate $index expr count)))))
 
-(defnamed radial [shape ?axis count :?oversample :?sample-from :?sample-to]
+(defnamed radial [shape ?axis count ?offset :?oversample :?sample-from :?sample-to]
   ````
   TODOC
   ````
   (def $index (jlsl/variable/new "radial-index" jlsl/type/float))
-  (radial-aux shape axis $index count oversample sample-from sample-to))
+  (radial-aux shape axis $index count offset oversample sample-from sample-to))
 
-(defnamed radial* [?axis count get-shape :?oversample :?sample-from :?sample-to]
+(defnamed radial* [?axis count ?offset get-shape :?oversample :?sample-from :?sample-to]
   ````
   TODOC
   ````
   (def $index (jlsl/variable/new "radial-index" jlsl/type/float))
   (def shape (get-shape $index))
-  (radial-aux shape axis $index count oversample sample-from sample-to))
+  (radial-aux shape axis $index count offset oversample sample-from sample-to))
 
 (defmacro radial:
   ````

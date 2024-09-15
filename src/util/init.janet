@@ -329,7 +329,14 @@
   (test-error (foo 1) "foo: not enough arguments, missing z")
   (test (foo 1 2) [1 nil 2])
   (test (foo 1 2 3) [1 2 3])
-  (test-error (foo 1 2 3 4) "foo: too many arguments"))
+  (test-error (foo 1 2 3 4) "foo: too many arguments")
+
+  (defnamed bar [a ?b c ?d e] "" [a b c d e])
+  (test-error (bar 1) "bar: not enough arguments, missing c e")
+  (test-error (bar 1 2) "bar: not enough arguments, missing e")
+  (test (bar 1 2 3) [1 nil 2 nil 3])
+  (test (bar 1 2 3 4) [1 2 3 nil 4])
+  (test (bar 1 2 3 4 5) [1 2 3 4 5]))
 
 (deftest "intermediate optional positional arguments and variadic arguments"
   (defnamed foo [x ?y z &w] "" [x y z w])
