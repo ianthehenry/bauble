@@ -27,15 +27,15 @@
   | slow 0.25)
   `
 
-  # TODO: restore once we have radial symmetry again
-  # "balloon" [ortho-z `
-  # (ball [100 100 50]
-  # | union :r 50 (cyl :y 25 50 | move [0 -100 0])
-  # | scale :y (ss p.y -100 100 1 0.8)
-  # | radial :y 20 0
-  # | move [0 40 0]
-  # | fresnel 1)
-  # `]
+  "balloon" `
+  (ball [50 100 100]
+  | union :r 50 (cyl y 25 50 | move [0 -100 0])
+  | scale [1 (ss p.y [-100 100] [1 0.8]) 1]
+  | radial y 20
+  | color normal+
+  | fresnel)
+  (set camera (camera/perspective [0 -40 384] [0 -40 0] :fov 45))
+  `
 
   "spatial noise" `(ball (perlin (p * 0.05) * 10 + 100) | slow 0.9)`
   "spatial noise extreme" `(ball (perlin (p * 0.05) * 30 + 80) | slow 0.5)`
@@ -47,11 +47,6 @@
   # TODO: rounded cone
   # "cone rounded" `(cone z 50 100 :r 10)`
   #"line" `(union :r 50 (line [-50 0 0] [50 0 0] 10) (ball 50 | move :x 100 | mirror :x))`
-
-  # TODO: do i want to preserve any of these ops?
-  # "twist" `(box 80 | twist :y 0.010 | slow 0.5)`
-  # "bend" `(box [80 10 80] | bend :x :y 0.010 | slow 0.5)`
-  # "swirl" `(box 80 | swirl :y 0.040 | slow 0.5)`
 
   "union" `(union (circle 75 | move [-30 0]) (rect 60 | move [30 0]))`
   "union smooth" `(union :r 10 (circle 75 | move [-30 0]) (rect 60 | move [30 0]))`
