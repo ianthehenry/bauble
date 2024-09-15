@@ -181,17 +181,42 @@
       (map-axes shape axes (fn [x] (sqrt (+ (* x x) (* r r))))))
     (map-axes shape axes abs)))
 
-(defnamed scale [shape factor]
-  ```
+(defn- product-scaled-vectors [dimension args]
+  (reduce2 * (seq [[axis scale] :in (partition 2 args)]
+    (if (nil? scale)
+      (jlsl/coerce-expr axis) # actually a scalar
+      (do
+        (def axis (coerce-axis-vector dimension axis))
+        (+ (- 1 axis) (* axis (typecheck (@or scale 1) jlsl/type/float))))))))
+
+(defnamed scale [shape &args]
+  ````
   Scale a shape. If the scale factor is a float, this will produce an exact
   distance field. If it's a vector, space will be distorted by the smallest
   component of the vector.
+
+  ```example
+  (rect 50 | scale 2)
   ```
-  (def factor (jlsl/coerce-expr factor))
+
+  ```example
+  (rect 50 | scale [2 1])
+  ```
+
+  With an even number of arguments, `scale` expects `axis amount` pairs.
+  Unlike `rotate`, it won't work with arbitrary axes -- you must give it
+  a cardinal axis.
+
+  ```example
+  (rect 50 | scale x 0.5 y 2)
+  ```
+  ````
+  (def dimension (shape/type shape))
+  (def factor (product-scaled-vectors dimension args))
   (def uniform? (= (jlsl/expr/type factor) jlsl/type/float))
   (gl/let [factor factor]
     (map-distance
-      (if (= (shape/type shape) jlsl/type/vec2)
+      (if (= dimension jlsl/type/vec2)
         (transform shape "scale" q (/ q factor))
         (transform shape "scale" p (/ p factor)))
       (if uniform?

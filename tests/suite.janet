@@ -30,7 +30,7 @@
   "balloon" `
   (ball [50 100 100]
   | union :r 50 (cyl y 25 50 | move [0 -100 0])
-  | scale [1 (ss p.y [-100 100] [1 0.8]) 1]
+  | scale y (ss p.y [-100 100] [1 0.8])
   | radial y 20
   | color normal+
   | fresnel)

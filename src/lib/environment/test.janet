@@ -335,7 +335,7 @@
     rotation-z @{:doc "(rotation-z angle)\n\nA rotation matrix about the Z axis."}
     round @{}
     round-even @{}
-    scale @{:doc "(scale shape factor)\n\nScale a shape. If the scale factor is a float, this will produce an exact\ndistance field. If it's a vector, space will be distorted by the smallest\ncomponent of the vector."}
+    scale @{:doc "(scale shape & args)\n\nScale a shape. If the scale factor is a float, this will produce an exact\ndistance field. If it's a vector, space will be distorted by the smallest\ncomponent of the vector.\n\n```example\n(rect 50 | scale 2)\n```\n\n```example\n(rect 50 | scale [2 1])\n```\n\nWith an even number of arguments, `scale` expects `axis amount` pairs.\nUnlike `rotate`, it won't work with arbitrary axes -- you must give it\na cardinal axis.\n\n```example\n(rect 50 | scale x 0.5 y 2)\n```"}
     shape/2d @{:doc "(shape/2d distance)\n\nReturns a new 2D shape with the given distance field."}
     shape/3d @{:doc "(shape/3d distance)\n\nReturns a new 3D shape with the given distance field."}
     shape/color @{:doc "(color shape)\n\nShorthand for `(shape/get-field shape :color)`."}
