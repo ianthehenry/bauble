@@ -204,7 +204,7 @@
     Shading
       23 values
     Repetition
-      3 values
+      6 values
     Noise
       8 values
     GLSL helpers

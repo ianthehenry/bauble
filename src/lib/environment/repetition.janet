@@ -1,4 +1,6 @@
 (use ./import)
+(use ./transforms)
+(use ./axis-helpers)
 
 (defhelper- :vec3 safe-div [:vec3 a :vec3 b]
   (return [
@@ -84,17 +86,16 @@
   (with [$index nearest-index p (- p (size * $index))]
     other-field))
 
-(defn- simple-tile [coord $index expr size limit]
-  (def index-expr
-    (sugar (let [index (coord | safe-div size | round)]
-      (if limit
-        (gl/let [limit limit]
-          (index | clamp (limit - 1 / 2 | floor -) (limit / 2 | floor)))
-        index))))
+(sugar (defn- simple-tile [coord $index expr size limit]
   (gl/let [size size]
-    (gl/with [$index index-expr
-              coord (- coord (* size $index))]
-      expr)))
+    (def index-expr (let [index (coord | safe-div size | round)]
+        (if limit
+          (gl/let [limit limit]
+            (index | clamp (limit - 1 / 2 | floor -) (limit / 2 | floor)))
+          index)))
+      (gl/with [$index index-expr
+                coord (- coord (* size $index))]
+        expr))))
 
 (defn- tile-aux [shape $index size limit oversample sample-from sample-to]
   (def size (coerce-to-domain size shape))
@@ -190,3 +191,98 @@
   ````
   [shape $i & args]
   ~(,tiled* ,;args (fn [,$i] ,shape)))
+
+(sugar (defn- simple-radial [coord $index expr count]
+  (gl/let [count count angular-size (tau / count)]
+    (gl/with [$index (atan2 coord.y coord.x + (angular-size * 0.5) | mod tau / angular-size | floor)
+              coord (rotate coord (* -1 angular-size $index))]
+      expr))))
+
+(defmacro- make-radiator [name coord & loop-body]
+  ~(defn- ,name [$index distance-field other-field count sample-from sample-to]
+    (sugar (jlsl/do
+      (var count count)
+      (var angular-size (tau / count))
+      (var angle (atan2 (. ,coord y) (. ,coord x) + (angular-size * 0.5) | mod tau / angular-size))
+      (var base-index (floor angle))
+      (var look-direction (angle | fract - 0.5 | sign))
+      (var start-logical (sample-from * look-direction + base-index))
+      (var end-logical (sample-to * look-direction + base-index))
+      (var start (min start-logical end-logical))
+      (var end (max start-logical end-logical))
+      ,;loop-body))))
+
+(make-radiator radial-distance-2d q
+  (var nearest 1e20)
+  (for (var i start) (<= i end) (++ i)
+    (with [$index i q (rotate q (* -1 angular-size i))]
+      (set nearest (min nearest distance-field))))
+  nearest)
+
+(make-tiler tile-other-2d q
+  (var nearest 1e20)
+  (var nearest-index [0 0])
+  (for (var y start.y) (<= y end.y) (++ y)
+    (for (var x start.x) (<= x end.x) (++ x)
+      (with [$index [x y] q (- q (size * $index))]
+        (var dist distance-field)
+        (if (< dist nearest) (do
+          (set nearest dist)
+          (set nearest-index $index))))))
+  (with [$index nearest-index q (- q (size * $index))]
+    other-field))
+
+(make-radiator radial-other-2d q
+  (var nearest 1e20)
+  (var nearest-index 0)
+  (for (var i start) (<= i end) (++ i)
+    (with [$index i q (rotate q (* -1 angular-size i))]
+      (var dist distance-field)
+      (if (< dist nearest) (do
+        (set nearest dist)
+        (set nearest-index $index)))))
+  (with [$index (mod nearest-index count) q (rotate q (* -1 angular-size $index))]
+    other-field))
+
+(defn- radial-distance-3d [])
+(defn- radial-other-3d [])
+
+(defn- radial-aux [shape $index count oversample sample-from sample-to]
+  (def size (typecheck count jlsl/type/float))
+  (def [coord radial-distance radial-other]
+    (case (shape/type shape)
+      jlsl/type/vec2 [q radial-distance-2d radial-other-2d]
+      jlsl/type/vec3 [p radial-distance-3d radial-other-3d]))
+  (def sample-from (typecheck (or sample-from 0) jlsl/type/float))
+  (def sample-to (typecheck (or sample-to 1) jlsl/type/float))
+
+  (if oversample
+    (shape/map-fields shape (fn [name expr]
+      (case name
+        :distance (radial-distance $index expr nil count sample-from sample-to)
+        (radial-other $index (shape/distance shape) expr count sample-from sample-to))))
+    (shape/map shape (fn [expr]
+      (simple-radial coord $index expr count)))))
+
+(defnamed radial [shape count :?oversample :?sample-from :?sample-to]
+  ````
+  TODOC
+  ````
+  (def $index (jlsl/variable/new "radial-index" jlsl/type/float))
+  (radial-aux shape $index count oversample sample-from sample-to))
+
+(defnamed radialed* [count get-shape :?oversample :?sample-from :?sample-to]
+  ````
+  TODOC
+  ````
+  (def $index (jlsl/variable/new "radial-index" jlsl/type/float))
+  (def shape (get-shape $index))
+  (radial-aux shape $index count oversample sample-from sample-to))
+
+(defmacro radialed
+  ````
+  TODOC
+  ````
+  [shape $i & args]
+  ~(,radialed* ,;args (fn [,$i] ,shape)))
+

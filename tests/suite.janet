@@ -573,6 +573,23 @@
       | color (vec3 (occlusion :dir (normalize (perlin P * 0.5 + normal))))
     | move [100 0 0]))
   `
+
+  "radial 2D" `
+  (rect 20 | move x 100 | radial 12)
+  `
+  "radial 2D no oversample" `
+  (rect 20 | rotate 0.25 | move x 100 | radial 12 :oversample false)
+  `
+  "radial 2D oversample" `
+  (rect 20 | rotate 0.25 | move x 100 | radial 12 :oversample true)
+  `
+  "radial 2D colors" `
+  (circle 12 | color (hsv (hash $i) 0.5 1) | move x 100 | radialed $i 24)
+  `
+  "radial 2D colors asymmetric" `
+    (isosceles-triangle [10 73] | color (hsv (hash $i) 0.5 1) | move x 89 | radialed $i 12 :oversample true :sample-from -1 :sample-to 1)
+  `
+
 })
 
 (each filename (os/dir "./cases")

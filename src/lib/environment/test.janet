@@ -306,6 +306,10 @@
                                      0]}
                  :tag <1>
                  :type [<3> vec [<4> float] 3]}}
+    radial @{:doc "(radial shape count [:oversample oversample] [:sample-from sample-from] [:sample-to sample-to])\n\nTODOC"}
+    radialed @{:doc "(radialed shape $i & args)\n\nTODOC"
+               :macro true}
+    radialed* @{:doc "(radialed* count get-shape [:oversample oversample] [:sample-from sample-from] [:sample-to sample-to])\n\nTODOC"}
     radians @{}
     ray @{:doc "The current ray being used to march and shade the current fragment. This always represents\nthe ray from the camera, even when raymarching for shadow casting.\n\nA ray has two components: an `origin` and a `dir`ection. `origin` is a point in the \nglobal coordinate space, and you can intuitively think of it as \"the location of the camera\"\nwhen you're using the default perspective camera (orthographic cameras shoot rays from different\norigins).\n\nThe direction is always normalized."
           :value [:var "ray" Ray]}
