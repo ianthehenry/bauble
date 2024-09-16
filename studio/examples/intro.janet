@@ -14,7 +14,7 @@
   | gl/let [parity (mod $i 2)] _)
 | radial: $i y 18
 | shell 1
-| subtract (box [1000 1000 1000] | color [0 1 1] | move x 1000 | move x (osc t 10 150 -50))
+| subtract (plane -x (osc t 10 -150 0) | color [0 1 1])
 | fresnel :color (vec3 0.1))
 
 # Drag the viewport around with your

@@ -133,3 +133,27 @@
 
   (var k (q.z - q.y + radius * 0.5 | clamp 0 radius))
   (return (length [q.x (q.y - radius + k) (q.z - k)])))
+
+(defnamed plane [normal ?offset]
+  ````
+  Returns a 3D shape that represents the infinite extrusion
+  of a plane in a single direction. `normal` should be a
+  normalized vector.
+
+  Because of its infinite size and featurelessness, this shape
+  is difficult to visualize on its own. You'll probably want to
+  use it in combination with boolean operations:
+
+  ```example
+  (ball 100 | intersect (plane x (sin t * 50)))
+  ```
+
+  `(plane x)` is the shape that faces the `+x` direction and extends
+  infinitely in the `-x` direction, and a positive offset will move it
+  in the `+x` direction.
+  ````
+  (def normal (typecheck normal jlsl/type/vec3))
+  (def offset (typecheck? offset jlsl/type/float))
+  (sugar (shape/3d (if offset
+    (dot p normal - offset)
+    (dot p normal)))))

@@ -287,6 +287,7 @@
     pie @{:doc "(pie radius angle)\n\nReturns a 2D shape, something like a pie slice or a pacman depending on `angle`.\n\n```example\n(pie 50 (osc t 5 tau))\n```"}
     pivot @{:doc "(pivot (operation subject & args) point)\n\nApply a transformation with a different pivot point. You can combine this with any\noperation, but it's probably most useful with `rotate` and `scale`.\n\nThis is a syntactic transformation, so it requires a particular kind of invocation.\nIt's designed to fit into a pipeline, immediately after the operation you want to apply:\n\n```\n# rotate around one corner\n(rect 30 | rotate t | pivot [30 30])\n```\n\nThis essentially rewrites its argument to:\n\n```\n(gl/let [$pivot [30 30]]\n  (rect 30 | move (- $pivot) | rotate t | move $pivot))\n```"
             :macro true}
+    plane @{:doc "(plane normal [offset])\n\nReturns a 3D shape that represents the infinite extrusion\nof a plane in a single direction. `normal` should be a\nnormalized vector.\n\nBecause of its infinite size and featurelessness, this shape\nis difficult to visualize on its own. You'll probably want to\nuse it in combination with boolean operations:\n\n```example\n(ball 100 | intersect (plane x (sin t * 50)))\n```\n\n`(plane x)` is the shape that faces the `+x` direction and extends\ninfinitely in the `-x` direction, and a positive offset will move it\nin the `+x` direction."}
     pow @{}
     product @{:doc "(product v)\n\nMultiply the components of a vector."}
     purple @{:value [hsv 0.75 0.98 1]}

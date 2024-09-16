@@ -192,7 +192,7 @@
     (fn [_] (-- indent))) `
     Shapes
       3D shapes
-        8 values
+        9 values
       2D shapes
         22 values
       Shape combinators
