@@ -55,10 +55,9 @@ Just like in GLSL, dot notation supports vector swizzling:
 Pipe notation is a way to write function applications in a postfix order, sort of like method-chaining in other languages.
 
 ```example
+# these two lines are the same
+(move (circle 50) [100 0])
 (circle 50 | move [100 0])
-
-# exactly the same as:
-# (move (circle 50) [100 0])
 ```
 
 This is purely syntactic, like the `->` or `->>` macros in the Janet standard library.
@@ -66,13 +65,17 @@ This is purely syntactic, like the `->` or `->>` macros in the Janet standard li
 By default the argument on the left of the pipe is inserted just after the first argument. But you can specify a different location for it using `_`:
 
 ```example
-([50 0] | move (circle 50) _)
+# these two lines are the same
+(move (circle 50) [100 0])
+([100 0] | move (circle 50) _)
 ```
 
 You can insert the left-hand side at any position you want:
 
 ```example
-(move | _ (circle 50) [50 0])
+# these two lines are the same
+(move (circle 50) [100 0])
+(move | _ (circle 50) [100 0])
 ```
 
 I don't know why you'd want to do that, but it's nice to know you have the option.
@@ -99,28 +102,27 @@ It's not too bad. It's a good tradeoff.
 In addition to `|`, four other symbols are treated specially: `+`, `-`, `*`, and `/`. These are interpreted as infix symbols, and they get rewritten like so:
 
 ```example
+# these two lines are the same
+(circle (+ 10 20))
 (circle (10 + 20))
-# is the same as:
-# (circle (+ 10 20))
 ```
 
 There is no order of operations or precedence in Bauble's infix notation. Operations always happen from left to right:
 
 ```example
+# these two lines are the same
+(circle (* (+ 5 5) 10))
 (circle (5 + 5 * 10))
-# is the same as:
-# (circle (* (+ 5 5) 10))
 ```
 
-You can still use prefix notation in Bauble; `(+ 10 20)` will not be rewritten to anything. `+` `-` `*` `/` are only special when they appear in the middle of a form like that.
+You can still use prefix notation in Bauble; `(+ 10 20)` will not be rewritten to anything. `+` `-` `*` `/` are only special when they appear in the middle of a form like that. (Sometimes it's nice to use the variadic prefix forms.)
 
 If there are multiple forms to the left of an infix operator, they will be implicitly wrapped in parentheses, just like pipe notation:
 
 ```example
+# these two lines are the same
+(circle (+ (* (sin+ t) 50) 50))
 (circle (sin+ t * 50 + 50))
-
-# is the same as:
-# (circle (+ (* (sin+ t) 50) 50))
 ```
 
 As an annoying corollary to this, there's no way to pass any of these functions around as regular first-class functions. For example, this code would work in regular Janet:
@@ -139,6 +141,16 @@ And you'll get an inscrutable error. To work around this, Bauble defines the sym
 
 ```
 (reduce @+ 0 [1 2 3])
+```
+
+Although Bauble's infix notation has no concept of precedence, the infix notation pass runs *after* the pipe notation pass. This means that you can use `_` to move an expression "over" an infix operator. In practice this is useful to say e.g. `(cos t | 1 - _)`.
+
+If you're ever confused by what Bauble's notation is doing, you can see what your code expands to like this:
+
+```example
+(defmacro show-syntax [x] (pp x) x)
+
+(show-syntax (p.x | 1 + 2 * _))
 ```
 
 # API Reference {#reference}
