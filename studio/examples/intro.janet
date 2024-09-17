@@ -94,10 +94,10 @@
 # library for composing SDFs, as well as a UI
 # full of tools for debugging and editing them.
 
-# Like, one cool thing is that Bauble lets you edit
+# Like, one useful feature is that Bauble lets you edit
 # values with your mouse. Uncomment the next block of
 # code, then ctrl-click and drag the value 0.00
-# left to right.
+# left to right until you find something you like.
 
 # (def r 0.00)
 # (box 80
@@ -127,17 +127,65 @@
 # increment by 0.1, but editing 3.000
 # will increment by 0.001.
 
-# More
+# Bauble isn't just about 3D art, either. It
+# supports 2D SDFs:
 
-# Uhh okay look. There used to be a pretty
-# long tutorial here. But then I rewrote
-# Bauble from scratch, and changed a lot of
-# how it worked, and the tutorial was all
-# wrong. So the tutorial is gone for now.
-# And I haven't written a new one. But! I did
-# write actual documentation this time, which
-# you can find in the "Help" link in the
-# header. A real tutorial is forthcoming...
+# (circle (osc t 5 1 45)
+# | move (hash2 $i - 0.5 * 2 * 10)
+# | color (hsv (hash $i + (t * 0.1)) 0.95 1)
+# | tile: $i [30 30] :oversample true :sample-from -1)
+
+# Although a great use of 2D SDFs is constructing 3D SDFs...
+
+# (circle (osc t 5 1 45)
+# | move (hash2 $i - 0.5 * 2 * 10)
+# | color (hsv (hash $i + (t * 0.1)) 0.95 1)
+# | tile: $i [30 30] :oversample true :sample-from -1
+# | extrude y 100
+# | intersect (ball 150))
+
+# Or even simpler:
+
+# (rect 25 | rotate t | revolve y 100)
+
+# Bauble is sort of a "batteries included"
+# playground. It has lots of functions that
+# come up in the procedural art world built
+# right in. Things like noise functions:
+
+# (set background-color
+#   (gl/let [s (frag-coord * 10 + [0 t])]
+#     (vec3 (perlin+ (s + (perlin+ (s + perlin+ (s - (sin t)))))))))
+
+# Various helpers for constructing rotation
+# matrices:
+
+# (gl/def pos ([(sin t) 1 (cos t)] * 100))
+# (union
+#   (ball 10 | move pos)
+#   (cone y 30 100 | align y (normalize pos)))
+
+# And casting shadows:
+
+# (torus y 100 20 | rotate z t x t y (t / 2)
+# | blinn-phong [0.25 0.75 0.75]
+# | union :r 20 (ball 100 | blinn-phong [0 0.75 0])
+# | union (plane y -100 | blinn-phong (vec3 0.75)))
+
+# But you can implement any of these things
+# yourself! Bauble exposes a low-level API
+# that you can use to generate GLSL directly.
+# Or, well, indirectly. You have to go through
+# a little s-expression DSL first.
+
+# If any of this piqued your curiosity, check
+# out the Help page for interactive examples of
+# all of Bauble's built-in functions, as well
+# as more information about the language.
+
+# There will probably also be a tutorial soon
+# but I haven't written it yet. Sorry. Bauble
+# is pretty new and I have a baby.
 
 # In the meantime, join the Bauble Discord:
 #
