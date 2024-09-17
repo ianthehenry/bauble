@@ -70,7 +70,7 @@
   Returns a 3D shape, a torus around the provided `axis`.
 
   ```example
-  (torus z 100 10)
+  (torus z 100 (osc t 2 10 50))
   ```
   ````
   (return (length [(length other-axes - radius) this-axis] - thickness)))
@@ -93,19 +93,19 @@
   (var s (max (k * (w.x * q.y - (w.y * q.x))) (k * (w.y - q.y))))
   (return (sqrt d * sign s)))
 
-(deforiented cyl [:float !radius :float !height]
+(deforiented tube [:float !radius :float !height]
   ````
   Returns a 3D shape, a cylinder oriented along the given `axis`.
 
   ```example
-  (cyl y 50 100)
+  (tube y 50 100)
   ```
 
   The second argument is twice the length of the cylinder. Like many shapes,
   you can round it with `:r`.
 
   ```example
-  (cyl z 100 50 :r (osc t 2 0 10))
+  (tube z 100 50 :r (osc t 2 0 10))
   ```
   ````
   (var d ((abs [(length other-axes) this-axis]) - [radius height]))

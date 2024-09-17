@@ -114,7 +114,6 @@
     cross-matrix @{:doc "(cross-matrix vec)\n\nReturns the matrix such that `(* (cross-matrix vec1) vec2)` = `(cross vec1 vec2)`."}
     cut-disk @{:doc "(cut-disk radius bottom)\n\nReturns a 2D shape.\n\n```example\n(cut-disk 50 (sin t * 40))\n```"}
     cyan @{:value [hsv 0.5 0.98 1]}
-    cyl @{:doc "(cyl axis radius height [:r round])\n\nReturns a 3D shape, a cylinder oriented along the given `axis`.\n\n```example\n(cyl y 50 100)\n```\n\nThe second argument is twice the length of the cylinder. Like many shapes,\nyou can round it with `:r`.\n\n```example\n(cyl z 100 50 :r (osc t 2 0 10))\n```"}
     dark-gray @{:value [0.25 0.25 0.25]}
     default-2d-color @{:doc "A variable that determines the default color to use when rendering a 2D shape with no color field.\n\nDefault is `isolines`."
                        :ref @[[isolines]]}
@@ -417,10 +416,11 @@
     tile* @{:doc "(tile* size get-shape [:limit limit] [:oversample oversample] [:sample-from sample-from] [:sample-to sample-to])\n\nLike `tile`, but the shape is a result of invoking `get-shape` with one argument,\na GLSL variable referring to the current index in space. Unlike `tile`, `size` must\nbe a vector that determines the dimension of the index variable.\n\n```example\n(tile* [10 10] (fn [$i] \n  (circle 5 \n  | color (hsv (hash $i) 0.5 1))))\n```\n\nYou can use this to generate different shapes or colors at every sampled tile. The index\nwill be a vector with integral components that represents  being considered. So for\nexample, in 3D, the shape at the origin has an index of `[0 0 0]` and the shape above\nit has an index of `[0 1 0]`."}
     tile: @{:doc "(tile: shape $i & args)\n\nLike `tile*`, but its first argument should be a form that will\nbecome the body of the function. Basically, it's a way to create\na repeated shape where each instance of the shape varies, and it's\nwritten in a way that makes it conveniently fit into a pipeline:\n\n```example\n(circle 5 \n| color (hsv (hash $i) 0.5 1) \n| tile: $i [10 10])\n```"
             :macro true}
-    torus @{:doc "(torus axis radius thickness)\n\nReturns a 3D shape, a torus around the provided `axis`.\n\n```example\n(torus z 100 10)\n```"}
+    torus @{:doc "(torus axis radius thickness)\n\nReturns a 3D shape, a torus around the provided `axis`.\n\n```example\n(torus z 100 (osc t 2 10 50))\n```"}
     trapezoid @{:doc "(trapezoid bottom-width top-width height [:r round])\n\nReturns a 2D shape.\n\n```example\n(trapezoid (osc t 3 20 50) (oss t 2 50 20) 50)\n```"}
     triangle-points @{:doc "(triangle-points a b c)\n\nTODOC"}
     trunc @{}
+    tube @{:doc "(tube axis radius height [:r round])\n\nReturns a 3D shape, a cylinder oriented along the given `axis`.\n\n```example\n(tube y 50 100)\n```\n\nThe second argument is twice the length of the cylinder. Like many shapes,\nyou can round it with `:r`.\n\n```example\n(tube z 100 50 :r (osc t 2 0 10))\n```"}
     uint @{}
     uneven-capsule @{:doc "(uneven-capsule bottom-radius top-radius height)\n\n```example\n(uneven-capsule 30 (osc t 2 20 40) (osc t 3 20 50))\n```"}
     union @{:doc "(union & shapes [:r r] [:rs rs] [:distance distance] [:color color])\n\nUnion two or more shapes together. Pass `:r` or `:rs` to produce a smooth union.\n\n`:r` and `:rs` combine color fields differently. `:rs` is a symmetric union, where\nthe color field is based on the nearest shape, regardless of the order that they're\nspecified. `:r` is an asymmetric union where the order matters, and later shapes will\nbe considered \"on top of\" previous shapes.\n\nThese produce identical colors on the surface, but different interior color fields.\nIt's easy to see the difference in 2D, while in 3D the difference only matters if\nyou're cutting into a shape, or transplanting the color field from one shape to another.\n\nYou can also pass `:distance` or `:color` to specify a different smoothing radius for\nthe separate fields. For example, to produce a smooth symmetric color union with a sharp\ndistance field, pass `(union :rs 10 :distance 0 ;shapes)`."}

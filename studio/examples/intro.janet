@@ -5,7 +5,7 @@
 # fields. Like this:
 
 (ball [50 100 100]
-| union :r 50 (cyl y 25 50 | move [0 -100 0])
+| union :r 50 (tube y 25 50 | move [0 -100 0])
 | scale y (ss p.y [-100 100] [1 0.8])
 | recolor
   (blinn-phong r3 (hsv (quantize (p.y / 100 - (t / 5)) 8) 1 1) :g 5
