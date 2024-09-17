@@ -16,6 +16,7 @@
 # TODO: these should probably be somewhere else
 (def- MAX_STEPS 256:u)
 (def- MINIMUM_HIT_DISTANCE 0.1)
+(def- MAXIMUM_HIT_DISTANCE 10)
 (def- MAXIMUM_TRACE_DISTANCE (* 64 1024))
 
 (def- base-zoom-distance 512)
@@ -115,11 +116,11 @@
            dist (nearest-distance)
            normal (calculate-normal (nearest-distance))]
       (case render-type
-        0:s (if (>= depth MAXIMUM_TRACE_DISTANCE)
+        0:s (if (>= dist MAXIMUM_HIT_DISTANCE)
             (return <background-color>)
             (return ,(@or <color-field> <default-color>)))
         # ignore color field
-        1:s (if (>= depth MAXIMUM_TRACE_DISTANCE)
+        1:s (if (>= dist MAXIMUM_HIT_DISTANCE)
             (return <background-color>)
             (return <default-color>))
         # convergence debug view
