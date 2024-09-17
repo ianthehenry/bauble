@@ -9,7 +9,8 @@
 | union :r 50 (tube y 25 50 | move [0 -100 0])
 | scale y (ss p.y [-100 100] [1 0.8])
 | recolor
-  (blinn-phong r3 (hsv (quantize (p.y / 100 - (t / 5)) 8) 1 1) :g 5
+  (blinn-phong r3
+    (hsv (quantize (p.y / 100 - (t / 5)) 8) 1 1) :g 5
   | move y (sin (t * 1.5) | ss * 100 / 8 * parity)
   | rotate z (parity * 2 - 1 * pi/4)
   | gl/let [parity (mod $i 2)] _)
@@ -129,10 +130,10 @@
 # More
 
 # Uhh okay look. There used to be a pretty
-# long interactive tutorial here. But then I
-# rewrote Bauble from scratch, and changed a
-# lot of how it worked, and the tutorial was
-# all wrong. So the tutorial is gone for now.
+# long tutorial here. But then I rewrote
+# Bauble from scratch, and changed a lot of
+# how it worked, and the tutorial was all
+# wrong. So the tutorial is gone for now.
 # And I haven't written a new one. But! I did
 # write actual documentation this time, which
 # you can find in the "Help" link in the
