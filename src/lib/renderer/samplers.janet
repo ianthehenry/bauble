@@ -70,8 +70,8 @@
         # scenery for little cost, but might cause issues with reflections
         (if (or (and (>= dist 0) (< dist MINIMUM_HIT_DISTANCE)) (> ray-depth MAXIMUM_TRACE_DISTANCE))
           (return ray-depth))
-
-        (+= ray-depth dist)))
+        (var rate (if (> dist 0) 0.95 1.05))
+        (+= ray-depth (* dist rate))))
     (return ray-depth)))
 
 # TODO: okay, so, theoretically we have nearest-distance in the current environment already
