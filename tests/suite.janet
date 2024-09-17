@@ -500,6 +500,14 @@
   | tile [60 60 60] :limit 3 :oversample true
   )
   `
+  "tile 3d works with oversample and zero axes" `
+  (ball 10
+  | move y (sin+ (hash $i * 5 * tau) | ss * 25)
+  | blinn-phong (hsv (hash $i / 2 + 0.3) 1 1)
+  | tile: $i [25 0 25] :oversample true
+  | union (plane y -10 | blinn-phong [1 1 1])
+  )
+  `
 
   "tile-colon" `
   (circle 6 | color (hsv (hash $i) 0.5 1) | tile: $i [12 12])
