@@ -36,6 +36,7 @@
 (defdyn *hoisted-vars* "A dynamic variable that keeps track of all hoisted variables.")
 
 (defn hoist [name expr]
+  (def expr (jlsl/coerce-expr expr))
   (def variable (jlsl/variable/new name (jlsl/expr/type expr)))
   (put (dyn *hoisted-vars*) variable expr)
   variable)
