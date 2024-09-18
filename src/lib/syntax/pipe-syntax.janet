@@ -66,42 +66,60 @@
       [nil bar]
       [nil baz]]))
 
-(test (expand '(foo)) [foo])
-(test (expand '(foo | bar)) [bar foo])
-(test (expand '(foo x | bar)) [bar [foo x]])
-(test (expand '(foo | bar baz)) [bar foo baz])
-(test (expand '(foo | bar _ baz)) [bar foo baz])
-(test (expand '(foo | bar baz _)) [bar baz foo])
-(test (expand '(foo | bar baz | qux)) [qux [bar foo baz]])
-(test (expand '(foo | bar baz _ | qux)) [qux [bar baz foo]])
-(test (expand '(foo x y | bar baz _ | qux)) [qux [bar baz [foo x y]]])
-(test (expand '((foo bar) | baz)) [baz [foo bar]])
-(test (expand '((foo | bar) | baz)) [baz [bar foo]])
-(test (expand '(foo | (bar | baz))) [[baz bar] foo])
-(test (expand '(foo x | (bar | baz) y)) [[baz bar] [foo x] y])
-(test (expand '(foo x | (bar | baz 1 _) y _)) [[baz 1 bar] y [foo x]])
+(defmacro- expand: [form] (expand form))
+(defmacro*- test-expansion [form & args]
+  ~(test-macro (expand: ,form) ,;args))
+
+(test-expansion (foo)
+  (foo))
+(test-expansion (foo | bar)
+  (bar foo))
+(test-expansion (foo x | bar)
+  (bar (foo x)))
+(test-expansion (foo | bar baz)
+  (bar foo baz))
+(test-expansion (foo | bar _ baz)
+  (bar foo baz))
+(test-expansion (foo | bar baz _)
+  (bar baz foo))
+(test-expansion (foo | bar baz | qux)
+  (qux (bar foo baz)))
+(test-expansion (foo | bar baz _ | qux)
+  (qux (bar baz foo)))
+(test-expansion (foo x y | bar baz _ | qux)
+  (qux (bar baz (foo x y))))
+(test-expansion ((foo bar) | baz)
+  (baz (foo bar)))
+(test-expansion ((foo | bar) | baz)
+  (baz (bar foo)))
+(test-expansion (foo | (bar | baz))
+  ((baz bar) foo))
+(test-expansion (foo x | (bar | baz) y)
+  ((baz bar) (foo x) y))
+(test-expansion (foo x | (bar | baz 1 _) y _)
+  ((baz 1 bar) y (foo x)))
 
 (deftest "expand preserves sourcemaps"
   (def form '(foo | bar baz | qux))
 
   (test-stdout (prewalk (fn [ast] (when (tuple? ast) (pp (tuple/sourcemap ast))) ast) form) `
-    (85 14)
-    (85 19)
-    (85 29)
+    (103 14)
+    (103 19)
+    (103 29)
   `
     [foo [short-fn bar] baz [short-fn qux]])
   (test-stdout (prewalk (fn [ast] (when (tuple? ast) (pp (tuple/sourcemap ast))) ast) (expand form)) `
-    (85 29)
-    (85 19)
+    (103 29)
+    (103 19)
   `
     [qux [bar foo baz]])
 
   (def form '(foo x | bar baz | qux))
 
   (test-stdout (prewalk (fn [ast] (when (tuple? ast) (pp (tuple/sourcemap ast))) ast) form) `
-    (99 14)
-    (99 21)
-    (99 31)
+    (117 14)
+    (117 21)
+    (117 31)
   `
     [foo
      x
@@ -109,24 +127,25 @@
      baz
      [short-fn qux]])
   (test-stdout (prewalk (fn [ast] (when (tuple? ast) (pp (tuple/sourcemap ast))) ast) (expand form)) `
-    (99 31)
-    (99 21)
-    (99 14)
+    (117 31)
+    (117 21)
+    (117 14)
   `
     [qux [bar [foo x] baz]]))
 
-
-(test (expand '(a + b | sin * 2)) [sin [a + b] * 2])
-(test (expand '(a + b | sin * foo bar)) [sin [a + b] * foo bar])
-(test (expand '(a + b | + 1 2)) [+ [a + b] 1 2])
-(test (expand '(a + b | sin + 2 | pow 2)) [pow [sin [a + b] + 2] 2])
-(test (expand '[1 1 1 | normalize]) [normalize [1 1 1]])
-(test-stdout (pp (expand '[1 1 1 | normalize foo bar | baz])) `
-  (baz (normalize [1 1 1] foo bar))
-`)
-(test-stdout (pp (expand '[1 | foo])) `
-  (foo [1])
-`)
-(test-stdout (pp (expand '[1 2 | foo bar _])) `
-  (foo bar [1 2])
-`)
+(test-expansion (a + b | sin * 2)
+  (sin (a + b) * 2))
+(test-expansion (a + b | sin * foo bar)
+  (sin (a + b) * foo bar))
+(test-expansion (a + b | + 1 2)
+  (+ (a + b) 1 2))
+(test-expansion (a + b | sin + 2 | pow 2)
+  (pow (sin (a + b) + 2) 2))
+(test-expansion [1 1 1 | normalize]
+  (normalize [1 1 1]))
+(test-expansion [1 1 1 | normalize foo bar | baz]
+  (baz (normalize [1 1 1] foo bar)))
+(test-expansion [1 | foo]
+  (foo [1]))
+(test-expansion [1 2 | foo bar _]
+  (foo bar [1 2]))

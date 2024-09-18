@@ -40,51 +40,61 @@
     ast)
     ast))
 
-(test (expand '(a + b)) [+ a b])
-(test (expand '(a + b c)) [+ a [b c]])
-(test (expand '(a + b c + d)) [+ [+ a [b c]] d])
-(test (expand '(a + b / + c)) [+ [/ [+ a b]] c])
-(test (expand '(a - 1)) [- a 1])
-(test (expand '(+ a b)) [+ a b])
-(test (expand '(+ a b + c)) [+ [+ a b] c])
+(defmacro- expand: [form] (expand form))
+(defmacro*- test-expansion [form & args]
+  ~(test-macro (expand: ,form) ,;args))
 
-(test-stdout (pp (expand '[1 2 + 3])) `
-  (+ [1 2] 3)
-`)
-(test-stdout (pp (expand '[1 (2 3) 4 + foo bar - 1])) `
-  (- (+ [1 (2 3) 4] (foo bar)) 1)
-`)
-(test-stdout (pp (expand '[1 + 2])) `
-  (+ [1] 2)
-`)
-(test-stdout (pp (expand '[1 -])) `
-  (- [1])
-`)
-(test-stdout (pp (expand '(1 2 + 3))) `
-  (+ (1 2) 3)
-`)
+(test-expansion (a + b)
+  (+ a b))
+(test-expansion (a + b c)
+  (+ a (b c)))
+(test-expansion (a + b c + d)
+  (+ (+ a (b c)) d))
+(test-expansion (a + b / + c)
+  (+ (/ (+ a b)) c))
+(test-expansion (a - 1)
+  (- a 1))
+(test-expansion (+ a b)
+  (+ a b))
+(test-expansion (+ a b + c)
+  (+ (+ a b) c))
+(test-expansion (+ a b + c - /)
+  (/ (- (+ (+ a b) c))))
+
+(test-expansion [1 2 + 3]
+  (+ [1 2] 3))
+(test-expansion [1 (2 3) 4 + foo bar - 1]
+  (- (+ [1 (2 3) 4] (foo bar)) 1))
+(test-expansion [1 + 2]
+  (+ [1] 2))
+(test-expansion [1 -]
+  (- [1]))
+(test-expansion [1 + 2 -]
+  (- (+ [1] 2)))
+(test-expansion (1 2 + 3)
+  (+ (1 2) 3))
 
 (deftest "expand preserves sourcemaps"
   (def form '(a + b))
 
   (test-stdout (prewalk (fn [ast] (when (tuple? ast) (pp (tuple/sourcemap ast))) ast) form) `
-    (68 14)
+    (78 14)
   `
     [a + b])
   (test-stdout (prewalk (fn [ast] (when (tuple? ast) (pp (tuple/sourcemap ast))) ast) (expand form)) `
-    (68 14)
+    (78 14)
   `
     [+ a b])
 
   (def form '(a b + c d))
 
   (test-stdout (prewalk (fn [ast] (when (tuple? ast) (pp (tuple/sourcemap ast))) ast) form) `
-    (79 14)
+    (89 14)
   `
     [a b + c d])
   (test-stdout (prewalk (fn [ast] (when (tuple? ast) (pp (tuple/sourcemap ast))) ast) (expand form)) `
-    (79 14)
-    (79 14)
+    (89 14)
+    (89 14)
     (-1 -1)
   `
     [+ [a b] [c d]])
@@ -92,12 +102,12 @@
   (def form '[a b + c d])
 
   (test-stdout (prewalk (fn [ast] (when (tuple? ast) (pp (tuple/sourcemap ast))) ast) form) `
-    (92 14)
+    (102 14)
   `
     [a b + c d])
   (test-stdout (prewalk (fn [ast] (when (tuple? ast) (pp (tuple/sourcemap ast))) ast) (expand form)) `
-    (92 14)
-    (92 14)
+    (102 14)
+    (102 14)
     (-1 -1)
   `
     [+ [a b] [c d]])
