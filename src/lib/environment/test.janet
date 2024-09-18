@@ -80,7 +80,7 @@
     asin @{}
     asinh @{}
     atan @{}
-    atan2 @{:doc "(atan2 y x)\n\nReturns a value in the range `[0, tau)` representing the angle\nbetween the (2D) `+x` axis and the point `[x y]`.\n\nThis is an alternative to the built-in `atan`'s two argument\noverload that is well-defined when `x = 0`."}
+    atan2 @{:doc "(atan2 y x)\n\nReturns a value in the range `[0, tau)` representing the angle\nbetween the (2D) `+x` axis and the point `[x y]`.\n\nThis is an alternative to the built-in `atan`'s two argument\noverload that is well-defined when `x = 0`.\n\nYou can also invoke this with a single `vec2` whose coordinates\nwill act as `x` and `y`."}
     atanh @{}
     background-color @{:doc "A variable that determines the background color of the canvas.\n\nDefault is `graydient`."
                        :ref @[[do]]}

@@ -65,6 +65,9 @@
 
   This is an alternative to the built-in `atan`'s two argument
   overload that is well-defined when `x = 0`.
+
+  You can also invoke this with a single `vec2` whose coordinates
+  will act as `x` and `y`.
   ```
   # The built-in atan is undefined when x = 0, and while
   # I would assume this means "it might be positive
@@ -75,6 +78,9 @@
   (if (< signed-angle 0)
     (return (tau + signed-angle))
     (return signed-angle)))
+
+(overload :float atan2 [:vec2 p]
+  (return (atan2 p.y p.x)))
 
 (defhelper :float quantize [:float value :float count]
   ```
