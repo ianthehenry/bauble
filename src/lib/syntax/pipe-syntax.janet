@@ -6,7 +6,7 @@
 (defn- pipe-node? [ast] (and (ptuple? ast) (= (first ast) pipe)))
 
 (def- unshort-fn (partial prewalk (fn [ast]
-  (if (ptuple? ast)
+  (if (tuple? ast)
     (keep-syntax! ast (catseq [ast :in ast]
       (if (and (ptuple? ast) (= (first ast) 'short-fn))
         [(keep-syntax! ast [pipe]) ;(tuple/slice ast 1)]
@@ -17,14 +17,14 @@
 
 (defn expand [ast]
   (prewalk (fn [ast]
-    (when (ptuple? ast)
+    (when (tuple? ast)
       (def subject-length (find-index pipe-node? ast 0))
       (unless subject-length (break ast))
 
       (var subject
-        (case subject-length
-          0 (error "form cannot begin with a pipe")
-          1 (in ast 0)
+        (cond
+          (= subject-length 0) (error "form cannot begin with a pipe")
+          (and (= subject-length 1) (ptuple? ast)) (in ast 0)
           (keep-syntax! ast (tuple/slice ast 0 subject-length))))
 
       (var current-pipe-index subject-length)
@@ -120,3 +120,13 @@
 (test (expand '(a + b | sin * foo bar)) [sin [a + b] * foo bar])
 (test (expand '(a + b | + 1 2)) [+ [a + b] 1 2])
 (test (expand '(a + b | sin + 2 | pow 2)) [pow [sin [a + b] + 2] 2])
+(test (expand '[1 1 1 | normalize]) [normalize [1 1 1]])
+(test-stdout (pp (expand '[1 1 1 | normalize foo bar | baz])) `
+  (baz (normalize [1 1 1] foo bar))
+`)
+(test-stdout (pp (expand '[1 | foo])) `
+  (foo [1])
+`)
+(test-stdout (pp (expand '[1 2 | foo bar _])) `
+  (foo bar [1 2])
+`)
