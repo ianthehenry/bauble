@@ -1,6 +1,5 @@
 (use ./import)
 (use ./rotation)
-(use ./camera)
 
 (steal ./rotation rotation-matrix-2d)
 (steal ./rotation rotation-matrix-3d)
@@ -21,9 +20,9 @@
   # this is goofy, but all arguments to functions in jlsl
   # notation must be jlsl expressions, and args is not
   (sugar (gl/let [camera camera]
-    (def new-dir (rotate-vector camera.dir args))
+    (def new-direction (rotate-vector camera.direction args))
     (gl/do
-      (set camera.dir new-dir)
+      (set camera.direction new-direction)
       camera))))
 
 (defn- align-shape [shape from to]

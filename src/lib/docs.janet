@@ -71,8 +71,10 @@
        shape/2d (:shapes :functions)
        shape/3d (:shapes :functions)
        shape? (:shapes :functions)
+       Camera (:camera)
        camera? (:camera)
        Ray (:camera)
+       ray? (:camera)
        light? (:surfacing)
        Light (:surfacing)
        } name)
@@ -216,7 +218,7 @@
     GLSL helpers
       9 values
     Camera
-      4 values
+      12 values
     Rotation
       6 values
     Uncategorized

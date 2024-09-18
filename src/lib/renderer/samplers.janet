@@ -63,7 +63,7 @@
 
     (for (set steps 0:u) (< steps MAX_STEPS) (++ steps)
       (with [depth ray-depth
-             P (+ ray.origin (* ray-depth ray.dir))
+             P (+ ray.origin (* ray-depth ray.direction))
              p P]
         (var dist (nearest-distance))
         # we could dynamically adjust the minimum_hit_distance when the ray
@@ -85,7 +85,7 @@
     (var ortho [ortho-distance (* frag-coord ortho-base-zoom-distance free-camera-zoom)])
     (case camera-type
       0:s ,(if <camera>
-        (jlsl/statement (set ray* <camera>) (break))
+        (jlsl/statement (set ray* (camera/ray <camera>)) (break))
         (jlsl/statement
           # just fall through
           ))
@@ -95,7 +95,7 @@
              (rotation-x (* tau free-camera-orbit.y))))
         (set ray* (Ray
           (camera-rotation-matrix * [0 0 (base-zoom-distance * free-camera-zoom)] + free-camera-target)
-          (camera-rotation-matrix * perspective-vector free-camera-fov)))
+          (camera-rotation-matrix * (perspective-vector free-camera-fov * [1 1 -1]))))
         (break))
       2:s (do # XZ
         (set ray* (Ray (ortho.yxz + free-camera-target) [0 -1 0]))
@@ -111,7 +111,7 @@
 
     (with [ray ray*
            depth (march steps)
-           P (+ ray.origin (* ray.dir depth))
+           P (+ ray.origin (* ray.direction depth))
            p P
            dist (nearest-distance)
            normal (calculate-normal (nearest-distance))]

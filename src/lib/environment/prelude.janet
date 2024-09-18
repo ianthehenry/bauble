@@ -127,22 +127,4 @@
     (- vec.z) 0 vec.x
     vec.y (- vec.x) 0)))
 
-(defn camera?
-  ```
-  Returns `true` if `value` is a GLSL expression with type `Ray`.
-  ```
-  [value]
-  (if-let [expr (jlsl/try-coerce-expr value)]
-    (= (jlsl/type/coerce Ray) (jlsl/expr/type expr))
-    false))
-
-(defn light?
-  ```
-  Returns `true` if `value` is a GLSL expression with type `Light`.
-  ```
-  [value]
-  (if-let [expr (jlsl/try-coerce-expr value)]
-    (= (jlsl/type/coerce Light) (jlsl/expr/type expr))
-    false))
-
 (put (curenv) 'shape? (table/setproto @{:private false} (dyn 'shape/shape?)))

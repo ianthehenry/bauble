@@ -46,7 +46,7 @@
   (def default-2d-color (typecheck (get-var env 'default-2d-color) jlsl/type/vec3))
   (def default-3d-color (typecheck (get-var env 'default-3d-color) jlsl/type/vec3))
   (def background-color (unhoist env (typecheck (get-var env 'background-color) jlsl/type/vec3)))
-  (def camera (typecheck? (get-var env 'camera) Ray))
+  (def camera (typecheck? (get-var env 'camera) Camera))
 
   (def subject (if subject (do
     (assertf (shape? subject) "%q is not a shape" subject)

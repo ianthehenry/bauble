@@ -37,10 +37,10 @@ Dot notation only applies to Janet *symbols*, so if you want to access a field o
 
 ```
 # this doesn't work!
-(camera/perpsective [10 1 0] [0 0 0]).dir
+(camera/perpsective [10 1 0] [0 0 0]).direction
 
 # you have to do this instead:
-(. (camera/perpsective [10 1 0] [0 0 0]) dir)
+(. (camera/perpsective [10 1 0] [0 0 0]) direction)
 ```
 
 Just like in GLSL, dot notation supports vector swizzling:

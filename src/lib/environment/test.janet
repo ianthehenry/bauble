@@ -60,6 +60,7 @@
     @length @{:doc "(length ds)\n\nReturns the length or count of a data structure in constant time as an integer. For structs and tables, returns the number of key-value pairs in the data structure."}
     @or @{:doc "(or & forms)\n\nEvaluates to the last argument if all preceding elements are falsey, otherwise\nevaluates to the first truthy element."
           :macro true}
+    Camera @{:doc "(Camera position direction up fov)\n\n"}
     Frag-Coord @{:doc "The center of the current pixel being rendered. Pixel centers are at `[0.5 0.5]`, so with no anti-aliasing this will have values like `[0.5 0.5]`, `[1.5 0.5]`, etc. If you are using multisampled antialiasing, this will have off-centered values like [0.3333 0.3333]."
                  :value [:var "Frag-Coord" :vec2]}
     Light @{:doc "(Light color direction brightness)\n\n"}
@@ -67,7 +68,7 @@
         :value [:var "P" :vec3]}
     Q @{:doc "The global point in 2D space."
         :value [:var "Q" :vec2]}
-    Ray @{:doc "(Ray origin dir)\n\n"}
+    Ray @{:doc "(Ray origin direction)\n\n"}
     aa-grid-size @{:doc "The size of the grid used to sample a single pixel. The total samples per pixel will\nbe the square of this number. The default value is 1 (no anti-aliasing)."
                    :ref @[nil]}
     abs @{}
@@ -96,8 +97,14 @@
     calculate-occlusion @{}
     camera @{:doc "An expression for a `ray` that determines the position and direction of the camera."
              :ref @[nil]}
-    camera/perspective @{:doc "(camera/perspective pos target [:fov fov])\n\nReturns a ray from a perspective camera located at `pos` and aiming towards `target`.\n\nYou can change the field of view by passing `:fov` with a number of degrees. The default is `60`, and\nthe default orbiting free camera uses `45`."}
-    camera? @{:doc "(camera? value)\n\nReturns `true` if `value` is a GLSL expression with type `Ray`."}
+    camera/pan @{:doc "(camera/pan camera angle)\n\nRotate the camera left and right.\n\n```example\n(morph (ball 50) (box 50) 2\n| union (circle 200 | extrude y 10 | move y -100)\n| blinn-phong (vec3 0.75))\n(set camera (camera/perspective [0 100 600] [0 0 0] :fov 45\n| camera/pan (sin t * 0.2)))\n```"}
+    camera/perspective @{:doc "(camera/perspective position target [:fov fov])\n\nReturns the camera located at `position` and aiming towards `target`\nthat has no roll.\n\nYou can change the field of view by passing `:fov` with a number of degrees. The default is `60`, and\nthe default orbiting free camera uses `45`.\n\n```example\n(morph (ball 50) (box 50) 2\n| union (circle 200 | extrude y 10 | move y -100)\n| blinn-phong (vec3 0.75))\n(def pos [(sin t * 200) (cos+ (t / 2) * 300) 500])\n(set camera (camera/perspective pos [0 0 0] :fov 45))\n```"}
+    camera/push @{:doc "(camera/push camera amount)\n\nMove the camera forward or backward.\n\n```example\n(morph (ball 50) (box 50) 2\n| union (circle 200 | extrude y 10 | move y -100)\n| blinn-phong (vec3 0.75))\n(set camera (camera/perspective [0 100 600] [0 0 0] :fov 45\n| camera/push (sin t * 100)))\n```\n\n```example\n(morph (ball 50) (box 50) 2\n| union\n  (circle 200 | extrude y 10 | move y -100)\n  (box [100 200 50] | tile [300 0 300] :limit 4 | move [0 0 -1000])\n| blinn-phong (vec3 0.75))\n\n# hitchcock zoom\n(set camera (camera/perspective [0 100 600] [0 0 0] :fov 45\n| camera/push (sin+ t * -500)\n| camera/zoom (sin+ t + 1)\n))\n```"}
+    camera/ray @{:doc "(camera/ray camera)\n\nReturns the perspective-adjusted ray from this camera for\nthe current `frag-coord`. You probably don't need to call\nthis."}
+    camera/roll @{:doc "(camera/roll camera angle)\n\nRoll the camera around.\n\n```example\n(morph (ball 50) (box 50) 2\n| union (circle 200 | extrude y 10 | move y -100)\n| blinn-phong (vec3 0.75))\n(set camera (camera/perspective [0 100 600] [0 0 0] :fov 45\n| camera/roll (sin t * 0.2)))\n```"}
+    camera/tilt @{:doc "(camera/tilt camera angle)\n\nRotate the camera up and down.\n\n```example\n(morph (ball 50) (box 50) 2\n| union (circle 200 | extrude y 10 | move y -100)\n| blinn-phong (vec3 0.75))\n(set camera (camera/perspective [0 100 600] [0 0 0] :fov 45\n| camera/tilt (sin t * 0.2)))\n```"}
+    camera/zoom @{:doc "(camera/zoom camera amount)\n\nZoom the camera by changing its field of view.\n\n```example\n(morph (ball 50) (box 50) 2\n| union (circle 200 | extrude y 10 | move y -100)\n| blinn-phong (vec3 0.75))\n(set camera (camera/perspective [0 100 600] [0 0 0] :fov 45\n| camera/zoom (sin t * 0.2 + 1)))\n```"}
+    camera? @{:doc "(camera? value)\n\nReturns `true` if `value` is a GLSL expression with type `Camera`."}
     cast-light-hard-shadow @{:doc "(cast-light-hard-shadow light-color light-position)\n\nTODOC"}
     cast-light-no-shadow @{:doc "(cast-light-no-shadow light-color light-position)\n\nTODOC"}
     cast-light-soft-shadow @{:doc "(cast-light-soft-shadow light-color light-position softness)\n\nTODOC"}
@@ -246,7 +253,7 @@
     pentagon @{:doc "(pentagon radius [:r round])\n\n```example\n(pentagon 50 :r (osc t 2 20))\n```"}
     perlin @{:doc "(perlin point)\n\nReturns perlin noise ranging from `-1` to `1`. The input `point` can be a vector of any dimension.\n\nUse `perlin+` to return noise in the range `0` to `1`."}
     perlin+ @{:doc "(perlin+ point)\n\nPerlin noise in the range `0` to `1`.\n\n```example\n(ball 100 | color (perlin+ (p.xy / 10) | vec3))\n```\n```example\n(ball 100 | color (perlin+ (p / 10) | vec3))\n```\n```example\n(ball 100 | color (perlin+ [(p / 10) t] | vec3))\n```"}
-    perspective-vector @{:doc "(perspective-vector fov)\n\nReturns a unit vector pointing in the `-z` direction for the\ngiven camera field-of-view (degrees)."}
+    perspective-vector @{:doc "(perspective-vector fov)\n\nReturns a unit vector pointing in the `+z` direction for the\ngiven camera field-of-view (in degrees)."}
     pi @{:doc "I think it's around three.\n\nNote that there are also values like `pi/4` and `pi/6*5` and related helpers all the way up to `pi/12`. They don't show up in autocomplete because they're annoying, but they're there."
          :value 3.1415926535897931}
     pi/10 @{:value 0.31415926535897931}
@@ -315,6 +322,7 @@
     radians @{}
     ray @{:doc "The current ray being used to march and shade the current fragment. This always represents\nthe ray from the camera, even when raymarching for shadow casting.\n\nA ray has two components: an `origin` and a `dir`ection. `origin` is a point in the \nglobal coordinate space, and you can intuitively think of it as \"the location of the camera\"\nwhen you're using the default perspective camera (orthographic cameras shoot rays from different\norigins).\n\nThe direction is always normalized."
           :value [:var "ray" Ray]}
+    ray? @{:doc "(ray? value)\n\nReturns `true` if `value` is a GLSL expression with type `Ray`."}
     recolor @{:doc "(recolor dest-shape source-shape)\n\nReplaces the color field on `dest-shape` with the color field on `source-shape`. Does not affect the distance field."}
     rect @{:doc "(rect size [:r radius])\n\nReturns a 2D shape, a rectangle with corners at `(- size)` and `size`. `size` will be coerced to a `vec2`.\n\nThink of `size` like the \"radius\" of the rect: a rect with `size.x = 50` will be `100` units wide.\n\n`radii` can be a single radius or a `vec4` of `[top-left` `top-right` `bottom-right` `bottom-left]`.\n\n```example\n(union\n  (rect 30 | move [-40 40])\n  (rect 30 :r 10 | move [40 40])\n  (rect 30 :r [0 10 20 30] | move [-40 -40])\n  (rect 30 :r [0 30 0 30] | move [40 -40]))\n```"}
     red @{:value [hsv 0 0.98 1]}

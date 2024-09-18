@@ -261,7 +261,7 @@ set it in a way that fits nicely into a pipeline.
 (defhelper- :vec3 blinn-phong1 [:vec3 color :float shininess :float glossiness Light light]
   (if (= light.direction (vec3 0))
     (return (* color light.color light.brightness)))
-  (var halfway-dir (light.direction - ray.dir | normalize))
+  (var halfway-dir (light.direction - ray.direction | normalize))
   (var specular-strength (shininess * pow (max (dot normal halfway-dir) 0) (glossiness * glossiness)))
   (var diffuse (max 0 (dot normal light.direction)))
   (return (light.color * light.brightness * specular-strength + (* color diffuse light.color light.brightness))))
@@ -318,7 +318,7 @@ set it in a way that fits nicely into a pipeline.
   (return (* saturation (c - 1 | clamp 0 1 - 0.5) (1 - abs (2 * lightness - 1)) + lightness)))
 
 (defhelper- :float fresnel-intensity [:float exponent]
-  (return (1 + dot normal ray.dir | pow exponent)))
+  (return (1 + dot normal ray.direction | pow exponent)))
 
 (defnamed fresnel [subject :?color :?exponent]
   ```
