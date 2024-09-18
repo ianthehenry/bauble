@@ -410,10 +410,10 @@
   Like `worley`, but returns the nearest distance in `x` and the second-nearest distance in `y`.
 
   ```example
-  (ball 100 | color [(worley2 (p.xy / 30)) 0])
+  (ball 100 | color [(worley2 (p.xy / 30)) 1])
   ```
   ```example
-  (ball 100 | color [(worley2 (p / 30)) 0])
+  (ball 100 | color [(worley2 (p / 30)) 1])
   ```
   ````
   (var d1a (min d1 d2))

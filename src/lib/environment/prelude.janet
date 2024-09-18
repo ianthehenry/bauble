@@ -43,10 +43,14 @@
 (def tau "Bigger than six, but smaller than seven.\n\nNote that there are also values like `tau/4` and `tau/6*5` and related helpers all the way up to `tau/12`.  They don't show up in autocomplete because they're annoying, but they're there." (* 2 math/pi))
 (loop [i :range-to [2 12]]
   (put (curenv) (symbol "pi/" i) @{:value (/ pi i)})
-  (put (curenv) (symbol "tau/" i) @{:value (/ tau i)}))
+  (put (curenv) (symbol "tau/" i) @{:value (/ tau i)})
+  (put (curenv) (symbol "-pi/" i) @{:value (- (/ pi i))})
+  (put (curenv) (symbol "-tau/" i) @{:value (- (/ tau i))}))
 (loop [i :in [3 4 6 8 12] j :range [2 i]]
   (put (curenv) (symbol "pi/" i "*" j) @{:value (* (/ pi i) j)})
-  (put (curenv) (symbol "tau/" i "*" j) @{:value (* (/ tau i) j)}))
+  (put (curenv) (symbol "tau/" i "*" j) @{:value (* (/ tau i) j)})
+  (put (curenv) (symbol "-pi/" i "*" j) @{:value (* -1 (/ pi i) j)})
+  (put (curenv) (symbol "-tau/" i "*" j) @{:value (* -1 (/ tau i) j)}))
 
 (defn remap+
   "Linearly transform a number in the range `[-1 1]` to `[0 1]`."

@@ -6,7 +6,7 @@
 # there:
 
 (ball [50 100 100]
-| union :r 50 (tube y 25 50 | move [0 -100 0])
+| union :r 50 (cylinder y 25 50 | move [0 -100 0])
 | scale y (ss p.y [-100 100] [1 0.8])
 | recolor
   (blinn-phong r3
@@ -101,7 +101,7 @@
 
 # (def r 0.00)
 # (box 80
-# | rotate (normalize [0 1 1]) r z (r * 0.7) x (r * 0.5)
+# | rotate [0 1 1 | normalize] r z (r * 0.7) x (r * 0.5)
 # | mirror x y z
 # | rotate y r z (r * 0.7) x (r * 0.5)
 # | mirror x y z)

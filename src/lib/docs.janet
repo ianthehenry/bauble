@@ -194,7 +194,7 @@
     (fn [_] (-- indent))) `
     Shapes
       3D shapes
-        9 values
+        12 values
       2D shapes
         22 values
       Shape combinators
@@ -216,7 +216,7 @@
     Noise
       8 values
     GLSL helpers
-      9 values
+      8 values
     Camera
       12 values
     Rotation

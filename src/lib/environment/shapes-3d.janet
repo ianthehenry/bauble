@@ -5,10 +5,16 @@
   ```A 2D shape with zero distance everywhere.```
   (shape/3d (jlsl/coerce-expr 0)))
 
-(defshape/3d- sphere [:float radius] ""
+(defshape/3d sphere [:float radius]
+  ````
+  Returns a 3D shape. This is an alias for the float overload of `ball`.
+  ````
   (return (length p - radius)))
 
-(defshape/3d- ellipsoid [:vec3 size] ""
+(defshape/3d ellipsoid [:vec3 size]
+  ````
+  Returns a 3D shape. This is an alias for the `vec3` overload of `ball`.
+  ````
   (var k0 (length (p / size)))
   (var k1 (length (p / (size * size))))
   (return (k0 * (k0 - 1) / k1)))
@@ -39,14 +45,38 @@
     jlsl/type/vec3 (ellipsoid size)
     (error "unknown overload: ball expects a float or vec3")))
 
-(defshape/3d box [:vec3 !size]
+(defshape/3d cube [:float !size]
   ```
-  Returns a 3D shape, a box with corners at `(- size)` and `size`. `size` will be coerced to a `vec3`.
-  
-  Think of `size` like the "radius" of the box: a box with `size.x = 50` will be `100` units wide.
+  This is an alias for the `float` overload of `box`.
   ```
   (var d (abs p - size))
   (return (max d 0 | length + min (max d) 0)))
+
+(defshape/3d- box [:vec3 !size] ""
+  (var d (abs p - size))
+  (return (max d 0 | length + min (max d) 0)))
+
+(def- box- box)
+
+(defnamed box [size :?r:round]
+  ````
+  Returns a 3D shape, a box with corners at `(- size)` and `size`. `size` will be coerced to a `vec3`.
+  
+  Think of `size` like the "radius" of the box: a box with `size.x = 50` will be `100` units wide.
+
+  ```example
+  (box 100 :r (osc t 2 0 10))
+  ```
+
+  ```example
+  (box [100 (osc t 2 50 100) (oss t 2 50 100)])
+  ```
+  ````
+  (def size (jlsl/coerce-expr size))
+  (case (jlsl/expr/type size)
+    jlsl/type/float (cube size :r round)
+    jlsl/type/vec3 (box- size :r round)
+    (error "unknown overload: ball expects a float or vec3")))
 
 (defshape/3d box-frame [:vec3 !size :float !thickness]
   ````
@@ -93,19 +123,19 @@
   (var s (max (k * (w.x * q.y - (w.y * q.x))) (k * (w.y - q.y))))
   (return (sqrt d * sign s)))
 
-(deforiented tube [:float !radius :float !height]
+(deforiented cylinder [:float !radius :float !height]
   ````
   Returns a 3D shape, a cylinder oriented along the given `axis`.
 
   ```example
-  (tube y 50 100)
+  (cylinder y 50 100)
   ```
 
   The second argument is twice the length of the cylinder. Like many shapes,
   you can round it with `:r`.
 
   ```example
-  (tube z 100 50 :r (osc t 2 0 10))
+  (cylinder z 100 50 :r (osc t 2 0 10))
   ```
   ````
   (var d ((abs [(length other-axes) this-axis]) - [radius height]))

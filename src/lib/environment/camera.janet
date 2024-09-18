@@ -9,7 +9,7 @@
   ```
   (var cot-half-fov (tan (radians (90 - (fov * 0.5)))))
   (var z (* 0.5 cot-half-fov))
-  (return (normalize [frag-coord z])))
+  (return [frag-coord z | normalize]))
 
 (sugar (defnamed camera/perspective [position target :?fov]
   ````
@@ -47,7 +47,7 @@
            y-axis (cross x-axis z-axis)]
     (Ray camera.position (mat3 x-axis y-axis z-axis * perspective-vector camera.fov)))))
 
-(sugar (defn camera/pan
+(sugar (defnamed camera/pan [camera angle :?up]
   ````
   Rotate the camera left and right.
 
@@ -58,16 +58,44 @@
   (set camera (camera/perspective [0 100 600] [0 0 0] :fov 45
   | camera/pan (sin t * 0.2)))
   ```
+
+  By default this rotation is relative to the camera's current
+  orientation, so the image you see will always appear to be moving
+  horizontally during a pan. But you can provide an absolute
+  `:up` vector to ignore the camera's roll. (I think the difference
+  is easier to understand if you unroll the camera afterward.)
+
+    ```example
+  (morph (ball 50) (box 50) 2
+  | union (circle 200 | extrude y 10 | move y -100)
+  | blinn-phong (vec3 0.75))
+  (set camera (camera/perspective [0 100 600] [0 0 0] :fov 45
+  | camera/roll pi/4
+  | camera/pan (sin t * 0.2)
+  # | camera/roll -pi/4
+  ))
+  ```
+
+  ```example
+  (morph (ball 50) (box 50) 2
+  | union (circle 200 | extrude y 10 | move y -100)
+  | blinn-phong (vec3 0.75))
+  (set camera (camera/perspective [0 100 600] [0 0 0] :fov 45
+  | camera/roll pi/4
+  | camera/pan (sin t * 0.2) :up y
+  # | camera/roll -pi/4
+  ))
+  ```
   ````
-  [camera angle]
   (def camera (typecheck camera Camera))
   (def angle (typecheck angle jlsl/type/float))
+  (def up (typecheck? up jlsl/type/vec3))
   (gl/do "pan"
     (var camera camera)
-    (set camera.direction (rotate camera.direction camera.up (- angle)))
+    (set camera.direction (rotate camera.direction ,(@or up camera.up) (- angle)))
     camera)))
 
-(sugar (defn camera/tilt
+(sugar (defnamed camera/tilt [camera angle :?up]
   ````
   Rotate the camera up and down.
 
@@ -78,13 +106,17 @@
   (set camera (camera/perspective [0 100 600] [0 0 0] :fov 45
   | camera/tilt (sin t * 0.2)))
   ```
+
+  As with `pan`, you can supply an absolute `:up` vector to use
+  instead of the camera's current roll.
+
   ````
-  [camera angle]
   (def camera (typecheck camera Camera))
   (def angle (typecheck angle jlsl/type/float))
+  (def up (typecheck? up jlsl/type/vec3))
   (gl/do "tilt"
     (var camera camera)
-    (set camera.direction (rotate camera.direction (cross camera.direction camera.up | normalize) angle))
+    (set camera.direction (rotate camera.direction (cross camera.direction ,(@or up camera.up) | normalize) angle))
     camera)))
 
 (sugar (defn camera/roll
@@ -127,7 +159,7 @@
     (set camera.fov (camera.fov / amount))
     camera)))
 
-(sugar (defn camera/push
+(sugar (defn camera/dolly
   ````
   Move the camera forward or backward.
 
@@ -136,7 +168,7 @@
   | union (circle 200 | extrude y 10 | move y -100)
   | blinn-phong (vec3 0.75))
   (set camera (camera/perspective [0 100 600] [0 0 0] :fov 45
-  | camera/push (sin t * 100)))
+  | camera/dolly (sin t * 100)))
   ```
 
   ```example
@@ -148,7 +180,7 @@
 
   # hitchcock zoom
   (set camera (camera/perspective [0 100 600] [0 0 0] :fov 45
-  | camera/push (sin+ t * -500)
+  | camera/dolly (sin+ t * -500)
   | camera/zoom (sin+ t + 1)
   ))
   ```
@@ -156,7 +188,7 @@
   [camera amount]
   (def camera (typecheck camera Camera))
   (def amount (typecheck amount jlsl/type/float))
-  (gl/do "push"
+  (gl/do "dolly"
     (var camera camera)
     (set camera.position (camera.direction * amount + camera.position))
     camera)))

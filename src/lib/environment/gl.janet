@@ -76,7 +76,7 @@
   ```
 
   If the body of the `gl/let` returns a shape, the bound variable will be available in all of its
-  fields. If you want to refer to variables or expressions that are only available in color fields,
+  fields. If you want to refer to variables or expressions that are only available in some fields,
   pass a keyword as the first argument:
 
   ```example
@@ -123,11 +123,12 @@
   Execute a series of GLSL statements and return the final expression.
 
   ```example
-  (ball 100 | color (gl/do "optional-label"
-    (var c [1 0 1])
-    (for (var i 0:u) (< i 10:u) (++ i)
-      (+= c.g 0.01))
-    c))
+  (ball 100 | color 
+    (gl/do "optional-label"
+      (var c [1 0 1])
+      (for (var i 0:u) (< i 10:u) (++ i)
+        (+= c.g 0.01))
+      c))
   ```
 
   The body of this macro is not regular Janet code, but a special DSL
@@ -140,16 +141,16 @@
   ````
   Like `gl/do`, except that you can explicitly return early.
 
+  ```example
+  (ball 100 | color
+    (gl/iife "optional-label"
+      (var c [1 0 1])
+      (if (< normal.y 0)
+        (return c))
+      (for (var i 0:u) (< i 10:u) (++ i)
+        (+= c.g (p.x / 100 / 10)))
+      c))
   ```
-  (gl/iife "optional-label"
-    (var c [1 0 1])
-    (if (< normal.y 0)
-      (return c))
-    (for (var i 0:u) (< i 10:u) (++ i)
-      (+= c.g 0.01))
-    c)
-  ```
-
   ````
   [& body]
   (call jlsl/iife ;body))
@@ -169,23 +170,32 @@
   [return-type name params & body]
   (call jlsl/jlsl/defn return-type name params ;body))
 
-(defmacro gl/overload
-  ````
-  Overloads a previously defined function with an additional signature.
-
-  Note that the argument type must uniquely determine the return type of
-  a GLSL function, so you can't make an overload that only varies in
-  its return type.
-
-  ```
-  (gl/overload :float min [:float a :float b :float c]
-    (return (min (min a b) c)))
-  ```
-
-  You can overload any function, including built-in functions.
-  ````
-  [return-type name params & body]
-  (call jlsl/jlsl/overload return-type name params ;body))
+# TODO: it's not safe to expose this in its current form
+# because it mutates values that exist outside the
+# environment, which means that the overload will survive
+# across multiple script invocations.
+#
+# We need to either check that the function being overloaded
+# was defined in the current environment, or clone the target
+# multifunction before we overload it.
+#
+# (defmacro gl/overload
+#   ````
+#   Overloads a previously defined function with an additional signature.
+#
+#   Note that the argument type must uniquely determine the return type of
+#   a GLSL function, so you can't make an overload that only varies in
+#   its return type.
+#
+#   ```
+#   (gl/overload :float min [:float a :float b :float c]
+#     (return (min (min a b) c)))
+#   ```
+#
+#   You can overload any function, including built-in functions.
+#   ````
+#   [return-type name params & body]
+#   (call jlsl/jlsl/overload return-type name params ;body))
 
 (defmacro gl/def
   ````
@@ -234,8 +244,10 @@
   A GLSL ternary conditional expression.
 
   ```example
-  (ball 100
-  | color (gl/if (< normal.y 0) [1 0 0] [1 1 0]))
+  (ball 100 | color 
+    (gl/if (< normal.y 0) 
+      [1 0 0] 
+      [1 1 0]))
   ```
   ````
   [condition then else]

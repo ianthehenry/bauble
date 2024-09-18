@@ -39,7 +39,7 @@
   In 3D, the arguments should be pairs of `axis angle`. For example:
 
   ```example
-  (rotate (box 50) x 0.1 y 0.2)
+  (rotate (box 100) x t y (sin t))
   ```
 
   All `axis` arguments must be unit vectors. There are built-in axis variables `x`/`+y`/`-z`
@@ -47,7 +47,7 @@
   rotate around an arbitrary axis:
 
   ```example
-  (rotate (box 50) (normalize [1 1 1]) t)
+  (rotate (box 100) [1 1 1 | normalize] t)
   ```
 
   The order of the arguments is significant, as rotations are not commutative.
@@ -55,6 +55,31 @@
   The first argument to `rotate` can be a shape, vector, or camera.
 
   In 2D, the arguments should just be angles; no axis is allowed.
+
+  You can use `rotate` to make lots of cool effects. By varying the angle
+  of rotation, you can create twists:
+
+  ```example
+  (box [50 100 50] | rotate y (p.y / 100 * (cos+ t)))
+  ```
+
+  Twirls:
+
+  ```example
+  (box [100 50 100] | rotate y (length p.xz / 50 * (cos+ t)))
+  ```
+
+  And bends:
+
+  ```example
+  (box [50 100 100] | rotate y (p.z / 100 * (cos+ t)))
+  ```
+
+  Or any number of other cool effects!
+
+  ```example
+  (box [50 100 50] | rotate y (sin (p.y / 10) * sin t * 0.2))
+  ```
   ````
   [subject & args]
   (assert (> (@length args) 0) "not enough arguments")
@@ -170,11 +195,17 @@
       (if (mask 2) (f (. p z)) (. p z))))))
 
 (defnamed mirror [shape :?r &axes]
-  ```
+  ````
   Mirror a shape across one or more axes. Normally this takes the absolute value
   of the coordinates, but if you supply `:r` it will take a biased square root to
   give a smooth mirror effect.
+
+  ```example
+  (box 50 | rotate x t y t
+  | move x 50
+  | mirror x :r (sin t * 20 | max 0))
   ```
+  ````
   (if r
     (gl/let [r (typecheck r jlsl/type/float)]
       (map-axes shape axes (fn [x] (sqrt (+ (* x x) (* r r))))))
@@ -191,12 +222,14 @@
 (defnamed scale [shape &args]
   ````
   Scale a shape. If the scale factor is a float, this will produce an exact
-  distance field. If it's a vector, space will be distorted by the smallest
-  component of the vector.
+  distance field.
 
   ```example
   (rect 50 | scale 2)
   ```
+
+  If the scale factor is a vector, space will be distorted by the smallest
+  component of that vector, and produce an approximate distance field:
 
   ```example
   (rect 50 | scale [2 1])
@@ -232,16 +265,16 @@
   This is a syntactic transformation, so it requires a particular kind of invocation.
   It's designed to fit into a pipeline, immediately after the operation you want to apply:
 
-  ```
+  ```example
   # rotate around one corner
-  (rect 30 | rotate t | pivot [30 30])
+  (rect 50 | rotate t | pivot [50 50])
   ```
 
   This essentially rewrites its argument to:
-  
-  ```
-  (gl/let [$pivot [30 30]]
-    (rect 30 | move (- $pivot) | rotate t | move $pivot))
+
+  ```example
+  (gl/let [$pivot [50 50]]
+    (rect 50 | move (- $pivot) | rotate t | move $pivot))
   ```
   ````
   (fn pivot [transformation point]
@@ -252,52 +285,97 @@
         (,move (,op (,move ,subject (- ,$pivot)) ,;args) ,$pivot)))))
 
 (deftransform elongate [shape size]
-  "Stretch a shape."
+  ````
+  Stretch the center of a shape, leaving the sides untouched.
+
+  ```example
+  (cone y 50 100 | elongate [(osc t 3 50) 0 (osc t 6 100)])
+  ```
+
+  ```example
+  (torus x 50 20 | elongate [0 100 0])
+  ```
+
+  ```example
+  (rhombus [100 (gl/if (< q.y 0) 100 50)] | elongate [0 (osc t 2 0 20)])
+  ```
+  ````
   (def size (typecheck size (shape/type shape)))
   (case (shape/type shape)
     jlsl/type/vec2
       (shape/map shape (fn [expr]
         (jlsl/do "elongate"
           (var q-prime (abs q - size))
-          (+ (with [q (max q-prime 0)] expr)
+          (+ (with [q (max q-prime 0 * sign q)] expr)
              (min (max q-prime) 0)))))
     jlsl/type/vec3
       (shape/map shape (fn [expr]
         (jlsl/do "elongate"
           (var p-prime (abs p - size))
-          (+ (with [p (max p-prime 0)] expr)
+          (+ (with [p (max p-prime 0 * sign p)] expr)
              (min (max p-prime) 0)))))
     (error "BUG")))
 
 (defn shell
-  ```
+  ````
   Returns a hollow version of the provided shape (the absolute value of the distance field).
+
+  ```example
+  (circle 100 | shell 5)
   ```
+
+  In 3D, it's hard to see the effect without cutting into the result:
+
+  ```example
+  (ball 100 | shell 5 | intersect (plane x (osc t 3 0 100)))
+  ```
+  ````
   [shape &opt thickness]
-  (default thickness 0)
+  (def thickness (typecheck (or thickness 0) jlsl/type/float))
   (shape/map-distance shape (fn [expr] (- (abs expr) (* thickness 0.5)))))
 
 (defn expand
-  ```
+  ````
   Expands the provided shape, rounding corners in the process.
 
   This is the same as subtracting `amount` from the distance field.
   It's more accurate to say that this "moves between isosurfaces," so
   it may not actually round anything if the provided shape is not an
   exact distance field.
+
+  For example, this produces a nicely expanded shape:
+
+  ```example
+  (rect 90 | expand (sin+ t * 30))
   ```
+
+  But this does something weird, because subtraction does not produce
+  an exact distance field:
+
+  ```example
+  (rect 90
+  | subtract (rect 100 | move x 150)
+  | expand (sin+ t * 30))
+  ```
+  ````
   [shape amount]
+  (def amount (typecheck amount jlsl/type/float))
   (shape/map-distance shape (fn [expr] (- expr amount))))
 
 (defn slow
-  ```
-  Scales distances around `shape`, causing the raymarcher to converge more slowly.
-
+  ````
+  Scales the shape's distance field, causing the raymarcher to converge more slowly.
   This is useful for raymarching distance fields that vary based on `p` -- shapes
   that don't actually provide an accurate distance field unless you are very close
-  to the surface.
+  to their surfaces.
 
-  Values larger than 1 will give weird results, and this will slow the render down.
+  ```example
+  (box 100
+  | rotate y (p.y / 30)
+  | rotate x t
+  | slow (osc t 5 1 0.25))
   ```
+  ````
   [shape amount]
+  (def amount (typecheck amount jlsl/type/float))
   (shape/map-distance shape (fn [expr] (* expr amount))))

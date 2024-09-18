@@ -29,7 +29,7 @@
 
   "balloon" `
   (ball [50 100 100]
-  | union :r 50 (tube y 25 50 | move [0 -100 0])
+  | union :r 50 (cylinder y 25 50 | move [0 -100 0])
   | scale y (ss p.y [-100 100] [1 0.8])
   | radial y 20
   | color normal+
@@ -42,7 +42,7 @@
 
   # TODO: restore this op
   #"onion" `(ball 100 | onion 5 | intersect (half-space :-z))`
-  "cylinder" `(box 50 | subtract (tube z 30 100))`
+  "cylinder" `(box 50 | subtract (cylinder z 30 100))`
   "rotations" `(subtract :r 30 (box 50 | rotate y tau/8 z tau/8) (ball 50 | move x 50))`
   # TODO: rounded cone
   # "cone rounded" `(cone z 50 100 :r 10)`
@@ -126,8 +126,8 @@
   "revolve" `(rect 30 | union (circle 30 | move x 30) | revolve x 100)`
   "revolve defaults to zero" `(rect 30 | union (circle 30 | move x 30) | revolve z)`
 
-  "slice" `(box 50 | rotate (normalize [1 1 1]) 1 | slice z)`
-  "slice with offset" `(box 50 | rotate (normalize [1 1 1]) 1 | slice y 10)`
+  "slice" `(box 50 | rotate [1 1 1 | normalize] 1 | slice z)`
+  "slice with offset" `(box 50 | rotate [1 1 1 | normalize] 1 | slice y 10)`
 
   "3d rotation" `
   (union
@@ -191,6 +191,7 @@
   "map-distance" `(rect 50 | map-distance (fn [d] (abs d - 10)))`
   "elongate 2d" `(circle 10 | elongate [50 60])`
   "elongate 3d" `(ball 10 | elongate [50 60 70])`
+  "asymmetric elongate" `(rect 100 :r [10 20 30 40] | elongate [20 20])`
 
   "torus" `
   (union
@@ -602,10 +603,10 @@
   (box 20 | radial y 12 100)
   `
   "radial 3D no oversample" `
-  (box 20 | rotate (normalize [1 1 1]) 0.25 | move x 100 | radial z 12 :oversample false)
+  (box 20 | rotate [1 1 1 | normalize] 0.25 | move x 100 | radial z 12 :oversample false)
   `
   "radial 3D oversample" `
-  (box 20 | rotate (normalize [1 1 1]) 0.25 | move x 100 | radial z 12 :oversample true)
+  (box 20 | rotate [1 1 1 | normalize] 0.25 | move x 100 | radial z 12 :oversample true)
   `
   "radial 3D colors" `
   (box 12 | blinn-phong (hsv (hash $i) 0.5 1) | move x 100 | radial: $i z 24)

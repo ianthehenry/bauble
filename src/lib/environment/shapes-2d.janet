@@ -10,7 +10,7 @@
   Returns a 2D shape.
 
   ```example
-  (circle 50)
+  (circle 100)
   ```
   ````
   (return (length q - radius)))
@@ -35,10 +35,10 @@
 
   ```example
   (union
-    (rect 30 | move [-40 40])
-    (rect 30 :r 10 | move [40 40])
-    (rect 30 :r [0 10 20 30] | move [-40 -40])
-    (rect 30 :r [0 30 0 30] | move [40 -40]))
+    (rect 50 | move [-100 100])
+    (rect 50 :r 10 | move [100 100])
+    (rect 50 :r [0 10 20 30] | move [-100 -100])
+    (rect 50 :r [0 30 0 30] | move [100 -100]))
   ```
   ````
   (if radius
@@ -59,7 +59,7 @@
   Returns a 2D shape. It rhombs with a kite.
 
   ```example
-  (rhombus [50 (osc t 3 20 80)])
+  (rhombus [100 (osc t 3 50 150)])
   ```
   ````
   (var q (abs q))
@@ -75,7 +75,7 @@
   is the height of the parellogram.
 
   ```example
-  (parallelogram [40 50] (sin t * 50))
+  (parallelogram [80 100] (sin t * 100))
   ```
   
   `skew` is how far the pallorelogram leans in the `x` direction, so the total
@@ -99,7 +99,7 @@
   Returns a 2D shape, an approximation of a circle made out of quadratic bezier curves.
 
   ```example
-  (quad-circle 50)
+  (quad-circle 100)
   ```
 
   It's like a circle, but quaddier.
@@ -150,7 +150,7 @@
   Returns a 2D shape.
 
   ```example
-  (trapezoid (osc t 3 20 50) (oss t 2 50 20) 50)
+  (trapezoid (osc t 3 50 100) (oss t 2 100 50) 100)
   ```
   ````
   (var k1 [top-width height])
@@ -209,7 +209,7 @@
 (defshape/2d uneven-capsule [:float bottom-radius :float top-radius :float height]
   ````
   ```example
-  (uneven-capsule 30 (osc t 2 20 40) (osc t 3 20 50))
+  (uneven-capsule 50 (osc t 3 20 60) (oss t 8 30 100))
   ```
   ````
   (var q [(abs q.x) q.y])
@@ -225,7 +225,7 @@
 (defshape/2d pentagon [:float !radius]
   ````
   ```example
-  (pentagon 50 :r (osc t 2 20))
+  (pentagon 100 :r (osc t 2 20))
   ```
   ````
   (def angle (math/pi / 5))
@@ -239,7 +239,7 @@
 (defshape/2d hexagon [:float !radius]
   ````
   ```example
-  (hexagon 50 :r (osc t 2 20))
+  (hexagon 100 :r (osc t 2 20))
   ```
   ````
   (def angle (math/pi / 6))
@@ -252,7 +252,7 @@
 (defshape/2d octagon [:float !radius]
   ````
   ```example
-  (octagon 50 :r (osc t 2 20))
+  (octagon 100 :r (osc t 2 20))
   ```
   ````
   (def angle (math/pi / 8))
@@ -266,7 +266,7 @@
 (defshape/2d hexagram [:float !radius]
   ````
   ```example
-  (hexagram 50 :r (osc t 2 20))
+  (hexagram 100 :r (osc t 2 20))
   ```
   ````
   (def angle (math/pi / 6))
@@ -281,7 +281,7 @@
 (defshape/2d star [:float !outer-radius :float !inner-radius]
   ````
   ```example
-  (star 50 30 :r (osc t 2 20))
+  (star 100 70 :r (osc t 2 20))
   ```
   ````
   (def angle (math/pi / 5))
@@ -303,7 +303,7 @@
   Returns a 2D shape, something like a pie slice or a pacman depending on `angle`.
 
   ```example
-  (pie 50 (osc t 5 tau))
+  (pie 100 (osc t 5 tau))
   ```
   ````
   (var angle (angle * 0.5))
@@ -320,7 +320,7 @@
   Returns a 2D shape.
 
   ```example
-  (cut-disk 50 (sin t * 40))
+  (cut-disk 100 (sin t * 80))
   ```
   ````
   (var w (sqrt (radius * radius - (bottom * bottom))))
@@ -333,7 +333,7 @@
 (defshape/2d arc [:float radius :float angle :float thickness]
   ````
   ```example
-  (arc 60 (osc t 5 tau) (osc t 2 5 20))
+  (arc 100 (osc t 5 tau) (osc t 2 5 20))
   ```
   ````
   (var angle (angle * 0.5))
@@ -346,7 +346,7 @@
 (defshape/2d ring [:float radius :float angle :float thickness]
   ````
   ```example
-  (ring 60 (osc t 5 tau) (osc t 2 5 20))
+  (ring 100 (osc t 5 tau) (osc t 2 5 20))
   ```
   ````
   (var q (rotate [(abs q.x) q.y] (angle * 0.5)))
