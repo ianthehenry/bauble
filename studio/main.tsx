@@ -72,6 +72,7 @@ if (inWorker) {
             initialScript={initialScript}
             focusable={true}
             canSave={false}
+            canSearch={false}
             size={{width: 256, height: 256}}
           />, container);
       }
@@ -91,6 +92,7 @@ if (inWorker) {
       initialScript={initialScript}
       focusable={false}
       canSave={true}
+      canSearch={true}
       size={{width: 512, height: 512}}
     />, document.body);
   break;

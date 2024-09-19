@@ -1,16 +1,57 @@
-import {basicSetup} from 'codemirror';
-import {EditorView, keymap, ViewUpdate} from '@codemirror/view';
+import {EditorView, ViewUpdate} from '@codemirror/view';
 import {indentWithTab} from '@codemirror/commands';
-import {syntaxTree, syntaxHighlighting, HighlightStyle} from '@codemirror/language';
-import {autocompletion} from "@codemirror/autocomplete";
+import {syntaxTree, HighlightStyle} from '@codemirror/language';
 import {SyntaxNode} from '@lezer/common';
 import {tags} from '@lezer/highlight';
 import {janet} from 'codemirror-lang-janet';
-import {EditorState, EditorSelection, Transaction} from '@codemirror/state';
+import {EditorSelection, Transaction} from '@codemirror/state';
 import type {Definition} from 'bauble-runtime';
 import Big from 'big.js';
 import * as Storage from './storage';
 import janetAutocomplete from "./autocomplete";
+
+/////////////////////////////////////////////////////////////////////////////////////
+// https://github.com/codemirror/basic-setup/blob/main/src/codemirror.ts
+// copied here so that we can optionally exclude searchKeyMap
+import {keymap, highlightSpecialChars, drawSelection, highlightActiveLine, dropCursor,
+        rectangularSelection, crosshairCursor,
+        lineNumbers, highlightActiveLineGutter} from "@codemirror/view"
+import {Extension, EditorState} from "@codemirror/state"
+import {defaultHighlightStyle, syntaxHighlighting, indentOnInput, bracketMatching,
+        foldGutter, foldKeymap} from "@codemirror/language"
+import {defaultKeymap, history, historyKeymap} from "@codemirror/commands"
+import {searchKeymap, highlightSelectionMatches} from "@codemirror/search"
+import {autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap} from "@codemirror/autocomplete"
+import {lintKeymap} from "@codemirror/lint"
+const basicSetup = (enableSearch: boolean) => [
+  lineNumbers(),
+  highlightActiveLineGutter(),
+  highlightSpecialChars(),
+  history(),
+  foldGutter(),
+  drawSelection(),
+  dropCursor(),
+  EditorState.allowMultipleSelections.of(true),
+  indentOnInput(),
+  syntaxHighlighting(defaultHighlightStyle, {fallback: true}),
+  bracketMatching(),
+  closeBrackets(),
+  autocompletion(),
+  rectangularSelection(),
+  crosshairCursor(),
+  highlightActiveLine(),
+  highlightSelectionMatches(),
+  keymap.of([
+    ...closeBracketsKeymap,
+    ...defaultKeymap,
+    ...(enableSearch ? searchKeymap : []),
+    ...historyKeymap,
+    ...foldKeymap,
+    ...completionKeymap,
+    ...lintKeymap
+  ])
+];
+/////////////////////////////////////////////////////////////////////////////////////
 
 function save({state}: StateCommandInput) {
   console.log('saving...');
@@ -75,6 +116,7 @@ interface EditorOptions {
   initialScript: string,
   parent: HTMLElement,
   canSave: boolean,
+  canSearch: boolean,
   onChange: (() => void),
   definitions: Array<Definition>,
 }
@@ -188,7 +230,7 @@ const theme = EditorView.theme({
   // TODO: style the "find/replace" box
 });
 
-export default function installCodeMirror({definitions, initialScript, parent, canSave, onChange}: EditorOptions): EditorView {
+export default function installCodeMirror({definitions, initialScript, parent, canSave, canSearch, onChange}: EditorOptions): EditorView {
   const keyBindings = [indentWithTab];
   if (canSave) {
     keyBindings.push({ key: "Mod-s", run: save });
@@ -196,7 +238,7 @@ export default function installCodeMirror({definitions, initialScript, parent, c
 
   const editor = new EditorView({
     extensions: [
-      basicSetup,
+      basicSetup(canSearch),
       janet(),
       keymap.of(keyBindings),
       EditorView.updateListener.of(function(viewUpdate: ViewUpdate) {

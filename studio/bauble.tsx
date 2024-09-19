@@ -282,6 +282,7 @@ interface BaubleProps {
   initialScript: string,
   focusable: boolean,
   canSave: boolean,
+  canSearch: boolean,
   definitions: Array<Definition>,
   wasmBox: Mailbox,
   renderBox: Mailbox,
@@ -411,6 +412,7 @@ const Bauble = (props: BaubleProps) => {
       initialScript: props.initialScript,
       parent: editorContainer,
       canSave: props.canSave,
+      canSearch: props.canSearch,
       onChange: recompile,
       definitions: definitions,
     });
