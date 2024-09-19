@@ -102,21 +102,21 @@
 # (def r 0.00)
 # (box 80
 # | rotate [0 1 1 | normalize] r z (r * 0.7) x (r * 0.5)
-# | mirror x y z
-# | rotate y r z (r * 0.7) x (r * 0.5)
-# | mirror x y z)
+# | mirror x y z :r 10
+# | rotate y r x (r * 0.7) y (r * 0.5)
+# | mirror x y z :r 10)
 
-# You can also hold down cmd-shift and
-# move your mouse without clicking
-# anywhere to edit the value under the
-# text cursor. This is a workaround for
-# Firefox on macOS, which due to a
-# long-standing bug cannot report
-# ctrl-click events correctly. But it's
-# also convenient for editing values
-# while typing, without having to do any
-# precision mousing.
-# https://bugzilla.mozilla.org/show_bug.cgi?id=1504210
+# > You can also hold down cmd-shift and
+# > move your mouse without clicking
+# > anywhere to edit the value under the
+# > text cursor. This is a workaround for
+# > Firefox on macOS, which due to a
+# > long-standing bug cannot report
+# > ctrl-click events correctly. But it's
+# > also convenient for editing values
+# > while typing, without having to do any
+# > precision mousing.
+# > https://bugzilla.mozilla.org/show_bug.cgi?id=1504210
 
 # When editing values with your mouse,
 # Bauble will increment the smallest
