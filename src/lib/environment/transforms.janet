@@ -60,25 +60,29 @@
   of rotation, you can create twists:
 
   ```example
-  (box [50 100 50] | rotate y (p.y / 100 * (cos+ t)))
+  (box [50 100 50]
+  | rotate y (p.y / 100 * (cos+ t)))
   ```
 
   Twirls:
 
   ```example
-  (box [100 50 100] | rotate y (length p.xz / 50 * (cos+ t)))
+  (box [100 50 100]
+  | rotate y (length p.xz / 50 * (cos+ t)))
   ```
 
   And bends:
 
   ```example
-  (box [50 100 100] | rotate y (p.z / 100 * (cos+ t)))
+  (box [50 100 100]
+  | rotate y (p.z / 100 * (cos+ t)))
   ```
 
   Or any number of other cool effects!
 
   ```example
-  (box [50 100 50] | rotate y (sin (p.y / 10) * sin t * 0.2))
+  (box [50 100 50]
+  | rotate y (sin (p.y / 10) * sin t * 0.2))
   ```
   ````
   [subject & args]
