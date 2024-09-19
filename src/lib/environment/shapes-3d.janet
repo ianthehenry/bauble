@@ -65,11 +65,11 @@
   Think of `size` like the "radius" of the box: a box with `size.x = 50` will be `100` units wide.
 
   ```example
-  (box 100 :r (osc t 2 0 10))
+  (box 100 :r (osc t 3 0 10))
   ```
 
   ```example
-  (box [100 (osc t 2 50 100) (oss t 2 50 100)])
+  (box [100 (osc t 3 50 100) (oss t 4 50 100)])
   ```
   ````
   (def size (jlsl/coerce-expr size))
@@ -100,7 +100,7 @@
   Returns a 3D shape, a torus around the provided `axis`.
 
   ```example
-  (torus z 100 (osc t 2 10 50))
+  (torus z 100 (osc t 3 10 50))
   ```
   ````
   (return (length [(length other-axes - radius) this-axis] - thickness)))
@@ -135,7 +135,7 @@
   you can round it with `:r`.
 
   ```example
-  (cylinder z 100 50 :r (osc t 2 0 10))
+  (cylinder z 100 50 :r (osc t 3 0 20))
   ```
   ````
   (var d ((abs [(length other-axes) this-axis]) - [radius height]))

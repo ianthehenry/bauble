@@ -98,15 +98,15 @@
 
   This function is useful for "pointing" one shape towards another. For example:
 
-  ```
-  (def pos [(sin (t * 2) * 50) (sin (t * 3) * 100) (cos (t * 5) * 50)])
+  ```example
+  (def pos
+    [(sin (t * 1.0) * 100)
+     (sin (t * 1.5) * 100)
+     (cos (t * 2.0) * 100)])
   (union
-    (cone y 10 80 | align y (normalize pos))
+    (cone y 10 100 | align y (normalize pos))
     (box 10 | move pos))
   ```
-
-  The tip of the cone points towards the moving target. In this case the `from` vector is equal to the
-  axis of the cone.
 
   If `from` = `(- to)`, the result is undefined: there are infinitely many rotation matrices that reverse
   a vector's direction.

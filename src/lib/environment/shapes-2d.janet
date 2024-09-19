@@ -225,7 +225,7 @@
 (defshape/2d pentagon [:float !radius]
   ````
   ```example
-  (pentagon 100 :r (osc t 2 20))
+  (pentagon 100 :r (osc t 3 20))
   ```
   ````
   (def angle (math/pi / 5))
@@ -239,7 +239,7 @@
 (defshape/2d hexagon [:float !radius]
   ````
   ```example
-  (hexagon 100 :r (osc t 2 20))
+  (hexagon 100 :r (osc t 3 20))
   ```
   ````
   (def angle (math/pi / 6))
@@ -252,7 +252,7 @@
 (defshape/2d octagon [:float !radius]
   ````
   ```example
-  (octagon 100 :r (osc t 2 20))
+  (octagon 100 :r (osc t 3 20))
   ```
   ````
   (def angle (math/pi / 8))
@@ -266,7 +266,7 @@
 (defshape/2d hexagram [:float !radius]
   ````
   ```example
-  (hexagram 100 :r (osc t 2 20))
+  (hexagram 100 :r (osc t 3 20))
   ```
   ````
   (def angle (math/pi / 6))
@@ -281,7 +281,7 @@
 (defshape/2d star [:float !outer-radius :float !inner-radius]
   ````
   ```example
-  (star 100 70 :r (osc t 2 20))
+  (star 100 70 :r (osc t 3 20))
   ```
   ````
   (def angle (math/pi / 5))
@@ -333,7 +333,7 @@
 (defshape/2d arc [:float radius :float angle :float thickness]
   ````
   ```example
-  (arc 100 (osc t 5 tau) (osc t 2 5 20))
+  (arc 100 (osc t 5 tau) (osc t 3 5 20))
   ```
   ````
   (var angle (angle * 0.5))
@@ -346,7 +346,7 @@
 (defshape/2d ring [:float radius :float angle :float thickness]
   ````
   ```example
-  (ring 100 (osc t 5 tau) (osc t 2 5 20))
+  (ring 100 (osc t 5 tau) (osc t 3 5 20))
   ```
   ````
   (var q (rotate [(abs q.x) q.y] (angle * 0.5)))

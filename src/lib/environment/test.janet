@@ -142,10 +142,10 @@
     abs @{}
     acos @{}
     acosh @{}
-    align @{:doc "(align target from to)\n\nAlign a shape or a vector to another vector. Both the `from` and `to` vectors must have unit length.\n\nThis function is useful for \"pointing\" one shape towards another. For example:\n\n```\n(def pos [(sin (t * 2) * 50) (sin (t * 3) * 100) (cos (t * 5) * 50)])\n(union\n  (cone y 10 80 | align y (normalize pos))\n  (box 10 | move pos))\n```\n\nThe tip of the cone points towards the moving target. In this case the `from` vector is equal to the\naxis of the cone.\n\nIf `from` = `(- to)`, the result is undefined: there are infinitely many rotation matrices that reverse\na vector's direction."}
+    align @{:doc "(align target from to)\n\nAlign a shape or a vector to another vector. Both the `from` and `to` vectors must have unit length.\n\nThis function is useful for \"pointing\" one shape towards another. For example:\n\n```example\n(def pos\n  [(sin (t * 1.0) * 100)\n   (sin (t * 1.5) * 100)\n   (cos (t * 2.0) * 100)])\n(union\n  (cone y 10 100 | align y (normalize pos))\n  (box 10 | move pos))\n```\n\nIf `from` = `(- to)`, the result is undefined: there are infinitely many rotation matrices that reverse\na vector's direction."}
     alignment-matrix @{:doc "(alignment-matrix from to)\n\nReturn a 3D rotation matrix that aligns one normalized vector to another.\n\nBoth input vectors must have a unit length!\n\nIf `from` = `(- to)`, the result is undefined."}
     and @{}
-    arc @{:doc "(arc radius angle thickness)\n\n```example\n(arc 100 (osc t 5 tau) (osc t 2 5 20))\n```"}
+    arc @{:doc "(arc radius angle thickness)\n\n```example\n(arc 100 (osc t 5 tau) (osc t 3 5 20))\n```"}
     asin @{}
     asinh @{}
     atan @{}
@@ -158,7 +158,7 @@
     blinn-phong @{:doc "(blinn-phong shape color [:s shininess] [:g glossiness])\n\nTODOC"}
     blue @{:value [hsv 0.66666666666666663 0.98 1]}
     bool @{}
-    box @{:doc "(box size [:r round])\n\nReturns a 3D shape, a box with corners at `(- size)` and `size`. `size` will be coerced to a `vec3`.\n\nThink of `size` like the \"radius\" of the box: a box with `size.x = 50` will be `100` units wide.\n\n```example\n(box 100 :r (osc t 2 0 10))\n```\n\n```example\n(box [100 (osc t 2 50 100) (oss t 2 50 100)])\n```"}
+    box @{:doc "(box size [:r round])\n\nReturns a 3D shape, a box with corners at `(- size)` and `size`. `size` will be coerced to a `vec3`.\n\nThink of `size` like the \"radius\" of the box: a box with `size.x = 50` will be `100` units wide.\n\n```example\n(box 100 :r (osc t 3 0 10))\n```\n\n```example\n(box [100 (osc t 3 50 100) (oss t 4 50 100)])\n```"}
     box-frame @{:doc "(box-frame size thickness [:r round])\n\nReturns a 3D shape, the outline of a box.\n\n```example\n(union\n  (box-frame 100 5 :r (osc t 3 5))\n  (box-frame [(osc t 4 30 100) (osc t 5 30 100) (oss t 6 30 100)] 1))\n```"}
     calculate-gradient @{:doc "(calculate-gradient expr)\n\nEvaluates the given 2D distance expression four times, and returns an approximation\nof the expression's gradient."}
     calculate-normal @{:doc "(calculate-normal expr)\n\nEvaluates the given 3D distance expression four times, and returns an approximation\nof the expression's gradient."}
@@ -190,7 +190,7 @@
     cube @{:doc "(cube size [:r round])\n\nThis is an alias for the `float` overload of `box`."}
     cut-disk @{:doc "(cut-disk radius bottom)\n\nReturns a 2D shape.\n\n```example\n(cut-disk 100 (sin t * 80))\n```"}
     cyan @{:value [hsv 0.5 0.98 1]}
-    cylinder @{:doc "(cylinder axis radius height [:r round])\n\nReturns a 3D shape, a cylinder oriented along the given `axis`.\n\n```example\n(cylinder y 50 100)\n```\n\nThe second argument is twice the length of the cylinder. Like many shapes,\nyou can round it with `:r`.\n\n```example\n(cylinder z 100 50 :r (osc t 2 0 10))\n```"}
+    cylinder @{:doc "(cylinder axis radius height [:r round])\n\nReturns a 3D shape, a cylinder oriented along the given `axis`.\n\n```example\n(cylinder y 50 100)\n```\n\nThe second argument is twice the length of the cylinder. Like many shapes,\nyou can round it with `:r`.\n\n```example\n(cylinder z 100 50 :r (osc t 3 0 20))\n```"}
     dark-gray @{:value [0.25 0.25 0.25]}
     default-2d-color @{:doc "A variable that determines the default color to use when rendering a 2D shape with no color field.\n\nDefault is `isolines`."
                        :ref @[[isolines]]}
@@ -249,8 +249,8 @@
     hash2 @{:doc "(hash2 v)\n\nReturn a pseudorandom `vec2`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
     hash3 @{:doc "(hash3 v)\n\nReturn a pseudorandom `vec3`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
     hash4 @{:doc "(hash4 v)\n\nReturn a pseudorandom `vec4`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
-    hexagon @{:doc "(hexagon radius [:r round])\n\n```example\n(hexagon 100 :r (osc t 2 20))\n```"}
-    hexagram @{:doc "(hexagram radius [:r round])\n\n```example\n(hexagram 100 :r (osc t 2 20))\n```"}
+    hexagon @{:doc "(hexagon radius [:r round])\n\n```example\n(hexagon 100 :r (osc t 3 20))\n```"}
+    hexagram @{:doc "(hexagram radius [:r round])\n\n```example\n(hexagram 100 :r (osc t 3 20))\n```"}
     hot-pink @{:value [hsv 0.91666666666666663 0.98 1]}
     hsl @{:doc "(hsl hue saturation lightness)\n\nReturns a color."}
     hsv @{:doc "(hsv hue saturation value)\n\nReturns a color."}
@@ -308,7 +308,7 @@
     not-equal @{}
     not= @{}
     occlusion @{:doc "(occlusion [:steps step-count] [:dist dist] [:dir dir] [:hoist hoist])\n\nApproximate ambient occlusion by sampling the distance field at `:steps` positions\n(default 8) linearly spaced from 0 to `:dist` (default `10`). The result will range\nfrom 1 (completely unoccluded) to 0 (fully occluded).\n\nBy default the occlusion samples will be taken along the surface normal of the point\nbeing shaded, but you can pass a custom `:dir` expression to change that. You can use\nthis to e.g. add jitter to the sample direction, which can help to improve the\nquality.\n\nOcclusion is somewhat expensive to calculate, so by default the result will\nbe hoisted, so that it's only calculated once per iteration (without you having to\nexplicitly `gl/def` the result). However, this means that the occlusion calculation\nwon't take into account local normal adjustments, so you might want to pass\n`:hoist false`."}
-    octagon @{:doc "(octagon radius [:r round])\n\n```example\n(octagon 100 :r (osc t 2 20))\n```"}
+    octagon @{:doc "(octagon radius [:r round])\n\n```example\n(octagon 100 :r (osc t 3 20))\n```"}
     octahedron @{:doc "(octahedron radius)\n\nReturns a 3D shape.\n\n```example\n(octahedron 100 | rotate x t)\n```"}
     or @{}
     orange @{:value [hsv 0.083333333333333329 0.98 1]}
@@ -319,7 +319,7 @@
     p @{:doc "The local point in 3D space. This is position of the current ray, with any transformations applied to it."
         :value [:var "p" :vec3]}
     parallelogram @{:doc "(parallelogram size skew)\n\nReturns a 2D shape. `size.x` is the width of the top and bottom edges, and `size.y` \nis the height of the parellogram.\n\n```example\n(parallelogram [80 100] (sin t * 100))\n```\n\n`skew` is how far the pallorelogram leans in the `x` direction, so the total\nwidth of the prellogram is `(size.x + skew) * 2`. A `skew` of `0` gives the\nsame shape as `rect`."}
-    pentagon @{:doc "(pentagon radius [:r round])\n\n```example\n(pentagon 100 :r (osc t 2 20))\n```"}
+    pentagon @{:doc "(pentagon radius [:r round])\n\n```example\n(pentagon 100 :r (osc t 3 20))\n```"}
     perlin @{:doc "(perlin point)\n\nReturns perlin noise ranging from `-1` to `1`. The input `point` can be a vector of any dimension.\n\nUse `perlin+` to return noise in the range `0` to `1`."}
     perlin+ @{:doc "(perlin+ point)\n\nPerlin noise in the range `0` to `1`.\n\n```example\n(ball 100 | color (perlin+ (p.xy / 10) | vec3))\n```\n```example\n(ball 100 | color (perlin+ (p / 10) | vec3))\n```\n```example\n(ball 100 | color (perlin+ [(p / 10) t] | vec3))\n```"}
     perspective-vector @{:doc "(perspective-vector fov)\n\nReturns a unit vector pointing in the `+z` direction for the\ngiven camera field-of-view (in degrees)."}
@@ -403,7 +403,7 @@
                  :value [:var "resolution" :vec2]}
     revolve @{:doc "(revolve shape axis &opt offset)\n\nRevolve a 2D shape around the given `axis` to return a 3D shape.\n\nYou can optionally supply an `offset` to move the shape away from the origin first (the default is `0`)."}
     rhombus @{:doc "(rhombus size)\n\nReturns a 2D shape. It rhombs with a kite.\n\n```example\n(rhombus [100 (osc t 3 50 150)])\n```"}
-    ring @{:doc "(ring radius angle thickness)\n\n```example\n(ring 100 (osc t 5 tau) (osc t 2 5 20))\n```"}
+    ring @{:doc "(ring radius angle thickness)\n\n```example\n(ring 100 (osc t 5 tau) (osc t 3 5 20))\n```"}
     rotate @{:doc "(rotate subject & args)\n\nRotate a shape or a vector. Positive angles are counter-clockwise rotations.\n\nIn 3D, the arguments should be pairs of `axis angle`. For example:\n\n```example\n(rotate (box 100) x t y (sin t))\n```\n\nAll `axis` arguments must be unit vectors. There are built-in axis variables `x`/`+y`/`-z`\nfor the cardinal directions, and these produce optimized rotation matrices. But you can\nrotate around an arbitrary axis:\n\n```example\n(rotate (box 100) [1 1 1 | normalize] t)\n```\n\nThe order of the arguments is significant, as rotations are not commutative.\n\nThe first argument to `rotate` can be a shape, vector, or camera.\n\nIn 2D, the arguments should just be angles; no axis is allowed.\n\nYou can use `rotate` to make lots of cool effects. By varying the angle\nof rotation, you can create twists:\n\n```example\n(box [50 100 50]\n| rotate y (p.y / 100 * (cos+ t)))\n```\n\nTwirls:\n\n```example\n(box [100 50 100]\n| rotate y (length p.xz / 50 * (cos+ t)))\n```\n\nAnd bends:\n\n```example\n(box [50 100 100]\n| rotate y (p.z / 100 * (cos+ t)))\n```\n\nOr any number of other cool effects!\n\n```example\n(box [50 100 50]\n| rotate y (sin (p.y / 10) * sin t * 0.2))\n```"}
     rotation-around @{:doc "(rotation-around axis angle)\n\nA rotation matrix about an arbitrary axis. More expensive to compute than the axis-aligned rotation matrices."}
     rotation-matrix @{:doc "(rotation-matrix & args)\n\nReturn a rotation matrix. Takes the same arguments as `rotate`, minus the initial thing to rotate."}
@@ -443,7 +443,7 @@
     sphere @{:doc "(sphere radius)\n\nReturns a 3D shape. This is an alias for the float overload of `ball`."}
     sqrt @{}
     ss @{:doc "(ss x &opt from-range to-range)\n\nThis is a wrapper around `smoothstep` with a different argument order, which also\nallows the input edges to occur in descending order.\n\nThere are several overloads:\n\n```\n(ss x)\n# becomes\n(smoothstep 0 1 x)\n```\n\n```\n(ss x [from-start from-end])\n# becomes\n(if (< from-start from-end)\n  (smoothstep from-start from-end x)\n  (1 - smoothstep from-end from-start x))\n``` \n\n```\n(ss x from [to-start to-end])\n# becomes\n(ss x from * (- to-end to-start) + to-start)\n```"}
-    star @{:doc "(star outer-radius inner-radius [:r round])\n\n```example\n(star 100 70 :r (osc t 2 20))\n```"}
+    star @{:doc "(star outer-radius inner-radius [:r round])\n\n```example\n(star 100 70 :r (osc t 3 20))\n```"}
     step @{}
     subject @{:doc "A variable that determines what Bauble will render.\n\nYou can set this variable explicitly to change your focus, or use\nthe `view` macro to change your focus. If you don't set a subject,\nBauble will render the last shape in your script."
               :ref @[nil]}
@@ -494,7 +494,7 @@
     tile* @{:doc "(tile* size get-shape [:limit limit] [:oversample oversample] [:sample-from sample-from] [:sample-to sample-to])\n\nLike `tile`, but the shape is a result of invoking `get-shape` with one argument,\na GLSL variable referring to the current index in space. Unlike `tile`, `size` must\nbe a vector that determines the dimension of the index variable.\n\n```example\n(tile* [10 10] (fn [$i] \n  (circle 5 \n  | color (hsv (hash $i) 0.5 1))))\n```\n\nYou can use this to generate different shapes or colors at every sampled tile. The index\nwill be a vector with integral components that represents  being considered. So for\nexample, in 3D, the shape at the origin has an index of `[0 0 0]` and the shape above\nit has an index of `[0 1 0]`."}
     tile: @{:doc "(tile: shape $i & args)\n\nLike `tile*`, but its first argument should be a form that will\nbecome the body of the function. Basically, it's a way to create\na repeated shape where each instance of the shape varies, and it's\nwritten in a way that makes it conveniently fit into a pipeline:\n\n```example\n(circle 5 \n| color (hsv (hash $i) 0.5 1) \n| tile: $i [10 10])\n```"
             :macro true}
-    torus @{:doc "(torus axis radius thickness)\n\nReturns a 3D shape, a torus around the provided `axis`.\n\n```example\n(torus z 100 (osc t 2 10 50))\n```"}
+    torus @{:doc "(torus axis radius thickness)\n\nReturns a 3D shape, a torus around the provided `axis`.\n\n```example\n(torus z 100 (osc t 3 10 50))\n```"}
     trapezoid @{:doc "(trapezoid bottom-width top-width height [:r round])\n\nReturns a 2D shape.\n\n```example\n(trapezoid (osc t 3 50 100) (oss t 2 100 50) 100)\n```"}
     triangle-points @{:doc "(triangle-points a b c)\n\nTODOC"}
     trunc @{}
