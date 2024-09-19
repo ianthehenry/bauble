@@ -614,6 +614,22 @@
   "radial 3D colors asymmetric" `
     (cone y 50 100 | blinn-phong (hsv (hash $i) 0.5 1) | move x 89 | radial: $i z 12 :oversample true :sample-from -1 :sample-to 1)
   `
+
+  "shadowing subject does nothing - def" `
+  (ball 100)
+  (def subject 123)
+  `
+  "shadowing subject does nothing - var" `
+  (ball 100)
+  (var subject 123)
+  `
+  "you can refer to hoisted expressions from any built-in var" `
+  (gl/def foo [1 0.5 1])
+  (gl/def bar [1 0.5 0.5])
+  (set background-color (foo * 0.5))
+  (set default-3d-color bar)
+  (sphere 100)
+  `
 })
 
 (each filename (os/dir "./cases")

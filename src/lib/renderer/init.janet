@@ -1,34 +1,9 @@
 (use judge)
-(import pat)
 (use ./util)
 (import ../../jlsl)
 (import ../../glsl)
-(import ../expression-hoister)
-(import ../../ordered)
 (use ./samplers)
 (import ../shape)
-
-(defn unhoist [env expr]
-  (def hoisted-vars (in env expression-hoister/*hoisted-vars*))
-  (def references (ordered/table/new))
-  (def seen @{})
-  (defn visit [node]
-    (when (seen node) (break))
-    (put seen node true)
-    (if (jlsl/variable? node)
-      (when-let [expr (in hoisted-vars node)]
-        (visit expr)
-        (unless (ordered/table/has-key? references node)
-          (ordered/table/put references node expr)))
-      (pat/match node
-        ,(jlsl/@function/custom impl) (walk visit (impl :body))
-        (walk visit node))))
-  (walk visit expr)
-
-  (def to-hoist (ordered/table/pairs references))
-  (if (empty? to-hoist)
-    expr
-    (jlsl/with-expr to-hoist [] expr "hoist")))
 
 (import ../environment/dynvars)
 # TODO: jlsl should probably just have a helper for this;
@@ -41,16 +16,15 @@
 (use ../environment)
 
 (defn render [env glsl-version]
-  (def subject (get-var env 'subject))
-  (def nearest-distance (get-env env 'nearest-distance))
-  (def default-2d-color (typecheck (get-var env 'default-2d-color) jlsl/type/vec3))
-  (def default-3d-color (typecheck (get-var env 'default-3d-color) jlsl/type/vec3))
-  (def background-color (unhoist env (typecheck (get-var env 'background-color) jlsl/type/vec3)))
-  (def camera (typecheck? (get-var env 'camera) Camera))
+  (def stdenv (table/getproto env))
+  (def subject (get-var stdenv 'subject))
+  (def nearest-distance (get-env stdenv 'nearest-distance))
+  (def default-2d-color (typecheck (get-var stdenv 'default-2d-color) jlsl/type/vec3))
+  (def default-3d-color (typecheck (get-var stdenv 'default-3d-color) jlsl/type/vec3))
+  (def background-color (typecheck (get-var stdenv 'background-color) jlsl/type/vec3))
+  (def camera (typecheck? (get-var stdenv 'camera) Camera))
 
-  (def subject (if subject (do
-    (assertf (shape? subject) "%q is not a shape" subject)
-    (shape/map subject (partial unhoist env)))))
+  (assertf (or (nil? subject) (shape? subject)) "%q is not a shape" subject)
 
   (def dimension (if subject
     (case (shape/type subject)
@@ -59,7 +33,7 @@
       (error "BUG"))
     0))
 
-  (def aa-grid-size (jlsl/coerce-expr (int/u64 (or (get-var env 'aa-grid-size) 1))))
+  (def aa-grid-size (jlsl/coerce-expr (int/u64 (or (get-var stdenv 'aa-grid-size) 1))))
 
   (def program (sugar (program/new
     (precision highp float)

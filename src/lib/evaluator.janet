@@ -1,8 +1,12 @@
 (use judge)
 (use ./util)
+(import pat)
+(import ../ordered)
 (import ./syntax)
 (import ./shape)
 (import ./environment/derive :prefix "environment/derive/")
+(import ../jlsl)
+(import ./expression-hoister)
 
 (defn- chunk-string [str]
   (var unread true)
@@ -23,14 +27,34 @@
     (bad-compile msg nil where line col))
   [(string/slice buf 0 -2) macro-fiber])
 
-(defn can-be-subject? [x] (shape/shape? x))
+(defn unhoist [env expr]
+  (def hoisted-vars (in env expression-hoister/*hoisted-vars*))
+  (def references (ordered/table/new))
+  (def seen @{})
+  (defn visit [node]
+    (when (seen node) (break))
+    (put seen node true)
+    (if (jlsl/variable? node)
+      (when-let [expr (in hoisted-vars node)]
+        (visit expr)
+        (unless (ordered/table/has-key? references node)
+          (ordered/table/put references node expr)))
+      (pat/match node
+        ,(jlsl/@function/custom impl) (walk visit (impl :body))
+        (walk visit node))))
+  (walk visit expr)
+
+  (def to-hoist (ordered/table/pairs references))
+  (if (empty? to-hoist)
+    expr
+    (jlsl/with-expr to-hoist [] expr "hoist")))
 
 # this returns the resulting environment
 (defn evaluate [script]
   (def env (environment/derive/new))
 
-  (var last-value nil)
   (def errors @[])
+  (var implicit-subject nil)
 
   (run-context {
     :env env
@@ -46,8 +70,8 @@
     :on-status (fn [fiber value]
       (unless (= (fiber/status fiber) :dead)
         (array/push errors [value fiber]))
-      (if (can-be-subject? value)
-        (set last-value value)))
+      (when (shape/shape? value)
+        (set implicit-subject value)))
     })
 
   (unless (empty? errors)
@@ -56,12 +80,28 @@
       (propagate error-message error-fiber)
       (error error-message)))
 
-  (when (nil? (get-var env 'subject))
-    (set-var env 'subject last-value))
+  # we declare all of the user-settable variables
+  # in the environment's prototype, while any variables
+  # that the user declares will be in this one. we don't
+  # need to unhoist user-declared values, because we'll never
+  # try to read them.
+  (def stdenv (table/getproto env))
+
+  (when (nil? (get-var stdenv 'subject))
+    (set-var stdenv 'subject implicit-subject))
+
+  (loop [[name entry] :pairs stdenv
+         :when (and (symbol? name) (table? entry) (has-key? entry :ref))
+         :let [ref (entry :ref) value (get ref 0)]]
+    (def unhoisted
+      (cond
+        (shape/shape? value) (shape/map value (partial unhoist env))
+        (jlsl/expr? value) (unhoist env value)
+        (jlsl/variable? value) (unhoist env (jlsl/expr/identifier value))
+        value))
+    (put ref 0 unhoisted))
 
   env)
-
-# now we want to invoke a function that's like "given this subject, give me a JLSL program to compile"
 
 (import ../jlsl)
 (defn- make-presentable [entry]
