@@ -173,6 +173,7 @@
     camera/tilt @{:doc "(camera/tilt camera angle [:up up])\n\nRotate the camera up and down.\n\n```example\n(morph (ball 50) (box 50) 2\n| union (circle 200 | extrude y 10 | move y -100)\n| blinn-phong (vec3 0.75))\n(set camera (camera/perspective [0 100 600] [0 0 0] :fov 45\n| camera/tilt (sin t * 0.2)))\n```\n\nAs with `pan`, you can supply an absolute `:up` vector to use\ninstead of the camera's current roll.\n"}
     camera/zoom @{:doc "(camera/zoom camera amount)\n\nZoom the camera by changing its field of view.\n\n```example\n(morph (ball 50) (box 50) 2\n| union (circle 200 | extrude y 10 | move y -100)\n| blinn-phong (vec3 0.75))\n(set camera (camera/perspective [0 100 600] [0 0 0] :fov 45\n| camera/zoom (sin t * 0.2 + 1)))\n```"}
     camera? @{:doc "(camera? value)\n\nReturns `true` if `value` is a GLSL expression with type `Camera`."}
+    capsule @{:doc "(capsule axis length radius [top-radius])\n\nThere are two types of `capsule`s: symmetric capsules, which look\nlike pills, or axis-aligned lines:\n\n```example\n(capsule y 100 25)\n```\n\nAnd asymmetric capsules, which have a different radius at the\ntop and bottom:\n\n```example\n(capsule y 100 25 10)\n```"}
     cast-light-hard-shadow @{:doc "(cast-light-hard-shadow light-color light-position)\n\nTODOC"}
     cast-light-no-shadow @{:doc "(cast-light-no-shadow light-color light-position)\n\nTODOC"}
     cast-light-soft-shadow @{:doc "(cast-light-soft-shadow light-color light-position softness)\n\nTODOC"}
@@ -180,7 +181,7 @@
     circle @{:doc "(circle radius)\n\nReturns a 2D shape.\n\n```example\n(circle 100)\n```"}
     clamp @{}
     color @{:doc "(color shape color)\n\nSet a shape's color field."}
-    cone @{:doc "(cone axis radius height)\n\nReturns a 3D shape. The `height` is the extent in only a single direction.\n\n```example\n(cone y 50 (sin t * 150))\n```"}
+    cone @{:doc "(cone axis radius height [:r round])\n\nReturns a 3D shape. The `height` is the extent in only a single direction.\n\n```example\n(cone y 50 (sin t * 150) :r (osc t 2 10))\n```\n\nIf you supply a rounding factor, the cone will be offset such that\nit always rests exactly on the zero plane normal to your axis. Is\nthat what you'd expect? I went back on forth on this. I think it's more\nintuitive but if you have thoughts I'd like to hear them."}
     cos @{}
     cos+ @{:doc "(cos+ x)\n\nLike `cos`, but returns a number in the range `0` to `1`."}
     cos- @{:doc "(cos- x)\n\nLike `cos`, but returns a number in the range `0` to `-1`."}
@@ -273,7 +274,7 @@
     light/point @{:doc "(light/point color position [:shadow softness] [:brightness brightness] [:hoist hoist])\n\nReturns a new light, which can be used as an input to some shading functions.\n\nAlthough this is called a point light, the location of the \"point\" can vary\nwith a dynamic expression. A light that casts no shadows and is located at `P`\n(no matter where `P` is) is an ambient light. A light that is always located at\na fixed offset from `P` is a directional light.\n\nBy default lights don't cast shadows, but you can change that by passing a\n`:shadow` argument. `0` will cast hard shadows, and any other expression will\ncast a soft shadow (it should be a number roughly in the range `0` to `1`).\n\nShadow casting affects the `brightness` of the light. You can also specify a baseline\n`:brightness` explicitly, which defaults to `1`.\n\nShadow casting always occurs in the global coordinate space, so you should position\nlights relative to `P`, not `p`.\n\nBy default light calculations are hoisted. This is an optimization that's helpful\nif you have a light that casts shadows that applies to multiple shaded surfaces that\nhave been combined with a smooth `union` or `morph` or other shape combinator. Instead\nof computing shadows twice and mixing them together, the shadow calculation will be\ncomputed once at the top level of the shader. Note though that this will prevent you\nfrom referring to variables that don't exist at the top level -- e.g. anything defined\nwith `gl/let`, or the index argument of `tiled` shape. If you want to make a light that\ndynamically varies, pass `:hoist false`."}
     light? @{:doc "(light? value)\n\nReturns `true` if `value` is a GLSL expression with type `Light`."}
     lime @{:value [hsv 0.25 0.98 1]}
-    line @{:doc "(line start end width)\n\nTODOC"}
+    line @{:doc "(line from to from-radius [to-radius])\n\nReturns a line between two points.\n\n```example\n(line\n  [-100 (sin t * 100) (cos t * 100)]\n  [100 (cos t * 100) (sin t * 100)]\n  10\n| union (box-frame 100 1))\n```\n\nYou can supply two radii to taper the line over its length:\n\n```example\n(line\n  [-100 (sin t * 100) (cos t * 100)]\n  [100 (cos t * 100) (sin t * 100)]\n  (oss t 3 50) (osc t 5 50)\n| union (box-frame 100 1))\n```\n\nYou can also give 2D points for a line in 2D:\n\n```example\n(line\n  [-100 (cos t * 100)]\n  [100 (sin t * 100)]\n  (osc t 3 50) (osc t 5 50))\n```"}
     log @{}
     log2 @{}
     magenta @{:value [hsv 0.83333333333333337 0.98 1]}

@@ -40,13 +40,11 @@
   "spatial noise" `(ball (perlin (p * 0.05) * 10 + 100) | slow 0.9)`
   "spatial noise extreme" `(ball (perlin (p * 0.05) * 30 + 80) | slow 0.5)`
 
-  # TODO: restore this op
-  #"onion" `(ball 100 | onion 5 | intersect (half-space :-z))`
+  "shell 3d" `(ball 100 | shell 5 | intersect (plane z))`
   "cylinder" `(box 50 | subtract (cylinder z 30 100))`
   "rotations" `(subtract :r 30 (box 50 | rotate y tau/8 z tau/8) (ball 50 | move x 50))`
-  # TODO: rounded cone
-  # "cone rounded" `(cone z 50 100 :r 10)`
-  #"line" `(union :r 50 (line [-50 0 0] [50 0 0] 10) (ball 50 | move :x 100 | mirror :x))`
+  "cone rounded" `(cone z 50 100 :r 10)`
+  "line" `(union :r 50 (line [-50 0 0] [50 0 0] 10) (ball 50 | move x 100 | mirror x))`
 
   "union" `(union (circle 75 | move [-30 0]) (rect 60 | move [30 0]))`
   "union smooth" `(union :r 10 (circle 75 | move [-30 0]) (rect 60 | move [30 0]))`

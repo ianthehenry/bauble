@@ -105,15 +105,137 @@
   ````
   (return (length [(length other-axes - radius) this-axis] - thickness)))
 
-# TODO: pretty complicated to round correctly
-(deforiented cone [:float radius :float height]
+(deforiented- uneven-capsule [:float r1 :float r2 :float height] ""
+  (var q [(length other-axes) (this-axis * sign height)])
+  (set height (abs height))
+  (var b (r1 - r2 / height))
+  (var a (b * b | 1 - _ | sqrt))
+  (var k [(- b) a | dot q])
+  (if (< k 0) (return (length q - r1)))
+  (if (> k (a * height)) (return (q - [0 height] | length - r2)))
+  (return [a b | dot q - r1]))
+
+(deforiented- capsule [:float radius :float height] ""
+  (var p p)
+  (*= p.y (sign height))
+  (-= p.y (clamp p.y 0 (abs height)))
+  (return (length p - radius)))
+(def- capsule- capsule)
+
+(defnamed capsule [axis length radius ?top-radius]
   ````
-  Returns a 3D shape. The `height` is the extent in only a single direction.
+  There are two types of `capsule`s: symmetric capsules, which look
+  like pills, or axis-aligned lines:
 
   ```example
-  (cone y 50 (sin t * 150))
+  (capsule y 100 25)
+  ```
+
+  And asymmetric capsules, which have a different radius at the
+  top and bottom:
+
+  ```example
+  (capsule y 100 25 10)
   ```
   ````
+  (if top-radius
+    (uneven-capsule axis radius top-radius length)
+    (capsule- axis radius length)))
+
+(defshape/3d- line-3d [:vec3 a :vec3 b :float r] ""
+  (var pa (p - a))
+  (var ba (b - a))
+  (var h (dot pa ba / dot ba | clamp 0 1))
+  (return (pa - (ba * h) | length - r)))
+
+(defshape/3d- uneven-line-3d [:vec3 a :vec3 b :float r1 :float r2] ""
+  (var ba (b - a))
+  (var l2 (dot ba))
+  (var rr (r1 - r2))
+  (var a2 (l2 - (rr * rr)))
+  (var il2 (/ l2))
+
+  (var pa (p - a))
+  (var y (dot pa ba))
+  (var z (y - l2))
+  (var x2 (pa * l2 - (ba * y) | dot))
+  (var y2 (* y y l2))
+  (var z2 (* z z l2))
+
+  (var k (* (sign rr) rr rr x2))
+  (if (> (* (sign z) a2 z2) k) (return (x2 + z2 | sqrt * il2 - r2)))
+  (if (< (* (sign y) a2 y2) k) (return (x2 + y2 | sqrt * il2 - r1)))
+  (return (* x2 a2 il2 | sqrt + (y * rr) * il2 - r1)))
+
+(defshape/2d- line-2d [:vec2 start :vec2 end :float width] ""
+  (var q-start (q - start))
+  (var end-start (end - start))
+  (var h (clamp (dot q-start end-start / dot end-start) 0 1))
+  (return (length (q-start - (end-start * h)) - (width * 0.5))))
+
+(defshape/2d- uneven-line-2d [:vec2 start :vec2 end :float start-width :float end-width] ""
+  (var q-start (q - start))
+  (var end-start (end - start))
+  (var h (clamp (dot q-start end-start / dot end-start) 0 1))
+  (return (length (q-start - (end-start * h)) - (mix start-width end-width h * 0.5))))
+
+(defnamed line [from to from-radius ?to-radius]
+  ````
+  Returns a line between two points.
+
+  ```example
+  (line
+    [-100 (sin t * 100) (cos t * 100)]
+    [100 (cos t * 100) (sin t * 100)]
+    10
+  | union (box-frame 100 1))
+  ```
+
+  You can supply two radii to taper the line over its length:
+
+  ```example
+  (line
+    [-100 (sin t * 100) (cos t * 100)]
+    [100 (cos t * 100) (sin t * 100)]
+    (oss t 3 50) (osc t 5 50)
+  | union (box-frame 100 1))
+  ```
+
+  You can also give 2D points for a line in 2D:
+
+  ```example
+  (line
+    [-100 (cos t * 100)]
+    [100 (sin t * 100)]
+    (osc t 3 50) (osc t 5 50))
+  ```
+  ````
+  (def from (jlsl/coerce-expr from))
+  (def to (typecheck to (jlsl/expr/type from)))
+  (def three-d (case (jlsl/expr/type from)
+    jlsl/type/vec2 false
+    jlsl/type/vec3 true
+    (error "line needs 2D or 3D points")))
+  (cond
+    (@and to-radius three-d) (uneven-line-3d from to from-radius to-radius)
+    three-d (line-3d from to from-radius)
+    to-radius (uneven-line-2d from to from-radius to-radius)
+    (line-2d from to from-radius)))
+
+(deforiented- round-cone [:float radius :float height :float round] ""
+  (var offset (height / radius * round))
+  (-= radius round)
+  (-= height offset)
+  (var q [radius (- height)])
+  (var w [(length other-axes) (this-axis - height - (sign height * round))])
+  (var a (w - (q * (dot w q / dot q | clamp 0 1))))
+  (var b (w - (q * [(w.x / q.x | clamp 0 1) 1])))
+  (var k (sign q.y))
+  (var d (min (dot a) (dot b)))
+  (var s (max (k * (w.x * q.y - (w.y * q.x))) (k * (w.y - q.y))))
+  (return (sqrt d * sign s - round)))
+
+(deforiented- cone [:float radius :float height] ""
   (var q [radius (- height)])
   (var w [(length other-axes) (this-axis - height)])
   (var a (w - (q * (dot w q / dot q | clamp 0 1))))
@@ -122,6 +244,24 @@
   (var d (min (dot a) (dot b)))
   (var s (max (k * (w.x * q.y - (w.y * q.x))) (k * (w.y - q.y))))
   (return (sqrt d * sign s)))
+(def- cone- cone)
+
+(defnamed cone [axis radius height :?r:round]
+  ````
+  Returns a 3D shape. The `height` is the extent in only a single direction.
+
+  ```example
+  (cone y 50 (sin t * 150) :r (osc t 2 10))
+  ```
+
+  If you supply a rounding factor, the cone will be offset such that
+  it always rests exactly on the zero plane normal to your axis. Is
+  that what you'd expect? I went back on forth on this. I think it's more
+  intuitive but if you have thoughts I'd like to hear them.
+  ````
+  (if round
+    (round-cone axis radius height round)
+    (cone- axis radius height)))
 
 (deforiented cylinder [:float !radius :float !height]
   ````

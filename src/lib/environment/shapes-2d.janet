@@ -136,15 +136,6 @@
   (set q (abs q - ([l width] * 0.5)))
   (return (length (max q 0) + min (max q) 0)))
 
-(defshape/2d line [:vec2 start :vec2 end :float width]
-  ```
-  TODOC
-  ```
-  (var q-start (q - start))
-  (var end-start (end - start))
-  (var h (clamp (dot q-start end-start / dot end-start) 0 1))
-  (return (length (q-start - (end-start * h)) - (width * 0.5))))
-
 (defshape/2d trapezoid [:float !bottom-width :float !top-width :float !height]
   ````
   Returns a 2D shape.
