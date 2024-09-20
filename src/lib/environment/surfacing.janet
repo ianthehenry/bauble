@@ -39,6 +39,25 @@
       (typecheck color jlsl/type/vec3)))
   (shape/with shape :color color))
 
+(defn tint
+  ````
+  Add a color to a shape's color field.
+
+  ```example
+  (ball 100 | blinn-phong normal+ | tint [1 0 0] (sin+ t))
+  ```
+  ````
+  [shape color &opt amount]
+  (default amount 1)
+  (def amount (typecheck amount jlsl/type/float))
+  (def color
+    (if (shape? color)
+      (shape/color color)
+      (typecheck color jlsl/type/vec3)))
+  (assert (not (nil? (shape/color shape))) "cannot tint a shape with no color field")
+  (map-color shape (fn [old-color]
+    (+ old-color (* color amount)))))
+
 (defdyn *lights* ```
 The default lights used by surfacing functions like `blinn-phong`.
 You can manipulate this using `setdyn` or `with-dyns` like any other
@@ -289,12 +308,11 @@ set it in a way that fits nicely into a pipeline.
   (def <expr> (calculate-occlusion step-count dist dir))
   (if hoist (,expression-hoister/hoist "occlusion" <expr>) <expr>)))
 
-# TODO: occlusion should alter shadowness, not light color
-(thunk ~(setdyn ,*lights*
-  (let [default-occlusion (occlusion)]
-    @[(light/directional (vec3 1.3) (normalize [-2 -2 -1]) 512 :shadow 0.25)
-      (light/ambient (vec3 0.05) :brightness default-occlusion)
-      (light/ambient (vec3 0.05) (* normal 0.1) :brightness default-occlusion)])))
+(sugar (thunk ~(setdyn ,*lights*
+  (let [default-occlusion (mix 0.1 1 (occlusion))]
+    @[(light/directional (vec3 1.2) [-2 -2 -1 | normalize] 512 :shadow 0.25)
+      (light/ambient (vec3 0.1) :brightness default-occlusion)
+      (light/ambient (vec3 0.1) (normal * 0.1) :brightness default-occlusion)]))))
 
 (defhelper- :vec3 blinn-phong1 [:vec3 color :float shininess :float glossiness Light light]
   (if (= light.direction (vec3 0))
@@ -350,18 +368,22 @@ set it in a way that fits nicely into a pipeline.
   (var c (hue * 6 + [0 4 2] | mod 6 - 3 | abs))
   (return (* saturation (c - 1 | clamp 0 1 - 0.5) (1 - abs (2 * lightness - 1)) + lightness)))
 
-(defhelper- :float fresnel-intensity [:float exponent]
+(defhelper- :float fresnel [:float exponent]
   (return (1 + dot normal ray.direction | pow exponent)))
+(def- fresnel- fresnel)
 
-(defnamed fresnel [subject :?color :?exponent]
-  ```
-  Tint a shape with an approximation of Fresnel reflectivity.
+(defnamed fresnel [?exponent]
+  ````
+  Returns an approximate fresnel intensity. `exponent` defaults to `5`.
 
-  `:color` defaults to `[1 1 1]`; `:exponent` defaults to `5`.
+  ```example
+  (ball 100
+  | blinn-phong [1 0.5 0.5]
+  | tint [1 1 1] (fresnel (osc t 5 0.5 5)))
   ```
-  (default color [1 1 1])
+  ````
   (default exponent 5)
-  (shape/map-color subject |(+ $ (* color (fresnel-intensity exponent)))))
+  (fresnel- (typecheck exponent jlsl/type/float)))
 
 (def normal+
   ```

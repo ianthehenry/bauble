@@ -371,13 +371,31 @@
   Scales the shape's distance field, causing the raymarcher to converge more slowly.
   This is useful for raymarching distance fields that vary based on `p` -- shapes
   that don't actually provide an accurate distance field unless you are very close
-  to their surfaces.
+  to their surfaces. Compare the following examples, with and without `slow`:
+
+  ```example
+  (box 100
+  | rotate y (p.y / 30)
+  | rotate x t)
+  ```
 
   ```example
   (box 100
   | rotate y (p.y / 30)
   | rotate x t
-  | slow (osc t 5 1 0.25))
+  | slow 0.5)
+  ```
+
+  Note however that `slow` will also affect the behavior of anything that depends on a shape's
+  distance field, such as smooth boolean operations, morphs, soft shadows, and so on. A future
+  version of Bauble may mitigate these effects, but it is the way that it is right now.
+
+  ```example
+  # slowing the distance field introduces asymmetry
+  # into the smooth union
+  (union :r 50
+    (ball 100 | move x 75)
+    (ball 100 | move x -75 | slow (osc t 4 0.25 1)))
   ```
   ````
   [shape amount]

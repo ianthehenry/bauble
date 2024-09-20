@@ -17,7 +17,7 @@
 | radial: $i y 18
 | shell 1
 | subtract (plane -x (osc t 10 -150 0) | color [0 1 1])
-| fresnel :color (vec3 0.1))
+| tint [0.5 0.5 1] (fresnel 5 * 0.2))
 
 # I know it's a bit... cryptic. Lots
 # of punctuation and some inscrutable
@@ -39,7 +39,7 @@
 # expression. Uncomment this next line
 # to return something else:
 
-# (union :r 15 (torus z 50 25) (torus x 50 25 | move y 50) | fresnel)
+# (union :r 15 (torus z 50 25) (torus x 50 25 | move y 50))
 
 # Neat. That's how we'll do this little intro.
 
@@ -52,7 +52,6 @@
 # | rotate z t
 # | move x 50
 # | mirror :r 10 x
-# | fresnel
 # | slow 0.25)
 
 # Whoa. Okay enough with the demos for a minute.
@@ -167,9 +166,9 @@
 
 # And casting shadows:
 
-# (torus y 100 20 | rotate z t x t y (t / 2)
+# (torus y 110 20 | rotate z t x t y (t / 2)
 # | blinn-phong [0.25 0.75 0.75]
-# | union :r 20 (ball 100 | blinn-phong [0 0.75 0])
+# | union (ball 100 | blinn-phong [0 0.75 0])
 # | union (plane y -100 | blinn-phong (vec3 0.75)))
 
 # But you can implement any of these things

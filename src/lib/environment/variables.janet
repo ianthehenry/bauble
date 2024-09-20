@@ -32,9 +32,9 @@ Default is `isolines`.
 (thunk ~(var default-3d-color ```
 A variable that determines the default color to use when rendering a 3D shape with no color field.
 
-Default is `normal+`.
+Default is `(mix normal+ [1 1 1] (fresnel 5))`.
 ```
-  normal+))
+  (mix normal+ [1 1 1] (fresnel 5))))
 
 # TODO: a little fresnel would be nice
 (thunk ~(var background-color ```

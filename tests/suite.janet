@@ -23,7 +23,6 @@
   | rotate y (p.y * 0.07)
   | move x 50
   | mirror :r 10 x
-  | fresnel
   | slow 0.25)
   `
 
@@ -33,7 +32,7 @@
   | scale y (ss p.y [-100 100] [1 0.8])
   | radial y 20
   | color normal+
-  | fresnel)
+  | tint [1 1 1] (fresnel 5))
   (set camera (camera/perspective [0 -40 384] [0 -40 0] :fov 45))
   `
 

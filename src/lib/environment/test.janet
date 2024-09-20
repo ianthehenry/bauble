@@ -195,8 +195,11 @@
     dark-gray @{:value [0.25 0.25 0.25]}
     default-2d-color @{:doc "A variable that determines the default color to use when rendering a 2D shape with no color field.\n\nDefault is `isolines`."
                        :ref @[[isolines]]}
-    default-3d-color @{:doc "A variable that determines the default color to use when rendering a 3D shape with no color field.\n\nDefault is `normal+`."
-                       :ref @[[+ 0.5 [* 0.5 normal]]]}
+    default-3d-color @{:doc "A variable that determines the default color to use when rendering a 3D shape with no color field.\n\nDefault is `(mix normal+ [1 1 1] (fresnel 5))`."
+                       :ref @[[mix
+                               [+ 0.5 [* 0.5 normal]]
+                               [vec3 1 1 1]
+                               [fresnel 5]]]}
     degrees @{}
     depth @{:doc "The distance that the current ray has marched, equal to `(distance ray-origin P)`. Not defined in 2D."
             :value [:var "depth" :float]}
@@ -220,7 +223,7 @@
     fract @{}
     frag-coord @{:doc "The logical position of the current fragment being rendered, in the approximate\nrange `-0.5` to `0.5`, with `[0 0]` as the center of the screen. Note though that\nwe always shade pixel centers, so we never actual render `-0.5` or `0.5`, just\nnearby subpixel approximations depending on the antialiasing level.\n\nThis is equal to `(Frag-Coord - (resolution * 0.5) / max resolution)`."
                  :value [:var "frag-coord" :vec2]}
-    fresnel @{:doc "(fresnel subject [:color color] [:exponent exponent])\n\nTint a shape with an approximation of Fresnel reflectivity.\n\n`:color` defaults to `[1 1 1]`; `:exponent` defaults to `5`."}
+    fresnel @{:doc "(fresnel [exponent])\n\nReturns an approximate fresnel intensity. `exponent` defaults to `5`.\n\n```example\n(ball 100\n| blinn-phong [1 0.5 0.5]\n| tint [1 1 1] (fresnel (osc t 5 0.5 5)))\n```"}
     gl-frag-coord @{:value [:var "gl_FragCoord" :vec4]}
     gl-frag-depth @{:value [:var "gl_FragDepth" :float]}
     gl-front-facing @{:value [:var "gl_FrontFacing" :bool]}
@@ -438,7 +441,7 @@
     sinh @{}
     sky @{:value [hsv 0.58333333333333337 0.98 1]}
     slice @{:doc "(slice shape axis &opt position)\n\nTake a 2D slice of a 3D shape at a given `position` along the supplied `axis`.\n\n`position` defaults to `0`."}
-    slow @{:doc "(slow shape amount)\n\nScales the shape's distance field, causing the raymarcher to converge more slowly.\nThis is useful for raymarching distance fields that vary based on `p` -- shapes\nthat don't actually provide an accurate distance field unless you are very close\nto their surfaces.\n\n```example\n(box 100\n| rotate y (p.y / 30)\n| rotate x t\n| slow (osc t 5 1 0.25))\n```"}
+    slow @{:doc "(slow shape amount)\n\nScales the shape's distance field, causing the raymarcher to converge more slowly.\nThis is useful for raymarching distance fields that vary based on `p` -- shapes\nthat don't actually provide an accurate distance field unless you are very close\nto their surfaces. Compare the following examples, with and without `slow`:\n\n```example\n(box 100\n| rotate y (p.y / 30)\n| rotate x t)\n```\n\n```example\n(box 100\n| rotate y (p.y / 30)\n| rotate x t\n| slow 0.5)\n```\n\nNote however that `slow` will also affect the behavior of anything that depends on a shape's\ndistance field, such as smooth boolean operations, morphs, soft shadows, and so on. A future\nversion of Bauble may mitigate these effects, but it is the way that it is right now.\n\n```example\n# slowing the distance field introduces asymmetry\n# into the smooth union\n(union :r 50\n  (ball 100 | move x 75)\n  (ball 100 | move x -75 | slow (osc t 4 0.25 1)))\n```"}
     smoothstep @{}
     sphere @{:doc "(sphere radius)\n\nReturns a 3D shape. This is an alias for the float overload of `ball`."}
     sqrt @{}
@@ -494,6 +497,7 @@
     tile* @{:doc "(tile* size get-shape [:limit limit] [:oversample oversample] [:sample-from sample-from] [:sample-to sample-to])\n\nLike `tile`, but the shape is a result of invoking `get-shape` with one argument,\na GLSL variable referring to the current index in space. Unlike `tile`, `size` must\nbe a vector that determines the dimension of the index variable.\n\n```example\n(tile* [10 10] (fn [$i] \n  (circle 5 \n  | color (hsv (hash $i) 0.5 1))))\n```\n\nYou can use this to generate different shapes or colors at every sampled tile. The index\nwill be a vector with integral components that represents  being considered. So for\nexample, in 3D, the shape at the origin has an index of `[0 0 0]` and the shape above\nit has an index of `[0 1 0]`."}
     tile: @{:doc "(tile: shape $i & args)\n\nLike `tile*`, but its first argument should be a form that will\nbecome the body of the function. Basically, it's a way to create\na repeated shape where each instance of the shape varies, and it's\nwritten in a way that makes it conveniently fit into a pipeline:\n\n```example\n(circle 5 \n| color (hsv (hash $i) 0.5 1) \n| tile: $i [10 10])\n```"
             :macro true}
+    tint @{:doc "(tint shape color &opt amount)\n\nAdd a color to a shape's color field.\n\n```example\n(ball 100 | blinn-phong normal+ | tint [1 0 0] (sin+ t))\n```"}
     torus @{:doc "(torus axis radius thickness)\n\nReturns a 3D shape, a torus around the provided `axis`.\n\n```example\n(torus z 100 (osc t 3 10 50))\n```"}
     trapezoid @{:doc "(trapezoid bottom-width top-width height [:r round])\n\nReturns a 2D shape.\n\n```example\n(trapezoid (osc t 3 50 100) (oss t 2 100 50) 100)\n```"}
     triangle-points @{:doc "(triangle-points a b c)\n\nTODOC"}

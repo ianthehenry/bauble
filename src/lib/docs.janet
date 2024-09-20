@@ -210,7 +210,7 @@
     Bauble variables
       7 values
     Shading
-      24 values
+      25 values
     Repetition
       6 values
     Noise
