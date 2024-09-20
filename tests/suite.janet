@@ -251,7 +251,7 @@
       (circles | expand 10 | move [0 80])
       (circles | move [0 20])
       (rect 40
-      | recolor circles
+      | color circles
       | move [0 -50])))
   (union
     (make sharp-circles

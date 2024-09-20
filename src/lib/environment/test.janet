@@ -180,7 +180,7 @@
     ceil @{}
     circle @{:doc "(circle radius)\n\nReturns a 2D shape.\n\n```example\n(circle 100)\n```"}
     clamp @{}
-    color @{:doc "(color shape color)\n\nSet a shape's color field."}
+    color @{:doc "(color shape color)\n\nSet a shape's color field. This is the primitive surfacing operation,\nboth in 2D:\n\n```example\n(circle 100 | color [1 0.5 0.5])\n```\n\nAnd in 3D:\n\n```example\n(box 100 :r 10 | color [1 0.5 0.5])\n```\n\nAlthough you will typically set a color field to a dynamic expression:\n\n```example\n(box 100 :r 10\n| color (hsv (atan2 p.xy / tau) 1 1\n  * dot normal [1 2 3 | normalize]))\n```\n\nYou can also pass another shape, in which case the color field will be copied to\nthe destination shape:\n\n```example\n(box 100 :r 10 | color\n  (union (box 100 | blinn-phong [0 1 0]) (ball 125 | blinn-phong [1 0 0])))\n```"}
     cone @{:doc "(cone axis radius height [:r round])\n\nReturns a 3D shape. The `height` is the extent in only a single direction.\n\n```example\n(cone y 50 (sin t * 150) :r (osc t 2 10))\n```\n\nIf you supply a rounding factor, the cone will be offset such that\nit always rests exactly on the zero plane normal to your axis. Is\nthat what you'd expect? I went back on forth on this. I think it's more\nintuitive but if you have thoughts I'd like to hear them."}
     cos @{}
     cos+ @{:doc "(cos+ x)\n\nLike `cos`, but returns a number in the range `0` to `1`."}
@@ -393,7 +393,6 @@
     ray @{:doc "The current ray being used to march and shade the current fragment. This always represents\nthe ray from the camera, even when raymarching for shadow casting.\n\nA ray has two components: an `origin` and a `dir`ection. `origin` is a point in the \nglobal coordinate space, and you can intuitively think of it as \"the location of the camera\"\nwhen you're using the default perspective camera (orthographic cameras shoot rays from different\norigins).\n\nThe direction is always normalized."
           :value [:var "ray" Ray]}
     ray? @{:doc "(ray? value)\n\nReturns `true` if `value` is a GLSL expression with type `Ray`."}
-    recolor @{:doc "(recolor dest-shape source-shape)\n\nReplaces the color field on `dest-shape` with the color field on `source-shape`. Does not affect the distance field."}
     rect @{:doc "(rect size [:r radius])\n\nReturns a 2D shape, a rectangle with corners at `(- size)` and `size`. `size` will be coerced to a `vec2`.\n\nThink of `size` like the \"radius\" of the rect: a rect with `size.x = 50` will be `100` units wide.\n\n`radii` can be a single radius or a `vec4` of `[top-left` `top-right` `bottom-right` `bottom-left]`.\n\n```example\n(union\n  (rect 50 | move [-100 100])\n  (rect 50 :r 10 | move [100 100])\n  (rect 50 :r [0 10 20 30] | move [-100 -100])\n  (rect 50 :r [0 30 0 30] | move [100 -100]))\n```"}
     red @{:value [hsv 0 0.98 1]}
     reflect @{}

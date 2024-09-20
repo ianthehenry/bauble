@@ -1,6 +1,44 @@
 (use ./import)
 (import ../expression-hoister)
 
+(defn color
+  ````
+  Set a shape's color field. This is the primitive surfacing operation,
+  both in 2D:
+
+  ```example
+  (circle 100 | color [1 0.5 0.5])
+  ```
+
+  And in 3D:
+
+  ```example
+  (box 100 :r 10 | color [1 0.5 0.5])
+  ```
+
+  Although you will typically set a color field to a dynamic expression:
+
+  ```example
+  (box 100 :r 10
+  | color (hsv (atan2 p.xy / tau) 1 1
+    * dot normal [1 2 3 | normalize]))
+  ```
+
+  You can also pass another shape, in which case the color field will be copied to
+  the destination shape:
+
+  ```example
+  (box 100 :r 10 | color
+    (union (box 100 | blinn-phong [0 1 0]) (ball 125 | blinn-phong [1 0 0])))
+  ```
+  ````
+  [shape color]
+  (def color
+    (if (shape? color)
+      (shape/color color)
+      (typecheck color jlsl/type/vec3)))
+  (shape/with shape :color color))
+
 (defdyn *lights* ```
 The default lights used by surfacing functions like `blinn-phong`.
 You can manipulate this using `setdyn` or `with-dyns` like any other
@@ -280,11 +318,6 @@ set it in a way that fits nicely into a pipeline.
   (default shininess 0.25)
   (default glossiness 10)
   (shape/with shape :color (blinn-phong-color-expression color shininess glossiness (dyn :lights))))
-
-(defn recolor
-  "Replaces the color field on `dest-shape` with the color field on `source-shape`. Does not affect the distance field."
-  [dest-shape source-shape]
-  (shape/transplant dest-shape :color source-shape))
 
 (defmacro with-lights
   ````

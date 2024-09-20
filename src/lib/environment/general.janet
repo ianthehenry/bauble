@@ -1,9 +1,5 @@
 (use ./import)
 
-(deftransform color [shape color]
-  "Set a shape's color field."
-  (shape/with shape :color (typecheck color jlsl/type/vec3)))
-
 (setdyn '@+ (table/getproto (dyn '+)))
 (setdyn '@- (table/getproto (dyn '-)))
 (setdyn '@* (table/getproto (dyn '*)))

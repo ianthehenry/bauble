@@ -222,6 +222,6 @@
     Rotation
       6 values
     Uncategorized
-      38 values
+      37 values
   `))
 
