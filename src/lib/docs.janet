@@ -141,7 +141,7 @@
     (def source-link (if-let [[file line col] source-map]
       (string/format `https://github.com/ianthehenry/bauble/blob/%s/src/%s#L%d`
         commit-hash file line)))
-    (printf ```<h%d class="help-entry" id="%s">`%s`%s</h2>``` (+ depth 2) name (or signature name)
+    (printf ```<h%d class="help-entry" id="%s">`%s`%s</h2>``` (+ depth 1) name (or signature name)
       (if source-link (string/format ` <a href="%s" class="source-link">source</a>` source-link) ""))
     (print)
 

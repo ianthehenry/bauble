@@ -5,6 +5,7 @@ cd $(dirname "$0")
 (
   cat preamble.md
   echo
-  cd ../../../build
-  janet -i docs.jimage $(git rev-parse HEAD)
+  (cd ../../../build && janet -i docs.jimage $(git rev-parse HEAD))
+  echo
+  cat appendices.md
 ) | pandoc --from markdown-auto_identifiers --to html --wrap=preserve
