@@ -10,7 +10,10 @@ cd ..
 rm -rf public
 mkdir -p public
 
-ln -f studio/assets/icons.svg public/icons.svg
+assets=$(echo studio/assets/*)
+redo-ifchange $assets
+
+ln -f $assets public/
 ln -f build/main.css public/$css
 ln -f build/all.js public/$js
 

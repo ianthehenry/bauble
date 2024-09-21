@@ -8,7 +8,8 @@ js=$2
 printf '<head>
   <meta name="viewport" content="initial-scale=1.0,maximum-scale=1.0">
   <title>Bauble</title>
-  <link rel="stylesheet" href="%s">
+  <link rel="stylesheet" href="%s" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
   <script type="text/javascript" src="%s"></script>
 </head>
 ' "$css" "$js"
