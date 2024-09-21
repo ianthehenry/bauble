@@ -95,10 +95,9 @@ main {
 
 ul {
   list-style-position: inside;
-}
-
-ul ul {
-  padding-left: 2em;
+  ul {
+    padding-left: 2em;
+  }
 }
 
 main > *+h1,
@@ -137,43 +136,39 @@ header {
   height: var(--header-height);
   line-height: var(--header-height);
   display: flex;
-}
+  .title, .spacer {
+    flex: 1;
+  }
 
-header .title, header .spacer {
-  flex: 1;
-}
+  a {
+    text-decoration: none;
+    &.text-link {
+      padding: 0 var(--header-padding);
+    }
+    &, &:visited, &:active {
+      color: var(--text-color);
+    }
+  }
 
-header a {
-  text-decoration: none;
-}
-header a.text-link {
-  padding: 0 var(--header-padding);
-}
+  svg {
+    fill: var(--text-color);
+    width: 24px;
+    height: 24px;
+  }
 
-header a,
-header a:visited,
-header a:active {
-  color: var(--text-color);
-}
-
-header svg {
-  fill: var(--text-color);
-  width: 24px;
-  height: 24px;
-}
-
-header > :first-child {
-  padding-left: var(--header-padding);
-}
-header > :last-child {
-  padding-right: var(--header-padding);
-}
-header .image-link {
-  display: flex;
-  width: var(--header-height);
-  height: var(--header-height);
-  justify-content: center;
-  align-items: center;
+  > :first-child {
+    padding-left: var(--header-padding);
+  }
+  > :last-child {
+    padding-right: var(--header-padding);
+  }
+  .image-link {
+    display: flex;
+    width: var(--header-height);
+    height: var(--header-height);
+    justify-content: center;
+    align-items: center;
+  }
 }
 
 .bauble-placeholder, pre.example {
@@ -182,53 +177,59 @@ header .image-link {
   overflow: hidden;
   border: solid 2px var(--window);
   box-sizing: content-box; /* This is important because the canvas is exactly 256px tall */
+  @media all and (max-width: 512px) {
+    height: 512px;
+  }
 }
 
-.bauble-placeholder .canvas-container, .bauble-placeholder .code-container {
-  position: relative;
-}
-.bauble-placeholder .bauble canvas {
-  max-height: calc(min(100%, var(--canvas-height)));
-}
-.bauble-placeholder .toolbar {
-  background-color: initial;
-}
-.bauble-placeholder .toolbar:last-child {
-  bottom: 0;
-}
-.bauble-placeholder .toolbar {
-  z-index: 1;
-  position: absolute;
-  left: 0;
-  right: 0;
-}
-.bauble-placeholder .code-container .toolbar {
-  background-image: none;
-  border: none;
-  pointer-events: none;
-}
-.bauble-placeholder .code-container .toolbar .indicator.compilation-error svg {
-  fill: var(--background);
-}
-.bauble-placeholder .canvas-container .toolbar input[inputmode="numeric"] {
-  background: transparent;
-}
-.bauble-placeholder .canvas-container .toolbar {
-  transition: visibility 0s 300ms, opacity 150ms 300ms;
-}
-.bauble-placeholder .canvas-container:not(:hover) .toolbar {
-  opacity: 0;
-  visibility: hidden;
-  transition: visibility 0s 450ms, opacity 150ms 300ms;
+.bauble-placeholder {
+  .canvas-container, .code-container {
+    position: relative;
+  }
+  .bauble canvas {
+    max-height: calc(min(100%, var(--canvas-height)));
+  }
+  .toolbar {
+    background-color: initial;
+  }
+  .toolbar:last-child {
+    bottom: 0;
+  }
+  .toolbar {
+    z-index: 1;
+    position: absolute;
+    left: 0;
+    right: 0;
+  }
+  .code-container .toolbar {
+    background-image: none;
+    border: none;
+    pointer-events: none;
+    .indicator.compilation-error svg {
+      fill: var(--background);
+    }
+  }
+  .canvas-container {
+    .toolbar {
+      transition: visibility 0s 300ms, opacity 150ms 300ms;
+      input[inputmode="numeric"] {
+        background: transparent;
+      }
+    }
+    &:not(:hover) .toolbar {
+      opacity: 0;
+      visibility: hidden;
+      transition: visibility 0s 450ms, opacity 150ms 300ms;
+    }
+  }
 }
 
 body.main-page {
   display: flex;
   flex-direction: column;
-}
-
-body.main-page .bauble {
-  flex: 1;
+  .bauble {
+    flex: 1;
+  }
 }
 
 .bauble {
@@ -240,73 +241,86 @@ body.main-page .bauble {
   display: flex;
   overflow: hidden;
   flex-direction: row-reverse;
-}
 
-.bauble > * { overflow: hidden; }
+  > * { overflow: hidden; }
 
-.bauble .code-container {
-  display: flex;
-  flex-direction: column;
-  /* TODO: this should be width OR height depending on orientation */
-  flex: 1 1 var(--canvas-width);
-}
+  .code-container {
+    display: flex;
+    flex-direction: column;
+    /* TODO: this should be width OR height depending on orientation */
+    flex: 1 1 var(--canvas-width);
+  }
 
-.bauble .canvas-container {
-  display: flex;
-  justify-content: start;
-  align-items: center;
-  flex-direction: column;
-  /* TODO: this should be width OR height depending on orientation */
-  flex: 0 1 var(--canvas-width);
-}
+  .canvas-container {
+    display: flex;
+    justify-content: start;
+    align-items: center;
+    flex-direction: column;
+    /* TODO: this should be width OR height depending on orientation */
+    flex: 0 1 var(--canvas-width);
+  }
 
-.bauble .editor-container {
-  overflow: hidden;
-  display: flex;
-  flex: 1;
-}
+  .editor-container {
+    overflow: hidden;
+    display: flex;
+    flex: 1;
+  }
 
-.bauble .editor-container > * {
-  flex: 1;
-  max-width: 100%; /* required for horizontal scrolling */
-}
+  .editor-container > * {
+    flex: 1;
+    max-width: 100%; /* required for horizontal scrolling */
+  }
 
-.bauble .output-resize-handle {
-  cursor: ns-resize;
-  touch-action: none;
-  background-color: var(--toolbar-bg);
-  background-image: var(--horizontal-grip);
-  flex: none;
-  flex-basis: 4px;
-}
+  .output-resize-handle {
+    cursor: ns-resize;
+    touch-action: none;
+    background-color: var(--toolbar-bg);
+    background-image: var(--horizontal-grip);
+    flex: none;
+    flex-basis: 4px;
+  }
 
-.bauble .resize-handle {
-  flex: none;
-  flex-basis: 4px;
-  touch-action: none;
-}
+  .resize-handle {
+    flex: none;
+    flex-basis: 4px;
+    touch-action: none;
+  }
 
-.bauble .canvas-resize-handle {
-  cursor: ew-resize;
-  background-color: var(--toolbar-bg);
-  background-image: var(--vertical-grip);
-}
+  .canvas-resize-handle {
+    cursor: ew-resize;
+    background-color: var(--toolbar-bg);
+    background-image: var(--vertical-grip);
+  }
 
-.bauble .output-container:not(:empty) {
-  padding: 8px;
-}
-.bauble .output-container {
-  overflow: auto;
-  max-height: 25%;
-}
+  .output-container:not(:empty) {
+    padding: 8px;
+  }
+  .output-container {
+    overflow: auto;
+    max-height: 25%;
+  }
 
-.bauble .output-container .err {
-  color: var(--red);
-}
+  .output-container .err {
+    color: var(--red);
+  }
 
-.bauble .output-container, span.timestamp, .toolbar input[inputmode=numeric] {
-  font-family: var(--monospace-family);
-  font-size: var(--monospace-size);
+  .output-container, .toolbar input[inputmode=numeric] {
+    font-family: var(--monospace-family);
+    font-size: var(--monospace-size);
+  }
+
+  canvas {
+    max-width: calc(min(100%, var(--canvas-width)));
+    max-height: calc(min(100% - 2 * var(--control-height), var(--canvas-height)));
+    touch-action: none;
+  }
+
+  @media all and (max-width: 512px) {
+    flex-direction: column;
+    .resize-handle { flex-basis: 12px; }
+    .canvas-resize-handle { background: var(--horizontal-grip); cursor: ns-resize; }
+    .output-container { height: 1.5em; }
+  }
 }
 
 .toolbar {
@@ -324,158 +338,147 @@ body.main-page .bauble {
   background-color: var(--toolbar-bg);
   background-image: linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,0.1));
   box-sizing: border-box;
-}
 
-.toolbar:last-child {
-  border-top: solid 1px rgba(0,0,0,0.25);
-}
-.toolbar:not(:last-child) {
-  border-bottom: solid 1px rgba(0,0,0,0.25);
-}
-
-.toolbar button:not(.hidden:first-child)+button, .toolbar label+label {
-  margin-left: -6px;
-}
-
-.toolbar .spacer {
-  flex: 1;
-}
-.toolbar .scrubber {
-  flex: 1;
-  background-color: #8f8;
-}
-.toolbar .timestamp {
-  padding: 0 1ch;
-}
-.toolbar input[inputmode=numeric] {
-  text-align: center;
-  border: none;
-  width: 6ch;
-  color: var(--toolbar-fg);
-  background-color: var(--toolbar-bg);
-  box-shadow: inset 0 0 3px rgba(0,0,0,0.5);
-  border-radius: 2px;
-  margin: 4px 0;
-}
-.toolbar input[inputmode=numeric]:last-child {
-  margin-right: 4px;
-}
-
-.toolbar .text {
-  padding: 0 4px;
-}
-
-.toolbar fieldset {
-  display: inline;
-  border: none;
-  padding: none;
-  white-space: nowrap;
-}
-
-.toolbar button {
-  min-width: var(--control-height);
-  border: none;
-  cursor: pointer;
-  background-color: initial;
-}
-
-.toolbar fieldset label {
-  display: inline-block;
-  height: 100%;
-  cursor: pointer;
-  min-width: var(--control-height);
-  text-align: center;
-}
-
-.toolbar fieldset input[type=radio] {
-  display: none;
-}
-
-.toolbar button svg,
-.toolbar fieldset input[type=radio] + span,
-.toolbar fieldset input[type=radio] + svg {
-  padding: 4px;
-  border-radius: 6px;
-}
-
-.toolbar fieldset input[type=radio]:checked + span,
-.toolbar fieldset input[type=radio]:checked + svg {
-  background-color: rgba(0, 0, 0, 0.15);
-}
-
-.toolbar button:hover svg,
-.toolbar fieldset label:hover input[type=radio] + span,
-.toolbar fieldset label:hover input[type=radio] + svg {
-  background-color: rgba(0, 0, 0, 0.1);
-}
-
-.toolbar button:active svg,
-.toolbar fieldset label:hover input[type=radio]:checked + span,
-.toolbar fieldset label:hover input[type=radio]:checked + svg {
-  background-color: rgba(0, 0, 0, 0.2);
-}
-
-.toolbar .indicator {
-  min-width: var(--control-height);
-  display: flex;
-}
-.toolbar fieldset {
-  display: flex;
-  flex-direction: row;
-}
-.toolbar .indicator,
-.toolbar fieldset label,
-.toolbar button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.toolbar .indicator svg {
-  border-radius: 12px;
-  padding: 2px;
-}
-.toolbar .indicator.compilation-error svg {
-  background-color: var(--red);
-  fill: var(--toolbar-bg);
-}
-.toolbar .hidden {
-  display: none;
-}
-.toolbar .indicator svg,
-.toolbar fieldset label svg,
-.toolbar button svg {
-  width: 20px;
-  height: 20px;
-}
-
-.bauble canvas {
-  max-width: calc(min(100%, var(--canvas-width)));
-  max-height: calc(min(100% - 2 * var(--control-height), var(--canvas-height)));
-  touch-action: none;
-}
-
-@media all and (max-width: 512px) {
-  .bauble {
-    flex-direction: column;
+  &:last-child {
+    border-top: solid 1px rgba(0,0,0,0.25);
   }
-  .bauble .resize-handle { flex-basis: 12px; }
-  .bauble .canvas-resize-handle { background: var(--horizontal-grip); cursor: ns-resize; }
-  .bauble .output-container { height: 1.5em; }
+  &:not(:last-child) {
+    border-bottom: solid 1px rgba(0,0,0,0.25);
+  }
+
+  button:not(.hidden:first-child)+button, label+label {
+    margin-left: -6px;
+  }
+
+  .spacer {
+    flex: 1;
+  }
+  .scrubber {
+    flex: 1;
+    background-color: #8f8;
+  }
+  .timestamp {
+    padding: 0 1ch;
+    font-family: var(--monospace-family);
+    font-size: var(--monospace-size);
+  }
+  input[inputmode=numeric] {
+    text-align: center;
+    border: none;
+    width: 6ch;
+    color: var(--toolbar-fg);
+    background-color: var(--toolbar-bg);
+    box-shadow: inset 0 0 3px rgba(0,0,0,0.5);
+    border-radius: 2px;
+    margin: 4px 0;
+  }
+  input[inputmode=numeric]:last-child {
+    margin-right: 4px;
+  }
+
+  .text {
+    padding: 0 4px;
+  }
+
+  fieldset {
+    display: inline;
+    border: none;
+    padding: none;
+    white-space: nowrap;
+  }
+
+  button {
+    min-width: var(--control-height);
+    border: none;
+    cursor: pointer;
+    background-color: initial;
+  }
+
+  fieldset label {
+    display: inline-block;
+    height: 100%;
+    cursor: pointer;
+    min-width: var(--control-height);
+    text-align: center;
+  }
+
+  fieldset input[type=radio] {
+    display: none;
+  }
+
+  button svg,
+  fieldset input[type=radio] + span,
+  fieldset input[type=radio] + svg {
+    padding: 4px;
+    border-radius: 6px;
+  }
+
+  fieldset input[type=radio]:checked + span,
+  fieldset input[type=radio]:checked + svg {
+    background-color: rgba(0, 0, 0, 0.15);
+  }
+
+  button:hover svg,
+  fieldset label:hover input[type=radio] + span,
+  fieldset label:hover input[type=radio] + svg {
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+
+  button:active svg,
+  fieldset label:hover input[type=radio]:checked + span,
+  fieldset label:hover input[type=radio]:checked + svg {
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+
+  .indicator {
+    min-width: var(--control-height);
+    display: flex;
+  }
+  fieldset {
+    display: flex;
+    flex-direction: row;
+  }
+  .indicator,
+  fieldset label,
+  button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .indicator svg {
+    border-radius: 12px;
+    padding: 2px;
+  }
+  .indicator.compilation-error svg {
+    background-color: var(--red);
+    fill: var(--toolbar-bg);
+  }
+  .hidden {
+    display: none;
+  }
+  .indicator svg,
+  fieldset label svg,
+  button svg {
+    width: 20px;
+    height: 20px;
+  }
 }
 
 /* for some reason you can't add these rules to the theme */
-.cm-tooltip-autocomplete .cm-completionIcon-function+.cm-completionLabel::before,
-.cm-tooltip-autocomplete .cm-completionIcon-text+.cm-completionLabel::before {
-  content: "(";
-}
+.cm-tooltip-autocomplete {
+  & .cm-completionIcon-function+.cm-completionLabel::before,
+  & .cm-completionIcon-text+.cm-completionLabel::before {
+    content: "(";
+  }
 
-.cm-tooltip-autocomplete .cm-completionIcon-function+.cm-completionLabel:last-child::after,
-.cm-tooltip-autocomplete .cm-completionIcon-text+.cm-completionLabel:last-child::after {
-  content: ")";
-}
+  & .cm-completionIcon-function+.cm-completionLabel:last-child::after,
+  & .cm-completionIcon-text+.cm-completionLabel:last-child::after {
+    content: ")";
+  }
 
-.cm-tooltip-autocomplete .cm-completionIcon-function+.cm-completionLabel+.cm-completionDetail::after,
-.cm-tooltip-autocomplete .cm-completionIcon-text+.cm-completionLabel+.cm-completionDetail::after {
-  content: ")";
-  font-style: normal;
+  & .cm-completionIcon-function+.cm-completionLabel+.cm-completionDetail::after,
+  & .cm-completionIcon-text+.cm-completionLabel+.cm-completionDetail::after {
+    content: ")";
+    font-style: normal;
+  }
 }
