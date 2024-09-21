@@ -593,6 +593,19 @@
     (triangle [10 73] | color (hsv (hash $i) 0.5 1) | move x 89 | radial: $i 12 :oversample true :sample-from -1 :sample-to 1)
   `
 
+  "radial 3D axis - no oversample" `
+  (union
+    (box 20 | move x 100 | radial z 12)
+    (box 20 | move z 100 | radial y 12)
+    (box 20 | move y 100 | radial x 12))
+  `
+  "radial 3D axis - oversample" `
+  (union
+    (box 20 | move x 100 | radial z 12 :oversample true)
+    (box 20 | move z 100 | radial y 12 :oversample true)
+    (box 20 | move y 100 | radial x 12 :oversample true))
+  `
+
   "radial 3D" `
   (box 20 | move x 100 | radial z 12)
   `

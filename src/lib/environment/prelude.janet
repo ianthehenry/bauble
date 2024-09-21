@@ -64,27 +64,33 @@
 
 (defhelper :float atan2 [:float y :float x]
   ```
-  Returns a value in the range `[0, tau)` representing the angle
+  Returns a value in the range `[-pi, pi]` representing the angle
   between the (2D) `+x` axis and the point `[x y]`.
 
   This is an alternative to the built-in `atan`'s two argument
-  overload that is well-defined when `x = 0`.
+  overload that is defined when `x = 0`. You can also invoke this
+  with a single `vec2` whose coordinates will act as `x` and `y`.
 
-  You can also invoke this with a single `vec2` whose coordinates
-  will act as `x` and `y`.
+  See `atan2+` for an angle in the range `[0, tau)`.
   ```
   # The built-in atan is undefined when x = 0, and while
   # I would assume this means "it might be positive
   # or negative pi," I don't know if I can count on that.
-  (var signed-angle (if (= x 0)
-    (0.5 * pi * sign y)
-    (atan y x)))
+  (return (if (= x 0) (0.5 * pi * sign y) (atan y x))))
+(overload :float atan2 [:vec2 p]
+  (return (atan2 p.y p.x)))
+
+(defhelper :float atan2+ [:float y :float x]
+  ```
+  Like `atan2`, but returns a value in the range `[0, tau)` instead of
+  `[-pi, pi]`.
+  ```
+  (var signed-angle (atan2 y x))
   (if (< signed-angle 0)
     (return (tau + signed-angle))
     (return signed-angle)))
-
-(overload :float atan2 [:vec2 p]
-  (return (atan2 p.y p.x)))
+(overload :float atan2+ [:vec2 p]
+  (return (atan2+ p.y p.x)))
 
 (defhelper :float quantize [:float value :float count]
   ```

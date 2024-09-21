@@ -192,16 +192,16 @@
 
 (sugar (defn- simple-radial [coord plane rotate $index expr count]
   (gl/let [count count angular-size (tau / count)]
-    (gl/with [$index (atan2 plane.y plane.x + (angular-size * 0.5) | mod tau / angular-size | floor)
+    (gl/with [$index (atan2 plane + (angular-size * 0.5) | mod tau / angular-size | floor)
               coord (rotate coord (* -1 angular-size $index))]
       expr))))
 
-(defmacro- make-radiator [name coord & loop-body]
-  ~(defn- ,name [$index rotate distance-field other-field count sample-from sample-to]
+(defmacro- make-radiator [name & loop-body]
+  ~(defn- ,name [$index plane rotate distance-field other-field count sample-from sample-to]
     (sugar (jlsl/do
       (var count count)
       (var angular-size (tau / count))
-      (var angle (atan2 (. ,coord y) (. ,coord x) + (angular-size * 0.5) | mod tau / angular-size))
+      (var angle (atan2 plane + (angular-size * 0.5) | mod tau / angular-size))
       (var base-index (floor angle))
       (var look-direction (angle | fract - 0.5 | sign))
       (var start-logical (sample-from * look-direction + base-index))
@@ -210,14 +210,14 @@
       (var end (max start-logical end-logical))
       ,;loop-body))))
 
-(make-radiator radial-distance-2d q
+(make-radiator radial-distance-2d
   (var nearest 1e20)
   (for (var i start) (<= i end) (++ i)
     (with [$index i q (rotate q (* -1 angular-size i))]
       (set nearest (min nearest distance-field))))
   nearest)
 
-(make-radiator radial-other-2d q
+(make-radiator radial-other-2d
   (var nearest 1e20)
   (var nearest-index 0)
   (for (var i start) (<= i end) (++ i)
@@ -229,14 +229,14 @@
   (with [$index (mod nearest-index count) q (rotate q (* -1 angular-size $index))]
     other-field))
 
-(make-radiator radial-distance-3d p
+(make-radiator radial-distance-3d
   (var nearest 1e20)
   (for (var i start) (<= i end) (++ i)
     (with [$index i p (rotate p (* -1 angular-size i))]
       (set nearest (min nearest distance-field))))
   nearest)
 
-(make-radiator radial-other-3d p
+(make-radiator radial-other-3d
   (var nearest 1e20)
   (var nearest-index 0)
   (for (var i start) (<= i end) (++ i)
@@ -276,8 +276,8 @@
   (if oversample
     (shape/map-fields shape (fn [name expr]
       (case name
-        :distance (radial-distance $index rotate expr nil count sample-from sample-to)
-        (radial-other $index rotate (shape/distance shape) expr count sample-from sample-to))))
+        :distance (radial-distance $index plane rotate expr nil count sample-from sample-to)
+        (radial-other $index plane rotate (shape/distance shape) expr count sample-from sample-to))))
     (shape/map shape (fn [expr]
       (simple-radial coord plane rotate $index expr count)))))
 
