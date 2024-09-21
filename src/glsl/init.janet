@@ -81,11 +81,11 @@
 # okay this is terrible but whatever
 (defn identifier [name]
   (->> name
-    (peg/replace-all ~(* (column) (set "+*$") (+ (/ (look 0 -1) true) (constant false))) (fn [char col eos]
+    (peg/replace-all ~(* (column) (set "+*$/") (+ (/ (look 0 -1) true) (constant false))) (fn [char col eos]
       (def bos (= col 1))
       (if (and bos eos)
         char
-        (string (if-not bos "_") ('{"+" "plus" "*" "star" "$" "dollar"} char) (if-not eos "_")))))
+        (string (if-not bos "_") ('{"+" "plus" "*" "star" "$" "dollar" "/" "slash"} char) (if-not eos "_")))))
     (string/replace-all "-" "_")
     ))
 
@@ -93,6 +93,7 @@
 (test (identifier "foo+") "foo_plus")
 (test (identifier "+foo") "plus_foo")
 (test (identifier "foo*+") "foo_star__plus")
+(test (identifier "capsule/2d") "capsule_slash_2d")
 (test (identifier "$i") "dollar_i")
 (test (identifier "+") "+")
 
