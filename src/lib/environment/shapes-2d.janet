@@ -224,7 +224,10 @@
   But it can also return a 3D shape:
 
   ```example
-  (triangle [-100 -100 -100] [-100 -100 100] [100 100 0]
+  (triangle 
+    [(osc t 4 -100 100) -100 (oss t 5 -100 100)]
+    [100 (osc t 6 -100 100) 100]
+    [-100 (oss t 7 -100 100) (osc t 8 -100 100)]
   | union (box-frame 100 1))
   ```
   ````
@@ -244,10 +247,10 @@
         (error "whatrya tryna pull")))
     (error "wrong number of arguments")))
 
-(defshape/2d uneven-capsule [:float bottom-radius :float top-radius :float height]
+(defshape/2d capsule-2d [:float bottom-radius :float top-radius :float height]
   ````
   ```example
-  (uneven-capsule 50 (osc t 3 20 60) (oss t 8 30 100))
+  (capsule-2d 50 (osc t 3 20 60) (oss t 8 30 100))
   ```
   ````
   (var q [(abs q.x) q.y])

@@ -163,7 +163,7 @@
     (star 30 15))
   `
 
-  "uneven capsule" `(uneven-capsule 39 32 37)`
+  "capsule 2d" `(capsule-2d 39 32 37)`
   "pie" `(union ;(seq [i :range [1 5]] (pie 30 (tau / i - 0.6) | move y (i * 40 - 100))))`
   "cut disk" `
   (union

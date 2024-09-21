@@ -174,6 +174,7 @@
     camera/zoom @{:doc "(camera/zoom camera amount)\n\nZoom the camera by changing its field of view.\n\n```example\n(morph (ball 50) (box 50) 2\n| union (circle 200 | extrude y 10 | move y -100)\n| blinn-phong (vec3 0.75))\n(set camera (camera/perspective [0 100 600] [0 0 0] :fov 45\n| camera/zoom (sin t * 0.2 + 1)))\n```"}
     camera? @{:doc "(camera? value)\n\nReturns `true` if `value` is a GLSL expression with type `Camera`."}
     capsule @{:doc "(capsule axis length radius [top-radius])\n\nThere are two types of `capsule`s: symmetric capsules, which look\nlike pills, or axis-aligned lines:\n\n```example\n(capsule y 100 25)\n```\n\nAnd asymmetric capsules, which have a different radius at the\ntop and bottom:\n\n```example\n(capsule y 100 25 10)\n```"}
+    capsule-2d @{:doc "(capsule-2d bottom-radius top-radius height)\n\n```example\n(capsule-2d 50 (osc t 3 20 60) (oss t 8 30 100))\n```"}
     cast-light-hard-shadow @{:doc "(cast-light-hard-shadow light-color light-position)\n\nTODOC"}
     cast-light-no-shadow @{:doc "(cast-light-no-shadow light-color light-position)\n\nTODOC"}
     cast-light-soft-shadow @{:doc "(cast-light-soft-shadow light-color light-position softness)\n\nTODOC"}
@@ -499,10 +500,9 @@
     tint @{:doc "(tint shape color &opt amount)\n\nAdd a color to a shape's color field.\n\n```example\n(ball 100 | blinn-phong normal+ | tint [1 0 0] (sin+ t))\n```"}
     torus @{:doc "(torus axis radius thickness)\n\nReturns a 3D shape, a torus around the provided `axis`.\n\n```example\n(torus z 100 (osc t 3 10 50))\n```"}
     trapezoid @{:doc "(trapezoid bottom-width top-width height [:r round])\n\nReturns a 2D shape.\n\n```example\n(trapezoid (osc t 3 50 100) (oss t 2 100 50) 100)\n```"}
-    triangle @{:doc "(triangle & args)\n\nUsually returns a 2D shape, with various overloads:\n\n```example\n(triangle 100)\n```\n\n```example\n(triangle [50 100])\n```\n\n```example\n(triangle [-50 100] [100 10] [-10 -100])\n```\n\nBut it can also return a 3D shape:\n\n```example\n(triangle [-100 -100 -100] [-100 -100 100] [100 100 0]\n| union (box-frame 100 1))\n```"}
+    triangle @{:doc "(triangle & args)\n\nUsually returns a 2D shape, with various overloads:\n\n```example\n(triangle 100)\n```\n\n```example\n(triangle [50 100])\n```\n\n```example\n(triangle [-50 100] [100 10] [-10 -100])\n```\n\nBut it can also return a 3D shape:\n\n```example\n(triangle \n  [(osc t 4 -100 100) -100 (oss t 5 -100 100)]\n  [100 (osc t 6 -100 100) 100]\n  [-100 (oss t 7 -100 100) (osc t 8 -100 100)]\n| union (box-frame 100 1))\n```"}
     trunc @{}
     uint @{}
-    uneven-capsule @{:doc "(uneven-capsule bottom-radius top-radius height)\n\n```example\n(uneven-capsule 50 (osc t 3 20 60) (oss t 8 30 100))\n```"}
     union @{:doc "(union & shapes [:r r] [:rs rs] [:distance distance] [:color color])\n\nUnion two or more shapes together. Pass `:r` or `:rs` to produce a smooth union.\n\n`:r` and `:rs` combine color fields differently. `:rs` is a symmetric union, where\nthe color field is based on the nearest shape, regardless of the order that they're\nspecified. `:r` is an asymmetric union where the order matters, and later shapes will\nbe considered \"on top of\" previous shapes.\n\nThese produce identical colors on the surface, but different interior color fields.\nIt's easy to see the difference in 2D, while in 3D the difference only matters if\nyou're cutting into a shape, or transplanting the color field from one shape to another.\n\nYou can also pass `:distance` or `:color` to specify a different smoothing radius for\nthe separate fields. For example, to produce a smooth symmetric color union with a sharp\ndistance field, pass `(union :rs 10 :distance 0 ;shapes)`."}
     vec @{}
     vec2 @{}
