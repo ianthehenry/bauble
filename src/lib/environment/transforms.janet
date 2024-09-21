@@ -140,29 +140,46 @@
 
 (defn move
   ````
-  Translate a shape. Usually you'd use this with a vector offset:
+  Translate a shape. You can pass a vector offset:
 
-  ```
-  (move (box 50) [0 100 0])
+  ```example
+  (move (box 50) [0 (sin t * 100) 0])
   ```
 
-  But you can also provide a vector and a scalar:
+  Or a vector and a scalar:
 
-  ```
-  (move (box 50) y 100)
+  ```example
+  (move (box 50) y (sin t * 100))
   ```
 
   Which is the same as `(move (box 50) (y * 100))`.
 
   If you provide multiple vector-scalar pairs, their sum is the final offset:
 
+  ```example
+  (move (box 50)
+    x (sin t * 100)
+    y (cos t * 100)
+    -z (sin t * 100))
   ```
-  (move (box 50) x 100 y 100 -z 20)
-  ```
-
-  That is the same as `(move (box 50) (+ (x * 100) (y * 100) (-z * 100)))`.
 
   `move` can take a shape, a vector, or a camera.
+
+  If you vary the amount of movement by the current position in space,
+  you can distort shapes in various ways:
+
+  ```example
+  (box 100 | move x (sin (p.y / 100 * pi) * 30))
+  ```
+
+  ```example
+  (cylinder y 100 10
+  | move y (atan p.x p.z * 10 | sin * (length p | ss 10 100 0 10)))
+  ```
+
+  ```example
+  (box [100 10 100] | move y (p.xz / 20 | pow 2 | sum) | slow 0.5)
+  ```
   ````
   [subject & args]
   (def subject (if (shape? subject) subject (jlsl/coerce-expr subject)))
