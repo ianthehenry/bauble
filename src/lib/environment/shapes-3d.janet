@@ -281,14 +281,12 @@
   (var d ((abs [(length other-axes) this-axis]) - [radius height]))
   (return (min (max d) 0 + length (max d 0))))
 
-# TODO: subtracting from the radius does *something*, but it's not what
-# i would expect
-(defshape/3d octahedron [:float radius]
+(defshape/3d octahedron [:float !radius]
   ````
   Returns a 3D shape.
 
   ```example
-  (octahedron 100 | rotate x t)
+  (octahedron 100 :r (sin+ t * 20) | rotate x t y t z t)
   ```
   ````
   (var p (abs p))
@@ -327,3 +325,15 @@
   (sugar (shape/3d (if offset
     (dot p normal - offset)
     (dot p normal)))))
+
+(sugar (defnamed ground [?offset]
+  ````
+  Returns a 3D plane that only exists while the camera is above it.
+
+  This is useful for quickly debugging shadows while still being able
+  to see the underside of your scene, although note that taking the plane
+  away will affect ambient occlusion, so you're not *really* seeing the
+  underside.
+  ````
+  (def offset (typecheck (@or offset 0) jlsl/type/float))
+  (shape/3d (gl/if (< ray.origin.y offset) 1e20 (dot p y - offset)))))

@@ -78,7 +78,7 @@
 # | move y (sin+ (hash $i * 5 + t * 3) | pow 11 | ss * 20)
 # | blinn-phong (hsv (hash $i / 8) 1 (hash $i | step 0.98))
 # | tile: $i [30 0 30] :oversample true
-# | union (plane y -10 | blinn-phong (vec3 0.5))
+# | union (ground -10 | blinn-phong (vec3 0.5))
 # )
 
 # The beauty of SDFs is that they're so simple
@@ -169,7 +169,7 @@
 # (torus y 110 20 | rotate z t x t y (t / 2)
 # | blinn-phong [0.25 0.75 0.75]
 # | union (ball 100 | blinn-phong [0 0.75 0])
-# | union (plane y -100 | blinn-phong (vec3 0.75)))
+# | union (ground -100 | blinn-phong (vec3 0.75)))
 
 # But you can implement any of these things
 # yourself! Bauble exposes a low-level API

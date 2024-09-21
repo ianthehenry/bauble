@@ -211,7 +211,6 @@
     ellipsoid @{:doc "(ellipsoid size)\n\nReturns a 3D shape. This is an alias for the `vec3` overload of `ball`."}
     elongate @{:doc "(elongate shape size)\n\nStretch the center of a shape, leaving the sides untouched.\n\n```example\n(cone y 50 100 | elongate [(osc t 3 50) 0 (osc t 6 100)])\n```\n\n```example\n(torus x 50 20 | elongate [0 100 0])\n```\n\n```example\n(rhombus [100 (gl/if (< q.y 0) 100 50)] | elongate [0 (osc t 2 0 20)])\n```"}
     equal @{}
-    equilateral-triangle @{:doc "(equilateral-triangle radius [:r round])\n\nTODOC"}
     exp @{}
     exp2 @{}
     expand @{:doc "(expand shape amount)\n\nExpands the provided shape, rounding corners in the process.\n\nThis is the same as subtracting `amount` from the distance field.\nIt's more accurate to say that this \"moves between isosurfaces,\" so\nit may not actually round anything if the provided shape is not an\nexact distance field.\n\nFor example, this produces a nicely expanded shape:\n\n```example\n(rect 90 | expand (sin+ t * 30))\n```\n\nBut this does something weird, because subtraction does not produce\nan exact distance field:\n\n```example\n(rect 90\n| subtract (rect 100 | move x 150)\n| expand (sin+ t * 30))\n```"}
@@ -249,6 +248,7 @@
     graydient @{:doc "The default background color, a gray gradient."
                 :value [do]}
     green @{:value [hsv 0.33333333333333331 0.98 1]}
+    ground @{:doc "(ground [offset])\n\nReturns a 3D plane that only exists while the camera is above it.\n\nThis is useful for quickly debugging shadows while still being able\nto see the underside of your scene, although note that taking the plane\naway will affect ambient occlusion, so you're not *really* seeing the\nunderside."}
     hash @{:doc "(hash v)\n\nReturn a pseudorandom float. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
     hash2 @{:doc "(hash2 v)\n\nReturn a pseudorandom `vec2`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
     hash3 @{:doc "(hash3 v)\n\nReturn a pseudorandom `vec3`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
@@ -266,7 +266,6 @@
     inversesqrt @{}
     isolines @{:doc "A color that represents the visualization of the 2D gradient. This is\nthe default color used when rendering a 2D shape with no color field."
                :value [isolines]}
-    isosceles-triangle @{:doc "(isosceles-triangle size)\n\nTODOC"}
     length @{}
     light-gray @{:value [0.75 0.75 0.75]}
     light/ambient @{:doc "(light/ambient color [offset] [:brightness brightness] [:hoist hoist])\n\nShorthand for `(light/point color (P + offset))`.\n\nWith no offset, the ambient light will be completely directionless, so it won't\ncontribute to specular highlights. By offsetting by a multiple of the surface\nnormal, or by the surface normal plus some constant, you can create an ambient\nlight with specular highlights, which provides some depth in areas of your scene\nthat are in full shadow."}
@@ -313,7 +312,7 @@
     not= @{}
     occlusion @{:doc "(occlusion [:steps step-count] [:dist dist] [:dir dir] [:hoist hoist])\n\nApproximate ambient occlusion by sampling the distance field at `:steps` positions\n(default 8) linearly spaced from 0 to `:dist` (default `10`). The result will range\nfrom 1 (completely unoccluded) to 0 (fully occluded).\n\nBy default the occlusion samples will be taken along the surface normal of the point\nbeing shaded, but you can pass a custom `:dir` expression to change that. You can use\nthis to e.g. add jitter to the sample direction, which can help to improve the\nquality.\n\nOcclusion is somewhat expensive to calculate, so by default the result will\nbe hoisted, so that it's only calculated once per iteration (without you having to\nexplicitly `gl/def` the result). However, this means that the occlusion calculation\nwon't take into account local normal adjustments, so you might want to pass\n`:hoist false`."}
     octagon @{:doc "(octagon radius [:r round])\n\n```example\n(octagon 100 :r (osc t 3 20))\n```"}
-    octahedron @{:doc "(octahedron radius)\n\nReturns a 3D shape.\n\n```example\n(octahedron 100 | rotate x t)\n```"}
+    octahedron @{:doc "(octahedron radius [:r round])\n\nReturns a 3D shape.\n\n```example\n(octahedron 100 :r (sin+ t * 20) | rotate x t y t z t)\n```"}
     or @{}
     orange @{:value [hsv 0.083333333333333329 0.98 1]}
     oriented-rect @{:doc "(oriented-rect start end width)\n\nTODOC"}
@@ -405,7 +404,7 @@
     resolution @{:doc "The size, in physical pixels, of the canvas being rendered. In quad view, this will be smaller than the physical canvas."
                  :value [:var "resolution" :vec2]}
     revolve @{:doc "(revolve shape axis &opt offset)\n\nRevolve a 2D shape around the given `axis` to return a 3D shape.\n\nYou can optionally supply an `offset` to move the shape away from the origin first (the default is `0`)."}
-    rhombus @{:doc "(rhombus size)\n\nReturns a 2D shape. It rhombs with a kite.\n\n```example\n(rhombus [100 (osc t 3 50 150)])\n```"}
+    rhombus @{:doc "(rhombus size [:r round])\n\nReturns a 2D shape. It rhombs with a kite.\n\n```example\n(rhombus [100 (osc t 3 50 150)])\n```"}
     ring @{:doc "(ring radius angle thickness)\n\n```example\n(ring 100 (osc t 5 tau) (osc t 3 5 20))\n```"}
     rotate @{:doc "(rotate subject & args)\n\nRotate a shape or a vector. Positive angles are counter-clockwise rotations.\n\nIn 3D, the arguments should be pairs of `axis angle`. For example:\n\n```example\n(rotate (box 100) x t y (sin t))\n```\n\nAll `axis` arguments must be unit vectors. There are built-in axis variables `x`/`+y`/`-z`\nfor the cardinal directions, and these produce optimized rotation matrices. But you can\nrotate around an arbitrary axis:\n\n```example\n(rotate (box 100) [1 1 1 | normalize] t)\n```\n\nThe order of the arguments is significant, as rotations are not commutative.\n\nThe first argument to `rotate` can be a shape, vector, or camera.\n\nIn 2D, the arguments should just be angles; no axis is allowed.\n\nYou can use `rotate` to make lots of cool effects. By varying the angle\nof rotation, you can create twists:\n\n```example\n(box [50 100 50]\n| rotate y (p.y / 100 * (cos+ t)))\n```\n\nTwirls:\n\n```example\n(box [100 50 100]\n| rotate y (length p.xz / 50 * (cos+ t)))\n```\n\nAnd bends:\n\n```example\n(box [50 100 100]\n| rotate y (p.z / 100 * (cos+ t)))\n```\n\nOr any number of other cool effects!\n\n```example\n(box [50 100 50]\n| rotate y (sin (p.y / 10) * sin t * 0.2))\n```"}
     rotation-around @{:doc "(rotation-around axis angle)\n\nA rotation matrix about an arbitrary axis. More expensive to compute than the axis-aligned rotation matrices."}
@@ -500,7 +499,7 @@
     tint @{:doc "(tint shape color &opt amount)\n\nAdd a color to a shape's color field.\n\n```example\n(ball 100 | blinn-phong normal+ | tint [1 0 0] (sin+ t))\n```"}
     torus @{:doc "(torus axis radius thickness)\n\nReturns a 3D shape, a torus around the provided `axis`.\n\n```example\n(torus z 100 (osc t 3 10 50))\n```"}
     trapezoid @{:doc "(trapezoid bottom-width top-width height [:r round])\n\nReturns a 2D shape.\n\n```example\n(trapezoid (osc t 3 50 100) (oss t 2 100 50) 100)\n```"}
-    triangle-points @{:doc "(triangle-points a b c)\n\nTODOC"}
+    triangle @{:doc "(triangle & args)\n\nUsually returns a 2D shape, with various overloads:\n\n```example\n(triangle 100)\n```\n\n```example\n(triangle [50 100])\n```\n\n```example\n(triangle [-50 100] [100 10] [-10 -100])\n```\n\nBut it can also return a 3D shape:\n\n```example\n(triangle [-100 -100 -100] [-100 -100 100] [100 100 0]\n| union (box-frame 100 1))\n```"}
     trunc @{}
     uint @{}
     uneven-capsule @{:doc "(uneven-capsule bottom-radius top-radius height)\n\n```example\n(uneven-capsule 50 (osc t 3 20 60) (oss t 8 30 100))\n```"}

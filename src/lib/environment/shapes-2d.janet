@@ -52,9 +52,7 @@
 (defhelper- :float ndot [:vec2 a :vec2 b]
   (return ((* a.x b.x) - (* a.y b.y))))
 
-# TODO: rounding this is tricky because we need to subtract
-# r from the short side and 2r from the long side
-(defshape/2d rhombus [:vec2 size]
+(defshape/2d rhombus [:vec2 !size]
   ````
   Returns a 2D shape. It rhombs with a kite.
 
@@ -152,10 +150,7 @@
   (var s (if (and (< cb.x 0) (< ca.y 0)) -1 1))
   (return (s * sqrt (min (dot ca) (dot cb)))))
 
-(defshape/2d equilateral-triangle [:float !radius]
-  ```
-  TODOC
-  ```
+(defshape/2d- equilateral-triangle [:float radius] ""
   (def k (sqrt 3))
   (var q [((abs q.x) - radius) (q.y + (radius / k))])
   (if (> (q.x + (k * q.y)) 0)
@@ -164,10 +159,7 @@
   (return (* -1 (length q) (sign q.y))))
 
 # TODO: the asymmetric height makes it difficult to round this
-(defshape/2d isosceles-triangle [:vec2 size]
-  ```
-  TODOC
-  ```
+(defshape/2d- isosceles-triangle [:vec2 size] ""
   (var q [(abs q.x) (size.y - q.y)])
   (var a (q - (size * ((dot q size) / (dot size) | clamp 0 1))))
   (var b (q - (size * [(q.x / size.x | clamp 0 1) 1])))
@@ -176,11 +168,7 @@
   (var s (max (q.x * size.y - (q.y * size.x) * k) (q.y - size.y * k)))
   (return (sqrt d * sign s)))
 
-# TODO: I *think* we can round this, maybe?
-(defshape/2d triangle-points [:vec2 a :vec2 b :vec2 c]
-  ```
-  TODOC
-  ```
+(defshape/2d- triangle-points-2d [:vec2 a :vec2 b :vec2 c] ""
   (var e0 (b - a))
   (var e1 (c - b))
   (var e2 (a - c))
@@ -196,6 +184,65 @@
     [(dot pq1) (v1.x * e1.y - (v1.y * e1.x) * s)])
     [(dot pq2) (v2.x * e2.y - (v2.y * e2.x) * s)]))
   (return (* -1 (sqrt d.x) (sign d.y))))
+
+(defshape/3d- triangle-points-3d [:vec3 a :vec3 b :vec3 c] ""
+  (var ba (b - a))
+  (var pa (p - a))
+  (var cb (c - b))
+  (var pb (p - b))
+  (var ac (a - c))
+  (var pc (p - c))
+  (var nor (cross ba ac))
+
+  (return (sqrt
+    (if (+ (cross ba nor | dot pa | sign)
+           (cross cb nor | dot pb | sign)
+           (cross ac nor | dot pc | sign)
+        | < 2)
+     (min (min
+       (dot (ba * (dot ba pa / dot ba | clamp 0 1) - pa))
+       (dot (cb * (dot cb pb / dot cb | clamp 0 1) - pb)))
+       (dot (ac * (dot ac pc / dot ac | clamp 0 1) - pc)))
+     (dot nor pa * dot nor pa / dot nor)))))
+
+(defnamed triangle [&args]
+  ````
+  Usually returns a 2D shape, with various overloads:
+
+  ```example
+  (triangle 100)
+  ```
+
+  ```example
+  (triangle [50 100])
+  ```
+
+  ```example
+  (triangle [-50 100] [100 10] [-10 -100])
+  ```
+
+  But it can also return a 3D shape:
+
+  ```example
+  (triangle [-100 -100 -100] [-100 -100 100] [100 100 0]
+  | union (box-frame 100 1))
+  ```
+  ````
+  (case (@length args)
+    1 (let [size (jlsl/coerce-expr (in args 0))]
+        (case (jlsl/expr/type size)
+          jlsl/type/float (equilateral-triangle size)
+          jlsl/type/vec2 (isosceles-triangle size)
+          (error "unknown triangle overload: expected float or vec2")))
+    3 (let [[a b c] args]
+      (def a (jlsl/coerce-expr a))
+      (def b (typecheck b (jlsl/expr/type a)))
+      (def c (typecheck c (jlsl/expr/type a)))
+      (case (jlsl/expr/type a)
+        jlsl/type/vec2 (triangle-points-2d a b c)
+        jlsl/type/vec3 (triangle-points-3d a b c)
+        (error "whatrya tryna pull")))
+    (error "wrong number of arguments")))
 
 (defshape/2d uneven-capsule [:float bottom-radius :float top-radius :float height]
   ````

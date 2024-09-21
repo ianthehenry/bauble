@@ -149,9 +149,9 @@
 
   "triangles" `
   (union
-    (equilateral-triangle 30 | move [-50 50])
-    (isosceles-triangle [40 40] | move [50 50])
-    (triangle-points [-20 -5] [45 17] [-16 -77]))
+    (triangle 30 | move [-50 50])
+    (triangle [40 40] | move [50 50])
+    (triangle [-20 -5] [45 17] [-16 -77]))
   `
 
   "gons and grams" `
@@ -513,7 +513,7 @@
 
   "tile with oversampling picks the nearest color" `
   (tile* [20 20] :oversample true :sample-from [-1 -1] :sample-to [1 1] (fn [$i]
-    (isosceles-triangle [10 31]
+    (triangle [10 31]
       | move (hash2 $i * 10)
       | rotate (hash $i)
       | color (hsv (hash $i) 0.8 1))))
@@ -590,7 +590,7 @@
   (circle 12 | color (hsv (hash $i) 0.5 1) | move x 100 | radial: $i 24)
   `
   "radial 2D colors asymmetric" `
-    (isosceles-triangle [10 73] | color (hsv (hash $i) 0.5 1) | move x 89 | radial: $i 12 :oversample true :sample-from -1 :sample-to 1)
+    (triangle [10 73] | color (hsv (hash $i) 0.5 1) | move x 89 | radial: $i 12 :oversample true :sample-from -1 :sample-to 1)
   `
 
   "radial 3D" `
