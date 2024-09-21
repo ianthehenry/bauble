@@ -50,7 +50,7 @@ export default class Renderer {
   private vertexData: Float32Array;
 
   constructor(canvas: OffscreenCanvas, private state: RenderState.Accessors) {
-    const gl = canvas.getContext('webgl2', { antialias: false });
+    const gl = canvas.getContext('webgl2', { antialias: false, premultipliedAlpha: false });
     if (!gl) {
       throw new Error("failed to create webgl2 context");
     }

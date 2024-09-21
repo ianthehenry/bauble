@@ -41,7 +41,7 @@
     (as-macro ,jlsl/jlsl/fn ,t ,(string name) ,;rest)))
 
 (defn make-sample-2d [nearest-distance <background-color> <default-color> <color-field>]
-  (jlsl/fn :vec3 sample []
+  (jlsl/fn :vec4 sample []
     (with [Q (frag-coord * ortho-base-zoom-distance * free-camera-zoom + origin-2d)
            q Q
            dist (nearest-distance)
@@ -51,11 +51,11 @@
         0:s ,(if <color-field>
           (jlsl/statement
             (if (<= dist 0)
-              (return <color-field>)
+              (return [<color-field> 1])
               (return <background-color>)))
           (jlsl/statement
-            (return <default-color>)))
-        (return <default-color>)))))
+            (return [<default-color> 1])))
+        (return [<default-color> 1])))))
 
 (defn- make-march [nearest-distance]
   (jlsl/fn :float march [[out :uint] steps]
@@ -80,7 +80,7 @@
   (def march (make-march nearest-distance))
   (def ortho-distance 1024)
 
-  (jlsl/fn :vec3 sample []
+  (jlsl/fn :vec4 sample []
     (var ray* (Ray [0 0 0] [0 0 1]))
     (var ortho [ortho-distance (* frag-coord ortho-base-zoom-distance free-camera-zoom)])
     (case camera-type
@@ -118,18 +118,18 @@
       (case render-type
         0:s (if (>= dist MAXIMUM_HIT_DISTANCE)
             (return <background-color>)
-            (return ,(@or <color-field> <default-color>)))
+            (return [,(@or <color-field> <default-color>) 1]))
         # ignore color field
         1:s (if (>= dist MAXIMUM_HIT_DISTANCE)
             (return <background-color>)
-            (return <default-color>))
+            (return [<default-color> 1]))
         # convergence debug view
         2:s
           (return (if (= steps MAX_STEPS)
-            [1 0 1]
-            (float steps / float MAX_STEPS | vec3)))
+            [1 0 1 1]
+            [(float steps / float MAX_STEPS | vec3) 1]))
         # overshoot debug view
         3:s (do
           (var overshoot (max (- dist) 0 / MINIMUM_HIT_DISTANCE))
           (var undershoot (max dist 0 / MINIMUM_HIT_DISTANCE))
-          (return [overshoot (- 1 undershoot overshoot) (1 - (step 1 undershoot))]))))))
+          (return [overshoot (- 1 undershoot overshoot) (1 - (step 1 undershoot)) 1]))))))

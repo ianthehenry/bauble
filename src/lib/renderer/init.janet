@@ -21,7 +21,13 @@
   (def nearest-distance (get-env stdenv 'nearest-distance))
   (def default-2d-color (typecheck (get-var stdenv 'default-2d-color) jlsl/type/vec3))
   (def default-3d-color (typecheck (get-var stdenv 'default-3d-color) jlsl/type/vec3))
-  (def background-color (typecheck (get-var stdenv 'background-color) jlsl/type/vec3))
+  (def background-color (jlsl/coerce-expr (get-var stdenv 'background-color)))
+
+  (def background-color (case (jlsl/expr/type background-color)
+    jlsl/type/vec3 (vec4 background-color 1)
+    jlsl/type/vec4 background-color
+    (error "background-color must be a vec3 or ve4")))
+
   (def camera (typecheck? (get-var stdenv 'camera) Camera))
 
   (assertf (or (nil? subject) (shape? subject)) "%q is not a shape" subject)
@@ -54,11 +60,12 @@
           jlsl/type/vec2 (make-sample-2d nearest-distance background-color default-2d-color (shape/color subject))
           jlsl/type/vec3 (make-sample-3d nearest-distance camera background-color default-3d-color (shape/color subject))
           (error "BUG"))
-        (jlsl/fn :vec3 sample [] (return background-color))))
+        (jlsl/fn :vec4 sample [] (return background-color))))
 
     (defn :void main []
       (def gamma 2.2)
       (var color [0 0 0])
+      (var alpha 0)
       (def aa-grid-size ,aa-grid-size)
       (def aa-sample-width (/ (float (+ 1:u aa-grid-size))))
       (def pixel-origin [0.5 0.5])
@@ -73,11 +80,15 @@
           (with [Frag-Coord (local-frag-coord + sample-offset)
                  resolution viewport.zw
                  frag-coord (Frag-Coord - (0.5 * resolution) / max resolution)]
-            (+= color ((sample) | clamp 0 1)))
+            (var this-sample (clamp (sample) 0 1))
+            (+= color (this-sample.rgb * this-sample.a))
+            (+= alpha this-sample.a))
           ))
-      (/= color (float (aa-grid-size * aa-grid-size)))
+      (if (> alpha 0) (do
+        (set color (color / alpha))
+        (/= alpha (float (aa-grid-size * aa-grid-size)))))
 
-      (set frag-color [(pow color (/ gamma)) 1])))))
+      (set frag-color [(pow color (/ gamma)) alpha])))))
 
   (def glsl (jlsl/render/program program))
 

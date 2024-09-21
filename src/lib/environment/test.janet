@@ -152,7 +152,7 @@
     atan2 @{:doc "(atan2 y x)\n\nReturns a value in the range `[-pi, pi]` representing the angle\nbetween the (2D) `+x` axis and the point `[x y]`.\n\nThis is an alternative to the built-in `atan`'s two argument\noverload that is defined when `x = 0`. You can also invoke this\nwith a single `vec2` whose coordinates will act as `x` and `y`.\n\nSee `atan2+` for an angle in the range `[0, tau)`."}
     atan2+ @{:doc "(atan2+ y x)\n\nLike `atan2`, but returns a value in the range `[0, tau)` instead of\n`[-pi, pi]`."}
     atanh @{}
-    background-color @{:doc "A variable that determines the background color of the canvas.\n\nDefault is `graydient`."
+    background-color @{:doc "A variable that determines the background color of the canvas.\n\nDefault is `graydient`. This can be a vec3 or a vec4:\n\n```example\n(ball 100)\n(set background-color transparent)\n```"
                        :ref @[[do]]}
     ball @{:doc "(ball size)\n\nReturns a 3D shape, which is either a sphere or an ellipsoid, depending on the type of `size`.\n\n```example\n(ball 100)\n```\n\n```example\n(ball [50 80 120])\n```\n\nEllipsoids do not have correct distance fields. Their distance field is only a bound, and\nit has strange isosurfaces that can make it combine with other shapes oddly:\n\n```example\n(ball [30 50 80] | slice y)\n```"}
     black @{:value [0.03 0.03 0.03]}
@@ -500,6 +500,7 @@
             :macro true}
     tint @{:doc "(tint shape color &opt amount)\n\nAdd a color to a shape's color field.\n\n```example\n(ball 100 | blinn-phong normal+ | tint [1 0 0] (sin+ t))\n```"}
     torus @{:doc "(torus axis radius thickness)\n\nReturns a 3D shape, a torus around the provided `axis`.\n\n```example\n(torus z 100 (osc t 3 10 50))\n```"}
+    transparent @{:value [vec4 0]}
     trapezoid @{:doc "(trapezoid bottom-width top-width height [:r round])\n\nReturns a 2D shape.\n\n```example\n(trapezoid (osc t 3 50 100) (oss t 2 100 50) 100)\n```"}
     triangle @{:doc "(triangle & args)\n\nUsually returns a 2D shape, with various overloads:\n\n```example\n(triangle 100)\n```\n\n```example\n(triangle [50 100])\n```\n\n```example\n(triangle [-50 100] [100 10] [-10 -100])\n```\n\nBut it can also return a 3D shape:\n\n```example\n(triangle \n  [(osc t 4 -100 100) -100 (oss t 5 -100 100)]\n  [100 (osc t 6 -100 100) 100]\n  [-100 (oss t 7 -100 100) (osc t 8 -100 100)]\n| union (box-frame 100 1))\n```"}
     trunc @{}

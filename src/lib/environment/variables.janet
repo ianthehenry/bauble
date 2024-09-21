@@ -28,7 +28,6 @@ Default is `isolines`.
 ```
   isolines))
 
-# TODO: a little fresnel would be nice
 (thunk ~(var default-3d-color ```
 A variable that determines the default color to use when rendering a 3D shape with no color field.
 
@@ -36,12 +35,16 @@ Default is `(mix normal+ [1 1 1] (fresnel 5))`.
 ```
   (mix normal+ [1 1 1] (fresnel 5))))
 
-# TODO: a little fresnel would be nice
-(thunk ~(var background-color ```
+(thunk ~(var background-color ````
 A variable that determines the background color of the canvas.
 
-Default is `graydient`.
+Default is `graydient`. This can be a vec3 or a vec4:
+
+```example
+(ball 100)
+(set background-color transparent)
 ```
+````
   graydient))
 
 (thunk ~(var camera

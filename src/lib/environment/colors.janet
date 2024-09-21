@@ -19,3 +19,4 @@
 (def gray       [0.5  0.5  0.5])
 (def dark-gray  [0.25 0.25 0.25])
 (def black      [0.03 0.03 0.03])
+(def transparent (vec4 0))

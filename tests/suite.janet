@@ -640,6 +640,14 @@
   (set default-3d-color bar)
   (sphere 100)
   `
+  "background color supports alpha channel" `
+  (ball 100)
+  (set background-color [1 1 0 (gl/if (< frag-coord.x 0) 0 1)])
+  `
+  "more alpha test" `
+  (ball 100)
+  (set background-color [1 1 0 (ss frag-coord.x -0.5 0.5)])
+  `
 })
 
 (each filename (os/dir "./cases")
