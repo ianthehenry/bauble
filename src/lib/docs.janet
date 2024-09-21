@@ -96,6 +96,11 @@
             [(keyword basename)]))
       [:misc])))
 
+(defn fix-signature [name signature]
+  (peg/replace ~(* "(" (to " ")) (string "(" name) signature))
+
+(test (fix-signature 'foo/bar "(bar x y z)") @"(foo/bar x y z)")
+
 # [name usage tag]
 # where tag=0 for value, tag=1 for functions, tag=2 for macros
 (defn gather-definitions []
@@ -113,7 +118,7 @@
 
     {:name name
      :value value
-     :signature signature
+     :signature (if signature (fix-signature name signature))
      :docstring docstring
      :source-map source-map
      :category (categorize name (get-in source-map [0]))
