@@ -1,5 +1,6 @@
 (use ./import)
 (use ./axis-helpers)
+(use ./transforms)
 
 (put (curenv) 'inf (dyn 'math/inf))
 
@@ -58,3 +59,24 @@
   (shape/map shape (fn [expr]
     (jlsl/with "slice" [p ,new-p] ,expr))
     jlsl/type/vec2))
+
+(defn sliced
+  ````
+  Take a 2D slice of a 3D shape at a given `position` along the supplied `axis`,
+  and then project it back into 3D space at the same spot.
+
+  This is useful for quickly looking inside shapes:
+
+  ```example
+  (union
+    (ball 100 | blinn-phong green)
+    (box 100 | blinn-phong red)
+  # try commenting out this line:
+  | sliced y (sin t * 100)
+  )
+  ```
+  ````
+  [shape axis &opt position]
+  (def position (typecheck (@or position 0) jlsl/type/float))
+  (sugar (gl/let [position position]
+    (slice shape axis position | extrude axis | move axis position))))
