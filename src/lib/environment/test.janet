@@ -129,10 +129,10 @@
     @or @{:doc "(or & forms)\n\nEvaluates to the last argument if all preceding elements are falsey, otherwise\nevaluates to the first truthy element."
           :macro true}
     Camera @{:doc "(Camera position direction up fov)\n\n"}
-    Frag-Coord @{:doc "The center of the current pixel being rendered. Pixel centers are at `[0.5 0.5]`, so with no anti-aliasing this will have values like `[0.5 0.5]`, `[1.5 0.5]`, etc. If you are using multisampled antialiasing, this will have off-centered values like [0.3333 0.3333]."
+    Frag-Coord @{:doc "The center of the current pixel being rendered. Pixel centers are at `[0.5 0.5]`,\nso with no anti-aliasing this will have values like `[0.5 0.5]`, `[1.5 0.5]`, etc.\nIf you're using multisampled antialiasing, this will have off-centered values\nlike `[0.3333 0.3333]`."
                  :value [:var "Frag-Coord" :vec2]}
     Light @{:doc "(Light color direction brightness)\n\n"}
-    P @{:doc "The global point in 3D space. This is the position of the current ray before any transformations are applied to it."
+    P @{:doc "The global point in 3D space. This is the position of the current ray before any\ntransformations are applied to it."
         :value [:var "P" :vec3]}
     Q @{:doc "The global point in 2D space."
         :value [:var "Q" :vec2]}
@@ -205,7 +205,7 @@
     degrees @{}
     depth @{:doc "The distance that the current ray has marched, equal to `(distance ray-origin P)`. Not defined in 2D."
             :value [:var "depth" :float]}
-    dist @{:doc "(Color only!) The value of the global distance field at `P`. In 3D, this should be a very small positive number, assuming the ray was able to converge correctly. In 2D, this gives a more useful value."
+    dist @{:doc "(Color only!) The value of the global distance field at `P`. In 3D, this\nshould be a very small positive number, assuming the ray was able to\nconverge correctly. In 2D, this gives a more useful value."
            :value [:var "dist" :float]}
     distance @{}
     dot @{}
@@ -275,7 +275,7 @@
     light/map @{:doc "(light/map light f)\n\n`f` takes and returns a `Light` expression."}
     light/map-brightness @{:doc "(light/map-brightness light f)\n\n`f` takes and returns a `:float` expression."}
     light/map-color @{:doc "(light/map-color light f)\n\n`f` takes and returns a `:vec3` expression."}
-    light/point @{:doc "(light/point color position [:shadow softness] [:brightness brightness] [:hoist hoist])\n\nReturns a new light, which can be used as an input to some shading functions.\n\nAlthough this is called a point light, the location of the \"point\" can vary\nwith a dynamic expression. A light that casts no shadows and is located at `P`\n(no matter where `P` is) is an ambient light. A light that is always located at\na fixed offset from `P` is a directional light.\n\nBy default lights don't cast shadows, but you can change that by passing a\n`:shadow` argument. `0` will cast hard shadows, and any other expression will\ncast a soft shadow (it should be a number roughly in the range `0` to `1`).\n\nShadow casting affects the `brightness` of the light. You can also specify a baseline\n`:brightness` explicitly, which defaults to `1`.\n\nShadow casting always occurs in the global coordinate space, so you should position\nlights relative to `P`, not `p`.\n\nBy default light calculations are hoisted. This is an optimization that's helpful\nif you have a light that casts shadows that applies to multiple shaded surfaces that\nhave been combined with a smooth `union` or `morph` or other shape combinator. Instead\nof computing shadows twice and mixing them together, the shadow calculation will be\ncomputed once at the top level of the shader. Note though that this will prevent you\nfrom referring to variables that don't exist at the top level -- e.g. anything defined\nwith `gl/let`, or the index argument of `tiled` shape. If you want to make a light that\ndynamically varies, pass `:hoist false`."}
+    light/point @{:doc "(light/point color position [:shadow softness] [:brightness brightness] [:hoist hoist])\n\nReturns a new light, which can be used as an input to some shading\nfunctions.\n\nAlthough this is called a point light, the location of the \"point\" can vary\nwith a dynamic expression. A light that casts no shadows and is located at\n`P` (no matter where `P` is) is an ambient light. A light that is always\nlocated at a fixed offset from `P` is a directional light.\n\nBy default lights don't cast shadows, but you can change that by passing a\n`:shadow` argument. `0` will cast hard shadows, and any other expression\nwill cast a soft shadow (it should be a number roughly in the range `0` to\n`1`).\n\nShadow casting affects the `brightness` of the light. You can also specify a\nbaseline `:brightness` explicitly, which defaults to `1`.\n\nShadow casting always occurs in the global coordinate space, so you should\nposition lights relative to `P`, not `p`.\n\nBy default light calculations are hoisted (see `gl/def` for more info). This\nis an optimization that's helpful if you have a light that casts shadows\nthat applies to multiple shaded surfaces that have been combined with a\nsmooth `union` or `morph` or other shape combinator. Instead of computing\nshadows twice and mixing them together, the shadow calculation will be\ncomputed once at the top level of the shader. Note though that this will\nprevent you from referring to variables that don't exist at the top\nlevel -- e.g. anything defined with `gl/let`, or the index argument of\n`tiled` shape. If you want to make a light that dynamically varies, pass\n`:hoist false`."}
     light? @{:doc "(light? value)\n\nReturns `true` if `value` is a GLSL expression with type `Light`."}
     lime @{:value [hsv 0.25 0.98 1]}
     line @{:doc "(line from to from-radius [to-radius])\n\nReturns a line between two points.\n\n```example\n(line\n  [-100 (sin t * 100) (cos t * 100)]\n  [100 (cos t * 100) (sin t * 100)]\n  10\n| union (box-frame 100 1))\n```\n\nYou can supply two radii to taper the line over its length:\n\n```example\n(line\n  [-100 (sin t * 100) (cos t * 100)]\n  [100 (cos t * 100) (sin t * 100)]\n  (oss t 3 50) (osc t 5 50)\n| union (box-frame 100 1))\n```\n\nYou can also give 2D points for a line in 2D:\n\n```example\n(line\n  [-100 (cos t * 100)]\n  [100 (sin t * 100)]\n  (osc t 3 50) (osc t 5 50))\n```"}
@@ -304,7 +304,7 @@
     morph @{:doc "(morph shape1 amount shape2 [:distance amount] [:color amount])\n\nMorph linearly interpolates between two shapes.\n\n```\n# 50% box, 50% sphere\n(box 50 | morph (ball 50))\n\n# 75% box, 25% sphere\n(box 50 | morph 0.25 (ball 50))\n```\n\nConcretely this means that it returns a new shape whose individual fields\nare linear interpolations of its inputs. With an anonymous `amount` coefficient,\nboth the distance and color fields will be interpolated with the same value.\nBut you can also specify per-field overrides:\n\n```\n# distance is a 50% blend, but the color is 90% red\n(box 50 | color [1 0 0] | morph :color 0.1 (ball 50 | color [0 1 0]))\n```"}
     move @{:doc "(move subject & args)\n\nTranslate a shape. You can pass a vector offset:\n\n```example\n(move (box 50) [0 (sin t * 100) 0])\n```\n\nOr a vector and a scalar:\n\n```example\n(move (box 50) y (sin t * 100))\n```\n\nWhich is the same as `(move (box 50) (y * 100))`.\n\nIf you provide multiple vector-scalar pairs, their sum is the final offset:\n\n```example\n(move (box 50)\n  x (sin t * 100)\n  y (cos t * 100)\n  -z (sin t * 100))\n```\n\n`move` can take a shape, a vector, or a camera.\n\nIf you vary the amount of movement by the current position in space,\nyou can distort shapes in various ways:\n\n```example\n(box 100 | move x (sin (p.y / 100 * pi) * 30))\n```\n\n```example\n(cylinder y 100 10\n| move y (atan p.x p.z * 10 | sin * (length p | ss 10 100 0 10)))\n```\n\n```example\n(box [100 10 100] | move y (p.xz / 20 | pow 2 | sum) | slow 0.5)\n```"}
     nearest-distance @{:doc "(nearest-distance)\n\nThis is the forward declaration of the function that will become the eventual\ndistance field for the shape we're rendering. This is used in the main raymarcher,\nas well as the shadow calculations. You can refer to this function to sample the\ncurrent distance field at the current value of `p` or `q`, for example to create\na custom ambient occlusion value."}
-    normal @{:doc "(Color only!) A normalized vector that approximates the 3D distance field gradient at `P` (in other words, the surface normal for shading)."
+    normal @{:doc "(Color only!) A normalized vector that approximates the 3D distance field\ngradient at `P` (in other words, the surface normal for shading)."
              :value [:var "normal" :vec3]}
     normal+ @{:doc "A color that represents the visualization of the 3D normal. This is\nthe default color used when rendering a 3D shape with no color field."
               :value [+ 0.5 [* 0.5 normal]]}
@@ -321,7 +321,7 @@
     osc @{:doc "(osc &opt period lo hi)\n\nReturns a number that oscillates with the given period. There are several overloads:\n\n```\n# 0 to 1 to 0 every second\n(osc t)\n\n# 0 to 1 to 0 every 10 seconds\n(osc t 10)\n\n# 0 to 100 to 0 every 10 seconds\n(osc t 10 100)\n\n# 50 to 100 to 50 every 10 seconds\n(osc t 10 50 100)\n```"}
     oss @{:doc "(oss &opt period lo hi)\n\nLike `osc`, but uses a sine wave instead of a cosine wave,\nso the output begins halfway between `lo` and `hi`."}
     outer-product @{}
-    p @{:doc "The local point in 3D space. This is position of the current ray, with any transformations applied to it."
+    p @{:doc "The local point in 3D space. This is the position of the current ray, with\nany transformations applied to it."
         :value [:var "p" :vec3]}
     parallelogram @{:doc "(parallelogram size skew)\n\nReturns a 2D shape. `size.x` is the width of the top and bottom edges, and `size.y` \nis the height of the parellogram.\n\n```example\n(parallelogram [80 100] (sin t * 100))\n```\n\n`skew` is how far the pallorelogram leans in the `x` direction, so the total\nwidth of the prellogram is `(size.x + skew) * 2`. A `skew` of `0` gives the\nsame shape as `rect`."}
     pentagon @{:doc "(pentagon radius [:r round])\n\n```example\n(pentagon 100 :r (osc t 3 20))\n```"}
@@ -371,7 +371,7 @@
     pow @{}
     product @{:doc "(product v)\n\nMultiply the components of a vector."}
     purple @{:value [hsv 0.75 0.98 1]}
-    q @{:doc "The local point in 2D space. This is the position being shaded, with any transformations applied."
+    q @{:doc "The local point in 2D space. This is the position being shaded, with any\ntransformations applied."
         :value [:var "q" :vec2]}
     quad-circle @{:doc "(quad-circle radius)\n\nReturns a 2D shape, an approximation of a circle made out of quadratic bezier curves.\n\n```example\n(quad-circle 100)\n```\n\nIt's like a circle, but quaddier."}
     quantize @{:doc "(quantize value count)\n\nRounds a value to the nearest multiple of `count`."}
@@ -403,7 +403,7 @@
     refract @{}
     remap+ @{:doc "(remap+ x)\n\nLinearly transform a number in the range `[-1 1]` to `[0 1]`."}
     remap- @{:doc "(remap- x)\n\nLinearly transform a number in the range `[-1 1]` to `[0 -1]`."}
-    resolution @{:doc "The size, in physical pixels, of the canvas being rendered. In quad view, this will be smaller than the physical canvas."
+    resolution @{:doc "The size, in physical pixels, of the canvas being rendered. In quad view, this\nwill be smaller than the physical size of the canvas."
                  :value [:var "resolution" :vec2]}
     revolve @{:doc "(revolve shape axis &opt offset)\n\nRevolve a 2D shape around the given `axis` to return a 3D shape.\n\nYou can optionally supply an `offset` to move the shape away from the origin first (the default is `0`)."}
     rhombus @{:doc "(rhombus size [:r round])\n\nReturns a 2D shape. It rhombs with a kite.\n\n```example\n(rhombus [100 (osc t 3 50 150)])\n```"}

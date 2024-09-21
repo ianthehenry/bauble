@@ -196,31 +196,35 @@ set it in a way that fits nicely into a pipeline.
 
 (thunk ~(as-macro ,defnamed light/point [color position :?shadow:softness :?brightness :?hoist]
   ```
-  Returns a new light, which can be used as an input to some shading functions.
+  Returns a new light, which can be used as an input to some shading
+  functions.
 
   Although this is called a point light, the location of the "point" can vary
-  with a dynamic expression. A light that casts no shadows and is located at `P`
-  (no matter where `P` is) is an ambient light. A light that is always located at
-  a fixed offset from `P` is a directional light.
+  with a dynamic expression. A light that casts no shadows and is located at
+  `P` (no matter where `P` is) is an ambient light. A light that is always
+  located at a fixed offset from `P` is a directional light.
 
   By default lights don't cast shadows, but you can change that by passing a
-  `:shadow` argument. `0` will cast hard shadows, and any other expression will
-  cast a soft shadow (it should be a number roughly in the range `0` to `1`).
+  `:shadow` argument. `0` will cast hard shadows, and any other expression
+  will cast a soft shadow (it should be a number roughly in the range `0` to
+  `1`).
 
-  Shadow casting affects the `brightness` of the light. You can also specify a baseline
-  `:brightness` explicitly, which defaults to `1`.
+  Shadow casting affects the `brightness` of the light. You can also specify a
+  baseline `:brightness` explicitly, which defaults to `1`.
 
-  Shadow casting always occurs in the global coordinate space, so you should position
-  lights relative to `P`, not `p`.
+  Shadow casting always occurs in the global coordinate space, so you should
+  position lights relative to `P`, not `p`.
 
-  By default light calculations are hoisted. This is an optimization that's helpful
-  if you have a light that casts shadows that applies to multiple shaded surfaces that
-  have been combined with a smooth `union` or `morph` or other shape combinator. Instead
-  of computing shadows twice and mixing them together, the shadow calculation will be
-  computed once at the top level of the shader. Note though that this will prevent you
-  from referring to variables that don't exist at the top level -- e.g. anything defined
-  with `gl/let`, or the index argument of `tiled` shape. If you want to make a light that
-  dynamically varies, pass `:hoist false`.
+  By default light calculations are hoisted (see `gl/def` for more info). This
+  is an optimization that's helpful if you have a light that casts shadows
+  that applies to multiple shaded surfaces that have been combined with a
+  smooth `union` or `morph` or other shape combinator. Instead of computing
+  shadows twice and mixing them together, the shadow calculation will be
+  computed once at the top level of the shader. Note though that this will
+  prevent you from referring to variables that don't exist at the top
+  level -- e.g. anything defined with `gl/let`, or the index argument of
+  `tiled` shape. If you want to make a light that dynamically varies, pass
+  `:hoist false`.
   ```
   (def color (,coerce-expr-to-type ',jlsl/type/vec3 vec3 color))
   (def position (,typecheck position ',jlsl/type/vec3))
