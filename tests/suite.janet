@@ -29,7 +29,7 @@
   "balloon" `
   (ball [50 100 100]
   | union :r 50 (cylinder y 25 50 | move [0 -100 0])
-  | scale y (ss p.y [-100 100] [1 0.8])
+  | scale y (ss p.y -100 100 1 0.8)
   | radial y 20
   | color normal+
   | tint [1 1 1] (fresnel 5))
@@ -522,19 +522,19 @@
   "ss overloads" `
   (union
     (rect 30
-    | color [(ss q.x [-30 30]) 0.1 0.1]
+    | color [(ss q.x -30 30) 0.1 0.1]
     | move [-40 40]
     )
     (rect 30
-    | color [(ss q.x [30 -30]) 0.1 0.1]
+    | color [(ss q.x 30 -30) 0.1 0.1]
     | move [-40 -40]
     )
     (rect 30
-    | color [(ss q.x [-30 30] [0.5 2]) 0.1 0.1]
+    | color [(ss q.x -30 30 0.5 2) 0.1 0.1]
     | move [40 40]
     )
     (rect 30
-    | color [(ss q.x [30 -30] [2 0.5]) 0.1 0.1]
+    | color [(ss q.x 30 -30 2 0.5) 0.1 0.1]
     | move [40 -40]
     ))
   `

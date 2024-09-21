@@ -76,7 +76,7 @@
   (case (jlsl/expr/type size)
     jlsl/type/float (cube size :r round)
     jlsl/type/vec3 (box- size :r round)
-    (error "unknown overload: ball expects a float or vec3")))
+    (error "unknown overload: box expects a float or vec3")))
 
 (defshape/3d box-frame [:vec3 !size :float !thickness]
   ````

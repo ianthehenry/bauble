@@ -5,45 +5,59 @@
 (setdyn '@* (table/getproto (dyn '*)))
 (setdyn '@/ (table/getproto (dyn '/)))
 
-(defn ss
+(defnamed ss [x ?from-start ?from-end ?to-start ?to-end]
   ````
   This is a wrapper around `smoothstep` with a different argument order, which also
-  allows the input edges to occur in descending order.
+  allows the input edges to occur in descending order. It smoothly interpolates
+  from some input range into some output range.
 
-  There are several overloads:
-
-  ```
-  (ss x)
-  # becomes
-  (smoothstep 0 1 x)
+  ```example
+  (box [100 (ss p.z 100 -100 0 100) 100])
   ```
 
-  ```
-  (ss x [from-start from-end])
-  # becomes
-  (if (< from-start from-end)
-    (smoothstep from-start from-end x)
-    (1 - smoothstep from-end from-start x))
-  ``` 
+  There are several overloads. You can pass one argument:
 
   ```
-  (ss x from [to-start to-end])
-  # becomes
-  (ss x from * (- to-end to-start) + to-start)
+  # (ss x) = (smoothstep 0 1 x)
+  (union
+    (rect 50 | move y (sin t * 100) x -100)
+    (rect 50 | move y (ss (sin t) * 100) x 100))
+  ```
+
+  Three arguments (which is basically just `smoothstep`, except that you can reverse
+  the edge order):
+
+  ```example
+  # (ss x from-start from-end) =
+  #   (if (< from-start from-end)
+  #     (smoothstep from-start from-end x)
+  #     (1 - smoothstep from-end from-start x))
+  (union
+    (rect 50 | move y (sin t * 100) x -100)
+    (rect 50 | move y (ss (sin t) 1 0.5 * 100) x 100))
+  ```
+
+  Or five arguments:
+
+  ```example
+  # (ss x from [to-start to-end]) =
+  #   (ss x from * (- to-end to-start) + to-start)
+  (union
+    (rect 50 | move y (sin t * 100) x -100)
+    (rect 50 | move y (ss (sin t) 0.9 1 -100 100) x 100))
   ```
   ````
-  [x &opt from-range to-range]
-  (when to-range
-    (def [to-start to-end] to-range)
+  (when to-start
+    (assert to-end "not enough arguments")
     (break
       (cond
-        (@and (number? to-start) (= to-start 0)) (sugar (ss x from-range * to-end))
+        (@and (number? to-start) (= to-start 0)) (sugar (ss x from-start from-end * to-end))
         (@and (number? to-start) (number? to-end))
-          (sugar (ss x from-range * (to-end - to-start) + to-start))
+          (sugar (ss x from-start from-end * (to-end - to-start) + to-start))
         (gl/let [to-start to-start]
-          (sugar (ss x from-range * (to-end - to-start) + to-start))))))
-  (when from-range
-    (def [from-start from-end] from-range)
+          (sugar (ss x from-start from-end * (to-end - to-start) + to-start))))))
+  (when from-start
+    (assert from-end "not enough arguments: missing from-end")
     (break (if (@and (number? from-start) (number? from-end))
       # if these are both constants, we can decide right here what to do
       (if (< from-start from-end)
