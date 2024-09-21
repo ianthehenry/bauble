@@ -143,6 +143,7 @@
     ['unquote expr] expr
     ['break] [statement/break]
     ['continue] [statement/continue]
+    ['discard] [statement/discard]
     [(and op (or
       '+= '*= '/= '-= '%=
       'blshift= 'brshift=
