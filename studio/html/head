@@ -10,6 +10,6 @@ printf '<head>
   <title>Bauble</title>
   <link rel="stylesheet" href="%s" />
   <link rel="icon" type="image/png" href="/favicon.png" />
-  <script type="text/javascript" src="%s"></script>
+  <script async type="text/javascript" src="%s"></script>
 </head>
 ' "$css" "$js"

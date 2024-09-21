@@ -44,7 +44,11 @@ if (inWorker) {
   self.postMessage('ready');
 } else {
   await new Promise<void>((resolve) => {
-    document.addEventListener("DOMContentLoaded", (_: any) => { resolve(); }, {once: true});
+    if (document.readyState === 'loading') {
+      document.addEventListener("DOMContentLoaded", (_: any) => { resolve(); }, {once: true});
+    } else {
+      resolve();
+    }
   });
 
   const wasmBox = await newMailbox(WhichWorker.Wasm);
