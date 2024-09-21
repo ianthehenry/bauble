@@ -131,8 +131,7 @@ header {
   --header-padding: 0.5em;
   --text-color: #1d1f21;
   color: var(--text-color);
-  background-color: #ffc6f9;
-  background-image: linear-gradient(to right, #ffc6f9, #fec4b2);
+  background-image: linear-gradient(to right, #bae5ff, #feb2fd);
   height: var(--header-height);
   line-height: var(--header-height);
   display: flex;
