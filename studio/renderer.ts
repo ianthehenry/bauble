@@ -1,4 +1,3 @@
-import {mat3, vec3} from 'gl-matrix';
 import * as Signal from './signals';
 import type {Accessor} from 'solid-js';
 import {clamp, TAU} from './util';
@@ -11,31 +10,6 @@ enum CameraType {
   Top = 2,
   Front = 3,
   Right = 4,
-}
-
-function rotateX(target: mat3, angle: number) {
-  const s = Math.sin(angle);
-  const c = Math.cos(angle);
-  mat3.set(target,
-    1.0, 0.0, 0.0,
-    0.0, c, -s,
-    0.0, s, c);
-}
-
-function rotateY(target: mat3, angle: number) {
-  const s = Math.sin(angle);
-  const c = Math.cos(angle);
-  mat3.set(target,
-    c, 0.0, s,
-    0.0, 1.0, 0.0,
-    -s, 0.0, c);
-}
-
-function rotateXY(target: mat3, x: number, y: number) {
-  const tempY = mat3.create();
-  rotateX(target, x);
-  rotateY(tempY, y);
-  mat3.multiply(target, tempY, target);
 }
 
 const vertexSource = `#version 300 es
@@ -74,13 +48,6 @@ export default class Renderer {
   private _positionLocation: number | null = null;
   private vertexBuffer: WebGLBuffer;
   private vertexData: Float32Array;
-
-  // TODO: the perspective is actually calculated
-  // in the shader, not here, so this is actually a
-  // "perspective XY" view
-  private orthogonalXY: vec3 = vec3.fromValues(0, 0, 0);
-  private orthogonalXZ: vec3 = vec3.fromValues(0.5 * Math.PI, 0, 0);
-  private orthogonalZY: vec3 = vec3.fromValues(0, 0.5 * Math.PI, 0);
 
   constructor(canvas: OffscreenCanvas, private state: RenderState.Accessors) {
     const gl = canvas.getContext('webgl2', { antialias: false });

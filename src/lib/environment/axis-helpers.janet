@@ -41,14 +41,11 @@
 (def deforiented :macro (partial deforiented-aux defnamed))
 (def deforiented- :macro (partial deforiented-aux defnamed-))
 
-(test-macro (deforiented cone [:float radius :float height]
-  ```
-  TODOC
-  ```
+(test-macro (deforiented cone [:float radius :float height] "docstring"
   (var q [radius (- height)])
   (return (sqrt d * sign s)))
   (upscope
-    (as-macro @defshape/3d- cone-x [:float radius :float height] "TODOC" (var other-axes (unquote (quote (<1> dot (<1> identifier (<2> lexical <3> "p" (<4> vec (<5> float) 3))) zy)))) (var this-axis (unquote (quote (<1> dot (<1> identifier (<2> lexical <3> "p" (<4> vec (<5> float) 3))) x)))) (var q [radius (- height)]) (return (sqrt d * sign s)))
-    (as-macro @defshape/3d- cone-y [:float radius :float height] "TODOC" (var other-axes (unquote (quote (<1> dot (<1> identifier (<2> lexical <3> "p" (<4> vec (<5> float) 3))) xz)))) (var this-axis (unquote (quote (<1> dot (<1> identifier (<2> lexical <3> "p" (<4> vec (<5> float) 3))) y)))) (var q [radius (- height)]) (return (sqrt d * sign s)))
-    (as-macro @defshape/3d- cone-z [:float radius :float height] "TODOC" (var other-axes (unquote (quote (<1> dot (<1> identifier (<2> lexical <3> "p" (<4> vec (<5> float) 3))) xy)))) (var this-axis (unquote (quote (<1> dot (<1> identifier (<2> lexical <3> "p" (<4> vec (<5> float) 3))) z)))) (var q [radius (- height)]) (return (sqrt d * sign s)))
-    (as-macro @partial cone [axis radius height] "TODOC" ((case axis (quote (1 0 0)) cone-x (quote (0 1 0)) cone-y (quote (0 0 1)) cone-z (errorf "unknown axis %q" (jlsl/show axis))) radius height))))
+    (as-macro @defshape/3d- cone-x [:float radius :float height] "docstring" (var other-axes (unquote (quote (<1> dot (<1> identifier (<2> lexical <3> "p" (<4> vec (<5> float) 3))) zy)))) (var this-axis (unquote (quote (<1> dot (<1> identifier (<2> lexical <3> "p" (<4> vec (<5> float) 3))) x)))) (var q [radius (- height)]) (return (sqrt d * sign s)))
+    (as-macro @defshape/3d- cone-y [:float radius :float height] "docstring" (var other-axes (unquote (quote (<1> dot (<1> identifier (<2> lexical <3> "p" (<4> vec (<5> float) 3))) xz)))) (var this-axis (unquote (quote (<1> dot (<1> identifier (<2> lexical <3> "p" (<4> vec (<5> float) 3))) y)))) (var q [radius (- height)]) (return (sqrt d * sign s)))
+    (as-macro @defshape/3d- cone-z [:float radius :float height] "docstring" (var other-axes (unquote (quote (<1> dot (<1> identifier (<2> lexical <3> "p" (<4> vec (<5> float) 3))) xy)))) (var this-axis (unquote (quote (<1> dot (<1> identifier (<2> lexical <3> "p" (<4> vec (<5> float) 3))) z)))) (var q [radius (- height)]) (return (sqrt d * sign s)))
+    (as-macro @partial cone [axis radius height] "docstring" ((case axis (quote (1 0 0)) cone-x (quote (0 1 0)) cone-y (quote (0 0 1)) cone-z (errorf "unknown axis %q" (jlsl/show axis))) radius height))))

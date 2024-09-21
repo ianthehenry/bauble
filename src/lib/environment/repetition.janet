@@ -114,7 +114,6 @@
     (shape/map shape (fn [expr]
       (simple-tile coord $index expr size limit)))))
 
-# TODO: oversample should be a flag; you shouldn't have to pass a boolean?
 (defnamed tile [shape size :?limit :?oversample :?sample-from :?sample-to]
   ````
   Repeat the region of space `size` units around the origin. Pass `:limit` to constrain

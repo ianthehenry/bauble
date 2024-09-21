@@ -106,12 +106,6 @@ You can also *modify* dynamic variables using `with`. For example:
 (defn :float distance []
   (with [p (- p [100 0 0])]
     (return (box (vec3 50 100 50)))))
-
-# TODO: is `with` an expression or a statement? which is easier for me? probably it should be a statement...?
-(defn :float distance []
-  (return
-    (with [p (- p [100 0 0])]
-      (box (vec3 50 100 50)))))
 ```
 
 That will produce code like this:
