@@ -165,7 +165,9 @@
       (ray/do-shader shader
         (jaylib/draw-rectangle-v [0 0] resolution :red)))
     (def image (jaylib/load-image-from-texture (jaylib/get-render-texture-texture2d frame-buffer)))
-    (def samples (jaylib/image-data image)))
+    (def samples (jaylib/image-data image))
+    (jaylib/unload-image image)
+    samples)
 
   (defn corner-position [p]
     (vec+ origin (vec* cube-size p)))
@@ -174,7 +176,8 @@
 
   (while (= (fiber/status fiber) :pending)
     (def z (fiber/last-value fiber))
-    (resume fiber (get-samples z)))
+    (resume fiber (get-samples z))
+    (eprin "."))
 
   (def [vertices triangles] (fiber/last-value fiber))
 
@@ -182,9 +185,7 @@
     (each [x y z] vertices
       (xprintf outfile "v %f %f %f" x y z))
     (each [a b c] triangles
-      (xprintf outfile "f %d// %d// %d//" a b c))
-    )
-
+      (xprintf outfile "f %d// %d// %d//" a b c)))
 
   (eprintf "%d vertices, %d faces" (@length vertices) (@length triangles))
 
