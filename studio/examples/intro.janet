@@ -17,18 +17,19 @@
 | subtract (plane -x (osc t 10 -150 0) | color [0 1 1])
 | tint [0.5 0.5 1] (fresnel 5 * 0.2))
 
-# I know it's a bit... cryptic. Lots
-# of punctuation and some inscrutable
+# I know it's a bit... cryptic. Lots of
+# punctuation and some inscrutable
 # single-letter variable names in
-# there. But don't panic! It will
-# all make sense soon.
+# there. But don't panic! It will all
+# make sense soon.
 
 # We'll start slow: drag the viewport
 # around with your mouse, and scroll to
-# move the camera in and out. If you get
-# disoriented, you can reset the camera
-# by pressing the box icon in the top-left
-# corner of the preview window.
+# move the camera in and out. If you
+# get disoriented, you can reset the
+# camera by pressing the box icon in
+# the top-left corner of the preview
+# window.
 
 # This text field is a Janet program
 # (https://janet-lang.org/) that runs
@@ -39,7 +40,8 @@
 
 # (union :r 15 (torus z 50 25) (torus x 50 25 | move y 50))
 
-# Neat. That's how we'll do this little intro.
+# Neat. That's how we'll do this little
+# intro.
 
 # To uncomment a block of code, select
 # the whole thing and press "cmd-/" or
@@ -52,25 +54,27 @@
 # | mirror :r 10 x
 # | slow 0.25)
 
-# Whoa. Okay enough with the demos for a minute.
+# Whoa. Okay enough with the demos for a
+# minute.
 
-# Bauble is actually a tool for composing
-# "signed distance functions." Signed
-# distance functions (or SDFs) are a
-# different way to represent 3D shapes
-# than you might be used to. Instead of
-# triangles and vertices, SDFs represent
-# shapes as pure functions of space, in
-# a form that lets us to "raymarch" those
-# shapes in realtime.
+# Bauble is actually a tool for
+# composing "signed distance functions."
+# Signed distance functions (or SDFs)
+# are a different way to represent 3D
+# shapes than you might be used to.
+# Instead of triangles and vertices,
+# SDFs represent shapes as pure
+# functions of space, in a form that
+# lets us to "raymarch" those shapes in
+# realtime.
 
 # There are already a lot of great
-# resources available on the internet for
-# understanding SDFs and how they work
-# and what "raymarching" is, so I'm not
-# going to rehash that here. You can do a
-# lot of cool stuff before you understand
-# the math behind it.
+# resources available on the internet
+# for understanding SDFs and how they
+# work and what "raymarching" is, so
+# I'm not going to rehash that here.
+# You can do a lot of cool stuff before
+# you understand the math behind it.
 
 # Like this:
 
@@ -86,28 +90,35 @@
 #   | camera/pan (sin t * 0.1)
 #   | camera/tilt (sin (t / 5) | ss 0 1 * pi/12)))
 
-# None of this is very complicated! Once you
-# understand how SDFs work, you can write a basic
-# raymarcher in like ten minutes. But there are
-# a lot of different SDFs and SDF combinators and
-# procedural noise functions and other things that
-# you might want to bring into your raymarcher, and
-# that's work. Any time you want to try out a new
-# shape you have to spend time implementing it
-# first, and actually composing a decent-looking
-# scene in raw GLSL is pretty hard.
+# None of this is very complicated! Once
+# you understand how SDFs work, you can
+# write a basic raymarcher in like ten
+# minutes. But there are a lot of
+# different SDFs and SDF combinators
+# and procedural noise functions and
+# other things that you might want to
+# bring into your raymarcher, and that
+# takes work. When you're making
+# generative art in raw GLSL, you'll
+# frequently switch between high-level
+# artistic decisions and low-level
+# implementation details.
 
-# So that's where Bauble comes in. Bauble makes
-# it easier to play around with SDFs: it gives
-# you a high-level, expression-oriented,
-# "functional" library for writing shaders,
-# as well as a UI full of tools for debugging
-# and editing SDFs.
+# So that's where Bauble comes in.
+# Bauble makes it easier to play around
+# with SDFs: it gives you a high-level,
+# expression-oriented, "functional"
+# library for writing shaders, as well
+# as a UI full of tools for debugging
+# and editing them interactively.
 
-# Like, one useful feature is that Bauble lets you edit
-# values with your mouse. Uncomment the next block of
-# code, then ctrl-click and drag the value 0.00
-# left to right until you find something you like.
+# For example: Bauble lets you edit
+# values with with your mouse, so you
+# can quickly tweak things until they
+# feel just right. Uncomment the next
+# block of code, then ctrl-click and
+# drag the value 0.00 left to right
+# until you find something you like.
 
 # (def r 0.00)
 # (box 80
@@ -125,28 +136,31 @@
 # > long-standing bug cannot report
 # > ctrl-click events correctly. But it's
 # > also convenient for editing values
-# > while typing, without having to do any
-# > precision mousing.
+# > while typing, without having to do
+# > any precision mousing.
 # > https://bugzilla.mozilla.org/show_bug.cgi?id=1504210
 
-# When editing values with your mouse,
-# Bauble will increment the smallest
-# digit of the number, so you can
-# increase the precision by adding
+# This works on any number -- try it out
+# on more of the examples! And note
+# that when you're editing values with
+# your mouse, Bauble will increment the
+# smallest digit of the number, so you
+# can increase the precision by adding
 # zeroes to the end. In other words,
 # editing a value like 3.0 will
 # increment by 0.1, but editing 3.000
 # will increment by 0.001.
 
-# Bauble isn't just about 3D art, either. It also
-# supports 2D SDFs:
+# Bauble isn't just about 3D art,
+# either. It also supports 2D SDFs:
 
 # (circle (osc t 5 1 45)
 # | move (hash2 $i - 0.5 * 2 * 10)
 # | color (hsv (hash $i + (t * 0.1)) 0.95 1)
 # | tile: $i [30 30] :oversample true :sample-from -1)
 
-# Although a great use of 2D SDFs is constructing 3D SDFs...
+# Although a great use of 2D SDFs is
+# constructing 3D SDFs...
 
 # (circle (osc t 5 1 45)
 # | move (hash2 $i - 0.5 * 2 * 10)
@@ -159,16 +173,18 @@
 
 # (rect 25 | rotate t | revolve y 100)
 
-# Bauble wants to be a "batteries included"
-# playground. It has a lot of familiar functions
-# from the procedural art world built right in.
+# Bauble wants to be a "batteries
+# included" playground. It has a lot of
+# familiar functions from the
+# procedural art world built right in.
 # Things like noise functions:
 
 # (set background-color
 #   (gl/let [s (frag-coord * 10 + [0 t])]
 #     (vec3 (perlin+ (s + (perlin+ (s + perlin+ (s - (sin t)))))))))
 
-# Helpers for constructing rotation matrices:
+# Helpers for constructing rotation
+# matrices:
 
 # (gl/def pos ([(sin t) 1 (cos t)] * 100))
 # (union
@@ -182,22 +198,26 @@
 # | union (ball 100 | blinn-phong [0 0.75 0])
 # | union (ground -100 | blinn-phong (vec3 0.75)))
 
-# But you can implement any of these things
-# yourself! Bauble exposes a low-level API
-# that you can use to generate GLSL directly.
-# Or, well, indirectly. You still write it
-# in lisp.
+# But you can implement any of these
+# things yourself! Bauble exposes a
+# low-level API that you can use to
+# generate GLSL directly. Or, well,
+# indirectly. You still write it in
+# lisp.
 
-# If any of this piqued your curiosity, check
-# out the Help page for interactive examples of
-# Bauble's standard library, as well as more
+# If any of this piqued your curiosity,
+# check out the Help page for
+# interactive examples of Bauble's
+# standard library, as well as more
 # information about the language.
 
-# There will probably also be a tutorial soon
-# but I haven't written it yet. Sorry. Bauble
-# is pretty new and I have a baby to keep alive.
+# There will probably also be a tutorial
+# soon but I haven't written it yet.
+# Sorry. Bauble is pretty new and I
+# have a baby to keep alive.
 
-# In the meantime, join the Bauble Discord:
+# In the meantime, join the Bauble
+# Discord:
 #
 # https://discord.gg/NzR375gJH6
 #
@@ -205,5 +225,5 @@
 #
 # https://twitter.com/ianthehenry
 #
-# To apply some social pressure to help me to
-# finish it.
+# To apply some social pressure to help
+# me to finish it.
