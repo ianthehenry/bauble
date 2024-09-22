@@ -380,3 +380,21 @@
 
 (defmacro steal [module sym]
   ~(def- ,sym (get-in ',(require (string module)) [',sym :value])))
+
+(defn get-env [env sym]
+  (-> env
+    (in sym)
+    (in :value)))
+
+(defn get-var [env sym]
+  (-> env
+    (in sym)
+    (in :ref)
+    (in 0)))
+
+(defn set-var [env sym value]
+  (-> env
+    (in sym)
+    (in :ref)
+    (put 0 value))
+  value)

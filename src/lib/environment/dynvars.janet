@@ -13,7 +13,7 @@ This represents the portion of the canvas currently being rendered. The `xy` com
 Normally this will be equal to `[[0 0] resolution]`, but when rendering quad-view or a chunked render,
 it may have a different origin or resolution.
 
-You can use `(gl_FragCoord.xy - viewport.xy)` in order to get the logical fragment position (the value
+You can use `(gl-frag-coord.xy - viewport.xy)` in order to get the logical fragment position (the value
 exposed to a typical shader as `Frag-Coord`).
 ```)
 

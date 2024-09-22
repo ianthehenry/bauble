@@ -2,8 +2,9 @@
 
 (def pixel-center [0.5 0.5])
 
-(defn make-fbo [size texture-filter]
-  (def fbo (jaylib/load-render-texture ;size))
+(defn make-fbo [size texture-filter &opt format]
+  (default format 7) # PIXELFORMAT_UNCOMPRESSED_R8G8B8A8
+  (def fbo (jaylib/load-render-texture-custom ;size format))
   (jaylib/set-texture-filter (jaylib/get-render-texture-texture2d fbo) texture-filter)
   fbo)
 

@@ -54,8 +54,7 @@
     {:render render})
 
   (defn render [{:render render} & args]
-    (render ;args))
-  )
+    (render ;args)))
 
 (defn render-image [shader-source &named resolution origin orbit zoom]
   (default zoom 1)
@@ -66,15 +65,12 @@
 
   (defn set-uniform [name type value]
     (jaylib/set-shader-value shader (jaylib/get-shader-location shader name) value type))
-  (defn set-uniform-matrix [name value]
-    (jaylib/set-shader-value-matrix shader (jaylib/get-shader-location shader name) value))
 
   (set-uniform "free_camera_origin" :vec3 origin)
   (set-uniform "free_camera_orbit" :vec2 orbit)
   (set-uniform "free_camera_zoom" :float zoom)
   (set-uniform "origin_2d" :vec2 [0 0])
   (set-uniform "camera_type" :int 0)
-
   (set-uniform "t" :float 0)
   (set-uniform "viewport" :vec4 [0 0 ;resolution])
   (set-uniform "render_type" :int 0)

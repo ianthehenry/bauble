@@ -2,24 +2,6 @@
 (import ../util :prefix "" :export true)
 (import ../jlsl)
 
-(defn get-env [env sym]
-  (-> env
-    (in sym)
-    (in :value)))
-
-(defn get-var [env sym]
-  (-> env
-    (in sym)
-    (in :ref)
-    (in 0)))
-
-(defn set-var [env sym value]
-  (-> env
-    (in sym)
-    (in :ref)
-    (put 0 value))
-  value)
-
 (defn find-index [pred? ast &opt start-index end-index]
   (default start-index 0)
   (default end-index (length ast))
