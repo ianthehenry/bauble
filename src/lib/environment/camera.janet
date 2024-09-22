@@ -11,10 +11,12 @@
   (var z (* 0.5 cot-half-fov))
   (return [frag-coord z | normalize]))
 
-(sugar (defnamed camera/perspective [position target :?fov]
+(sugar (defnamed camera/perspective [position :?target :?dir :?roll :?fov]
   ````
-  Returns the camera located at `position` and aiming towards `target`
-  that has no roll.
+  Returns a camera with a perspective projection located at `position` and
+  pointing towards the origin. You can have the camera face another point
+  by passing `:target`, or set the orientation explicitly by passing a
+  normalized vector as `:dir` (you can't pass both).
 
   You can change the field of view by passing `:fov` with a number of degrees. The default is `60`, and
   the default orbiting free camera uses `45`.
@@ -24,13 +26,20 @@
   | union (circle 200 | extrude y 10 | move y -100)
   | blinn-phong (vec3 0.75))
   (def pos [(sin t * 200) (cos+ (t / 2) * 300) 500])
-  (set camera (camera/perspective pos [0 0 0] :fov 45))
+  (set camera (camera/perspective pos :fov 45))
   ```
   ````
   (default fov 60)
   (def position (typecheck position jlsl/type/vec3))
-  (def target (typecheck target jlsl/type/vec3))
-  (Camera position (target - position | normalize) y fov)))
+  (def dir (typecheck? dir jlsl/type/vec3))
+  (def target (typecheck? target jlsl/type/vec3))
+  (def roll (typecheck? roll jlsl/type/float))
+  (when (@and target dir) (error "well which is it, target or dir"))
+  (def dir (if dir dir (if target
+    (target - position | normalize)
+    [0 0 0 - position | normalize])))
+  (def up (if roll (rotate y roll) y))
+  (Camera position dir up fov)))
 
 (sugar (defn camera/ray
   ````
@@ -55,7 +64,7 @@
   (morph (ball 50) (box 50) 2
   | union (circle 200 | extrude y 10 | move y -100)
   | blinn-phong (vec3 0.75))
-  (set camera (camera/perspective [0 100 600] [0 0 0] :fov 45
+  (set camera (camera/perspective [0 100 600] :fov 45
   | camera/pan (sin t * 0.2)))
   ```
 
@@ -69,7 +78,7 @@
   (morph (ball 50) (box 50) 2
   | union (circle 200 | extrude y 10 | move y -100)
   | blinn-phong (vec3 0.75))
-  (set camera (camera/perspective [0 100 600] [0 0 0] :fov 45
+  (set camera (camera/perspective [0 100 600] :fov 45
   | camera/roll pi/4
   | camera/pan (sin t * 0.2)
   # | camera/roll -pi/4
@@ -80,7 +89,7 @@
   (morph (ball 50) (box 50) 2
   | union (circle 200 | extrude y 10 | move y -100)
   | blinn-phong (vec3 0.75))
-  (set camera (camera/perspective [0 100 600] [0 0 0] :fov 45
+  (set camera (camera/perspective [0 100 600] :fov 45
   | camera/roll pi/4
   | camera/pan (sin t * 0.2) :up y
   # | camera/roll -pi/4
@@ -103,7 +112,7 @@
   (morph (ball 50) (box 50) 2
   | union (circle 200 | extrude y 10 | move y -100)
   | blinn-phong (vec3 0.75))
-  (set camera (camera/perspective [0 100 600] [0 0 0] :fov 45
+  (set camera (camera/perspective [0 100 600] :fov 45
   | camera/tilt (sin t * 0.2)))
   ```
 
@@ -127,7 +136,7 @@
   (morph (ball 50) (box 50) 2
   | union (circle 200 | extrude y 10 | move y -100)
   | blinn-phong (vec3 0.75))
-  (set camera (camera/perspective [0 100 600] [0 0 0] :fov 45
+  (set camera (camera/perspective [0 100 600] :fov 45
   | camera/roll (sin t * 0.2)))
   ```
   ````
@@ -147,7 +156,7 @@
   (morph (ball 50) (box 50) 2
   | union (circle 200 | extrude y 10 | move y -100)
   | blinn-phong (vec3 0.75))
-  (set camera (camera/perspective [0 100 600] [0 0 0] :fov 45
+  (set camera (camera/perspective [0 100 600] :fov 45
   | camera/zoom (sin t * 0.2 + 1)))
   ```
   ````
@@ -167,7 +176,7 @@
   (morph (ball 50) (box 50) 2
   | union (circle 200 | extrude y 10 | move y -100)
   | blinn-phong (vec3 0.75))
-  (set camera (camera/perspective [0 100 600] [0 0 0] :fov 45
+  (set camera (camera/perspective [0 100 600] :fov 45
   | camera/dolly (sin t * 100)))
   ```
 
@@ -179,7 +188,7 @@
   | blinn-phong (vec3 0.75))
 
   # hitchcock zoom
-  (set camera (camera/perspective [0 100 600] [0 0 0] :fov 45
+  (set camera (camera/perspective [0 100 600] :fov 45
   | camera/dolly (sin+ t * -500)
   | camera/zoom (sin+ t + 1)
   ))

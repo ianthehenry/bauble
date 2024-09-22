@@ -82,7 +82,7 @@
 # (gl/def elevation (ss t 0 30 100 500))
 # (gl/def eye [0 elevation (t * 50)])
 # (set camera
-#   (camera/perspective eye (z * elevation + [1 0 1 * eye])
+#   (camera/perspective eye :target (z * elevation + [1 0 1 * eye])
 #   | camera/pan (sin t * 0.1)
 #   | camera/tilt (sin (t / 5) | ss 0 1 * pi/12)))
 

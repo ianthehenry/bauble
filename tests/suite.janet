@@ -33,7 +33,7 @@
   | radial y 20
   | color normal+
   | tint [1 1 1] (fresnel 5))
-  (set camera (camera/perspective [0 -40 384] [0 -40 0] :fov 45))
+  (set camera (camera/perspective [0 -40 384] :dir -z :fov 45))
   `
 
   "spatial noise" `(ball (perlin (p * 0.05) * 10 + 100) | slow 0.9)`
@@ -414,7 +414,7 @@
     (union :rs 10 green-sphere red-box | move [-50 50 0])
     (union :rs 10 red-box green-sphere | move [50 50 0])
   | slice z 0)
-  (set camera (camera/perspective [0 0 384] [0 0 0] :fov 45))
+  (set camera (camera/perspective [0 0 384] :fov 45))
   `
 
   "boolean intersect interior color fields" `
@@ -426,14 +426,14 @@
     (intersect :rs 10 green-sphere red-box | move [-50 50 0])
     (intersect :rs 10 red-box green-sphere | move [50 50 0])
   | slice z 0)
-  (set camera (camera/perspective [0 0 384] [0 0 0] :fov 45))
+  (set camera (camera/perspective [0 0 384] :fov 45))
   `
 
   "shadow banding artifacts" `
   (union
     (ball 50 | blinn-phong [1 1 1] | with-lights (light/point [1 1 1] [500 -50 0] :shadow 0.25) | move y -50)
     (ball 50 | blinn-phong [1 1 1] | with-lights (light/directional [1 1 1] [-1 0 0] 500 :shadow 0.25) | move y 50))
-  (set camera (camera/perspective [0 0 384] [0 0 0] :fov 45))
+  (set camera (camera/perspective [0 0 384] :fov 45))
   `
 
   "raymarcher tries not to penetrate shape 1" `
@@ -445,7 +445,7 @@
   (ball 50
     | morph 2 (box 50)
     | blinn-phong [1 1 1])
-  (set camera (camera/perspective [0 0 384] [0 0 0] :fov 45))
+  (set camera (camera/perspective [0 0 384] :fov 45))
   `
 
   "scale" `
