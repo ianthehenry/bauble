@@ -120,7 +120,7 @@ main .help-entry {
     content: "# ";
     color: var(--comment);
     position: absolute;
-    left: -1rem;
+    left: -2rem;
   }
  .source-link {
     font-size: initial;
