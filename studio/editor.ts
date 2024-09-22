@@ -107,7 +107,6 @@ function alterNumber({state, dispatch}: StateCommandInput, amount: Big) {
     },
     selection: EditorSelection.single(node.from, node.to + lengthDifference),
     scrollIntoView: true,
-    userEvent: 'alterNumber',
   }));
   return true;
 }
