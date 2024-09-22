@@ -1,9 +1,7 @@
-# Welcome to Bauble!
-
-# Bauble is an offline playground for
-# turning parentheses into pixels. Here's
-# the source for that hot air balloon over
-# there:
+# Welcome to Bauble! This is a little
+# playground for turning parentheses
+# into pixels. Here's the source for
+# that hot air balloon over there:
 
 (ball [50 100 100]
 | union :r 50 (cylinder y 25 50 | move [0 -100 0])
@@ -57,13 +55,15 @@
 # Whoa. Okay enough with the demos for a minute.
 
 # Bauble is actually a tool for composing
-# "signed distance functions." A signed
-# distance function (or SDF) is a way to
-# represent 3D shapes with pure functions
-# in a way that makes it possible to
-# "raymarch" those shapes in realtime.
-# There are no triangle meshes involved,
-# no quads, just pure numeric expressions.
+# "signed distance functions." Signed
+# distance functions (or SDFs) are a
+# different way to represent 3D shapes
+# than you might be used to. Instead of
+# triangles and vertices, SDFs represent
+# shapes as pure functions of space, in
+# a form that lets us to "raymarch" those
+# shapes in realtime.
+
 # There are already a lot of great
 # resources available on the internet for
 # understanding SDFs and how they work
@@ -86,17 +86,23 @@
 #   | camera/pan (sin t * 0.1)
 #   | camera/tilt (sin (t / 5) | ss 0 1 * pi/12)))
 
-# The beauty of SDFs is that they're so simple
-# that, once you understand how they work, you
-# can write a basic raymarcher in GLSL in like
-# ten minutes. And this is very cool -- but it
-# takes quite a bit longer to *compose a scene*
-# with SDFs.
+# None of this is very complicated! Once you
+# understand how SDFs work, you can write a basic
+# raymarcher in like ten minutes. But there are
+# a lot of different SDFs and SDF combinators and
+# procedural noise functions and other things that
+# you might want to bring into your raymarcher, and
+# that's work. Any time you want to try out a new
+# shape you have to spend time implementing it
+# first, and actually composing a decent-looking
+# scene in raw GLSL is pretty hard.
 
-# So Bauble makes this easier. It gives you a
-# high-level, expression-oriented, "functional"
-# library for composing SDFs, as well as a UI
-# full of tools for debugging and editing them.
+# So that's where Bauble comes in. Bauble makes
+# it easier to play around with SDFs: it gives
+# you a high-level, expression-oriented,
+# "functional" library for writing shaders,
+# as well as a UI full of tools for debugging
+# and editing SDFs.
 
 # Like, one useful feature is that Bauble lets you edit
 # values with your mouse. Uncomment the next block of
@@ -132,7 +138,7 @@
 # increment by 0.1, but editing 3.000
 # will increment by 0.001.
 
-# Bauble isn't just about 3D art, either. It
+# Bauble isn't just about 3D art, either. It also
 # supports 2D SDFs:
 
 # (circle (osc t 5 1 45)
@@ -149,28 +155,27 @@
 # | extrude y 100
 # | intersect (ball 150))
 
-# Or even simpler:
+# Or even more simply:
 
 # (rect 25 | rotate t | revolve y 100)
 
-# Bauble is sort of a "batteries included"
-# playground. It has lots of functions that
-# come up in the procedural art world built
-# right in. Things like noise functions:
+# Bauble wants to be a "batteries included"
+# playground. It has a lot of familiar functions
+# from the procedural art world built right in.
+# Things like noise functions:
 
 # (set background-color
 #   (gl/let [s (frag-coord * 10 + [0 t])]
 #     (vec3 (perlin+ (s + (perlin+ (s + perlin+ (s - (sin t)))))))))
 
-# Various helpers for constructing rotation
-# matrices:
+# Helpers for constructing rotation matrices:
 
 # (gl/def pos ([(sin t) 1 (cos t)] * 100))
 # (union
 #   (ball 10 | move pos)
 #   (cone y 30 100 | align y (normalize pos)))
 
-# And casting shadows:
+# Shadow casting:
 
 # (torus y 110 20 | rotate z t x t y (t / 2)
 # | blinn-phong [0.25 0.75 0.75]
@@ -180,17 +185,17 @@
 # But you can implement any of these things
 # yourself! Bauble exposes a low-level API
 # that you can use to generate GLSL directly.
-# Or, well, indirectly. You have to go through
-# a little s-expression DSL first.
+# Or, well, indirectly. You still write it
+# in lisp.
 
 # If any of this piqued your curiosity, check
 # out the Help page for interactive examples of
-# all of Bauble's built-in functions, as well
-# as more information about the language.
+# Bauble's standard library, as well as more
+# information about the language.
 
 # There will probably also be a tutorial soon
 # but I haven't written it yet. Sorry. Bauble
-# is pretty new and I have a baby.
+# is pretty new and I have a baby to keep alive.
 
 # In the meantime, join the Bauble Discord:
 #
