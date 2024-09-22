@@ -1,10 +1,7 @@
 (use ./constants)
 (use ./util)
-(use ../cli/helpers)
-(import ../cli/ray)
 (import ../lib/shape)
 (import ../jlsl)
-(import ../glsl)
 (import ../lib/syntax)
 
 (defmacro sugar [expr] (syntax/expand expr))
@@ -91,10 +88,6 @@
         triangles))
   [vertices triangles]))
 
-(import jaylib)
-(import cmd)
-(import ../lib :as bauble)
-
 (use ../lib/environment/prelude)
 
 (defn get-program [env]
@@ -123,70 +116,3 @@
       (var logical [pixel (float z)])
       (with [P (logical * cube-size + origin) p P]
         (set frag-color [(vec3 (nearest-distance)) 1])))))))
-
-(cmd/main (cmd/fn
-  [infile (required :file)
-   [outfile -o --out] (required :file)
-   --slices (optional :number 64)
-   --size (optional :number 128)]
-  (def source (slurp infile))
-  (def env (bauble/evaluator/evaluate source))
-  (def glsl (jlsl/render/program (get-program env)))
-  (def shader-source (glsl/render-program glsl "330"))
-
-  (init-jaylib)
-
-  (assert (>= slices 2) "need at least two slices")
-
-  (def slices [slices slices slices])
-  (def origin [(- size) (- size) (- size)])
-  (def end [size size size])
-  (def cube-size (vec/ (vec- end origin) (map dec slices)))
-  (def resolution [(in slices 0) (in slices 1)])
-
-  (def [xs ys zs] slices)
-  (assert (and (>= xs 2) (>= ys 2) (>= zs 2)) "cannot slice without any cubes")
-
-  (eprintf "origin=%q cube-size=%q slices=%q" origin cube-size slices)
-
-  (def frame-buffer (ray/make-fbo resolution :point 8))
-  (def shader (jaylib/load-shader-from-memory nil shader-source))
-
-  (defn set-uniform [name type value]
-    (jaylib/set-shader-value shader (jaylib/get-shader-location shader name) value type))
-
-  (set-uniform "t" :float 0)
-  (set-uniform "cube_size" :vec3 cube-size)
-  (set-uniform "origin" :vec3 origin)
-
-  (defn get-samples [z]
-    (set-uniform "z" :int z)
-    (ray/do-texture frame-buffer
-      (ray/do-shader shader
-        (jaylib/draw-rectangle-v [0 0] resolution :red)))
-    (def image (jaylib/load-image-from-texture (jaylib/get-render-texture-texture2d frame-buffer)))
-    (def samples (jaylib/image-data image))
-    (jaylib/unload-image image)
-    samples)
-
-  (defn corner-position [p]
-    (vec+ origin (vec* cube-size p)))
-  (def fiber (march origin cube-size slices))
-  (resume fiber)
-
-  (while (= (fiber/status fiber) :pending)
-    (def z (fiber/last-value fiber))
-    (resume fiber (get-samples z))
-    (eprin "."))
-
-  (def [vertices triangles] (fiber/last-value fiber))
-
-  (with [outfile (file/open outfile :w)]
-    (each [x y z] vertices
-      (xprintf outfile "v %f %f %f" x y z))
-    (each [a b c] triangles
-      (xprintf outfile "f %d// %d// %d//" a b c)))
-
-  (eprintf "%d vertices, %d faces" (@length vertices) (@length triangles))
-
-  ))

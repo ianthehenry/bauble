@@ -8,26 +8,106 @@
 
 (def arg/resolution (cmd/peg "WxH" ~(/ (* (number :d+) "x" (number :d+) -1) ,|[$0 $1])))
 
-(cmd/defn render "render a bauble to a png"
-  [infile (required :file)
-   outfile (required :file)
-   --resolution (optional arg/resolution [512 512]) "default 512x512"]
-  (def source (slurp infile))
+(defn read-input [filename]
+  (if filename
+    (slurp filename)
+    (file/read stdin :all)))
+
+(cmd/defn render "Render a single still image."
+  [input (optional :file)
+   [outfile -o --out] (required :file)
+   --resolution (optional arg/resolution [512 512]) "default 512x512"
+   -t (optional :number 0) "timestamp to use"]
+  (def source (read-input input))
   (def env (bauble/evaluator/evaluate source))
   (def [shader-source dimension animated? has-custom-camera?] (bauble/shade/compile-shape nil env "330"))
   (init-jaylib)
   (def image (render-image shader-source
     :resolution resolution
-    :orbit [0.125 -0.125]))
+    :orbit [0.125 -0.125]
+    :t t))
   (jaylib/export-image image outfile))
 
-(cmd/defn print-source "print fragment shader source to stdout"
-  [infile (required :file)]
-  (def source (slurp infile))
+(cmd/defn print-source "Print fragment shader source."
+  [input (optional :file)
+   [outfile -o --out] (optional :file)]
+  (def source (read-input input))
   (def env (bauble/evaluator/evaluate source))
   (def [shader-source dimension animated? has-custom-camera?] (bauble/shade/compile-shape nil env "330"))
-  (print shader-source))
+  (if outfile
+    (spit outfile shader-source)
+    (print shader-source)))
+
+(import ../cubert)
+(import ../jlsl)
+(import ../glsl)
+(use ../cubert/util)
+
+(cmd/defn export-mesh "Export an OBJ file"
+  [input (optional :file)
+   [outfile -o --out] (required :file)
+   -t (optional :number 0)
+   --slices (optional :number 64) "the resolution of the final mesh"
+   --size (optional :number 128) "the size (in Bauble units) of the bounding box to march"]
+  (def slices [slices slices slices])
+  (def [xs ys zs] slices)
+  (assert (and (>= xs 2) (>= ys 2) (>= zs 2)) "not enough slices")
+  (def origin [(- size) (- size) (- size)])
+  (def end [size size size])
+  (def cube-size (vec/ (vec- end origin) (map dec slices)))
+  (def source (read-input input))
+
+  (def env (bauble/evaluator/evaluate source))
+  (def glsl (jlsl/render/program (cubert/get-program env)))
+  (def shader-source (glsl/render-program glsl "330"))
+
+  (init-jaylib)
+
+  (def resolution [xs ys])
+  (eprintf "origin=%q\ncube-size=%q\nslices=%q" origin cube-size slices)
+
+  (def frame-buffer (ray/make-fbo resolution :point 8))
+  (def shader (jaylib/load-shader-from-memory nil shader-source))
+
+  (defn set-uniform [name type value]
+    (jaylib/set-shader-value shader (jaylib/get-shader-location shader name) value type))
+
+  (set-uniform "t" :float t)
+  (set-uniform "cube_size" :vec3 cube-size)
+  (set-uniform "origin" :vec3 origin)
+
+  (defn get-samples [z]
+    (set-uniform "z" :int z)
+    (ray/do-texture frame-buffer
+      (ray/do-shader shader
+        (jaylib/draw-rectangle-v [0 0] resolution :red)))
+    (def image (jaylib/load-image-from-texture (jaylib/get-render-texture-texture2d frame-buffer)))
+    (def samples (jaylib/image-data image))
+    (jaylib/unload-image image)
+    samples)
+
+  (defn corner-position [p]
+    (vec+ origin (vec* cube-size p)))
+  (def fiber (cubert/march origin cube-size slices))
+  (resume fiber)
+  (while (= (fiber/status fiber) :pending)
+    (def z (fiber/last-value fiber))
+    (resume fiber (get-samples z))
+    (eprin "."))
+  (print)
+
+  (def [vertices triangles] (fiber/last-value fiber))
+
+  (with [outfile (file/open outfile :w)]
+    (each [x y z] vertices
+      (xprintf outfile "v %f %f %f" x y z))
+    (each [a b c] triangles
+      (xprintf outfile "f %d// %d// %d//" a b c)))
+
+  (eprintf "%d vertices, %d faces" (length vertices) (length triangles)))
 
 (cmd/main (cmd/group
   render render
-  compile print-source))
+  compile print-source
+  mesh export-mesh
+  ))
