@@ -127,9 +127,7 @@ Although Bauble's infix notation has no concept of precedence, the infix notatio
 If you're ever confused by what Bauble's notation is doing, you can see what your code expands to like this:
 
 ```example
-(defmacro show-syntax [x] (pp x) x)
-
-(show-syntax (p.x | 1 + 2 * _))
+(pp '(p.x | 1 + 2 * _))
 ```
 
 # Bauble CLI {#cli}
