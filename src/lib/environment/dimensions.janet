@@ -69,8 +69,8 @@
 
   ```example
   (union
+    (box 80 | blinn-phong red)
     (ball 100 | blinn-phong green)
-    (box 100 | blinn-phong red)
   # try commenting out this line:
   | sliced y (sin t * 100)
   )
