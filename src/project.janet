@@ -10,6 +10,6 @@
   ])
 
 (declare-executable
- :name "main"
- :description "bauble CLI"
- :entry "cli/main.janet")
+ :name "bauble"
+ :description "Bauble CLI"
+ :entry "cli/init.janet")

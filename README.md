@@ -26,6 +26,12 @@ https://twitter.com/ianthehenry
 
 Bauble requires at least Janet 1.36.0 (the first release with integer literal syntax). It may work with newer versions of Janet, assuming that the image format is compatible, but it's better to [update the version of Janet that Bauble includes](build/janet/janet-version) to match your local version if you want to upgrade.
 
+Install the Janet dependencies:
+
+```
+$ (cd src && jpm -l deps)
+```
+
 Afterwards, install JavaScript dependencies with:
 
 ```
@@ -37,7 +43,7 @@ Bauble depends on [`codemirror-lang-janet`](https://github.com/ianthehenry/codem
 
 # Development
 
-To build Bauble:
+To build Bauble after installing dependencies:
 
 ```
 $ redo
@@ -69,7 +75,14 @@ There are two types of tests. Regular [Judge](https://github.com/ianthehenry/jud
 $ (cd src; judge)
 ```
 
-And snapshot tests:
+And snapshot tests, which require installing separate dependencies:
+
+```
+# you only have to do this once
+$ (cd src && jpm -l deps)
+```
+
+After installing dependencies, run tests like this:
 
 ```
 $ (cd tests; jpm -l janet suite.janet)
@@ -85,3 +98,22 @@ $ (cd tests; jpm -l janet gc.janet)
 
 Which will delete old snapshots and compress new ones. This depends on `pngcrush`.
 
+# CLI
+
+To run the Bauble CLI:
+
+```
+$ cd src
+$ jpm -l deps
+$ jpm -l build
+$ build/bauble
+```
+
+Or, after installing dependencies, you can just invoke it with the interpreter:
+
+```
+$ cd src
+$ jpm -l janet cli/init.janet
+```
+
+Currently the CLI is the only way to export high-resolution images, render images with non-square aspect ratios, view raw GLSL shader source, and export 3D meshes.
