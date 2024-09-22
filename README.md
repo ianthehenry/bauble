@@ -1,5 +1,9 @@
 # [Bauble](https://bauble.studio)
 
+<p align="center">
+<a href="https://bauble.studio/"><img width="256" height="256" src="/logo-1024x1024.png"></a>
+</p>
+
 Bauble is a toy for composing signed distance functions in a high-level language ([Janet](https://janet-lang.org/)), compiling them to [GLSL](https://www.khronos.org/opengl/wiki/OpenGL_Shading_Language), and rendering them via WebGL.
 
 Try it out at <https://bauble.studio/>, or watch this video introduction where I model an infinite number of hot air balloons:
@@ -80,3 +84,4 @@ $ (cd tests; jpm -l janet gc.janet)
 ```
 
 Which will delete old snapshots and compress new ones. This depends on `pngcrush`.
+
