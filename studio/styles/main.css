@@ -13,6 +13,7 @@
   --blue: #4271ae;
   --purple: #8959a8;
   --window: #efefef;
+  color-scheme: light dark;
 }
 
 @media (prefers-color-scheme: dark) {
