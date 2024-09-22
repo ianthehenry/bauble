@@ -77,6 +77,7 @@ if (inWorker) {
             focusable={true}
             canSave={false}
             canSearch={false}
+            canExport={false}
             size={{width: 256, height: 256}}
           />, container);
       }
@@ -97,6 +98,7 @@ if (inWorker) {
       focusable={false}
       canSave={true}
       canSearch={true}
+      canExport={true}
       size={{width: 512, height: 512}}
     />, document.body);
   break;

@@ -1,5 +1,5 @@
 import type {Component, JSX} from 'solid-js';
-import {batch, createEffect, createMemo, createSelector, onMount, For, Switch, Match} from 'solid-js';
+import {batch, createEffect, createMemo, createSelector, onMount, For, Switch, Match, Show} from 'solid-js';
 import {Timer, LoopMode, TimerState} from './timer';
 import installCodeMirror from './editor';
 import {EditorView} from '@codemirror/view';
@@ -87,9 +87,42 @@ function choices<T extends number | string>(
   </fieldset>;
 }
 
-const EditorToolbar: Component<{state: EvaluationState}> = (props) => {
+type EditorToolbarProps = {
+  state: EvaluationState,
+  canExport: boolean,
+};
+
+const EditorToolbar: Component<EditorToolbarProps> = (props) => {
+  let exportPopover: HTMLDivElement;
+  let exportButton: HTMLButtonElement;
   return <div class="toolbar">
     <div class="spacer"></div>
+    <Show when={props.canExport}>
+      <button title="Export" ref={exportButton!} onClick={(e) => {
+        const buttonPosition = exportButton.getBoundingClientRect();
+        exportPopover.style.top = buttonPosition.bottom.toString() + "px";
+        exportPopover.style.left = buttonPosition.left.toString() + "px";
+      }}>
+        <Icon name="box-arrow-up" />
+      </button>
+      <div popover ref={(el) => {
+        exportPopover = el;
+        exportButton!.popoverTargetElement = el
+      }}>
+      <ul>
+      <li>Export Image [CLI only]</li>
+      <li>Export Video [todo]</li>
+      <li>Export 3D model [CLI only]</li>
+      <li>Export to Shadertoy [todo]</li>
+      <li>Export to HTML Embed [todo]</li>
+      </ul>
+      <p>Sign up for a Bauble Pro account to unlock these features!</p>
+      <p>No I'm kidding look, this is theoretically the export menu, but I haven't
+      actually implemented an export UI yet, so you kinda have to like
+      record your screen or use the extremely alpha-quality Bauble CLI if
+      you want to share your creations.</p>
+      </div>
+    </Show>
     <Switch>
       <Match when={props.state === EvaluationState.Unknown}>
         <div title="Compilation unknown" class="indicator compilation-unknown">
@@ -283,6 +316,7 @@ interface BaubleProps {
   focusable: boolean,
   canSave: boolean,
   canSearch: boolean,
+  canExport: boolean,
   definitions: Array<Definition>,
   wasmBox: Mailbox,
   renderBox: Mailbox,
@@ -734,7 +768,7 @@ const Bauble = (props: BaubleProps) => {
       onDblClick={onHandleDblClick}
     />
     <div class="code-container" ref={codeContainer!}>
-      <EditorToolbar state={Signal.get(evaluationState)} />
+      <EditorToolbar state={Signal.get(evaluationState)} canExport={props.canExport} />
       <div class="editor-container" ref={editorContainer!} />
       <ResizableArea ref={outputContainer!} />
     </div>
