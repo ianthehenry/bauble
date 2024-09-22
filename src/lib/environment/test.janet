@@ -211,7 +211,7 @@
     dot @{}
     double @{}
     ellipsoid @{:doc "(ellipsoid size)\n\nReturns a 3D shape. This is an alias for the `vec3` overload of `ball`."}
-    elongate @{:doc "(elongate shape size)\n\nStretch the center of a shape, leaving the sides untouched.\n\n```example\n(cone y 50 100 | elongate [(osc t 3 50) 0 (osc t 6 100)])\n```\n\n```example\n(torus x 50 20 | elongate [0 100 0])\n```\n\n```example\n(rhombus [100 (gl/if (< q.y 0) 100 50)] | elongate [0 (osc t 2 0 20)])\n```"}
+    elongate @{:doc "(elongate shape size)\n\nStretch the center of a shape, leaving the sides untouched.\n\n```example\n(cone y 50 100 | elongate [(osc t 3 50) 0 (osc t 6 100)])\n```\n\n```example\n(torus x 50 20 | elongate [(sin+ t * 50) 100 0])\n```\n\n```example\n(rhombus [100 (gl/if (< q.y 0) 100 50)] | elongate [0 (osc t 2 0 20)])\n```"}
     equal @{}
     exp @{}
     exp2 @{}

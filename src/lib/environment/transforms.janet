@@ -314,7 +314,7 @@
   ```
 
   ```example
-  (torus x 50 20 | elongate [0 100 0])
+  (torus x 50 20 | elongate [(sin+ t * 50) 100 0])
   ```
 
   ```example
