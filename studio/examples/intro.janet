@@ -78,8 +78,13 @@
 # | move y (sin+ (hash $i * 5 + t * 3) | pow 11 | ss * 20)
 # | blinn-phong (hsv (hash $i / 8) 1 (hash $i | step 0.98))
 # | tile: $i [30 0 30] :oversample true
-# | union (ground -10 | blinn-phong (vec3 0.5))
-# )
+# | union (ground -10 | blinn-phong (vec3 0.5)))
+# (gl/def elevation (ss t 0 30 100 500))
+# (gl/def eye [0 elevation (t * 50)])
+# (set camera
+#   (camera/perspective eye (z * elevation + [1 0 1 * eye])
+#   | camera/pan (sin t * 0.1)
+#   | camera/tilt (sin (t / 5) | ss 0 1 * pi/12)))
 
 # The beauty of SDFs is that they're so simple
 # that, once you understand how they work, you
@@ -104,6 +109,7 @@
 # | mirror x y z :r 10
 # | rotate y r x (r * 0.7) y (r * 0.5)
 # | mirror x y z :r 10)
+# (set camera nil)
 
 # > You can also hold down cmd-shift and
 # > move your mouse without clicking
