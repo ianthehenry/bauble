@@ -17,7 +17,7 @@
 
   There are several overloads. You can pass one argument:
 
-  ```
+  ```example
   # (ss x) = (smoothstep 0 1 x)
   (union
     (rect 50 | move y (sin t * 100) x -100)
