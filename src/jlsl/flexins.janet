@@ -90,10 +90,36 @@
         :unless (table/rawget (curenv) key)]
     key))
 
+(defn- tmap [& args]
+  (tuple/slice (map ;args)))
+(defn- inflate-scalars [args count]
+  (seq [arg :in args]
+    (if (indexed? arg)
+      arg
+      (array/new-filled count arg))))
+(defn- get-vec-length [args]
+  (var vec-length nil)
+  (loop [arg :in args :when (indexed? arg)]
+    (if (nil? vec-length)
+      (set vec-length (@length arg))
+      (assert (= (@length arg) vec-length) "argument length mismatch")))
+  vec-length)
+
+(defn- lift-vectory [f]
+  (fn [& args]
+    (if-let [vec-length (get-vec-length args)]
+      (tmap f ;(inflate-scalars args vec-length))
+      (f ;args))))
+
+(test (get-vec-length [1 2 3]) nil)
+(test (get-vec-length [1 2 [2 3]]) 2)
+(test (inflate-scalars [1 2 [2 3]] 2) @[@[1 1] @[2 2] [2 3]])
+
 (eval (seq [sym :in (non-flexible)
-            :let [math-equivalent (symbol "math/" sym)]
-            :when (has-key? (curenv) math-equivalent)]
-  (call defflex sym math-equivalent)))
+            :let [math-sym (symbol "math/" sym)]
+            :when (has-key? (curenv) math-sym)
+            :let [math-equivalent (get-env (curenv) math-sym)]]
+  (call defflex sym (lift-vectory math-equivalent))))
 
 (defn- float [x] (expr/literal type/float x))
 
@@ -159,6 +185,8 @@
 
 (test (length [3 4]) 5)
 (test (@length [1 2 3]) 3)
+(test (pow [1 2 3] 2) [1 4 9])
+(test (pow [1 2 3] [2 2 1]) [1 4 3])
 
 (test-stdout (and false (print "hello")) `
   hello
