@@ -223,7 +223,7 @@
 
   "blinn phong" `
   (box 60 :r 10
-  | blinn-phong [0.25 1 0.25] :s 0.5 :g 10
+  | shade [0.25 1 0.25] :s 0.5 :g 10
   | with-lights
     (light/point [1 1 1] [-200 100 200])
     (light/point [1 0.1 0.1] [200 200 200]))
@@ -271,7 +271,7 @@
     (union
       (box [50 5 50])
       (box 20 | move y 30 | expand 1)
-    | blinn-phong [1 0.1 0.1]))
+    | shade [1 0.1 0.1]))
   (grid 60 2 2
     ((make) | with-lights (light/directional [0.9 0.9 0.9] [-1 -5 1] 100 :shadow 0.25))
     ((make) | with-lights (light/directional [0.9 0.9 0.9] [-1 -5 1] 100 :shadow 0))
@@ -292,7 +292,7 @@
     (union
       (box [50 5 50])
       (box 20 | move y 30 | expand 1)
-    | blinn-phong [1 0.1 0.1]))
+    | shade [1 0.1 0.1]))
   (def point-light (light/point [0.9 0.9 0.9] [0 200 0] :shadow 0.25))
   (grid 60 2 2 (make) (make) (make) (make)
   | with-lights point-light)
@@ -309,7 +309,7 @@
     (union
       (box [50 5 50])
       (box 20 | move y 30 | expand 1)
-    | blinn-phong [1 0.1 0.1] :g 5))
+    | shade [1 0.1 0.1] :g 5))
   (grid 60 2 2
     ((make) | with-lights)
     ((make) | with-lights (light/ambient [0.5 0.5 0.5]))
@@ -330,9 +330,9 @@
   "morph"
   `
   (box 50
-  | blinn-phong [1 0 0]
+  | shade [1 0 0]
   | morph :color 0.1 :distance 0.25
-    (ball 50 | blinn-phong [0 1 0]))
+    (ball 50 | shade [0 1 0]))
   `
 
   "round 2d shapes"
@@ -353,8 +353,8 @@
 
   "boolean union"
   `
-  (def green-sphere (ball 40 | blinn-phong [0.05 0.95 0.05]))
-  (def red-box (box 30 | blinn-phong [0.95 0.05 0.05]))
+  (def green-sphere (ball 40 | shade [0.05 0.95 0.05]))
+  (def red-box (box 30 | shade [0.95 0.05 0.05]))
   (union
     (union green-sphere red-box | move [-40 0 0])
     (union red-box green-sphere | move [+40 0 0])
@@ -371,8 +371,8 @@
 
   "boolean intersect"
   `
-  (def green-sphere (ball 40 | blinn-phong [0.05 0.95 0.05]))
-  (def red-box (box 30 | blinn-phong [0.95 0.05 0.05]))
+  (def green-sphere (ball 40 | shade [0.05 0.95 0.05]))
+  (def red-box (box 30 | shade [0.95 0.05 0.05]))
   (union
     (intersect green-sphere red-box | move [-40 0 0])
     (intersect red-box green-sphere | move [+40 0 0])
@@ -389,8 +389,8 @@
 
   "boolean subtract"
   `
-  (def green-sphere (ball 40 | blinn-phong [0.05 0.95 0.05]))
-  (def red-box (box 30 | blinn-phong [0.95 0.05 0.05]))
+  (def green-sphere (ball 40 | shade [0.05 0.95 0.05]))
+  (def red-box (box 30 | shade [0.95 0.05 0.05]))
   (union
     (subtract green-sphere red-box | move [-40 0 0])
     (subtract red-box green-sphere | move [+40 0 0])
@@ -431,20 +431,20 @@
 
   "shadow banding artifacts" `
   (union
-    (ball 50 | blinn-phong [1 1 1] | with-lights (light/point [1 1 1] [500 -50 0] :shadow 0.25) | move y -50)
-    (ball 50 | blinn-phong [1 1 1] | with-lights (light/directional [1 1 1] [-1 0 0] 500 :shadow 0.25) | move y 50))
+    (ball 50 | shade [1 1 1] | with-lights (light/point [1 1 1] [500 -50 0] :shadow 0.25) | move y -50)
+    (ball 50 | shade [1 1 1] | with-lights (light/directional [1 1 1] [-1 0 0] 500 :shadow 0.25) | move y 50))
   (set camera (camera/perspective [0 0 384] :fov 45))
   `
 
   "raymarcher tries not to penetrate shape 1" `
   (ball 50
     | morph 2 (box 50)
-    | blinn-phong [1 1 1])
+    | shade [1 1 1])
   `
   "raymarcher tries not to penetrate shape 2" `
   (ball 50
     | morph 2 (box 50)
-    | blinn-phong [1 1 1])
+    | shade [1 1 1])
   (set camera (camera/perspective [0 0 384] :fov 45))
   `
 
@@ -467,8 +467,8 @@
   "gl with color fields" `
   (union
     (gl/with :color [normal (normal + (perlin p * 0.1))]
-      (ball 100 | blinn-phong [1 0 0] | move [-50 0 0]))
-    (ball 100 | blinn-phong [1 0 0] | move [50 0 0]
+      (ball 100 | shade [1 0 0] | move [-50 0 0]))
+    (ball 100 | shade [1 0 0] | move [50 0 0]
     | gl/with :color [normal (normal + (perlin p * 0.1))] _)
   )
   `
@@ -486,14 +486,14 @@
 
   "tile 3d with asymmetric shape, no oversampling" `
   (cone y 30 60
-  | blinn-phong [1 0 0]
+  | shade [1 0 0]
   | rotate x -1 y 2 z 3
   | tile 60 :limit 3
   )
   `
   "tile 3d with asymmetric shape, oversampling" `
   (cone y 30 60
-  | blinn-phong [1 0 0]
+  | shade [1 0 0]
   | rotate x -1 y 2 z 3
   | tile [60 60 60] :limit 3 :oversample true
   )
@@ -501,9 +501,9 @@
   "tile 3d works with oversample and zero axes" `
   (ball 10
   | move y (sin+ (hash $i * 5 * tau) | ss * 25)
-  | blinn-phong (hsv (hash $i / 2 + 0.3) 1 1)
+  | shade (hsv (hash $i / 2 + 0.3) 1 1)
   | tile: $i [25 0 25] :oversample true
-  | union (plane y -10 | blinn-phong [1 1 1])
+  | union (plane y -10 | shade [1 1 1])
   )
   `
 
@@ -553,7 +553,7 @@
 
   "unhoisted lights can refer to tile indices" `
   (ball 20
-  | blinn-phong [1 1 1]
+  | shade [1 1 1]
   | with-lights (light/point (hsv (hash $i) 1 1) [200 200 200] :shadow 0.50 :hoist false)
   | tile: $i :limit 3 [70 70 70])
   `
@@ -619,10 +619,10 @@
   (box 20 | rotate [1 1 1 | normalize] 0.25 | move x 100 | radial z 12 :oversample true)
   `
   "radial 3D colors" `
-  (box 12 | blinn-phong (hsv (hash $i) 0.5 1) | move x 100 | radial: $i z 24)
+  (box 12 | shade (hsv (hash $i) 0.5 1) | move x 100 | radial: $i z 24)
   `
   "radial 3D colors asymmetric" `
-    (cone y 50 100 | blinn-phong (hsv (hash $i) 0.5 1) | move x 89 | radial: $i z 12 :oversample true :sample-from -1 :sample-to 1)
+    (cone y 50 100 | shade (hsv (hash $i) 0.5 1) | move x 89 | radial: $i z 12 :oversample true :sample-from -1 :sample-to 1)
   `
 
   "shadowing subject does nothing - def" `

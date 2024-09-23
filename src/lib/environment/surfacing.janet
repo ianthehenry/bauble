@@ -318,28 +318,90 @@ set it in a way that fits nicely into a pipeline.
       (light/ambient (vec3 0.1) :brightness default-occlusion)
       (light/ambient (vec3 0.1) (normal * 0.1) :brightness default-occlusion)]))))
 
-(defhelper- :vec3 blinn-phong1 [:vec3 color :float shininess :float glossiness Light light]
+(defhelper- :vec3 blinn-phong [Light light :vec3 color :float shininess :float glossiness]
   (if (= light.direction (vec3 0))
     (return (* color light.color light.brightness)))
   (var halfway-dir (light.direction - ray.direction | normalize))
   (var specular-strength (shininess * pow (max (dot normal halfway-dir) 0) (glossiness * glossiness)))
   (var diffuse (max 0 (dot normal light.direction)))
   (return (light.color * light.brightness * specular-strength + (* color diffuse light.color light.brightness))))
+(def- blinn-phong- blinn-phong)
 
-(defn- blinn-phong-color-expression [color shininess glossiness lights]
-  (jlsl/do "blinn-phong"
-    (var result (vec3 0))
-    ,;(seq [light :in lights]
-      (jlsl/statement (+= result (blinn-phong1 color shininess glossiness light))))
-    result))
+(defnamed blinn-phong [light color :?s:shininess :?g:glossiness]
+  ````
+  A Blinn-Phong shader, intended to be passed as an argument to `shade`. `:s` controls
+  the strength of specular highlights, and `:g` controls the glossiness.
 
-(defnamed blinn-phong [shape color :?s:shininess :?g:glossiness]
+  ```example
+  (ball 100 | shade :f blinn-phong [1 0 0] :s 1 :g (osc t 5 5 30))
   ```
-  TODOC
-  ```
+  ````
   (default shininess 0.25)
   (default glossiness 10)
-  (shape/with shape :color (blinn-phong-color-expression color shininess glossiness (dyn :lights))))
+  (blinn-phong- light color shininess glossiness))
+
+(defnamed shade [shape :?f &args :&kargs]
+  ````
+  `shade` colors a shape with a map-reduce over the current lights.
+  It's a higher-order operation that takes a shading function (by
+  default `blinn-phong`) -- and calls it once for every light in `*lights*`.
+
+  ```example
+  (ball 100 | shade [1 0.25 0.5])
+  ```
+
+  All arguments to `shade` will be passed to the shading function,
+  and only evaluated once, no matter how many lights there are. See the
+  documentation for `blinn-phong` for a description of the arguments
+  it takes.
+
+  If you define a custom shading function, its first should be a light:
+
+  ```example
+  (ball 100 | shade [1 0.25 0.5] :f (fn [light color]
+    (dot normal light.direction * light.brightness
+    | quantize 5 * light.color * color
+  )))
+  ```
+
+  A light is a struct with three fields: `color`, `direction`,
+  and `brightness`. `brightness` is roughly "shadow intensity,"
+  and in the default lights it includes an ambient occlusion
+  component. This shader hardens the edges of shadows with step,
+  and uses it to apply a custom shadow color:
+
+  ```example
+  (torus x 10 5 | rotate z t | radial y 20 100 | union (ground -120)
+  | shade [0.5 1.0 1.0] :f (fn [light color]
+    (dot normal light.direction * light.color * (mix [0.5 0 0] color (step 0.5 light.brightness))
+    )))
+  ```
+
+  Why does a light give you a `direction` instead of a `position`? `direction` is a little
+  more robust because you don't have to remember to special-case the zero vector (ambient
+  lights), and theoretically if you want to do anything position-dependent you should reflect
+  that in the `color` or `brightness`. But maybe it should give you both. I'm torn now.
+  ````
+  (default f blinn-phong)
+  (def bindings @[])
+  (defn save [value]
+    (if (jlsl/expr? value)
+      (let [v (jlsl/variable/new "temp" (jlsl/expr/type value))]
+        (array/push bindings [v value])
+        v)
+      value))
+
+  (def args (map save args))
+  (def kargs (mapcat (fn [[k v]] [k (save v)]) (pairs kargs)))
+
+  (shape/with shape :color
+    (jlsl/with-expr bindings []
+      (jlsl/do "shade"
+        (var result (vec3 0))
+        ,;(seq [light :in (dyn *lights*)]
+          (jlsl/statement (+= result ,(f light ;args ;kargs))))
+        result)
+      "shade")))
 
 (defmacro with-lights
   ````

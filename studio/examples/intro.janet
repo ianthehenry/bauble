@@ -7,8 +7,7 @@
 | union :r 50 (cylinder y 25 50 | move [0 -100 0])
 | scale y (ss p.y -100 100 1 0.8)
 | color
-  (blinn-phong r3
-    (hsv (quantize (p.y / 100 - (t / 5)) 8) 1 1) :g 5
+  (shade r3 (hsv (quantize (p.y / 100 - (t / 5)) 8) 1 1) :g 5
   | move y (sin (t * 1.5) | ss * 100 / 8 * parity)
   | rotate z (parity * 2 - 1 * pi/4)
   | gl/let [parity (mod $i 2)] _)
@@ -49,10 +48,10 @@
 
 # (torus z 60 30
 # | rotate y (p.y / 50 + t * 3)
-# | rotate z t
+# | rotate [1 1 1 | normalize] t
 # | move x 50
 # | mirror :r 10 x
-# | slow 0.25)
+# | slow 0.4)
 
 # Whoa. Okay enough with the demos for a
 # minute.
@@ -80,9 +79,9 @@
 
 # (box 10 | morph (ball 10) (sin+ (t + hash $i))
 # | move y (sin+ (hash $i * 5 + t * 3) | pow 11 | ss * 20)
-# | blinn-phong (hsv (hash $i / 8) 1 (hash $i | step 0.98))
+# | shade (hsv (hash $i / 8) 1 (hash $i | step 0.98))
 # | tile: $i [30 0 30] :oversample true
-# | union (ground -10 | blinn-phong (vec3 0.5)))
+# | union (ground -10 | shade (vec3 0.5)))
 # (gl/def elevation (ss t 0 30 100 500))
 # (gl/def eye [0 elevation (t * 50)])
 # (set camera
@@ -194,9 +193,9 @@
 # Shadow casting:
 
 # (torus y 110 20 | rotate z t x t y (t / 2)
-# | blinn-phong [0.25 0.75 0.75]
-# | union (ball 100 | blinn-phong [0 0.75 0])
-# | union (ground -100 | blinn-phong (vec3 0.75)))
+# | shade [0.25 0.75 0.75]
+# | union (ball 100 | shade [0 0.75 0])
+# | union (ground -100 | shade (vec3 0.75)))
 
 # But you can implement any of these
 # things yourself! Bauble exposes a
