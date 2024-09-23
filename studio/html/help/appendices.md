@@ -132,6 +132,6 @@ If you're ever confused by what Bauble's notation is doing, you can see what you
 
 # Bauble CLI {#cli}
 
-Okay so there is, technically, a command-line version of Bauble. You can run it locally using native OpenGL instead of WebGL and . And it has exciting features like exporing an OBJ file, and rendering non-square images.
+Okay so there is, technically, a command-line version of Bauble. You can run it locally using native OpenGL instead of WebGL, and it has exciting features like exporing an OBJ file and rendering non-square images.
 
 But it's like pre-pre-alpha quality, and the only way to get it is to build it from source, and I'm sorry about that. There are instructions [in the GitHub repo](https://github.com/ianthehenry/bauble#cli).

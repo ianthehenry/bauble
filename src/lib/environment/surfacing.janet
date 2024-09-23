@@ -355,7 +355,7 @@ set it in a way that fits nicely into a pipeline.
   documentation for `blinn-phong` for a description of the arguments
   it takes.
 
-  If you define a custom shading function, its first should be a light:
+  If you define a custom shading function, its first argument should be a light:
 
   ```example
   (ball 100 | shade [1 0.25 0.5] :f (fn [light color]
