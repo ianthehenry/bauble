@@ -81,7 +81,7 @@
 
   ```example
   (gl/let :color [banding (dist * 10)]
-    (box 100 | blinn-phong [1 banding 0]))
+    (box 100 | shade [1 banding 0]))
   ```
   ````
   [bindings & body]
@@ -112,7 +112,7 @@
 
   ```example
   (gl/with :color [normal (normal + (perlin p * 0.1))]
-    (ball 100 | blinn-phong [1 0 0]))
+    (ball 100 | shade [1 0 0]))
   ```
   ````
   [bindings & body]

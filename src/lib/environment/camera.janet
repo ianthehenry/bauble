@@ -24,7 +24,7 @@
   ```example
   (morph (ball 50) (box 50) 2
   | union (circle 200 | extrude y 10 | move y -100)
-  | blinn-phong (vec3 0.75))
+  | shade (vec3 0.75))
   (def pos [(sin t * 200) (cos+ (t / 2) * 300) 500])
   (set camera (camera/perspective pos :fov 45))
   ```
@@ -63,7 +63,7 @@
   ```example
   (morph (ball 50) (box 50) 2
   | union (circle 200 | extrude y 10 | move y -100)
-  | blinn-phong (vec3 0.75))
+  | shade (vec3 0.75))
   (set camera (camera/perspective [0 100 600] :fov 45
   | camera/pan (sin t * 0.2)))
   ```
@@ -77,7 +77,7 @@
     ```example
   (morph (ball 50) (box 50) 2
   | union (circle 200 | extrude y 10 | move y -100)
-  | blinn-phong (vec3 0.75))
+  | shade (vec3 0.75))
   (set camera (camera/perspective [0 100 600] :fov 45
   | camera/roll pi/4
   | camera/pan (sin t * 0.2)
@@ -88,7 +88,7 @@
   ```example
   (morph (ball 50) (box 50) 2
   | union (circle 200 | extrude y 10 | move y -100)
-  | blinn-phong (vec3 0.75))
+  | shade (vec3 0.75))
   (set camera (camera/perspective [0 100 600] :fov 45
   | camera/roll pi/4
   | camera/pan (sin t * 0.2) :up y
@@ -111,7 +111,7 @@
   ```example
   (morph (ball 50) (box 50) 2
   | union (circle 200 | extrude y 10 | move y -100)
-  | blinn-phong (vec3 0.75))
+  | shade (vec3 0.75))
   (set camera (camera/perspective [0 100 600] :fov 45
   | camera/tilt (sin t * 0.2)))
   ```
@@ -135,7 +135,7 @@
   ```example
   (morph (ball 50) (box 50) 2
   | union (circle 200 | extrude y 10 | move y -100)
-  | blinn-phong (vec3 0.75))
+  | shade (vec3 0.75))
   (set camera (camera/perspective [0 100 600] :fov 45
   | camera/roll (sin t * 0.2)))
   ```
@@ -155,7 +155,7 @@
   ```example
   (morph (ball 50) (box 50) 2
   | union (circle 200 | extrude y 10 | move y -100)
-  | blinn-phong (vec3 0.75))
+  | shade (vec3 0.75))
   (set camera (camera/perspective [0 100 600] :fov 45
   | camera/zoom (sin t * 0.2 + 1)))
   ```
@@ -175,7 +175,7 @@
   ```example
   (morph (ball 50) (box 50) 2
   | union (circle 200 | extrude y 10 | move y -100)
-  | blinn-phong (vec3 0.75))
+  | shade (vec3 0.75))
   (set camera (camera/perspective [0 100 600] :fov 45
   | camera/dolly (sin t * 100)))
   ```
@@ -185,7 +185,7 @@
   | union
     (circle 200 | extrude y 10 | move y -100)
     (box [100 200 50] | tile [300 0 300] :limit 4 | move [0 0 -1000])
-  | blinn-phong (vec3 0.75))
+  | shade (vec3 0.75))
 
   # hitchcock zoom
   (set camera (camera/perspective [0 100 600] :fov 45

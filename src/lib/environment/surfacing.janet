@@ -29,7 +29,7 @@
 
   ```example
   (box 100 :r 10 | color
-    (union (box 100 | blinn-phong [0 1 0]) (ball 125 | blinn-phong [1 0 0])))
+    (union (box 100 | shade [0 1 0]) (ball 125 | shade [1 0 0])))
   ```
   ````
   [shape color]
@@ -44,7 +44,7 @@
   Add a color to a shape's color field.
 
   ```example
-  (ball 100 | blinn-phong normal+ | tint [1 0 0] (sin+ t))
+  (ball 100 | shade normal+ | tint [1 0 0] (sin+ t))
   ```
   ````
   [shape color &opt amount]
@@ -59,7 +59,7 @@
     (+ old-color (* color amount)))))
 
 (defdyn *lights* ```
-The default lights used by surfacing functions like `blinn-phong`.
+The default lights used by the `shade` function.
 You can manipulate this using `setdyn` or `with-dyns` like any other
 dynamic variable, but there is a dedicated `with-lights` function to
 set it in a way that fits nicely into a pipeline.
@@ -411,7 +411,7 @@ set it in a way that fits nicely into a pipeline.
 
   ```example
   (ball 100
-  | blinn-phong [1 0 0]
+  | shade [1 0 0]
   | with-lights
     (light/point 0.5 [100 100 0])
     (light/ambient 0.5))
@@ -444,7 +444,7 @@ set it in a way that fits nicely into a pipeline.
 
   ```example
   (ball 100
-  | blinn-phong [1 0.5 0.5]
+  | shade [1 0.5 0.5]
   | tint [1 1 1] (fresnel (osc t 5 0.5 5)))
   ```
   ````
