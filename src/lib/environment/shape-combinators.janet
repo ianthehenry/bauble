@@ -132,11 +132,11 @@
 
 (defn- zero-to-nil [x] (if (= x 0) nil x))
 
-(defnamed union [:?r :?rs :?distance :?color &shapes]
+(defnamed union [:?r :?s :?distance :?color &shapes]
   ```
-  Union two or more shapes together. Pass `:r` or `:rs` to produce a smooth union.
+  Union two or more shapes together. Pass `:r` or `:s` to produce a smooth union.
 
-  `:r` and `:rs` combine color fields differently. `:rs` is a symmetric union, where
+  `:r` and `:s` combine color fields differently. `:s` is a symmetric union, where
   the color field is based on the nearest shape, regardless of the order that they're
   specified. `:r` is an asymmetric union where the order matters, and later shapes will
   be considered "on top of" previous shapes.
@@ -147,28 +147,28 @@
 
   You can also pass `:distance` or `:color` to specify a different smoothing radius for
   the separate fields. For example, to produce a smooth symmetric color union with a sharp
-  distance field, pass `(union :rs 10 :distance 0 ;shapes)`.
+  distance field, pass `(union :s 10 :distance 0 ;shapes)`.
   ```
-  (assert (not (and r rs)) "you can only specify :r or :rs, not both")
-  (def distance-roundness (zero-to-nil (or distance r rs)))
-  (def color-roundness (zero-to-nil (or color r rs)))
+  (assert (not (and r s)) "you can only specify :r or :s, not both")
+  (def distance-roundness (zero-to-nil (or distance r s)))
+  (def color-roundness (zero-to-nil (or color r s)))
   (boolean shapes
     (if distance-roundness
       (partial smooth-min-distance (typecheck distance-roundness jlsl/type/float))
       min-distance)
     (if color-roundness
       (partial
-        (if rs smooth-union-color-symmetric smooth-union-color)
+        (if s smooth-union-color-symmetric smooth-union-color)
         (typecheck color-roundness jlsl/type/float))
       sharp-union-color)))
 
-(defnamed intersect [:?r :?rs :?distance :?color &shapes]
+(defnamed intersect [:?r :?s :?distance :?color &shapes]
   ```
   Intersect two or more shapes. The named arguments here produce a smooth intersection,
   and are similar to the arguments to `union`.
 
   If you're performing rounded intersections with surfaced shapes in 3D, the color
-  field produced by `:rs` might give more intuitive results. This is because
+  field produced by `:s` might give more intuitive results. This is because
   the color field of the first shape is only visible as a thin, two-dimensional
   surface, and as soon as you start to blend it with the second shape it will be
   overtaken.
@@ -177,27 +177,27 @@
   intersection (i.e. slicing into the intersection, or transplanting the color field),
   the asymmetric `:r` rounding will probably be more intuitive.
   ```
-  (assert (not (and r rs)) "you can only specify :r or :rs, not both")
-  (def distance-roundness (zero-to-nil (or distance r rs)))
-  (def color-roundness (zero-to-nil (or color r rs)))
+  (assert (not (and r s)) "you can only specify :r or :s, not both")
+  (def distance-roundness (zero-to-nil (or distance r s)))
+  (def color-roundness (zero-to-nil (or color r s)))
   (boolean shapes
     (if distance-roundness
       (partial smooth-max-distance (typecheck distance-roundness jlsl/type/float))
       max-distance)
     (if color-roundness
       (partial
-        (if rs smooth-union-color-symmetric smooth-union-color)
+        (if s smooth-union-color-symmetric smooth-union-color)
         (typecheck color-roundness jlsl/type/float))
       sharp-union-color)
     ))
 
-(defnamed subtract [:?r :?rs :?distance :?color &shapes]
+(defnamed subtract [:?r :?s :?distance :?color &shapes]
   ```
   Subtract one or more shapes from a source shape. The named arguments
   here produce a smooth subtraction, and are similar to the arguments to `union`.
 
   If you're performing rounded subtractions with surfaced shapes in 3D, the color
-  field produced by `:rs` might give more intuitive results. This is because
+  field produced by `:s` might give more intuitive results. This is because
   the color field of the first shape is only visible as a thin, two-dimensional
   surface, and as soon as you start to blend it with the second shape it will be
   overtaken.
@@ -207,16 +207,16 @@
   will probably be more intuitive.
 
   ```
-  (assert (not (and r rs)) "you can only specify :r or :rs, not both")
-  (def distance-roundness (zero-to-nil (or distance r rs)))
-  (def color-roundness (zero-to-nil (or color r rs)))
+  (assert (not (and r s)) "you can only specify :r or :s, not both")
+  (def distance-roundness (zero-to-nil (or distance r s)))
+  (def color-roundness (zero-to-nil (or color r s)))
   (boolean shapes
     (if distance-roundness
       (partial smooth-neg-max-distance (typecheck distance-roundness jlsl/type/float))
       neg-max-distance)
     (if color-roundness
       (partial
-        (if rs smooth-subtract-color-symmetric smooth-union-color)
+        (if s smooth-subtract-color-symmetric smooth-union-color)
         (typecheck color-roundness jlsl/type/float))
       sharp-union-color)))
 
