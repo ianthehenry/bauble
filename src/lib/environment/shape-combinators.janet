@@ -68,7 +68,25 @@
         (set nearest (+ (mix nearest dist h) (* r h (- 1 h))))))
     nearest))
 
-(defn- sharp-union-color [colors]
+(defn- sharp-union-color-symmetric [colors]
+  (def surface-id
+    (jlsl/iife "union-color-index"
+      (var nearest 1e20)
+      (var nearest-index 0:u)
+      ,;(seq [[i [_ d]] :pairs (reverse colors)]
+        (def i (int/u64 (- (@length colors) i 1)))
+        (jlsl/statement
+          (var d ,d)
+          (if (< d nearest) (do
+            (set nearest d)
+            (set nearest-index i)))))
+      nearest-index))
+  (jlsl/iife "union-color"
+    ,(jlsl/statement/case surface-id
+      (seq [[i [c _]] :pairs colors] [(jlsl/coerce-expr (int/u64 i)) (jlsl/statement (return ,c))]))
+    [0 0 0]))
+
+(defn- sharp-union-color-asymmetric [colors]
   (def surface-id
     (jlsl/iife "union-color-index"
       (var nearest 1e20)
@@ -82,7 +100,6 @@
             (set nearest d)
             (set nearest-index i)))))
       nearest-index))
-
   (jlsl/iife "union-color"
     ,(jlsl/statement/case surface-id
       (seq [[i [c _]] :pairs colors] [(jlsl/coerce-expr (int/u64 i)) (jlsl/statement (return ,c))]))
@@ -132,23 +149,100 @@
 
 (defn- zero-to-nil [x] (if (= x 0) nil x))
 
+# TODO: :distance and :color shouldn't be special-cased;
+# these operations should work with any :&fields
 (defnamed union [:?r :?s :?distance :?color &shapes]
-  ```
+  ````
   Union two or more shapes together. Pass `:r` or `:s` to produce a smooth union.
 
-  `:r` and `:s` combine color fields differently. `:s` is a symmetric union, where
-  the color field is based on the nearest shape, regardless of the order that they're
-  specified. `:r` is an asymmetric union where the order matters, and later shapes will
-  be considered "on top of" previous shapes.
+  ```example
+  (union
+    (ball 100 | shade red | move x -50)
+    (ball 100 | shade sky | move x 50))
+  ```
 
-  These produce identical colors on the surface, but different interior color fields.
-  It's easy to see the difference in 2D, while in 3D the difference only matters if
-  you're cutting into a shape, or transplanting the color field from one shape to another.
+  There are two ways that `union` (and other boolean operations) can combine color fields.
+  The default is to put later shapes "on top of" earlier shapes:
+
+  ```example
+  (union
+    (circle 100 | move x -50 | color red)
+    (circle 100 | move x +50 | color sky))
+  ```
+
+  And you can perform a smoothed version of this operation with `:r`:
+
+  ```example
+  (union :r 20
+    (circle 100 | move x -50 | color red)
+    (circle 100 | move x +50 | color sky))
+  ```
+
+  The other way to combine color fields is to simply pick the nearest
+  color. This produces a symmetric color field where the order of arguments
+  doesn't matter:
+
+  ```example
+  (union :s 20
+    (circle 100 | move x -50 | color red)
+    (circle 100 | move x +50 | color sky))
+  ```
+
+  (You can pass `:s 0` if you want a sharp symmetric color union.)
+
+  In 3D, the difference is harder to see, because they both produce
+  the same color field at the shape's surface:
+
+  ```example
+  (union
+    (union :r 20
+      (ball 100 | move x -50 | shade red)
+      (ball 100 | move x +50 | shade sky)
+    | move y 100)
+    (union :s 20
+      (ball 100 | move x -50 | shade red)
+      (ball 100 | move x +50 | shade sky)
+    | move y -100))
+  ```
+
+  But just as in 2D, they produce different colors inside the shapes:
+
+  ```example
+  (union
+    (union :r 20
+      (ball 100 | move x -50 | shade red)
+      (ball 100 | move x +50 | shade sky)
+    | move y 100)
+    (union :s 20
+      (ball 100 | move x -50 | shade red)
+      (ball 100 | move x +50 | shade sky)
+    | move y -100)
+  | sliced z (sin t * 50))
+  ```
+
+  This is more relevant when using `subtract` or `intersect`, which will
+  typically prefer the `:s` behavior.
 
   You can also pass `:distance` or `:color` to specify a different smoothing radius for
-  the separate fields. For example, to produce a smooth symmetric color union with a sharp
-  distance field, pass `(union :s 10 :distance 0 ;shapes)`.
+  the separate fields. For example, you can produce a smooth symmetric color union with a sharp
+  distance field:
+
+  ```example
+  (union :s 30 :distance 0
+    (ball 100 | move x -50 | shade red)
+    (ball 100 | move x +50 | shade sky))
   ```
+
+  Or a smooth distance field with a sharp transition in color:
+
+  ```example
+  (union :r 30 :color 0
+    (ball 100 | move x -50 | shade red)
+    (ball 100 | move x +50 | shade sky))
+  ```
+
+  Or any combination like that.
+  ````
   (assert (not (and r s)) "you can only specify :r or :s, not both")
   (def distance-roundness (zero-to-nil (or distance r s)))
   (def color-roundness (zero-to-nil (or color r s)))
@@ -160,23 +254,54 @@
       (partial
         (if s smooth-union-color-symmetric smooth-union-color)
         (typecheck color-roundness jlsl/type/float))
-      sharp-union-color)))
+      (if s sharp-union-color-symmetric sharp-union-color-asymmetric))))
 
 (defnamed intersect [:?r :?s :?distance :?color &shapes]
-  ```
-  Intersect two or more shapes. The named arguments here produce a smooth intersection,
-  and are similar to the arguments to `union`.
+  ````
+  Intersect two or more shapes. The named arguments produce a smooth intersection;
+  see `union` for a thorough description.
 
-  If you're performing rounded intersections with surfaced shapes in 3D, the color
-  field produced by `:s` might give more intuitive results. This is because
-  the color field of the first shape is only visible as a thin, two-dimensional
-  surface, and as soon as you start to blend it with the second shape it will be
-  overtaken.
-
-  Meanwhile if you're working in 2D, or looking at the interior distance field of a 3D
-  intersection (i.e. slicing into the intersection, or transplanting the color field),
-  the asymmetric `:r` rounding will probably be more intuitive.
+  ```example
+  (intersect
+    (ball 100 | move x -50 | shade red)
+    (ball 100 | move x +50 | shade sky))
   ```
+
+  Note that although it doesn't matter when doing a sharp intersection,
+  you probably want to use `:s` to smooth over `:r`, or else the latter
+  shape's color field will "take over" the earlier shape. Compare:
+
+  ```example
+  (intersect :r 30
+    (ball 100 | move x -50 | shade red)
+    (ball 100 | move x +50 | shade sky))
+  ```
+  ```example
+  (intersect :s 30
+    (ball 100 | move x -50 | shade red)
+    (ball 100 | move x +50 | shade sky))
+  ```
+
+  This effect makes sense if you think about the shapes in 2D:
+
+  ```example
+  (intersect :r 30
+    (circle 100 | move x -50 | color red)
+    (circle 100 | move x +50 | color sky))
+  ```
+
+  The second shape was on top of the first shape, so the first
+  shape's color field is only visible where it fades into the
+  shape of the first. But with a symmetric intersection:
+
+  ```example
+  (intersect :s 30
+    (circle 100 | move x -50 | color red)
+    (circle 100 | move x +50 | color sky))
+  ```
+
+  This doesn't happen.
+  ````
   (assert (not (and r s)) "you can only specify :r or :s, not both")
   (def distance-roundness (zero-to-nil (or distance r s)))
   (def color-roundness (zero-to-nil (or color r s)))
@@ -188,25 +313,36 @@
       (partial
         (if s smooth-union-color-symmetric smooth-union-color)
         (typecheck color-roundness jlsl/type/float))
-      sharp-union-color)
-    ))
+      (if s sharp-union-color-symmetric sharp-union-color-asymmetric))))
 
 (defnamed subtract [:?r :?s :?distance :?color &shapes]
-  ```
+  ````
   Subtract one or more shapes from a source shape. The named arguments
   here produce a smooth subtraction, and are similar to the arguments to `union`.
 
-  If you're performing rounded subtractions with surfaced shapes in 3D, the color
-  field produced by `:s` might give more intuitive results. This is because
-  the color field of the first shape is only visible as a thin, two-dimensional
-  surface, and as soon as you start to blend it with the second shape it will be
-  overtaken.
-
-  Meanwhile if you're working in 2D, or looking at the interior distance field of a 3D
-  subtraction (i.e. slicing into the subtracting shape), the asymmetric `:r` rounding
-  will probably be more intuitive.
-
+  ```example
+  (subtract
+    (ball 100 | move x -50 | shade red)
+    (ball 100 | move x +50 | shade sky))
   ```
+
+  Like `union` and `intersect`, you can perform a smooth subtraction with `:r` or `:s`:
+
+  ```example
+  (subtract :r 20
+    (ball 100 | move x -50 | shade red)
+    (ball 100 | move x +50 | shade sky))
+  ```
+
+  ```example
+  (subtract :s 20
+    (ball 100 | move x -50 | shade red)
+    (ball 100 | move x +50 | shade sky))
+  ```
+
+  See the docs for `union` and `intersect` for a full explanation of these arguments
+  and the difference between them.
+  ````
   (assert (not (and r s)) "you can only specify :r or :s, not both")
   (def distance-roundness (zero-to-nil (or distance r s)))
   (def color-roundness (zero-to-nil (or color r s)))
@@ -218,7 +354,7 @@
       (partial
         (if s smooth-subtract-color-symmetric smooth-union-color)
         (typecheck color-roundness jlsl/type/float))
-      sharp-union-color)))
+      (if s sharp-union-color-symmetric sharp-union-color-asymmetric))))
 
 (defn- get-coefficient [value] (typecheck value jlsl/type/float))
 (deffn morph [& args]
