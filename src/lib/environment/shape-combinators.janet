@@ -362,22 +362,23 @@
 
   Morph linearly interpolates between two shapes.
 
-  ```
-  # 50% box, 50% sphere
-  (box 50 | morph (ball 50))
-
-  # 75% box, 25% sphere
-  (box 50 | morph 0.25 (ball 50))
+  ```example
+  (morph (sin+ t)
+    (ball 100 | shade sky)
+    (box 100 | shade red))
   ```
 
   Concretely this means that it returns a new shape whose individual fields
-  are linear interpolations of its inputs. With an anonymous `amount` coefficient,
-  both the distance and color fields will be interpolated with the same value.
-  But you can also specify per-field overrides:
+  are linear interpolations of the fields on the input shapes.
 
-  ```
-  # distance is a 50% blend, but the color is 90% red
-  (box 50 | color [1 0 0] | morph :color 0.1 (ball 50 | color [0 1 0]))
+  With an anonymous `amount` coefficient, both the distance and color fields
+  will be interpolated with the same value. But you can also specify per-field
+  overrides:
+
+  ```example
+  (morph (sin+ t) :color (cos+ t)
+    (ball 100 | shade sky)
+    (box 100 | shade red))
   ```
   ````
   (def field-coefficients @{})
