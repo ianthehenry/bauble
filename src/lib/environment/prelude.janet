@@ -117,7 +117,7 @@
 (defn map-color
   ```
   Apply a function `f` to the shape's color field. `f` should take and return a
-  `:vec3` expression.
+  `vec3` expression.
 
   The returned shape has the same dimensions as the input.
 

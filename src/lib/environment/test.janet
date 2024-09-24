@@ -155,9 +155,11 @@
     background-color @{:doc "A variable that determines the background color of the canvas.\n\nDefault is `graydient`. This can be a vec3 or a vec4:\n\n```example\n(ball 100)\n(set background-color transparent)\n```"
                        :ref @[[do]]}
     ball @{:doc "(ball size)\n\nReturns a 3D shape, which is either a sphere or an ellipsoid, depending on the type of `size`.\n\n```example\n(ball 100)\n```\n\n```example\n(ball [50 80 120])\n```\n\nEllipsoids do not have correct distance fields. Their distance field is only a bound, and\nit has strange isosurfaces that can make it combine with other shapes oddly:\n\n```example\n(ball [30 50 80] | slice y)\n```"}
-    black @{:value [0.03 0.03 0.03]}
+    black @{:doc "  ```example\n  (set background-color black)\n  (ball 100 | shade black)\n  ```\n  "
+            :value [0.03 0.03 0.03]}
     blinn-phong @{:doc "(blinn-phong light color [:s shininess] [:g glossiness])\n\nA Blinn-Phong shader, intended to be passed as an argument to `shade`. `:s` controls\nthe strength of specular highlights, and `:g` controls the glossiness.\n\n```example\n(ball 100 | shade :f blinn-phong [1 0 0] :s 1 :g (osc t 5 5 30))\n```"}
-    blue @{:value [hsv 0.66666666666666663 0.98 1]}
+    blue @{:doc "  ```example\n  (set background-color blue)\n  (ball 100 | shade blue)\n  ```\n  "
+           :value [hsv 0.66666666666666663 0.98 1]}
     bool @{}
     box @{:doc "(box size [:r round])\n\nReturns a 3D shape, a box with corners at `(- size)` and `size`. `size` will be coerced to a `vec3`.\n\nThink of `size` like the \"radius\" of the box: a box with `size.x = 50` will be `100` units wide.\n\n```example\n(box 100 :r (osc t 3 0 10))\n```\n\n```example\n(box [100 (osc t 3 50 100) (oss t 4 50 100)])\n```"}
     box-frame @{:doc "(box-frame size thickness [:r round])\n\nReturns a 3D shape, the outline of a box.\n\n```example\n(union\n  (box-frame 100 5 :r (osc t 3 5))\n  (box-frame [(osc t 4 30 100) (osc t 5 30 100) (oss t 6 30 100)] 1))\n```"}
@@ -192,9 +194,11 @@
     cross-matrix @{:doc "(cross-matrix vec)\n\nReturns the matrix such that `(* (cross-matrix vec1) vec2)` = `(cross vec1 vec2)`."}
     cube @{:doc "(cube size [:r round])\n\nThis is an alias for the `float` overload of `box`."}
     cut-disk @{:doc "(cut-disk radius bottom)\n\nReturns a 2D shape.\n\n```example\n(cut-disk 100 (sin t * 80))\n```"}
-    cyan @{:value [hsv 0.5 0.98 1]}
+    cyan @{:doc "  ```example\n  (set background-color cyan)\n  (ball 100 | shade cyan)\n  ```\n  "
+           :value [hsv 0.5 0.98 1]}
     cylinder @{:doc "(cylinder axis radius height [:r round])\n\nReturns a 3D shape, a cylinder oriented along the given `axis`.\n\n```example\n(cylinder y 50 100)\n```\n\nThe second argument is twice the length of the cylinder. Like many shapes,\nyou can round it with `:r`.\n\n```example\n(cylinder z 100 50 :r (osc t 3 0 20))\n```"}
-    dark-gray @{:value [0.25 0.25 0.25]}
+    dark-gray @{:doc "  ```example\n  (set background-color dark-gray)\n  (ball 100 | shade dark-gray)\n  ```\n  "
+                :value [0.25 0.25 0.25]}
     default-2d-color @{:doc "A variable that determines the default color to use when rendering a 2D shape with no color field.\n\nDefault is `isolines`."
                        :ref @[[isolines]]}
     default-3d-color @{:doc "A variable that determines the default color to use when rendering a 3D shape with no color field.\n\nDefault is `(mix normal+ [1 1 1] (fresnel 5))`."
@@ -242,14 +246,16 @@
               :macro true}
     gl/let @{:doc "(gl/let bindings & body)\n\nLike `let`, but creates GLSL bindings instead of a Janet bindings. You can use this\nto reference an expression multiple times while only evaluating it once in the resulting\nshader.\n\nFor example:\n\n```\n(let [s (sin t)]\n  (+ s s))\n```\n\nProduces GLSL code like this:\n\n```\nsin(t) + sin(t)\n```\n\nBecause `s` refers to the GLSL *expression* `(sin t)`.\n\nMeanwhile:\n\n```\n(gl/let [s (sin t)]\n  (+ s s))\n```\n\nProduces GLSL code like this:\n\n```\nfloat let(float s) {\n  return s + s;\n}\n\nlet(sin(t))\n```\n\nOr something equivalent. Note that the variable is hoisted into an immediately-invoked function\nbecause it's the only way to introduce a new identifier in a GLSL expression context.\n\nYou can also use Bauble's underscore notation to fit this into a pipeline:\n\n```\n(s + s | gl/let [s (sin t)] _)\n```\n\nIf the body of the `gl/let` returns a shape, the bound variable will be available in all of its\nfields. If you want to refer to variables or expressions that are only available in some fields,\npass a keyword as the first argument:\n\n```example\n(gl/let :color [banding (dist * 10)]\n  (box 100 | shade [1 banding 0]))\n```"
              :macro true}
-    gl/with @{:doc "(gl/with bindings & body)\n\nLike `gl/let`, but instead of creating a new binding, it alters the value of an existing\nvariable. You can use this to give new values to dynamic variables. For example:\n\n```example\n# implement your own `move`\n(gl/with [p (- p [0 (sin t * 50) 0])] (ball 100))\n```\n\nYou can also use Bauble's underscore notation to fit this into a pipeline:\n\n```example\n(ball 100 | gl/with [p (- p [0 (sin t * 50) 0])] _)\n```\n\nYou can -- if you really want -- use this to alter `P` or `Q` to not refer to the point in\nglobal space, or use it to pretend that the camera `ray` is actually coming at a different angle.\n\nThe variables you change in `gl/with` will, by default, apply to all of the fields of a shape.\nYou can pass a keyword as the first argument to only change a particular field. This allows you\nto refer to variables that only exist in color expressions:\n\n```example\n(gl/with :color [normal (normal + (perlin p * 0.1))]\n  (ball 100 | shade [1 0 0]))\n```"
+    gl/with @{:doc "(gl/with bindings & body)\n\nLike `gl/let`, but instead of creating a new binding, it alters the value of an existing\nvariable. You can use this to give new values to dynamic variables. For example:\n\n```example\n# implement your own (move)\n(gl/with [p (- p [0 (sin t * 50) 0])] (ball 100))\n```\n\nYou can also use Bauble's underscore notation to fit this into a pipeline:\n\n```example\n(ball 100 | gl/with [p (- p [0 (sin t * 50) 0])] _)\n```\n\nYou can -- if you really want -- use this to alter `P` or `Q` to not refer to the point in\nglobal space, or use it to pretend that the camera `ray` is actually coming at a different angle.\n\nThe variables you change in `gl/with` will, by default, apply to all of the fields of a shape.\nYou can pass a keyword as the first argument to only change a particular field. This allows you\nto refer to variables that only exist in color expressions:\n\n```example\n(gl/with :color [normal (normal + (perlin p * 0.1))]\n  (ball 100 | shade [1 0 0]))\n```"
               :macro true}
     gradient @{:doc "(Color only!) An approximation of the 2D distance field gradient at `Q`."
                :value [:var "gradient" :vec2]}
-    gray @{:value [0.5 0.5 0.5]}
+    gray @{:doc "  ```example\n  (set background-color gray)\n  (ball 100 | shade gray)\n  ```\n  "
+           :value [0.5 0.5 0.5]}
     graydient @{:doc "The default background color, a gray gradient."
                 :value [do]}
-    green @{:value [hsv 0.33333333333333331 0.98 1]}
+    green @{:doc "  ```example\n  (set background-color green)\n  (ball 100 | shade green)\n  ```\n  "
+            :value [hsv 0.33333333333333331 0.98 1]}
     ground @{:doc "(ground [offset])\n\nReturns a 3D plane that only exists while the camera is above it.\n\nThis is useful for quickly debugging shadows while still being able\nto see the underside of your scene, although note that taking the plane\naway will affect ambient occlusion, so you're not *really* seeing the\nunderside."}
     hash @{:doc "(hash v)\n\nReturn a pseudorandom float. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
     hash2 @{:doc "(hash2 v)\n\nReturn a pseudorandom `vec2`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
@@ -257,7 +263,8 @@
     hash4 @{:doc "(hash4 v)\n\nReturn a pseudorandom `vec4`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
     hexagon @{:doc "(hexagon radius [:r round])\n\n```example\n(hexagon 100 :r (osc t 3 20))\n```"}
     hexagram @{:doc "(hexagram radius [:r round])\n\n```example\n(hexagram 100 :r (osc t 3 20))\n```"}
-    hot-pink @{:value [hsv 0.91666666666666663 0.98 1]}
+    hot-pink @{:doc "  ```example\n  (set background-color hot-pink)\n  (ball 100 | shade hot-pink)\n  ```\n  "
+               :value [hsv 0.91666666666666663 0.98 1]}
     hsl @{:doc "(hsl hue saturation lightness)\n\nReturns a color."}
     hsv @{:doc "(hsv hue saturation value)\n\nReturns a color."}
     in @{:doc "(in & args)\n\n"}
@@ -269,20 +276,23 @@
     isolines @{:doc "A color that represents the visualization of the 2D gradient. This is\nthe default color used when rendering a 2D shape with no color field."
                :value [isolines]}
     length @{}
-    light-gray @{:value [0.75 0.75 0.75]}
+    light-gray @{:doc "  ```example\n  (set background-color light-gray)\n  (ball 100 | shade light-gray)\n  ```\n  "
+                 :value [0.75 0.75 0.75]}
     light/ambient @{:doc "(light/ambient color [offset] [:brightness brightness] [:hoist hoist])\n\nShorthand for `(light/point color (P + offset))`.\n\nWith no offset, the ambient light will be completely directionless, so it won't\ncontribute to specular highlights. By offsetting by a multiple of the surface\nnormal, or by the surface normal plus some constant, you can create an ambient\nlight with specular highlights, which provides some depth in areas of your scene\nthat are in full shadow."}
     light/directional @{:doc "(light/directional color dir dist [:shadow softness] [:brightness brightness] [:hoist hoist])\n\nA light that hits every point at the same angle.\n\nShorthand for `(light/point color (P - (dir * dist)))`."}
     light/map @{:doc "(light/map light f)\n\n`f` takes and returns a `Light` expression."}
     light/map-brightness @{:doc "(light/map-brightness light f)\n\n`f` takes and returns a `:float` expression."}
-    light/map-color @{:doc "(light/map-color light f)\n\n`f` takes and returns a `:vec3` expression."}
+    light/map-color @{:doc "(light/map-color light f)\n\n`f` takes and returns a `vec3` expression."}
     light/point @{:doc "(light/point color position [:shadow softness] [:brightness brightness] [:hoist hoist])\n\nReturns a new light, which can be used as an input to some shading\nfunctions.\n\nAlthough this is called a point light, the location of the \"point\" can vary\nwith a dynamic expression. A light that casts no shadows and is located at\n`P` (no matter where `P` is) is an ambient light. A light that is always\nlocated at a fixed offset from `P` is a directional light.\n\nBy default lights don't cast shadows, but you can change that by passing a\n`:shadow` argument. `0` will cast hard shadows, and any other expression\nwill cast a soft shadow (it should be a number roughly in the range `0` to\n`1`).\n\nShadow casting affects the `brightness` of the light. You can also specify a\nbaseline `:brightness` explicitly, which defaults to `1`.\n\nShadow casting always occurs in the global coordinate space, so you should\nposition lights relative to `P`, not `p`.\n\nBy default light calculations are hoisted (see `gl/def` for more info). This\nis an optimization that's helpful if you have a light that casts shadows\nthat applies to multiple shaded surfaces that have been combined with a\nsmooth `union` or `morph` or other shape combinator. Instead of computing\nshadows twice and mixing them together, the shadow calculation will be\ncomputed once at the top level of the shader. Note though that this will\nprevent you from referring to variables that don't exist at the top\nlevel -- e.g. anything defined with `gl/let`, or the index argument of\n`tiled` shape. If you want to make a light that dynamically varies, pass\n`:hoist false`."}
     light? @{:doc "(light? value)\n\nReturns `true` if `value` is a GLSL expression with type `Light`."}
-    lime @{:value [hsv 0.25 0.98 1]}
+    lime @{:doc "  ```example\n  (set background-color lime)\n  (ball 100 | shade lime)\n  ```\n  "
+           :value [hsv 0.25 0.98 1]}
     line @{:doc "(line from to from-radius [to-radius])\n\nReturns a line between two points.\n\n```example\n(line\n  [-100 (sin t * 100) (cos t * 100)]\n  [100 (cos t * 100) (sin t * 100)]\n  10\n| union (box-frame 100 1))\n```\n\nYou can supply two radii to taper the line over its length:\n\n```example\n(line\n  [-100 (sin t * 100) (cos t * 100)]\n  [100 (cos t * 100) (sin t * 100)]\n  (oss t 3 50) (osc t 5 50)\n| union (box-frame 100 1))\n```\n\nYou can also give 2D points for a line in 2D:\n\n```example\n(line\n  [-100 (cos t * 100)]\n  [100 (sin t * 100)]\n  (osc t 3 50) (osc t 5 50))\n```"}
     log @{}
     log2 @{}
-    magenta @{:value [hsv 0.83333333333333337 0.98 1]}
-    map-color @{:doc "(map-color shape f)\n\nApply a function `f` to the shape's color field. `f` should take and return a\n`:vec3` expression.\n\nThe returned shape has the same dimensions as the input.\n\nThis differs from `shape/map-color` in that the expression is wrapped in `gl/let`,\nso you can refer to it multiple times."}
+    magenta @{:doc "  ```example\n  (set background-color magenta)\n  (ball 100 | shade magenta)\n  ```\n  "
+              :value [hsv 0.83333333333333337 0.98 1]}
+    map-color @{:doc "(map-color shape f)\n\nApply a function `f` to the shape's color field. `f` should take and return a\n`vec3` expression.\n\nThe returned shape has the same dimensions as the input.\n\nThis differs from `shape/map-color` in that the expression is wrapped in `gl/let`,\nso you can refer to it multiple times."}
     map-distance @{:doc "(map-distance shape f)\n\nApply a function `f` to the shape's distance field. `f` should take and return a\n`:float` expression.\n\nThe returned shape has the same dimensions as the input.\n\nThis differs from `shape/map-distance` in that the expression is wrapped in `gl/let`,\nso you can refer to it multiple times."}
     mat2 @{}
     mat2x2 @{}
@@ -316,7 +326,8 @@
     octagon @{:doc "(octagon radius [:r round])\n\n```example\n(octagon 100 :r (osc t 3 20))\n```"}
     octahedron @{:doc "(octahedron radius [:r round])\n\nReturns a 3D shape.\n\n```example\n(octahedron 100 :r (sin+ t * 20) | rotate x t y t z t)\n```"}
     or @{}
-    orange @{:value [hsv 0.083333333333333329 0.98 1]}
+    orange @{:doc "  ```example\n  (set background-color orange)\n  (ball 100 | shade orange)\n  ```\n  "
+             :value [hsv 0.083333333333333329 0.98 1]}
     oriented-rect @{:doc "(oriented-rect start end width)\n\nTODOC"}
     osc @{:doc "(osc &opt period lo hi)\n\nReturns a number that oscillates with the given period. There are several overloads:\n\n```\n# 0 to 1 to 0 every second\n(osc t)\n\n# 0 to 1 to 0 every 10 seconds\n(osc t 10)\n\n# 0 to 100 to 0 every 10 seconds\n(osc t 10 100)\n\n# 50 to 100 to 50 every 10 seconds\n(osc t 10 50 100)\n```"}
     oss @{:doc "(oss &opt period lo hi)\n\nLike `osc`, but uses a sine wave instead of a cosine wave,\nso the output begins halfway between `lo` and `hi`."}
@@ -370,7 +381,8 @@
     plane @{:doc "(plane normal [offset])\n\nReturns a 3D shape that represents the infinite extrusion\nof a plane in a single direction. `normal` should be a\nnormalized vector.\n\nBecause of its infinite size and featurelessness, this shape\nis difficult to visualize on its own. You'll probably want to\nuse it in combination with boolean operations:\n\n```example\n(ball 100 | intersect (plane x (sin t * 50)))\n```\n\n`(plane x)` is the shape that faces the `+x` direction and extends\ninfinitely in the `-x` direction, and a positive offset will move it\nin the `+x` direction."}
     pow @{}
     product @{:doc "(product v)\n\nMultiply the components of a vector."}
-    purple @{:value [hsv 0.75 0.98 1]}
+    purple @{:doc "  ```example\n  (set background-color purple)\n  (ball 100 | shade purple)\n  ```\n  "
+             :value [hsv 0.75 0.98 1]}
     q @{:doc "The local point in 2D space. This is the position being shaded, with any\ntransformations applied."
         :value [:var "q" :vec2]}
     quad-circle @{:doc "(quad-circle radius)\n\nReturns a 2D shape, an approximation of a circle made out of quadratic bezier curves.\n\n```example\n(quad-circle 100)\n```\n\nIt's like a circle, but quaddier."}
@@ -398,7 +410,8 @@
           :value [:var "ray" Ray]}
     ray? @{:doc "(ray? value)\n\nReturns `true` if `value` is a GLSL expression with type `Ray`."}
     rect @{:doc "(rect size [:r radius])\n\nReturns a 2D shape, a rectangle with corners at `(- size)` and `size`. `size` will be coerced to a `vec2`.\n\nThink of `size` like the \"radius\" of the rect: a rect with `size.x = 50` will be `100` units wide.\n\n`radii` can be a single radius or a `vec4` of `[top-left` `top-right` `bottom-right` `bottom-left]`.\n\n```example\n(union\n  (rect 50 | move [-100 100])\n  (rect 50 :r 10 | move [100 100])\n  (rect 50 :r [0 10 20 30] | move [-100 -100])\n  (rect 50 :r [0 30 0 30] | move [100 -100]))\n```"}
-    red @{:value [hsv 0 0.98 1]}
+    red @{:doc "  ```example\n  (set background-color red)\n  (ball 100 | shade red)\n  ```\n  "
+          :value [hsv 0 0.98 1]}
     reflect @{}
     refract @{}
     remap+ @{:doc "(remap+ x)\n\nLinearly transform a number in the range `[-1 1]` to `[0 1]`."}
@@ -441,7 +454,8 @@
     sin+ @{:doc "(sin+ x)\n\nLike `sin`, but returns a number in the range `0` to `1`."}
     sin- @{:doc "(sin- x)\n\nLike `sin`, but returns a number in the range `0` to `-1`."}
     sinh @{}
-    sky @{:value [hsv 0.58333333333333337 0.98 1]}
+    sky @{:doc "  ```example\n  (set background-color sky)\n  (ball 100 | shade sky)\n  ```\n  "
+          :value [hsv 0.58333333333333337 0.98 1]}
     slice @{:doc "(slice shape axis &opt position)\n\nTake a 2D slice of a 3D shape at a given `position` along the supplied `axis`.\n\n`position` defaults to `0`."}
     sliced @{:doc "(sliced shape axis &opt position)\n\nTake a 2D slice of a 3D shape at a given `position` along the supplied `axis`,\nand then project it back into 3D space at the same spot.\n\nThis is useful for quickly looking inside shapes:\n\n```example\n(union\n  (box 80 | shade red)\n  (ball 100 | shade green)\n# try commenting out this line:\n| sliced y (sin t * 100)\n)\n```"}
     slow @{:doc "(slow shape amount)\n\nScales the shape's distance field, causing the raymarcher to converge more slowly.\nThis is useful for raymarching distance fields that vary based on `p` -- shapes\nthat don't actually provide an accurate distance field unless you are very close\nto their surfaces. Compare the following examples, with and without `slow`:\n\n```example\n(box 100\n| rotate y (p.y / 30)\n| rotate x t)\n```\n\n```example\n(box 100\n| rotate y (p.y / 30)\n| rotate x t\n| slow 0.5)\n```\n\nNote however that `slow` will also affect the behavior of anything that depends on a shape's\ndistance field, such as smooth boolean operations, morphs, soft shadows, and so on. A future\nversion of Bauble may mitigate these effects, but it is the way that it is right now.\n\n```example\n# slowing the distance field introduces asymmetry\n# into the smooth union\n(union :r 50\n  (ball 100 | move x 75)\n  (ball 100 | move x -75 | slow (osc t 4 0.25 1)))\n```"}
@@ -495,14 +509,16 @@
     tau/8*6 @{:value 4.71238898038469}
     tau/8*7 @{:value 5.497787143782138}
     tau/9 @{:value 0.69813170079773179}
-    teal @{:value [hsv 0.41666666666666669 0.98 1]}
+    teal @{:doc "  ```example\n  (set background-color teal)\n  (ball 100 | shade teal)\n  ```\n  "
+           :value [hsv 0.41666666666666669 0.98 1]}
     tile @{:doc "(tile shape size [:limit limit] [:oversample oversample] [:sample-from sample-from] [:sample-to sample-to])\n\nRepeat the region of space `size` units around the origin. Pass `:limit` to constrain\nthe number of repetitions. See `tile:` or `tile*` if you want to produce a shape that\nvaries as it repeats.\n\nTo repeat space only along some axes, pass `0`. For example, to only tile in the `y` direction:\n\n```example\n(tile (ball 50) [0 100 0])\n```\n\nIf you're repeating a shape that is not symmetric, you can use `:oversample true` to evaluate\nmultiple instances at each pass, essentially considering the distance not only to this\ntile, but also to neighboring tiles. Compare these two distance fields:\n\n```example\n(rect 30 | rotate 0.3 | tile [80 80] :oversample false)\n```\n```example\n(rect 30 | rotate 0.3 | tile [80 80] :oversample true)\n```\n\nThe default oversampling is `:sample-from 0` `:sample-to 1`, which means looking at one adjacent\ntile, asymmetrically based on the location of the point (so when evaluating a point near\nthe right edge of a tile, it will look at the adjacent tile to the right, but not the tile\nto the left). By passing `:sample-from -1`, you can also look at the tile to the left.\nBy passing `:sample-from 0 :sample-to [2 1 1]`, it will look at two tiles to the right in the\n`x` direction, and one tile up/down/in/out.\n\nThis can be useful when raymarching a 3D space where each tile is quite different, but note\nthat it's very costly to increase these values. If you're tiling a 3D shape in all directions,\nthe default `:oversample` parameters will do 8 distance field evaluations;\n`:sample-from -1` `:sample-to 1` will do 27."}
     tile* @{:doc "(tile* size get-shape [:limit limit] [:oversample oversample] [:sample-from sample-from] [:sample-to sample-to])\n\nLike `tile`, but the shape is a result of invoking `get-shape` with one argument,\na GLSL variable referring to the current index in space. Unlike `tile`, `size` must\nbe a vector that determines the dimension of the index variable.\n\n```example\n(tile* [10 10] (fn [$i] \n  (circle 5 \n  | color (hsv (hash $i) 0.5 1))))\n```\n\nYou can use this to generate different shapes or colors at every sampled tile. The index\nwill be a vector with integral components that represents  being considered. So for\nexample, in 3D, the shape at the origin has an index of `[0 0 0]` and the shape above\nit has an index of `[0 1 0]`."}
     tile: @{:doc "(tile: shape $i & args)\n\nLike `tile*`, but its first argument should be a form that will\nbecome the body of the function. Basically, it's a way to create\na repeated shape where each instance of the shape varies, and it's\nwritten in a way that makes it conveniently fit into a pipeline:\n\n```example\n(circle 5 \n| color (hsv (hash $i) 0.5 1) \n| tile: $i [10 10])\n```"
             :macro true}
     tint @{:doc "(tint shape color &opt amount)\n\nAdd a color to a shape's color field.\n\n```example\n(ball 100 | shade normal+ | tint [1 0 0] (sin+ t))\n```"}
     torus @{:doc "(torus axis radius thickness)\n\nReturns a 3D shape, a torus around the provided `axis`.\n\n```example\n(torus z 100 (osc t 3 10 50))\n```"}
-    transparent @{:value [vec4 0]}
+    transparent @{:doc "\nThis is a `vec4`, not a `vec3`, so you\ncan basically only use it as a background color.\n\n```example\n(set background-color transparent)\n```"
+                  :value [vec4 0]}
     trapezoid @{:doc "(trapezoid bottom-width top-width height [:r round])\n\nReturns a 2D shape.\n\n```example\n(trapezoid (osc t 3 50 100) (oss t 2 100 50) 100)\n```"}
     triangle @{:doc "(triangle & args)\n\nUsually returns a 2D shape, with various overloads:\n\n```example\n(triangle 100)\n```\n\n```example\n(triangle [50 100])\n```\n\n```example\n(triangle [-50 100] [100 10] [-10 -100])\n```\n\nBut it can also return a 3D shape:\n\n```example\n(triangle \n  [(osc t 4 -100 100) -100 (oss t 5 -100 100)]\n  [100 (osc t 6 -100 100) 100]\n  [-100 (oss t 7 -100 100) (osc t 8 -100 100)]\n| union (box-frame 100 1))\n```"}
     trunc @{}
@@ -516,7 +532,8 @@
            :macro true}
     viewport @{:doc "You don't have to think about this value unless you're implementing a custom `main` function,\nwhich you probably aren't doing.\n\nThis represents the portion of the canvas currently being rendered. The `xy` components are the start\n(bottom left) and the `zw` coordinates are the size.\n\nNormally this will be equal to `[[0 0] resolution]`, but when rendering quad-view or a chunked render,\nit may have a different origin or resolution.\n\nYou can use `(gl-frag-coord.xy - viewport.xy)` in order to get the logical fragment position (the value\nexposed to a typical shader as `Frag-Coord`)."
                :value [:var "viewport" :vec4]}
-    white @{:value [1 1 1]}
+    white @{:doc "  ```example\n  (set background-color white)\n  (ball 100 | shade white)\n  ```\n  "
+            :value [1 1 1]}
     with-lights @{:doc "(with-lights shape & lights)\n\nEvaluate `shape` with the `*lights*` dynamic variable set to the provided lights.\n\nThe argument order makes it easy to stick this in a pipeline. For example:\n\n```example\n(ball 100\n| shade [1 0 0]\n| with-lights\n  (light/point 0.5 [100 100 0])\n  (light/ambient 0.5))\n```"
                   :macro true}
     worley @{:doc "(worley point)\n\nWorley noise, also called cellular noise or voronoi noise.\nThe input `point` can be a `vec2` or a `vec3`.\n\n```example\n(ball 100 | color (worley (p.xy / 30) | vec3))\n```\n```example\n(ball 100 | color (worley (p / 30) | vec3))\n```\n\nReturns the nearest distance to points distributed randomly within the tiles of a square or cubic grid."}
@@ -524,7 +541,8 @@
     x @{:doc "`[1 0 0]`" :value [1 0 0]}
     xor @{}
     y @{:doc "`[0 1 0]`" :value [0 1 0]}
-    yellow @{:value [hsv 0.16666666666666666 0.98 1]}
+    yellow @{:doc "  ```example\n  (set background-color yellow)\n  (ball 100 | shade yellow)\n  ```\n  "
+             :value [hsv 0.16666666666666666 0.98 1]}
     z @{:doc "`[0 0 1]`" :value [0 0 1]}})
 
 (use .)

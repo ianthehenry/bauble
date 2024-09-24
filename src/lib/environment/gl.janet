@@ -93,7 +93,7 @@
   variable. You can use this to give new values to dynamic variables. For example:
 
   ```example
-  # implement your own `move`
+  # implement your own (move)
   (gl/with [p (- p [0 (sin t * 50) 0])] (ball 100))
   ```
 

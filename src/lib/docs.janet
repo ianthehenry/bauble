@@ -24,10 +24,10 @@
     :noise 5
     #:colors 0
     #:camera 0
-    #:rotation 0
     #:helpers 0
     #:unknown 0
-    :gl 99
+    :rotation 101
+    :gl 102
     :misc 200
     100
     #(errorf "unknown category %q" category)
@@ -84,7 +84,7 @@
       (string/has-prefix? "lib/environment/" filename)
         (let [basename (slice filename (length "lib/environment/") (- (length filename) (length ".janet")))]
           (case basename
-            "boolean" [:shapes :combinators]
+            "shape-combinators" [:shapes :combinators]
             "dimensions" [:shapes :combinators]
             "operator-overloads" [:misc]
             "forward-declarations" [:misc]
@@ -220,12 +220,14 @@
       6 values
     Noise
       8 values
-    GLSL helpers
-      8 values
     Camera
       12 values
+    Colors
+      18 values
     Rotation
       6 values
+    GLSL helpers
+      8 values
     Uncategorized
       38 values
   `))

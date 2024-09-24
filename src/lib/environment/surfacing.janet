@@ -94,7 +94,7 @@ set it in a way that fits nicely into a pipeline.
 
 (defn light/map-color
   ```
-  `f` takes and returns a `:vec3` expression.
+  `f` takes and returns a `vec3` expression.
   ```
   [light f]
   (sugar (jlsl/do

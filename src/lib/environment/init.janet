@@ -9,7 +9,7 @@
 (import ./shapes-2d :prefix "" :export true)
 (import ./shapes-3d :prefix "" :export true)
 (import ./dimensions :prefix "" :export true)
-(import ./boolean :prefix "" :export true)
+(import ./shape-combinators :prefix "" :export true)
 (import ./surfacing :prefix "" :export true)
 (import ./camera :prefix "" :export true)
 (import ./repetition :prefix "" :export true)
