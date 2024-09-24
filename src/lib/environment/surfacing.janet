@@ -519,3 +519,38 @@ set it in a way that fits nicely into a pipeline.
     (def light (pow ([69 72 79] / 255) (vec3 2.2)))
     (def dark (pow ([40 42 46] / 255) (vec3 2.2)))
     (vec3 (mix dark light (Frag-Coord.x + Frag-Coord.y / (resolution.x + resolution.y)))))))
+
+(defnamed bump [shape by ?amount]
+  ````
+  Alter the `normal` for a shape. You can use this along
+  with noise expressions to give the appearance of texture
+  without the expense of evaluating the offset multiple
+  times during the march.
+
+  Compare, an actually-bumpy shape:
+
+  ```example
+  (ball 100 | shade red | expand (perlin (p / 10)))
+  ```
+
+  To a shape with normals inspired by that bumpiness:
+
+  ```example
+  (ball 100 | shade red | bump (perlin (p / 10)) 0.1)
+  ```
+
+  The expression to `bump` will be evaluated using `calculate-normal`,
+  so it should vary with `p`. This is a much cheaper way to add texture
+  than trying to sculpt it into the distance field. Orange peel:
+
+  ```example
+  (ball 100 | shade (hsv 0.05 1 0.75) | bump (perlin+ p) 0.1)
+  (set camera (camera/perspective [(cos (t / 2)) 0 (sin (t / 2)) * 200] | camera/zoom (osc t 7 1 2)))
+  ```
+  ````
+  (default amount 1)
+  (def by (if (shape? by) (shape/distance by) (typecheck by jlsl/type/float)))
+  (def amount (typecheck amount jlsl/type/float))
+  (assert (shape/color shape) "you have to set a color field before you can bump it up")
+  (sugar (gl/with :color [normal (normal - (calculate-normal by * amount) | normalize)]
+    shape)))
