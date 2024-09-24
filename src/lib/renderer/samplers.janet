@@ -72,7 +72,9 @@
         (if (or (and (>= dist 0) (< dist MINIMUM_HIT_DISTANCE)) (> ray-depth MAXIMUM_TRACE_DISTANCE))
           (return ray-depth))
         (var rate (if (> dist 0) 0.95 1.05))
-        (+= ray-depth (* dist rate))))
+        (+= ray-depth (* dist rate))
+        (if (< ray-depth 0)
+          (return 0))))
     (return ray-depth)))
 
 # TODO: okay, so, theoretically we have nearest-distance in the current environment already
