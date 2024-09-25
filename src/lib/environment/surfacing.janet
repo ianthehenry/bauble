@@ -1,6 +1,8 @@
 (use ./import)
 (import ../expression-hoister)
 
+(def- VERY_LARGE_DISTANCE 1e6)
+
 (defn color
   ````
   Set a shape's color field. This is the primitive surfacing operation,
@@ -179,7 +181,7 @@ set it in a way that fits nicely into a pipeline.
   (var ray-dir (target - light-position / light-distance))
   (var brightness 1)
   (var sharpness (softness * softness /))
-  (var last-nearest 1e10)
+  (var last-nearest ,VERY_LARGE_DISTANCE)
   (var depth 0)
   (for (var i 0:u) (< i ,MAX_LIGHT_STEPS) (++ i)
     (var nearest (with [P (light-position + (ray-dir * depth)) p P] (nearest-distance)))

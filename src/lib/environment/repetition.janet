@@ -1,6 +1,10 @@
 (use ./import)
 (use ./transforms)
 
+# values too large create bizarre results
+# on my iphone
+(def- VERY_LARGE_DISTANCE 1e6)
+
 (defhelper- :vec3 safe-div [:vec3 a :vec3 b]
   (return [
     (if (= b.x 0) 0 (a.x / b.x))
@@ -42,7 +46,7 @@
         ,;loop-body)))))
 
 (make-tiler tile-distance-2d q
-  (var nearest 1e20)
+  (var nearest VERY_LARGE_DISTANCE)
   (for (var y start.y) (<= y end.y) (++ y)
     (for (var x start.x) (<= x end.x) (++ x)
       (with [$index [x y] q (- q (size * $index))]
@@ -50,7 +54,7 @@
   nearest)
 
 (make-tiler tile-distance-3d p
-  (var nearest 1e20)
+  (var nearest VERY_LARGE_DISTANCE)
   (for (var z start.z) (<= z end.z) (++ z)
     (for (var y start.y) (<= y end.y) (++ y)
       (for (var x start.x) (<= x end.x) (++ x)
@@ -59,7 +63,7 @@
   nearest)
 
 (make-tiler tile-other-2d q
-  (var nearest 1e20)
+  (var nearest VERY_LARGE_DISTANCE)
   (var nearest-index [0 0])
   (for (var y start.y) (<= y end.y) (++ y)
     (for (var x start.x) (<= x end.x) (++ x)
@@ -72,7 +76,7 @@
     other-field))
 
 (make-tiler tile-other-3d p
-  (var nearest 1e20)
+  (var nearest VERY_LARGE_DISTANCE)
   (var nearest-index [0 0 0])
   (for (var z start.z) (<= z end.z) (++ z)
     (for (var y start.y) (<= y end.y) (++ y)
@@ -211,14 +215,14 @@
       ,;loop-body))))
 
 (make-radiator radial-distance-2d
-  (var nearest 1e20)
+  (var nearest VERY_LARGE_DISTANCE)
   (for (var i start) (<= i end) (++ i)
     (with [$index i q (rotate q (* -1 angular-size i))]
       (set nearest (min nearest distance-field))))
   nearest)
 
 (make-radiator radial-other-2d
-  (var nearest 1e20)
+  (var nearest VERY_LARGE_DISTANCE)
   (var nearest-index 0)
   (for (var i start) (<= i end) (++ i)
     (with [$index i q (rotate q (* -1 angular-size i))]
@@ -230,14 +234,14 @@
     other-field))
 
 (make-radiator radial-distance-3d
-  (var nearest 1e20)
+  (var nearest VERY_LARGE_DISTANCE)
   (for (var i start) (<= i end) (++ i)
     (with [$index i p (rotate p (* -1 angular-size i))]
       (set nearest (min nearest distance-field))))
   nearest)
 
 (make-radiator radial-other-3d
-  (var nearest 1e20)
+  (var nearest VERY_LARGE_DISTANCE)
   (var nearest-index 0)
   (for (var i start) (<= i end) (++ i)
     (with [$index i p (rotate p (* -1 angular-size i))]

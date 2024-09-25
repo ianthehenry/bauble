@@ -336,4 +336,4 @@
   underside.
   ````
   (def offset (typecheck (@or offset 0) jlsl/type/float))
-  (shape/3d (gl/if (< ray.origin.y offset) 1e20 (dot p y - offset)))))
+  (shape/3d (gl/if (< ray.origin.y offset) 1e6 (dot p y - offset)))))

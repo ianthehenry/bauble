@@ -1,9 +1,16 @@
 (use ./import)
 
+# i was using 1e20, but on iOS this gives
+# incorrect results -- it's not able to clamp
+# values that are too large? it's not using enough
+# precision? i don't know. 1e10 still doesn't work
+(def- VERY_LARGE_DISTANCE 1e6)
+
 (defn- boolean [shapes reduce-distances reduce-colors]
   (shape/merge shapes (fn [fields]
     (def distances (seq [{:distance d} :in fields :when d] d))
-    (def colors (seq [{:color c :distance d} :in fields :when c] [c (@or d (jlsl/coerce-expr 0))]))
+    (def colors (seq [{:color c :distance d} :in fields :when c]
+      [c (@or d (jlsl/coerce-expr 0))]))
     {:distance
       (case (@length distances)
         0 nil
@@ -36,45 +43,46 @@
      nearest))
 
 (defn- smooth-min-distance [r distances]
-  (jlsl/do "smooth-min-distance"
+  (sugar (jlsl/do "smooth-min-distance"
     (var r ,r)
     (var nearest ,(first distances))
     ,;(seq [expr :in (drop 1 distances)]
       (jlsl/statement
         (var dist ,expr)
-        (var h (remap+ (clamp (/ (- nearest dist) r) -1 1)))
-        (set nearest (- (mix nearest dist h) (* r h (- 1 h))))))
-    nearest))
+        (var h (nearest - dist / r | clamp -1 1 | remap+))
+        (set nearest (mix nearest dist h - (* r h (1 - h))))))
+    nearest)))
 
 (defn- smooth-max-distance [r distances]
-  (jlsl/do "smooth-min-distance"
+  (sugar (jlsl/do "smooth-min-distance"
     (var r ,r)
     (var nearest ,(first distances))
     ,;(seq [expr :in (drop 1 distances)]
       (jlsl/statement
         (var dist ,expr)
-        (var h (- 1 (remap+ (clamp (/ (- nearest dist) r) -1 1))))
-        (set nearest (+ (mix nearest dist h) (* r h (- 1 h))))))
-    nearest))
+        (var h (1 - (nearest - dist / r | clamp -1 1 | remap+)))
+        (set nearest (mix nearest dist h + (* r h (1 - h))))))
+    nearest)))
 
 (defn- smooth-neg-max-distance [r distances]
-  (jlsl/do "smooth-min-distance"
+  (sugar (jlsl/do "smooth-min-distance"
     (var r ,r)
     (var nearest ,(first distances))
     ,;(seq [expr :in (drop 1 distances)]
       (jlsl/statement
         (var dist (- ,expr))
-        (var h (- 1 (remap+ (clamp (/ (- nearest dist) r) -1 1))))
-        (set nearest (+ (mix nearest dist h) (* r h (- 1 h))))))
-    nearest))
+        (var h (1 - (nearest - dist / r | clamp -1 1 | remap+)))
+        (set nearest (mix nearest dist h + (* r h (1 - h))))))
+    nearest)))
 
 (defn- sharp-union-color-symmetric [colors]
+  (def colors (reverse colors))
   (def surface-id
     (jlsl/iife "union-color-index"
-      (var nearest 1e20)
+      (var nearest ,(get-in colors [0 1]))
       (var nearest-index 0:u)
-      ,;(seq [[i [_ d]] :pairs (reverse colors)]
-        (def i (int/u64 (- (@length colors) i 1)))
+      ,;(seq [[i [_ d]] :pairs colors]
+        (def i (int/u64 i))
         (jlsl/statement
           (var d ,d)
           (if (< d nearest) (do
@@ -83,16 +91,18 @@
       nearest-index))
   (jlsl/iife "union-color"
     ,(jlsl/statement/case surface-id
-      (seq [[i [c _]] :pairs colors] [(jlsl/coerce-expr (int/u64 i)) (jlsl/statement (return ,c))]))
+      (seq [[i [c _]] :pairs colors]
+        [(jlsl/coerce-expr (int/u64 i)) (jlsl/statement (return ,c))]))
     [0 0 0]))
 
 (defn- sharp-union-color-asymmetric [colors]
+  (def colors (reverse colors))
   (def surface-id
     (jlsl/iife "union-color-index"
-      (var nearest 1e20)
+      (var nearest ,(get-in colors [0 1]))
       (var nearest-index 0:u)
-      ,;(seq [[i [_ d]] :pairs (reverse colors)]
-        (def i (int/u64 (- (@length colors) i 1)))
+      ,;(seq [[i [_ d]] :pairs colors]
+        (def i (int/u64 i))
         (jlsl/statement
           (var d ,d)
           (if (< d 0) (return i))
@@ -106,46 +116,46 @@
     [0 0 0]))
 
 (defn- smooth-union-color [r colors]
-  (jlsl/do "smooth-union-color"
+  (sugar (jlsl/do "smooth-union-color"
     (var r ,r)
     (var color [0 0 0])
-    (var nearest 1e20)
+    (var nearest VERY_LARGE_DISTANCE)
     ,;(seq [[color-expr dist-expr] :in colors]
       (jlsl/statement
         (var dist ,dist-expr)
-        (var contribution (- 1 (remap+ (clamp (/ (min dist (- dist nearest)) r) -1 1))))
-        (set nearest (- (mix nearest dist contribution) (* r contribution (- 1 contribution))))
+        (var contribution (1 - (dist - nearest | min dist / r | clamp -1 1 | remap+)))
+        (set nearest (mix nearest dist contribution - (* r contribution (1 - contribution))))
         (if (> contribution 0) (set color (mix color ,color-expr contribution)))
       ))
-    color))
+    color)))
 (defn- smooth-union-color-symmetric [r colors]
-  (jlsl/do "smooth-union-color"
+  (sugar (jlsl/do "smooth-union-color"
     (var r ,r)
     (var color [0 0 0])
-    (var nearest 1e20)
+    (var nearest VERY_LARGE_DISTANCE)
     ,;(seq [[color-expr dist-expr] :in colors]
       (jlsl/statement
         (var dist ,dist-expr)
-        (var contribution (remap+ (clamp (/ (- nearest dist) r) -1 1)))
-        (set nearest (- (mix nearest dist contribution) (* r contribution (- 1 contribution))))
+        (var contribution (nearest - dist / r | clamp -1 1 | remap+))
+        (set nearest (mix nearest dist contribution - (* r contribution (1 - contribution))))
         (if (> contribution 0) (set color (mix color ,color-expr contribution)))
       ))
-      color))
+      color)))
 
 (defn- smooth-subtract-color-symmetric [r colors]
   (def [first-color first-dist] (first colors))
-  (jlsl/do "smooth-subtract-color"
+  (sugar (jlsl/do "smooth-subtract-color"
     (var r ,r)
     (var color first-color)
     (var nearest first-dist)
     ,;(seq [[color-expr dist-expr] :in (drop 1 colors)]
       (jlsl/statement
         (var dist (- ,dist-expr))
-        (var contribution (- 1 (remap+ (clamp (/ (- nearest dist) r) -1 1))))
-        (set nearest (+ (mix nearest dist contribution) (* r contribution (- 1 contribution))))
+        (var contribution (1 - (nearest - dist / r | clamp -1 1 | remap+)))
+        (set nearest (mix nearest dist contribution + (* r contribution (1 - contribution))))
         (if (> contribution 0) (set color (mix color ,color-expr contribution)))
       ))
-      color))
+      color)))
 
 (defn- zero-to-nil [x] (if (= x 0) nil x))
 
