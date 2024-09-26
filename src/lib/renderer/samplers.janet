@@ -33,7 +33,7 @@
 #
 # tan(45 / 2) = (x / base-zoom-distance)
 
-(def- ortho-base-zoom-distance (* 2 base-zoom-distance (math/tan (/ (* tau (/ free-camera-fov 360)) 2))))
+(def- ortho-base-zoom-distance (sugar (* 2 base-zoom-distance (math/tan (free-camera-fov / 360 * tau / 2)))))
 (test ortho-base-zoom-distance 424.15468787004937)
 
 (defmacro jlsl/fn [t name & rest]
