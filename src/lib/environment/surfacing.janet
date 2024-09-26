@@ -541,6 +541,10 @@ set it in a way that fits nicely into a pipeline.
   (ball 100 | shade red | bump (perlin (p / 10)) 0.1)
   ```
 
+  This is much cheaper than using `expand`, so if you're only trying to add
+  a little texture and don't need to change the shape, consider using `bump`
+  instead.
+
   The expression to `bump` will be evaluated using `calculate-normal`,
   so it should vary with `p`. This is a much cheaper way to add texture
   than trying to sculpt it into the distance field. Orange peel:

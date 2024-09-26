@@ -168,10 +168,12 @@
     | color (hsv (hash $i) 0.5 1))))
   ```
 
-  You can use this to generate different shapes or colors at every sampled tile. The index
-  will be a vector with integral components that represents  being considered. So for
-  example, in 3D, the shape at the origin has an index of `[0 0 0]` and the shape above
-  it has an index of `[0 1 0]`.
+  You can use this to generate different shapes or colors at every sampled tile. The
+  index will be a vector with integral components that represents the current tile
+  being evaluated. So in 3D, the shape at the origin has an index of `[0 0 0]` and
+  the shape above it has an index of `[0 1 0]`.
+
+  See also `tile:`, which is a more convenient macro version of this function.
   ````
   (def size (jlsl/coerce-expr size))
   (def $index (jlsl/variable/new "tile-index" (jlsl/expr/type size)))
@@ -287,14 +289,63 @@
 
 (defnamed radial [shape ?axis count ?offset :?oversample :?sample-from :?sample-to]
   ````
-  TODOC
+  Repeat an angular slice of space `count` times around the given axis.
+
+  ```example
+  (torus x 100 1 | radial y 24)
+  ```
+
+  With an offset argument, you can translate the shape away from the origin first:
+
+  ```example
+  (torus x 100 1 | radial y 24 (osc t 5 0 120))
+  ```
+
+  If you're repeating a shape that is not symmetric, you can use `:oversample true` to evaluate
+  multiple instances at each pass, essentially considering the distance not only to this
+  slice, but also to neighboring slices. Compare these two distance fields:
+
+  ```example
+  (triangle [50 100] | radial 12 100)
+  ```
+  ```example
+  (triangle [50 100] | radial 12 100 :oversample true)
+  ```
+
+  The default oversampling is `:sample-from 0` `:sample-to 1`, which means looking at one adjacent
+  slice, asymmetrically based on the location of the point (so when evaluating a point near
+  the right edge of a slice, it will look at the slice to the right, but not the slice
+  to the left). By passing `:sample-from -1`, you can also look at the "far" slice.
+  By passing `:sample-from 0 :sample-to 2`, you can look at two slices in the direction of
+  the nearest slice.
+
+  This can be useful when raymarching a 3D space where each slice produces a different shape, or
+  where the shape you're marching doesn't fit into a single slice. For example:
+
+  ```example
+  (cone y 25 100 :r 1
+  | radial z 12 100 :oversample true :sample-from -1)
+  ```
   ````
   (def $index (jlsl/variable/new "radial-index" jlsl/type/float))
   (radial-aux shape axis $index count offset oversample sample-from sample-to))
 
 (defnamed radial* [?axis count ?offset get-shape :?oversample :?sample-from :?sample-to]
   ````
-  TODOC
+  Like `radial`, but the shape is a result of invoking `get-shape` with one argument,
+  a GLSL variable referring to the current slice of space.
+
+  ```example
+  (radial* z 12 100 (fn [$i]
+    (ball 50
+    | color (hsv (hash $i) 0.5 1))))
+  ```
+
+  You can use this to generate different shapes or colors at every sampled slice of space.
+  The index will be a `float` with integral components that represents the current slice
+  being considered.
+
+  See also `radial:`, which is a more convenient macro version of this function.
   ````
   (def $index (jlsl/variable/new "radial-index" jlsl/type/float))
   (def shape (get-shape $index))
@@ -302,7 +353,16 @@
 
 (defmacro radial:
   ````
-  TODOC
+  Like `radial*`, but its first argument should be a form that will
+  become the body of the function. Basically, it's a way to create
+  a repeated shape where each instance of the shape varies, and it's
+  written in a way that makes it conveniently fit into a pipeline:
+
+  ```example
+  (ball 50
+  | color (hsv (hash $i) 0.5 1)
+  | radial: $i z 12 100)
+  ```
   ````
   [shape $i & args]
   ~(,radial* ,;args (fn [,$i] ,shape)))
