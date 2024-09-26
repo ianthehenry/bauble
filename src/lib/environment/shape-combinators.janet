@@ -157,7 +157,7 @@
       ))
       color)))
 
-(defn- zero-to-nil [x] (if (= x 0) nil x))
+(defn- zero-to-nil [x] (if (zero? x) nil x))
 
 # TODO: :distance and :color shouldn't be special-cased;
 # these operations should work with any :&fields
@@ -253,9 +253,9 @@
 
   Or any combination like that.
   ````
-  (assert (not (and r s)) "you can only specify :r or :s, not both")
-  (def distance-roundness (zero-to-nil (or distance r s)))
-  (def color-roundness (zero-to-nil (or color r s)))
+  (assert (not (@and r s)) "you can only specify :r or :s, not both")
+  (def distance-roundness (zero-to-nil (@or distance r s)))
+  (def color-roundness (zero-to-nil (@or color r s)))
   (boolean shapes
     (if distance-roundness
       (partial smooth-min-distance (typecheck distance-roundness jlsl/type/float))
@@ -312,9 +312,9 @@
 
   This doesn't happen.
   ````
-  (assert (not (and r s)) "you can only specify :r or :s, not both")
-  (def distance-roundness (zero-to-nil (or distance r s)))
-  (def color-roundness (zero-to-nil (or color r s)))
+  (assert (not (@and r s)) "you can only specify :r or :s, not both")
+  (def distance-roundness (zero-to-nil (@or distance r s)))
+  (def color-roundness (zero-to-nil (@or color r s)))
   (boolean shapes
     (if distance-roundness
       (partial smooth-max-distance (typecheck distance-roundness jlsl/type/float))
@@ -353,9 +353,9 @@
   See the docs for `union` and `intersect` for a full explanation of these arguments
   and the difference between them.
   ````
-  (assert (not (and r s)) "you can only specify :r or :s, not both")
-  (def distance-roundness (zero-to-nil (or distance r s)))
-  (def color-roundness (zero-to-nil (or color r s)))
+  (assert (not (@and r s)) "you can only specify :r or :s, not both")
+  (def distance-roundness (zero-to-nil (@or distance r s)))
+  (def color-roundness (zero-to-nil (@or color r s)))
   (boolean shapes
     (if distance-roundness
       (partial smooth-neg-max-distance (typecheck distance-roundness jlsl/type/float))
