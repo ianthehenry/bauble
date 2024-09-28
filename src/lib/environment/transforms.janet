@@ -138,7 +138,7 @@
   (reduce2 + (seq [[direction scale] :in (partition 2 args)]
     (* (coerce-axis-vector dimension direction) (jlsl/coerce-expr (@or scale 1))))))
 
-(defn move
+(defnamed move [subject &args]
   ````
   Translate a shape. You can pass a vector offset:
 
@@ -181,7 +181,6 @@
   (box [100 10 100] | move y (p.xz / 20 | pow 2 | sum) | slow 0.5)
   ```
   ````
-  [subject & args]
   (def subject (if (shape? subject) subject (jlsl/coerce-expr subject)))
   (def dimension (cond
    (shape? subject) (shape/type subject)
@@ -305,24 +304,28 @@
       ~(as-macro ,gl/let [,$pivot ,point]
         (,move (,op (,move ,subject (- ,$pivot)) ,;args) ,$pivot)))))
 
-(deftransform elongate [shape size]
+(defnamed elongate [shape &args]
   ````
   Stretch the center of a shape, leaving the sides untouched.
+  The arguments to `elongate` are similar to `move`: you
+  pass vectors or axis / magnitude pairs, and their sum
+  will be the total elongation.
 
   ```example
   (cone y 50 100 | elongate [(osc t 3 50) 0 (osc t 6 100)])
   ```
 
   ```example
-  (torus x 50 20 | elongate [(sin+ t * 50) 100 0])
+  (torus x 50 20 | elongate x (sin+ t * 50) [0 100 0])
   ```
 
   ```example
-  (rhombus [100 (gl/if (< q.y 0) 100 50)] | elongate [0 (osc t 2 0 20)])
+  (rhombus [100 (gl/if (< q.y 0) 100 50)] | elongate y (osc t 2 0 20))
   ```
   ````
-  (def size (typecheck size (shape/type shape)))
-  (case (shape/type shape)
+  (def dimension (shape/type shape))
+  (def size (sum-scaled-vectors dimension args))
+  (sugar (case dimension
     jlsl/type/vec2
       (shape/map shape (fn [expr]
         (jlsl/do "elongate"
@@ -335,7 +338,7 @@
           (var p-prime (abs p - size))
           (+ (with [p (max p-prime 0 * sign p)] expr)
              (min (max p-prime) 0)))))
-    (error "BUG")))
+    (error "BUG"))))
 
 (defn shell
   ````
