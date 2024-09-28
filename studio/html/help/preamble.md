@@ -14,10 +14,4 @@ First things first: there's a [Discord where you can ask questions](https://disc
 
 Second things second: Bauble's autocomplete is Not Half Bad, and all the docs you see here are accessible within the Bauble composer. It should just pop up automatically as you type stuff, but you can press `ctrl-space` to trigger it manually.
 
-When you first visited Bauble, you were greeted by an interactive tutorial. You can restore it by deleting your script (just clear out the text field) and then refreshing the page. Make sure to save a backup of your script if you've done something interesting!
-
-One day this page might have links to video tutorials. But... there are no video tutorials yet. So.
-
-All of the examples on this page are interactive. To prevent annoying scrolljacking, you have to click on a canvas to focus it before you can zoom.
-
 # Reference {#reference}

@@ -76,6 +76,25 @@ But Bauble co-opts the character for postfix application, and doesn't have anyth
 
 It's not too bad. It's a good tradeoff.
 
+Finally, you can use pipe notation inside vectors:
+
+```
+[1 1 1 | normalize]
+```
+
+And save yourself some parens. This is the same as writing:
+
+
+```
+([1 1 1] | normalize)
+```
+
+Or:
+
+```
+(normalize [1 1 1])
+```
+
 ## Infix notation {#infix-notation}
 
 In addition to `|`, four other symbols are treated specially: `+`, `-`, `*`, and `/`. These are interpreted as infix symbols, and they get rewritten like so:
@@ -123,6 +142,20 @@ And you'll get an inscrutable error. To work around this, Bauble defines the sym
 ```
 
 Although Bauble's infix notation has no concept of precedence, the infix notation pass runs *after* the pipe notation pass. This means that you can use `_` to move an expression "over" an infix operator. In practice this is useful to say e.g. `(cos t | 1 - _)`.
+
+You can also use infix notation inside a vector literal:
+
+```
+[1 0 1 * 100]
+```
+
+Which is the same as writing:
+
+```
+([1 0 1] * 100)
+```
+
+But with fewer parens.
 
 If you're ever confused by what Bauble's notation is doing, you can see what your code expands to like this:
 
