@@ -538,7 +538,7 @@ set it in a way that fits nicely into a pipeline.
   To a shape with normals inspired by that bumpiness:
 
   ```example
-  (ball 100 | shade red | bump (perlin (p / 10)) 0.1)
+  (ball 100 | shade red | bump (perlin (p / 10)) 0.3)
   ```
 
   This is much cheaper than using `expand`, so if you're only trying to add
@@ -550,7 +550,7 @@ set it in a way that fits nicely into a pipeline.
   than trying to sculpt it into the distance field. Orange peel:
 
   ```example
-  (ball 100 | shade (hsv 0.05 1 0.75) | bump (perlin+ p) 0.1)
+  (ball 100 | shade (hsv 0.05 1 0.75) | bump (perlin+ p) 0.2)
   (set camera (camera/perspective [(cos (t / 2)) 0 (sin (t / 2)) * 200] | camera/zoom (osc t 7 1 2)))
   ```
   ````
@@ -558,5 +558,5 @@ set it in a way that fits nicely into a pipeline.
   (def by (if (shape? by) (shape/distance by) (typecheck by jlsl/type/float)))
   (def amount (typecheck amount jlsl/type/float))
   (assert (shape/color shape) "you have to set a color field before you can bump it up")
-  (sugar (gl/with :color [normal (normal - (calculate-normal by * amount) | normalize)]
+  (sugar (gl/with :color [normal (normal - (calculate-normal by * amount * by) | normalize)]
     shape)))
