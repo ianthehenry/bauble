@@ -11,11 +11,16 @@
   :vec3 direction
   :float brightness)
 
-(jlsl/defstruct Camera
+(jlsl/defstruct PerspectiveCamera
   :vec3 position
   :vec3 direction
   :vec3 up
   :float fov)
+(jlsl/defstruct OrthographicCamera
+  :vec3 position
+  :vec3 direction
+  :vec3 up
+  :float scale)
 
 (defn ray?
   ```
@@ -28,11 +33,14 @@
 
 (defn camera?
   ```
-  Returns `true` if `value` is a GLSL expression with type `Camera`.
+  Returns `true` if `value` is a GLSL expression with type `PerspectiveCamera` or `OrthographicCamera`.
   ```
   [value]
   (if-let [expr (try-coerce-expr value)]
-    (= (type/coerce Camera) (expr/type expr))
+    (case (expr/type expr)
+      (type/coerce PerspectiveCamera) true
+      (type/coerce OrthographicCamera) true
+      false)
     false))
 
 (defn light?

@@ -71,7 +71,8 @@
        shape/2d (:shapes :functions)
        shape/3d (:shapes :functions)
        shape? (:shapes :functions)
-       Camera (:camera)
+       PerspectiveCamera (:camera)
+       OrthographicCamera (:camera)
        camera? (:camera)
        Ray (:camera)
        ray? (:camera)
@@ -221,7 +222,7 @@
     Noise
       8 values
     Camera
-      12 values
+      14 values
     Colors
       18 values
     Rotation

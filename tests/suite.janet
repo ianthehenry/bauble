@@ -651,6 +651,10 @@
   "bump" `
   (ball 100 | color default-3d-color | bump (worley (p / 30) | pow 4))
   `
+  "orthographic camera" `
+  (box 50 | tile [200 0 200])
+  (set camera (camera/orthographic [1 1 1 | normalize * 512]))
+  `
 })
 
 (each filename (os/dir "./cases")
