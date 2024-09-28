@@ -112,7 +112,7 @@
   (shape/map-distance shape (fn [expr]
     (jlsl/do "map-distance"
       (var dist expr)
-      (f dist)))))
+      ,(typecheck (f dist) jlsl/type/float)))))
 
 (defn map-color
   ```
@@ -127,8 +127,8 @@
   [shape f]
   (shape/map-color shape (fn [expr]
     (jlsl/do "map-color"
-      (var dist expr)
-      (f dist)))))
+      (var color expr)
+      ,(typecheck (f color) jlsl/type/vec3)))))
 
 (defhelper :mat3 cross-matrix [:vec3 vec]
   "Returns the matrix such that `(* (cross-matrix vec1) vec2)` = `(cross vec1 vec2)`."
