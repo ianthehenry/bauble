@@ -105,7 +105,7 @@
     ['unquote expr] [coerce-expr expr]
     [(and op (or '++ '-- '_++ '_--)) expr] [expr/crement ['quote op] (expr/of-ast expr)]
     ['if cond then else] [if-expr (expr/of-ast cond) (expr/of-ast then) (expr/of-ast else)]
-    [f & args] [call f (map expr/of-ast args)]
+    [f & args] [coerce-expr [call f (map expr/of-ast args)]]
     ))
 
 (defn expr/to-sexp [t]
