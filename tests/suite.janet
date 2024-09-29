@@ -36,8 +36,8 @@
   (set camera (camera/perspective [0 -40 384] :dir -z :fov 45))
   `
 
-  "spatial noise" `(ball (perlin (p * 0.05) * 10 + 100) | slow 0.9)`
-  "spatial noise extreme" `(ball (perlin (p * 0.05) * 30 + 80) | slow 0.5)`
+  "spatial noise" `(ball (perlin p 20 * 10 + 100) | slow 0.9)`
+  "spatial noise extreme" `(ball (perlin p 20 * 30 + 80) | slow 0.5)`
 
   "shell 3d" `(ball 100 | shell 5 | intersect (plane z))`
   "cylinder" `(box 50 | subtract (cylinder z 30 100))`
@@ -107,14 +107,14 @@
   "color after move" `(circle 100 | move [50 0] | color [(q.x / 100 * 0.5 + 0.5) 1 0.5])`
   "rect" `(rect 75)`
   "rotation is counter-clockwise" `(rect 70 | rotate 0.1)`
-  "perlin2" `(ball 100 | color (vec3 (perlin+ (p.xy / 10))))`
-  "perlin3" `(ball 100 | color (vec3 (perlin+ (p / 10))))`
-  "perlin4" `(ball 100 | color (vec3 (perlin+ (vec4 (p / 10) 0))))`
+  "perlin2" `(ball 100 | color (vec3 (perlin+ p.xy 10)))`
+  "perlin3" `(ball 100 | color (vec3 (perlin+ p 10)))`
+  "perlin4" `(ball 100 | color (vec3 (perlin+ [p 0] 10)))`
 
-  "worley-2d" `(ball 100 | color (vec3 (worley (p.xy / 30))))`
-  "worley2-2d" `(ball 100 | color (vec3 0 (worley2 (p.xy / 30))))`
-  "worley-3d" `(ball 100 | color (vec3 (worley (p / 30))))`
-  "worley2-3d" `(ball 100 | color (vec3 0 (worley2 (p / 30))))`
+  "worley-2d" `(ball 100 | color (vec3 (worley p.xy 30)))`
+  "worley2-2d" `(ball 100 | color (vec3 0 (worley2 p.xy 30)))`
+  "worley-3d" `(ball 100 | color (vec3 (worley p 30)))`
+  "worley2-3d" `(ball 100 | color (vec3 0 (worley2 p 30)))`
 
   "extrude" `(rect 30 | union (circle 30 | move x 30) | extrude x 100)`
   "extrude defaults to zero" `(rect 30 | union (circle 30 | move x 30) | extrude z)`

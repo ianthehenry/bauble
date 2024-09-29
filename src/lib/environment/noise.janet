@@ -122,12 +122,7 @@
 (overload   :vec4 fade [:vec4 t] (return (* t t t (t * (t * 6 - 15) + 10))))
 (defhelper- :vec3 mod7 [:vec3 x] (return (x - (floor (x * (/ 7)) * 7))))
 
-(defhelper :float perlin [:vec2 point]
-  ```
-  Returns perlin noise ranging from `-1` to `1`. The input `point` can be a vector of any dimension.
-
-  Use `perlin+` to return noise in the range `0` to `1`.
-  ```
+(defhelper- :float perlin [:vec2 point]
   (var Pi ((floor point.xyxy) + [0 0 1 1]))
   (var Pf ((fract point.xyxy) - [0 0 1 1]))
   (set Pi (mod289 Pi))
@@ -363,6 +358,18 @@
   (var n-xyzw (mix n-yzw.x n-yzw.y fade-xyzw.x))
   (return (2.2 * n-xyzw)))
 
+(def- perlin- perlin)
+(defn perlin
+  ````
+  Returns perlin noise ranging from `-1` to `1`. The input `point` can be a vector of any dimension.
+
+  Use `perlin+` to return noise in the range `0` to `1`.
+  ````
+  [point &opt period]
+  (if period
+    (perlin- (/ point period))
+    (perlin- point)))
+
 (defn perlin+
   ````
   Perlin noise in the range `0` to `1`.
@@ -377,12 +384,11 @@
   (ball 100 | color (perlin+ [(p / 10) t] | vec3))
   ```
   ````
-  [point]
-  (remap+ (perlin point)))
+  [point &opt period]
+  (remap+ (perlin point period)))
 
-(defmacro- define-worley2d [return-type name docstring & closing-statements]
-  ~(defhelper ,return-type ,name [:vec2 point]
-    ,docstring
+(defmacro- define-worley2d [return-type name & closing-statements]
+  ~(defhelper- ,return-type ,name [:vec2 point]
     (def K (1 / 7))
     (def Ko (3 / 7))
     (def jitter 1)
@@ -412,32 +418,9 @@
     ,;closing-statements))
 
 (define-worley2d :float worley
-  ````
-  Worley noise, also called cellular noise or voronoi noise.
-  The input `point` can be a `vec2` or a `vec3`.
-
-  ```example
-  (ball 100 | color (worley (p.xy / 30) | vec3))
-  ```
-  ```example
-  (ball 100 | color (worley (p / 30) | vec3))
-  ```
-
-  Returns the nearest distance to points distributed randomly within the tiles of a square or cubic grid.
-  ````
   (return (sqrt (min (min (min d1 d2) d3)))))
 
 (define-worley2d :vec2 worley2
-  ````
-  Like `worley`, but returns the nearest distance in `x` and the second-nearest distance in `y`.
-
-  ```example
-  (ball 100 | color [(worley2 (p.xy / 30)) 1])
-  ```
-  ```example
-  (ball 100 | color [(worley2 (p / 30)) 1])
-  ```
-  ````
   (var d1a (min d1 d2))
   (set d2 (max d1 d2))
   (set d2 (min d2 d3))
@@ -605,3 +588,40 @@
   (set d11.y (min d11.y d12.z))
   (set d11.y (min d11.y d11.z))
   (return (sqrt d11.xy)))
+
+(def- worley- worley)
+(defn worley
+  ````
+  Worley noise, also called cellular noise or voronoi noise.
+  The input `point` can be a `vec2` or a `vec3`.
+
+  ```example
+  (ball 100 | color (worley (p.xy / 30) | vec3))
+  ```
+  ```example
+  (ball 100 | color (worley (p / 30) | vec3))
+  ```
+
+  Returns the nearest distance to points distributed randomly within the tiles of a square or cubic grid.
+  ````
+  [point &opt period]
+  (if period
+    (worley- (/ point period))
+    (worley- point)))
+
+(def- worley2- worley2)
+(defn worley2
+  ````
+  Like `worley`, but returns the nearest distance in `x` and the second-nearest distance in `y`.
+
+  ```example
+  (ball 100 | color [(worley2 (p.xy / 30)) 1])
+  ```
+  ```example
+  (ball 100 | color [(worley2 (p / 30)) 1])
+  ```
+  ````
+  [point &opt period]
+  (if period
+    (worley2- (/ point period))
+    (worley2- point)))
