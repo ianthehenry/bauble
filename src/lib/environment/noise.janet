@@ -656,12 +656,24 @@
 
   You can use this to create many effects, like clouds or landscapes,
   although note that it is pretty expensive to use in a distance field.
+  For example, 2D perlin noise makes a pretty good landscape:
 
   ```example
-  (box [500 5 500]
-  | expound (fbm 5 perlin p 50 | remap+) 50 10
-  | intersect (ball 200)
-  | slow 0.5)
+  (plane y
+  | expound (fbm 7 perlin p.xz 100 | remap+) 50 10
+  | intersect (ball [200 100 200])
+  | slow 0.5
+  | shade normal+ :g 20)
+  ```
+
+  3D perlin noise is more expensive, but produces a detailed rocky effect:
+
+  ```example
+  (plane y
+  | expound (fbm 7 perlin p 50 | remap+) 50 10
+  | intersect (ball [200 100 200])
+  | slow 0.5
+  | shade normal+ :g 20)
   ```
   ````
   (gl/do "fbm"
