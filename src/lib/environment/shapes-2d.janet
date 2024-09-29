@@ -12,6 +12,49 @@
   ```example
   (circle 100)
   ```
+
+  A circle is the most primitive shape, and it's very versatile. With no radius it's a
+  point in space, which can be useful for procedural patterns:
+
+  ```example
+  (circle 0
+  | move (hash2 $i * 50)
+  | tile: $i [50 50] :oversample true :sample-from -1 :sample-to 1)
+  ```
+
+  (See also `worley` for an optimized version of that voronoi pattern.)
+
+  By varying the radius dynamically, you can produce other interesting shapes:
+
+  ```example
+  (circle (ss q.x -100 150 100 150)
+  | color green)
+  ```
+
+  ```example
+  (circle (sin+ (abs q.y - abs q.x / 10 + (t * 5)) * 20 + 100)
+  | color sky)
+  ```
+
+  And by projecting it into 3D, you can produce shapes like a disc:
+
+  ```example
+  (circle 100 | extrude y | expand 25)
+  ```
+
+  A torus:
+
+  ```example
+  (circle 100 | shell | extrude y | expand 25)
+  ```
+
+  A tube:
+
+  ```example
+  (circle 100 | shell | extrude z 100 | expand 10)
+  ```
+
+  Among other shapes.
   ````
   (return (length q - radius)))
 
