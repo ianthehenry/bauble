@@ -478,29 +478,35 @@
     threshold)
   ```
 
-  But in a more convenient package. Compare:
+  But it produces slightly better code. Consider this:
 
   ```example
   (ball 100
   | expand (perlin+ [(p / 50) t] * osc t 1 20 50))
   ```
 
-  The rays near the edge of the canvas never approach the shape,
+  The rays around the edge of the canvas never approach the shape,
   but they need to evaluate its distance expression repeatedly until
-  they give up. There's no need for them to evaluate 4D perlin noise
-  at every step of this march, so we can speed that up:
+  they give up. But 4D perlin noise is pretty expensive to compute,
+  so we can speed up the render by only evaluating it when the
+  current ray is near the shape we're distorting:
 
   ```example
   (ball 100
   | expound
     (perlin+ [(p / 50) t])
-    (osc t 1 20 50)
-    10)
+    (osc t 1 20 50))
   ```
 
   It's important that the signal you supply as `by` not exceed `1`,
-  or the bounding shape will be inaccurate. By default the `threshold`
-  is equal to the `magnitude` of the offset.
+  or the bounding shape will be inaccurate.
+
+  By default the `threshold` is equal to the `magnitude` of the
+  offset, but you can provide a custom threshold to fine-tune the
+  boundary behavior.
+
+  If you're only using procedural distortion to texture a shape, consider
+  using `bump` for an even larger speedup.
   ````
   [shape by &opt magnitude threshold]
   (default magnitude 1)

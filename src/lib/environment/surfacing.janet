@@ -545,6 +545,9 @@ set it in a way that fits nicely into a pipeline.
   a little texture and don't need to change the shape, consider using `bump`
   instead.
 
+  (If you really do care about distorting the geometry, see `expound` for
+  a more efficient way to do that.)
+
   The expression to `bump` will be evaluated using `calculate-normal`,
   so it should vary with `p`. This is a much cheaper way to add texture
   than trying to sculpt it into the distance field. Orange peel:
