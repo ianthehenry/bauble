@@ -3,12 +3,7 @@
 # TODO: it would be nice to add vec4 inputs to hash2 and hash3
 
 # Taken from David Hoskins: https://www.shadertoy.com/view/4djSRW
-(defhelper :float hash [:float v]
-  ```
-  Return a pseudorandom float. The input can be a float or vector.
-
-  This should return consistent results across GPUs, unlike high-frequency sine functions.
-  ```
+(defhelper- :float hash [:float v]
   (set v (v * 0.1031 | fract))
   (*= v (v + 33.33))
   (*= v (v + v))
@@ -29,12 +24,7 @@
   (+= v (dot v (v.wzxy + 33.33)))
   (return ((v.x + v.y) * (v.z + v.w) | fract)))
 
-(defhelper :vec2 hash2 [:float v]
-  ```
-  Return a pseudorandom `vec2`. The input can be a float or vector.
-
-  This should return consistent results across GPUs, unlike high-frequency sine functions.
-  ```
+(defhelper- :vec2 hash2 [:float v]
   (var v (vec3 v * [.1031 .1030 .0973] | fract))
   (+= v (dot v (v.yzx + 33.33)))
   (return (v.xx + v.yz * v.zy | fract)))
@@ -49,12 +39,7 @@
   (+= v (dot v (v.yzx + 33.33)))
   (return (v.xx + v.yz * v.zy | fract)))
 
-(defhelper :vec3 hash3 [:float v]
-  ```
-  Return a pseudorandom `vec3`. The input can be a float or vector.
-
-  This should return consistent results across GPUs, unlike high-frequency sine functions.
-  ```
+(defhelper- :vec3 hash3 [:float v]
   (var v (vec3 v * [.1031 .1030 .0973] | fract))
   (+= v (dot v (v.yzx + 33.33)))
   (return (v.xxy + v.yzz * v.zyx | fract)))
@@ -67,12 +52,7 @@
   (+= v (dot v (v.yxz + 33.33)))
   (return (v.xxy + v.yxx * v.zyx | fract)))
 
-(defhelper :vec4 hash4 [:float v]
-  ```
-  Return a pseudorandom `vec4`. The input can be a float or vector.
-
-  This should return consistent results across GPUs, unlike high-frequency sine functions.
-  ```
+(defhelper- :vec4 hash4 [:float v]
   (var v (vec4 v * [.1031 .1030 .0973 .1099] | fract))
   (+= v (dot v (v.wzxy + 33.33)))
   (return (v.xxyz + v.yzzw * v.zywx | fract)))
@@ -88,6 +68,48 @@
   (set v (v * [.1031 .1030 .0973 .1099] | fract))
   (+= v (dot v (v.wzxy + 33.33)))
   (return (v.xxyz + v.yzzw * v.zywx | fract)))
+
+(def- hash- hash)
+(def- hash2- hash2)
+(def- hash3- hash3)
+(def- hash4- hash4)
+
+(defn hash
+  ```
+  Return a pseudorandom float. The input can be a float or vector. With multiple arguments,
+  this will return the hash of the sum.
+
+  This should return consistent results across GPUs, unlike high-frequency sine functions.
+  ```
+  [& args]
+  (if (> (@length args) 1) (hash- (+ ;args)) (hash- ;args)))
+(defn hash2
+  ```
+  Return a pseudorandom `vec2`. The input can be a float or vector. With multiple arguments,
+  this will return the hash of the sum.
+
+  This should return consistent results across GPUs, unlike high-frequency sine functions.
+  ```
+  [& args]
+  (if (> (@length args) 1) (hash2- (+ ;args)) (hash2- ;args)))
+(defn hash3
+  ```
+  Return a pseudorandom `vec3`. The input can be a float or vector. With multiple arguments,
+  this will return the hash of the sum.
+
+  This should return consistent results across GPUs, unlike high-frequency sine functions.
+  ```
+  [& args]
+  (if (> (@length args) 1) (hash3- (+ ;args)) (hash3- ;args)))
+(defn hash4
+  ```
+  Return a pseudorandom `vec4`. The input can be a float or vector. With multiple arguments,
+  this will return the hash of the sum.
+
+  This should return consistent results across GPUs, unlike high-frequency sine functions.
+  ```
+  [& args]
+  (if (> (@length args) 1) (hash4- (+ ;args)) (hash4- ;args)))
 
 (defhelper- :vec2 mod289 [:vec2 x] (return (x - (floor (x * (/ 289)) * 289))))
 (overload   :vec3 mod289 [:vec3 x] (return (x - (floor (x * (/ 289)) * 289))))

@@ -262,10 +262,10 @@
     green @{:doc "  ```example\n  (set background-color green)\n  (ball 100 | shade green)\n  ```\n  "
             :value [hsv 0.33333333333333331 0.98 1]}
     ground @{:doc "(ground [offset])\n\nReturns a 3D plane that only exists while the camera is above it.\n\nThis is useful for quickly debugging shadows while still being able\nto see the underside of your scene, although note that taking the plane\naway will affect ambient occlusion, so you're not *really* seeing the\nunderside."}
-    hash @{:doc "(hash v)\n\nReturn a pseudorandom float. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
-    hash2 @{:doc "(hash2 v)\n\nReturn a pseudorandom `vec2`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
-    hash3 @{:doc "(hash3 v)\n\nReturn a pseudorandom `vec3`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
-    hash4 @{:doc "(hash4 v)\n\nReturn a pseudorandom `vec4`. The input can be a float or vector.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
+    hash @{:doc "(hash & args)\n\nReturn a pseudorandom float. The input can be a float or vector. With multiple arguments,\nthis will return the hash of the sum.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
+    hash2 @{:doc "(hash2 & args)\n\nReturn a pseudorandom `vec2`. The input can be a float or vector. With multiple arguments,\nthis will return the hash of the sum.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
+    hash3 @{:doc "(hash3 & args)\n\nReturn a pseudorandom `vec3`. The input can be a float or vector. With multiple arguments,\nthis will return the hash of the sum.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
+    hash4 @{:doc "(hash4 & args)\n\nReturn a pseudorandom `vec4`. The input can be a float or vector. With multiple arguments,\nthis will return the hash of the sum.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
     hexagon @{:doc "(hexagon radius [:r round])\n\n```example\n(hexagon 100 :r (osc t 3 20))\n```"}
     hexagram @{:doc "(hexagram radius [:r round])\n\n```example\n(hexagram 100 :r (osc t 3 20))\n```"}
     hot-pink @{:doc "  ```example\n  (set background-color hot-pink)\n  (ball 100 | shade hot-pink)\n  ```\n  "
