@@ -362,9 +362,9 @@
   ````
   Expands the provided shape, rounding corners in the process.
 
-  This is the same as subtracting `amount` from the distance field.
-  It's more accurate to say that this "moves between isosurfaces," so
-  it may not actually round anything if the provided shape is not an
+  This is the same as subtracting `by` from the distance field. It's
+  more accurate to say that this "moves between isosurfaces," so it
+  may not actually round anything if the provided shape is not an
   exact distance field.
 
   For example, this produces a nicely expanded shape:
@@ -382,9 +382,9 @@
   | expand (sin+ t * 30))
   ```
   ````
-  [shape amount]
-  (def amount (typecheck amount jlsl/type/float))
-  (shape/map-distance shape (fn [expr] (- expr amount))))
+  [shape by]
+  (def by (typecheck by jlsl/type/float))
+  (shape/map-distance shape (fn [expr] (- expr by))))
 
 (defn slow
   ````
@@ -421,3 +421,98 @@
   [shape amount]
   (def amount (typecheck amount jlsl/type/float))
   (shape/map-distance shape (fn [expr] (* expr amount))))
+
+(defn bound
+  ````
+  Wrap an expensive shape with a cheap bounding shape.
+
+  This operation evaluates the bounding shape, and if the distance to the bounding
+  shape is less than `threshold`, it returns that distance. Otherwise it evaluates
+  the real shape.
+
+  You can use this to wrap a complicated, expensive shape in a cheaper bounding
+  shape (spheres are best), so that you don't need to evaluate the expensive shape
+  at every step of the raymarch. This is a very effective optimization if most
+  rays don't need to enter the bounding shape, for example if you wrap a
+  small shape in a large scene, but it doesn't really help.
+
+  This is hard to visualize because ideally it does not change the render,
+  only makes it faster, but you can see the effect it has on the raymarch
+  by switching to debug convergence view (the magnet icon in the top right).
+
+  ```example
+  (box 100 | bound (ball 180) 10)
+  ```
+
+  It's important that the bounding shape actually contain the inner shape, or
+  you'll get wild results that will hurt performance as rays fail to converge:
+
+  ```example
+  (box 100 | bound (ball 100) 10)
+  ```
+
+  There's a tradeoff to make with the threshold between increased marching steps and
+  tightening the bound, and a threshold too low may cause weird artifacts when rendering
+  soft shadows or ambient occlusion.
+  ````
+  [shape bounding-shape threshold]
+  (assert (shape? shape) "i know shapes and that's no shape")
+  (assert (shape? bounding-shape) "i know shapes and that's no shape")
+  (def threshold (typecheck threshold jlsl/type/float))
+  (shape/map-distance shape (fn [dist]
+    (gl/do "bound"
+      (var bounding-dist ,(shape/distance bounding-shape))
+      (if (< bounding-dist threshold)
+        dist
+        bounding-dist)))))
+
+(defn expound
+  ````
+  This is a combination of `bound` and `expand`, when you want to expand a shape by
+  some expensive expression (e.g. a noise function). Essentially it's the same as:
+
+  ```
+  (bound
+    (expand shape (by * magnitude))
+    (expand shape magnitude)
+    threshold)
+  ```
+
+  But in a more convenient package. Compare:
+
+  ```example
+  (ball 100
+  | expand (perlin+ [(p / 50) t] * osc t 1 20 50))
+  ```
+
+  The rays near the edge of the canvas never approach the shape,
+  but they need to evaluate its distance expression repeatedly until
+  they give up. There's no need for them to evaluate 4D perlin noise
+  at every step of this march, so we can speed that up:
+
+  ```example
+  (ball 100
+  | expound
+    (perlin+ [(p / 50) t])
+    (osc t 1 20 50)
+    10)
+  ```
+
+  It's important that the signal you supply as `by` not exceed `1`,
+  or the bounding shape will be inaccurate. By default the `threshold`
+  is equal to the `magnitude` of the offset.
+  ````
+  [shape by &opt magnitude threshold]
+  (default magnitude 1)
+  (assert (shape? shape) "i know shapes and that's no shape")
+  (def magnitude (typecheck magnitude jlsl/type/float))
+  (def threshold (typecheck? threshold jlsl/type/float))
+  (sugar (shape/map-distance shape (fn [dist]
+    (gl/do "expound"
+      (var magnitude ,magnitude)
+      (var threshold ,(@or threshold magnitude))
+      (var dist ,(shape/distance shape))
+      (var bounding-dist (dist - magnitude))
+      (if (< bounding-dist threshold)
+        (dist - (by * magnitude))
+        bounding-dist))))))

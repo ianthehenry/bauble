@@ -210,7 +210,7 @@
       Lower-level shape stuff
         14 values
     Transformations
-      10 values
+      12 values
     Dynamic variables
       14 values
     Bauble variables
