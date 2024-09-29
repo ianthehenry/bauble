@@ -625,3 +625,54 @@
   (if period
     (worley2- (/ point period))
     (worley2- point)))
+
+(defnamed fbm [octaves f point ?period :?rate :?gain]
+  ````
+  Run the given noise function over the input multiple times,
+  with different periods, and sum the results with some decay.
+
+  You can use this to create interesting procedural patterns
+  out of simple noise functions. For example, perlin noise is
+  a fairly smooth and "low resoultion" pattern:
+
+  ```example
+  (rect 100
+  | color (vec3 (perlin q 30 | remap+)))
+  ```
+
+  But by summing multiple instances of perlin noise
+  sampled with different periods, we can create more detailed
+  patterns:
+
+  ```example
+  (rect 100
+  | color (vec3 (fbm 4 perlin q 30 | remap+)))
+  ```
+
+  ```example
+  (rect 100
+  | color (vec3 (fbm 4 perlin q 30 :gain 0.8 | remap+)))
+  ```
+
+  You can use this to create many effects, like clouds or landscapes,
+  although note that it is pretty expensive to use in a distance field.
+
+  ```example
+  (box [500 5 500]
+  | expound (fbm 5 perlin p 50 | remap+) 50 10
+  | intersect (ball 200)
+  | slow 0.5)
+  ```
+  ````
+  (gl/do "fbm"
+    (var octaves (int ,octaves))
+    (var point ,(if period (/ point period) point))
+    (var gain ,(@or gain 0.5))
+    (var rate ,(@or rate 2))
+    (var amplitude 1)
+    (var result 0)
+    (for (var i 0:s) (< i octaves) (++ i)
+      (+= result (* amplitude (f point)))
+      (*= point rate)
+      (*= amplitude gain))
+    result))

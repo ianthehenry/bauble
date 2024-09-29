@@ -220,7 +220,7 @@
     Repetition
       6 values
     Noise
-      8 values
+      9 values
     Camera
       14 values
     Colors
