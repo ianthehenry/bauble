@@ -655,6 +655,13 @@
   (box 50 | tile [200 0 200])
   (set camera (camera/orthographic [1 1 1 | normalize * 512]))
   `
+  "rotation actually works the way it's supposed to" `
+  (def point [100 50 70])
+  (def theta 2)
+  (union
+    (line [0 0 0] point 5 | rotate x theta y theta z theta)
+    (ball 10 | move (rotate point x theta y theta z theta)))
+  `
 })
 
 (each filename (os/dir "./cases")

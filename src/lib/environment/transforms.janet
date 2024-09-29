@@ -6,14 +6,14 @@
 
 (defn- rotate-shape [shape args]
   (case (shape/type shape)
-    jlsl/type/vec2 (transform shape "rotate" q (* ,(rotation-matrix-2d -1 args) q))
-    jlsl/type/vec3 (transform shape "rotate" p (* ,(rotation-matrix-3d -1 args) p))))
+    jlsl/type/vec2 (transform shape "rotate" q (* q ,(rotation-matrix-2d args)))
+    jlsl/type/vec3 (transform shape "rotate" p (* p ,(rotation-matrix-3d args)))))
 
 (defn- rotate-vector [vector args]
   (def v (jlsl/coerce-expr vector))
   (case (jlsl/expr/type v)
-    jlsl/type/vec2 (* (rotation-matrix-2d 1 args) v)
-    jlsl/type/vec3 (* (rotation-matrix-3d 1 args) v)
+    jlsl/type/vec2 (* (rotation-matrix-2d args) v)
+    jlsl/type/vec3 (* (rotation-matrix-3d args) v)
     (errorf "I don't know how to rotate %q" (jlsl/expr/to-sexp v))))
 
 (defn- rotate-camera [camera args]

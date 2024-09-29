@@ -63,10 +63,9 @@
   (var c (cos angle))
   (return (mat2 c s (- s) c)))
 
-(defn- rotation-matrix-3d [multiplier args]
+(defn- rotation-matrix-3d [args]
   (reduce2 * (seq [[axis angle] :in (partition 2 args)]
     (assert angle "angle required")
-    (def angle (* multiplier angle))
     (case axis
       x (rotation-x angle)
       y (rotation-y angle)
@@ -76,13 +75,13 @@
       -z (rotation-z (- angle))
       (rotation-around axis angle)))))
 
-(defn- rotation-matrix-2d [multiplier args]
+(defn- rotation-matrix-2d [args]
   (each arg args (assertf (floaty? arg) "expected angle, got %q" (jlsl/show arg)))
-  (rotation-2d (* multiplier (reduce2 + args))))
+  (rotation-2d (reduce2 + args)))
 
 (defn rotation-matrix
   "Return a rotation matrix. Takes the same arguments as `rotate`, minus the initial thing to rotate."
   [& args]
   (if (floaty? (first args))
-    (rotation-matrix-2d 1 args)
-    (rotation-matrix-3d 1 args)))
+    (rotation-matrix-2d args)
+    (rotation-matrix-3d args)))
