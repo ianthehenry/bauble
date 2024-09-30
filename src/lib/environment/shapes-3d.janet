@@ -116,9 +116,9 @@
   (return [a b | dot q - r1]))
 
 (deforiented- capsule [:float radius :float height] ""
-  (var p p)
-  (*= p.y (sign height))
-  (-= p.y (clamp p.y 0 (abs height)))
+  (var p [this-axis other-axes])
+  (*= p.x (sign height))
+  (-= p.x (clamp p.x 0 (abs height)))
   (return (length p - radius)))
 (def- capsule- capsule)
 
