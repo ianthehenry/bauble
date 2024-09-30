@@ -626,7 +626,7 @@
     (worley2- (/ point period))
     (worley2- point)))
 
-(defnamed fbm [octaves f point ?period :?rate :?gain]
+(sugar (defnamed fbm [octaves noise point ?period :?f :?gain]
   ````
   Run the given noise function over the input multiple times,
   with different periods, and sum the results with some decay.
@@ -636,8 +636,7 @@
   a fairly smooth and "low resoultion" pattern:
 
   ```example
-  (rect 100
-  | color (vec3 (perlin q 30 | remap+)))
+  (color r2 (vec3 (perlin q 30 | remap+)))
   ```
 
   But by summing multiple instances of perlin noise
@@ -645,13 +644,11 @@
   patterns:
 
   ```example
-  (rect 100
-  | color (vec3 (fbm 4 perlin q 30 | remap+)))
+  (color r2 (vec3 (fbm 4 perlin q 30 | remap+)))
   ```
 
   ```example
-  (rect 100
-  | color (vec3 (fbm 4 perlin q 30 :gain 0.8 | remap+)))
+  (color r2 (vec3 (fbm 4 perlin q 30 :gain 0.8 | remap+)))
   ```
 
   You can use this to create many effects, like clouds or landscapes,
@@ -675,16 +672,35 @@
   | slow 0.5
   | shade normal+ :g 20)
   ```
+
+  By default the function will be evaluated with its input multiplied
+  by two every time. You can change this by passing a different value
+  as `:f`, or you can pass a function to provide a custom transformation:
+
+  ```example
+  (color r2 (vec3 (fbm 3
+    (fn [q] (sin q.x + cos q.y /))
+    :f (fn [q] (rotate (q * 2) pi/4))
+    q 10 | remap+)))
+  ```
   ````
+  (def [f preamble]
+    (cond
+      (nil? f) [(fn [x] (x * 2)) []]
+      (function? f) [f []]
+      (do
+        (def f (jlsl/coerce-expr f))
+        (def $f (jlsl/variable/new "f" (jlsl/expr/type f)))
+        [(fn [x] (x * $f)) [(jlsl/statement/declaration false $f f)]])))
   (gl/do "fbm"
     (var octaves (int ,octaves))
     (var point ,(if period (/ point period) point))
     (var gain ,(@or gain 0.5))
-    (var rate ,(@or rate 2))
+    ,;preamble
     (var amplitude 1)
     (var result 0)
     (for (var i 0:s) (< i octaves) (++ i)
-      (+= result (* amplitude (f point)))
-      (*= point rate)
+      (+= result (* amplitude (noise point)))
+      (set point ,(f point))
       (*= amplitude gain))
-    result))
+    result)))
