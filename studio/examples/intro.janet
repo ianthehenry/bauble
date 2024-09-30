@@ -165,8 +165,8 @@
 # | move (hash2 $i - 0.5 * 2 * 10)
 # | color (hsv (hash $i + (t * 0.1)) 0.95 1)
 # | tile: $i [30 30] :oversample true :sample-from -1
-# | extrude y 100
-# | intersect (ball 150))
+# | revolve x 100
+# | intersect :r 5 (ball [150 50 150]))
 
 # Or even more simply:
 
