@@ -64,7 +64,7 @@
 # Instead of triangles and vertices,
 # SDFs represent shapes as pure
 # functions of space, in a form that
-# lets us to "raymarch" those shapes in
+# lets us "raymarch" those shapes in
 # realtime.
 
 # There are already a lot of great
@@ -120,7 +120,7 @@
 # until you find something you like.
 
 # (def r 0.00)
-# (box 80
+# (box 80 :r 1
 # | rotate [0 1 1 | normalize] r z (r * 0.7) x (r * 0.5)
 # | mirror x y z :r 10
 # | rotate y r x (r * 0.7) y (r * 0.5)
@@ -155,7 +155,7 @@
 
 # (circle (osc t 5 1 45)
 # | move (hash2 $i - 0.5 * 2 * 10)
-# | color (hsv (hash $i + (t * 0.1)) 0.95 1)
+# | color (hsv (hash $i + (t * 0.1)) 0.7 1)
 # | tile: $i [30 30] :oversample true :sample-from -1)
 
 # Although a great use of 2D SDFs is
@@ -163,7 +163,8 @@
 
 # (circle (osc t 5 1 45)
 # | move (hash2 $i - 0.5 * 2 * 10)
-# | color (hsv (hash $i + (t * 0.1)) 0.95 1)
+# | shade (hsv (hash $i + (t * 0.1)) 0.7 1)
+# | with-lights (light/ambient 1 normal)
 # | tile: $i [30 30] :oversample true :sample-from -1
 # | revolve x 100
 # | intersect :r 5 (ball [150 50 150]))
@@ -185,7 +186,7 @@
 # Helpers for constructing rotation
 # matrices:
 
-# (gl/def pos ([(sin t) 1 (cos t)] * 100))
+# (gl/def pos (rotate [100 100 0] y t))
 # (union
 #   (ball 10 | move pos)
 #   (cone y 30 100 | align y (normalize pos)))
