@@ -316,7 +316,7 @@ set it in a way that fits nicely into a pipeline.
 
 (sugar (thunk ~(setdyn ,*lights*
   (let [default-occlusion (mix 0.1 1 (occlusion))]
-    @[(light/directional (vec3 1.2) [-2 -2 -1 | normalize] 512 :shadow 0.25)
+    @[(light/directional (vec3 1.2) [-2 -2 -1 | normalize] 2048 :shadow 0.25)
       (light/ambient (vec3 0.1) :brightness default-occlusion)
       (light/ambient (vec3 0.1) (normal * 0.1) :brightness default-occlusion)]))))
 
