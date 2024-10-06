@@ -314,6 +314,17 @@
   | bezier: $t [-100 0 100] [0 -100 0] [100 0 -100] :to (osc t 3 0 1))
   ```
 
+  Like `elongate`, only a two-dimensional slice of a three-dimensional shape will be
+  extruded along the curve. But if you vary the position of that shape as you extrude
+  it, you can "scan" the entire shape, and produce a stretching effect instead:
+
+  ```example
+  (gl/def to (osc t 3 0 1))
+  (box 20 | shade red | subtract (ball 23 | shade green) | rotate z ($t * tau)
+  | move z (mix -20 20 ($t / to))
+  | bezier: $t [-100 0 100] [0 -100 0] [100 0 -100] :to to)
+  ```
+
   The shape will be oriented along the curve according to the vector `:up`, which determines
   what direction will become normal to the curve. The default is `+y`, but you can specify
   any normalized vector:
