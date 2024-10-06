@@ -1,6 +1,17 @@
 (use judge)
 (use ./import)
 
+# This is a minor convenience that lets us use the 3D vector
+# x/y/-x/-y vectors as arguments to functions like move
+# TODO: should we just truncate the vector instead? That's... easier and maybe better?
+(defn axis-vector-2d [v]
+  (case v
+    x [1 0]
+    y [0 1]
+    -x [-1 0]
+    -y [0 -1]
+    v))
+
 (defn split-axis [axis]
   (sugar (case axis
     x [p.x p.zy]

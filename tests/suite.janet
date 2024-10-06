@@ -662,6 +662,46 @@
     (line [0 0 0] point 5 | rotate x theta y theta z theta)
     (ball 10 | move (rotate point x theta y theta z theta)))
   `
+  "3d 3d bezier extrude" `
+  (cone y 20 50
+  | bezier [-100 0 0] [100 200 -100] [100 0 0])
+  `
+  "2d 3d bezier extrude" `
+  (trapezoid 30 5 20
+  | bezier [-100 0 0] [100 200 -100] [100 0 0])
+  `
+  "float 3d bezier extrude" `
+  (20
+  | bezier-extrude [-100 0 0] [100 200 -100] [100 0 0])
+  `
+  "2d 3d bezier extrude parameterized" `
+  (rect (mix 10 30 $t)
+  | bezier: $t [-100 0 0] [100 200 -100] [100 0 0])
+  `
+  "3d 3d bezier extrude parameterized" `
+  (cone y 20 (mix 10 50 $t)
+  | bezier: $t [-100 0 0] [100 200 -100] [100 0 0])
+  `
+  "float 3d bezier extrude parameterized" `
+  ($t * 20 + 5
+  | bezier: $t [-100 0 0] [100 200 -100] [100 0 0])
+  `
+  "2d 2d bezier extrude" `
+  (triangle [20 50]
+  | bezier [-100 0] [0 50] [100 0])
+  `
+  "float 2d bezier extrude" `
+  (20
+  | bezier [-100 0] [0 50] [100 0])
+  `
+  "2d 2d bezier extrude parameterized" `
+  (rect (mix 10 30 $t)
+  | bezier: $t [-100 0] [0 50] [100 0])
+  `
+  "float 2d bezier extrude parameterized" `
+  ($t * 20 + 5
+  | bezier: $t [-100 0] [0 50] [100 0])
+  `
 })
 
 (each filename (os/dir "./cases")

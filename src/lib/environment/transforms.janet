@@ -1,5 +1,6 @@
 (use ./import)
 (use ./rotation)
+(use ./axis-helpers)
 
 (steal ./rotation rotation-matrix-2d)
 (steal ./rotation rotation-matrix-3d)
@@ -118,16 +119,10 @@
 
 # This is a minor convenience that lets us use the 3D vector
 # x/y/-x/-y vectors as arguments to move
-# TODO: should we just truncate the vector instead? That's... easier and maybe better?
 (defn- coerce-axis-vector [type vector]
   (typecheck
     (if (= type jlsl/type/vec2)
-      (case vector
-        x [1 0]
-        y [0 1]
-        -x [-1 0]
-        -y [0 -1]
-        vector)
+      (axis-vector-2d vector)
       vector)
     type))
 

@@ -112,13 +112,13 @@
 # needs to change by some complex factor
 (defshape/2d parallelogram [:vec2 size :float skew]
   ````
-  Returns a 2D shape. `size.x` is the width of the top and bottom edges, and `size.y` 
+  Returns a 2D shape. `size.x` is the width of the top and bottom edges, and `size.y`
   is the height of the parellogram.
 
   ```example
   (parallelogram [80 100] (sin t * 100))
   ```
-  
+
   `skew` is how far the pallorelogram leans in the `x` direction, so the total
   width of the prellogram is `(size.x + skew) * 2`. A `skew` of `0` gives the
   same shape as `rect`.
@@ -267,7 +267,7 @@
   But it can also return a 3D shape:
 
   ```example
-  (triangle 
+  (triangle
     [(osc t 4 -100 100) -100 (oss t 5 -100 100)]
     [100 (osc t 6 -100 100) 100]
     [-100 (oss t 7 -100 100) (osc t 8 -100 100)]

@@ -204,7 +204,7 @@
       2D shapes
         19 values
       Shape combinators
-        8 values
+        10 values
       Shape functions
         5 values
       Lower-level shape stuff

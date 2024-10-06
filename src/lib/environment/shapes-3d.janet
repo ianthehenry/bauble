@@ -1,5 +1,6 @@
 (use ./import)
 (use ./axis-helpers)
+(use ./dimensions)
 
 (def r3
   ```A 2D shape with zero distance everywhere.```
