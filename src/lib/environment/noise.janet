@@ -678,10 +678,10 @@
   as `:f`, or you can pass a function to provide a custom transformation:
 
   ```example
-  (color r2 (vec3 (fbm 3
+  (color r2 (vec3 (fbm 4
     (fn [q] (sin q.x + cos q.y /))
-    :f (fn [q] (rotate (q * 2) pi/4))
-    q 10 | remap+)))
+    :f (fn [q] (rotate (q * 2) pi/4 (t / 20)))
+    q 20 | remap+)))
   ```
   ````
   (def [f preamble]
