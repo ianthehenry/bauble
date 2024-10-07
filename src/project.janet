@@ -2,7 +2,7 @@
   :name "bauble"
   :description "signed distance function playground"
   :dependencies [
-  "https://github.com/ianthehenry/jaylib.git"
+  {:url "https://github.com/ianthehenry/jaylib.git" :tag "bauble"}
   "https://github.com/ianthehenry/judge.git"
   "https://github.com/ianthehenry/cmd.git"
   "https://github.com/ianthehenry/janet-module.git"
