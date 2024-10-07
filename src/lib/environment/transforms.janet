@@ -189,7 +189,7 @@
       (error "BUG"))
     (camera? subject) (sugar (gl/do
       (var camera subject)
-      (+= camera.origin offset)
+      (+= camera.position offset)
       camera))
     (+ subject offset)))
 
