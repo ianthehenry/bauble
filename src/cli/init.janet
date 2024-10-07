@@ -6,7 +6,9 @@
 (use ./helpers)
 (import ../lib :as bauble)
 
-(def arg/resolution (cmd/peg "WxH" ~(/ (* (number :d+) "x" (number :d+) -1) ,|[$0 $1])))
+(def vec2 (cmd/peg "WxH" ~(+
+  (/ (* (number :d+) -1) ,|[$ $])
+  (/ (* (number :d+) "x" (number :d+) -1) ,|[$0 $1]))))
 
 (defn read-input [filename]
   (if filename
@@ -16,16 +18,26 @@
 (cmd/defn render "Render a single still image."
   [input (optional :file)
    [outfile -o --out] (required :file)
-   --resolution (optional arg/resolution [512 512]) "default 512x512"
-   -t (optional :number 0) "timestamp to use"]
+   --resolution (optional vec2 [512 512]) "default 512x512"
+   -t (optional :number 0) "timestamp to use"
+   --slices (optional vec2 [1 1]) "draw the image in multiple passes, e.g. 4x2 = 8 total draw calls"]
   (def source (read-input input))
   (def env (bauble/evaluator/evaluate source))
   (def [shader-source dimension animated? has-custom-camera?] (bauble/shade/compile-shape nil env "330"))
   (init-jaylib)
+  (defn vec2 [[x y]] (string/format "%dx%d" x y))
   (def image (render-image shader-source
     :resolution resolution
     :orbit [0.125 -0.125]
-    :t t))
+    :t t
+    :slices slices
+    :on-render-start (fn [slice-size extra]
+      (if (some pos? extra)
+        (eprint "rendering slices at " (vec2 slice-size) " to " (vec2 (map + slice-size extra)))
+        (eprint "rendering slices at " (vec2 slice-size))))
+    :on-slice-end (fn [_ _] (eprin "."))
+    :on-render-end (fn [] (eprint) (eprint "copying"))))
+  (eprint "encoding")
   (jaylib/export-image image outfile))
 
 (cmd/defn print-source "Print fragment shader source."

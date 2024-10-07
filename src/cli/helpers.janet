@@ -56,7 +56,15 @@
   (defn render [{:render render} & args]
     (render ;args)))
 
-(defn render-image [shader-source &named resolution origin orbit zoom t]
+(defn- calry [f & args]
+  (if f (f ;args)))
+
+(defn render-image [shader-source &named resolution origin orbit zoom t slices
+  on-render-start
+  on-slice-start
+  on-slice-end
+  on-render-end]
+  (default slices [1 1])
   (default zoom 1)
   (default origin [0 0 0])
   (default orbit [0 0])
@@ -76,9 +84,28 @@
   (set-uniform "viewport" :vec4 [0 0 ;resolution])
   (set-uniform "render_type" :int 0)
 
-  (ray/do-texture frame-buffer
-    (ray/do-shader shader
-      (jaylib/draw-rectangle-v [0 0] resolution :red)))
+  (def slice-size (map |(math/floor (/ $0 $1)) resolution slices))
+  (def residution (map - resolution (map |(* $0 $1) slice-size slices)))
+  (calry on-render-start slice-size residution)
+  (ray/do-shader shader (ray/do-texture frame-buffer
+    (loop [y :range [0 (slices 1)]
+           x :range [0 (slices 0)]]
+      (def last-x? (= x (dec (slices 0))))
+      (def last-y? (= y (dec (slices 1))))
+      # the final slice in each direction may be larger to account
+      # for any floored pixels
+      (def residution
+        [(if last-x? (residution 0) 0)
+         (if last-y? (residution 1) 0)])
+      (def this-size (map + residution slice-size))
+      (calry on-slice-start x y)
+      (jaylib/draw-rectangle-v (map * [x y] slice-size) this-size :red)
+      (jaylib/draw-render-batch-active)
+      (jaylib/finish)
+      (unless (and last-x? last-y?)
+        (os/sleep 0.01))
+      (calry on-slice-end x y))))
+  (calry on-render-end)
   (def image (jaylib/load-image-from-texture (jaylib/get-render-texture-texture2d frame-buffer)))
   (jaylib/image-flip-vertical image)
   image)
