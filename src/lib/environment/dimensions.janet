@@ -163,23 +163,10 @@
 (overload :vec2 bezier-position [:vec2 A :vec2 B :vec2 C :float t]
   (return (mix (mix A B t) (mix B C t) t)))
 
-(sugar (defhelper- :vec4 bezier-extrusion [:vec3 A :vec3 B :vec3 C :vec3 up :float from :float to]
-  (var t (bezier-t A B C))
-  (var rotation (bezier-orient A B C t up))
-  (set t (clamp t from to))
-  (return [((bezier-position A B C t) - p * rotation) t])))
-
-(sugar (overload :vec3 bezier-extrusion [:vec2 A :vec2 B :vec2 C :vec2 up :float from :float to]
-  (var t (bezier-t A B C))
-  (var rotation (bezier-orient A B C t up))
-  (set t (clamp t from to))
-  (return [((bezier-position A B C t) - q * rotation) t])))
-
 (defn- bezier-3d [shape A B C up from to]
   (sugar (gl/let [t (bezier-t A B C)
-                  t* (clamp t from to)
-                  projection (bezier-position A B C t*)]
-    (def subject (if (function? shape) (shape t*) shape))
+                  projection (bezier-position A B C (clamp t from to))]
+    (def subject (if (function? shape) (shape t) shape))
     (if (shape/shape? subject)
       (gl/with [p (projection - p * bezier-orient A B C t up)]
         (case (shape/type subject)
@@ -319,11 +306,42 @@
   it, you can "scan" the entire shape, and produce a stretching effect instead:
 
   ```example
-  (gl/def to (osc t 3 0 1))
+  (gl/def to (osc t 3 0.1 1))
   (box 20 | shade red | subtract (ball 23 | shade green) | rotate z ($t * tau)
   | move z (mix -20 20 ($t / to))
+  | bezier: $t [-100 0 100] [0 -100 0] [100 0 -100] :to to
+  | slow 0.8)
+  ```
+
+  The relative curve position (`$t` in this case) is not clamped to `from`/`to`, which means
+  that if you're extruding a 3D shape, you might see unexpected results. For example, this
+  2D extrusion is a perfect rainbow from red to red:
+
+  ```example
+  (circle 5 | radial 6 16 | rotate ($t * tau)
+  | shade (hsv $t 1 1)
+  | bezier: $t [-100 0 100] [0 -100 0] [100 0 -100] :to (osc t 3 0 1))
+  ```
+
+  But this similar 3D extrusion is not:
+
+  ```example
+  (octahedron 30 | radial z 6 16 | rotate z ($t * tau)
+  | shade (hsv $t 1 1)
+  | bezier: $t [-100 0 100] [0 -100 0] [100 0 -100] :to (osc t 3 0 1))
+  ```
+
+  Because the left edge of the shape has a negative `$t` value. You can explicitly clamp it:
+
+  ```example
+  (gl/def to (osc t 3 0 1))
+  (octahedron 30 | radial z 6 16 | rotate z ($t * tau)
+  | shade (hsv $t 1 1)
+  | gl/let [$t (clamp $t 0 to)] _
   | bezier: $t [-100 0 100] [0 -100 0] [100 0 -100] :to to)
   ```
+
+  If that isn't what you want.
 
   The shape will be oriented along the curve according to the vector `:up`, which determines
   what direction will become normal to the curve. The default is `+y`, but you can specify

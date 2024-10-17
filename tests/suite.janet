@@ -672,7 +672,7 @@
   `
   "float 3d bezier extrude" `
   (20
-  | bezier-extrude [-100 0 0] [100 200 -100] [100 0 0])
+  | bezier [-100 0 0] [100 200 -100] [100 0 0])
   `
   "2d 3d bezier extrude parameterized" `
   (rect (mix 10 30 $t)
