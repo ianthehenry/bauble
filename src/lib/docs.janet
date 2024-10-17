@@ -68,6 +68,7 @@
   (or
     ('{map-distance (:shapes :functions)
        map-color (:shapes :functions)
+       union-color (:surfacing)
        shape/2d (:shapes :functions)
        shape/3d (:shapes :functions)
        shape? (:shapes :functions)
@@ -216,7 +217,7 @@
     Bauble variables
       7 values
     Shading
-      27 values
+      28 values
     Repetition
       6 values
     Noise

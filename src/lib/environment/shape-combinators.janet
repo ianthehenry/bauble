@@ -266,6 +266,33 @@
         (typecheck color-roundness jlsl/type/float))
       (if s sharp-union-color-symmetric sharp-union-color-asymmetric))))
 
+(defnamed union-color [:?r :?s &shapes]
+  ````
+  `union-color` is like `union`, but it only affects color fields: it returns a shape with the same
+  distance field as its first argument.
+
+  You can use it to "paint" or "stamp" shapes, in 2D or 3D. For example:
+
+  ```example
+  (star 100 50 | color sky | union-color (circle 60 | color orange))
+  ```
+
+  ```example
+  (ball 100
+  | shade sky
+  # change this to a union
+  | union-color (star 50 30 | color red | extrude z inf | radial y 5 | rotate y t))
+  ```
+  ````
+  (assert (not (@and r s)) "you can only specify :r or :s, not both")
+  (def color-roundness (zero-to-nil (@or r s)))
+  (boolean shapes first
+    (if color-roundness
+      (partial
+        (if s smooth-union-color-symmetric smooth-union-color)
+        (typecheck color-roundness jlsl/type/float))
+      (if s sharp-union-color-symmetric sharp-union-color-asymmetric))))
+
 (defnamed intersect [:?r :?s :?distance :?color &shapes]
   ````
   Intersect two or more shapes. The named arguments produce a smooth intersection;

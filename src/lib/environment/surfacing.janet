@@ -3,6 +3,11 @@
 
 (def- VERY_LARGE_DISTANCE 1e6)
 
+(defn- to-color [value]
+  (if (shape? value)
+    (shape/color value)
+    (coerce-expr-to-type jlsl/type/vec3 vec3 value)))
+
 (defn color
   ````
   Set a shape's color field. This is the primitive surfacing operation,
@@ -35,11 +40,7 @@
   ```
   ````
   [shape color]
-  (def color
-    (if (shape? color)
-      (shape/color color)
-      (typecheck color jlsl/type/vec3)))
-  (shape/with shape :color color))
+  (shape/with shape :color (to-color color)))
 
 (defn tint
   ````
@@ -52,10 +53,7 @@
   [shape color &opt amount]
   (default amount 1)
   (def amount (typecheck amount jlsl/type/float))
-  (def color
-    (if (shape? color)
-      (shape/color color)
-      (typecheck color jlsl/type/vec3)))
+  (def color (to-color color))
   (assert (not (nil? (shape/color shape))) "cannot tint a shape with no color field")
   (map-color shape (fn [old-color]
     (+ old-color (* color amount)))))
@@ -228,7 +226,7 @@ set it in a way that fits nicely into a pipeline.
   `tiled` shape. If you want to make a light that dynamically varies, pass
   `:hoist false`.
   ```
-  (def color (,coerce-expr-to-type ',jlsl/type/vec3 vec3 color))
+  (def color (,to-color color))
   (def position (,typecheck position ',jlsl/type/vec3))
   (default hoist true)
   (def <expr> (case softness
@@ -340,7 +338,7 @@ set it in a way that fits nicely into a pipeline.
   ````
   (default shininess 0.25)
   (default glossiness 10)
-  (blinn-phong- light color shininess glossiness))
+  (blinn-phong- light (to-color color) shininess glossiness))
 
 (defnamed shade [shape :?f &args :&kargs]
   ````
