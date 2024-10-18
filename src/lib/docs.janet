@@ -217,7 +217,7 @@
     Bauble variables
       7 values
     Shading
-      28 values
+      26 values
     Repetition
       6 values
     Noise
@@ -225,7 +225,7 @@
     Camera
       14 values
     Colors
-      18 values
+      24 values
     Rotation
       6 values
     GLSL helpers
