@@ -142,6 +142,18 @@
 (defbuiltin mat4x3 (partial resolve-matrix-constructor 4 3))
 (defbuiltin mat4x4 (partial resolve-matrix-constructor 4 4))
 
+(defbuiltin inverse (fn [name arg-types]
+  (check-arity name 1 arg-types)
+  (type/match (in arg-types 0)
+    (mat cols (= cols)) (builtin name (in arg-types 0) arg-types)
+    (error "inverse needs a square matrix"))))
+
+(defbuiltin transpose (fn [name arg-types]
+  (check-arity name 1 arg-types)
+  (type/match (in arg-types 0)
+    (mat cols rows) (builtin name (type/mat rows cols) arg-types)
+    (error "transpose needs a matrix"))))
+
 (defbuiltin length (partial numeric-vector-to-number 1))
 (defbuiltin distance (partial numeric-vector-to-number 2))
 (defbuiltin normalize (partial resolve-generic 1))
@@ -214,6 +226,10 @@
 (typecheck (* (mat2x4 1) (mat3x2 1)) [:mat2x4 :mat3x2 -> :mat3x4])
 (typecheck (* (mat2x4 1) (mat3x2 1) (vec3 1)) [:mat2x4 :mat3x2 :vec3 -> :vec4])
 (typecheck (* (mat2x4 1) (mat3x2 1) (mat2x3 1)) [:mat2x4 :mat3x2 :mat2x3 -> :mat2x4])
+
+(test-error (inverse (mat2x4 1)) "inverse needs a square matrix")
+(typecheck (inverse (mat3 1)) [:mat3 -> :mat3])
+(typecheck (transpose (mat2x4 1)) [:mat2x4 -> :mat4x2])
 
 (test-error (and true) "and needs at least 2 arguments but you gave it 1")
 (typecheck (and true false) [:bool :bool -> :bool])

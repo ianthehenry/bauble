@@ -163,6 +163,7 @@
       [fma]
       [fract]
       [int]
+      [inverse]
       [inversesqrt]
       [mix]
       [normalize]
@@ -175,6 +176,7 @@
       [sign]
       [smoothstep]
       [step]
+      [transpose]
       [uint]
       [xor]]))
 

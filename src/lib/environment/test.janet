@@ -281,6 +281,7 @@
           :value 9e999}
     int @{}
     intersect @{:doc "(intersect & shapes [:r r] [:s s] [:distance distance] [:color color])\n\nIntersect two or more shapes. The named arguments produce a smooth intersection;\nsee `union` for a thorough description.\n\n```example\n(intersect\n  (ball 100 | move x -50 | shade red)\n  (ball 100 | move x +50 | shade sky))\n```\n\nNote that although it doesn't matter when doing a sharp intersection,\nyou probably want to use `:s` to smooth over `:r`, or else the latter\nshape's color field will \"take over\" the earlier shape. Compare:\n\n```example\n(intersect :r 30\n  (ball 100 | move x -50 | shade red)\n  (ball 100 | move x +50 | shade sky))\n```\n```example\n(intersect :s 30\n  (ball 100 | move x -50 | shade red)\n  (ball 100 | move x +50 | shade sky))\n```\n\nThis effect makes sense if you think about the shapes in 2D:\n\n```example\n(intersect :r 30\n  (circle 100 | move x -50 | color red)\n  (circle 100 | move x +50 | color sky))\n```\n\nThe second shape was on top of the first shape, so the first\nshape's color field is only visible where it fades into the\nshape of the first. But with a symmetric intersection:\n\n```example\n(intersect :s 30\n  (circle 100 | move x -50 | color red)\n  (circle 100 | move x +50 | color sky))\n```\n\nThis doesn't happen."}
+    inverse @{}
     inversesqrt @{}
     isolines @{:doc "A color that represents the visualization of the 2D gradient. This is\nthe default color used when rendering a 2D shape with no color field."
                :value [isolines]}
@@ -532,6 +533,7 @@
     torus @{:doc "(torus axis radius thickness)\n\nReturns a 3D shape, a torus around the provided `axis`.\n\n```example\n(torus z 100 (osc t 3 10 50))\n```"}
     transparent @{:doc "\nThis is a `vec4`, not a `vec3`, so you\ncan basically only use it as a background color.\n\n```example\n(set background-color transparent)\n```"
                   :value [vec4 0]}
+    transpose @{}
     trapezoid @{:doc "(trapezoid bottom-width top-width height [:r round])\n\nReturns a 2D shape.\n\n```example\n(trapezoid (osc t 3 50 100) (oss t 2 100 50) 100)\n```"}
     triangle @{:doc "(triangle & args)\n\nUsually returns a 2D shape, with various overloads:\n\n```example\n(triangle 100)\n```\n\n```example\n(triangle [50 100])\n```\n\n```example\n(triangle [-50 100] [100 10] [-10 -100])\n```\n\nBut it can also return a 3D shape:\n\n```example\n(triangle\n  [(osc t 4 -100 100) -100 (oss t 5 -100 100)]\n  [100 (osc t 6 -100 100) 100]\n  [-100 (oss t 7 -100 100) (osc t 8 -100 100)]\n| union (box-frame 100 1))\n```"}
     trunc @{}
