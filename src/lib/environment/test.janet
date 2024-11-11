@@ -160,7 +160,7 @@
     bezier: @{:doc "(bezier: shape $t & args)\n\nLike `bezier`, but implicitly wraps its first argument in an anonymous function. See `bezier` for examples."
               :macro true}
     black @{:doc "  ```example\n  (set background-color black)\n  (ball 100 | shade black)\n  ```\n  "
-            :value [0.03 0.03 0.03]}
+            :value [0 0 0]}
     blinn-phong @{:doc "(blinn-phong light color [:s shininess] [:g glossiness])\n\nA Blinn-Phong shader, intended to be passed as an argument to `shade`. `:s` controls\nthe strength of specular highlights, and `:g` controls the glossiness.\n\n```example\n(ball 100 | shade :f blinn-phong [1 0 0] :s 1 :g (osc t 5 5 30))\n```"}
     blue @{:doc "  ```example\n  (set background-color blue)\n  (ball 100 | shade blue)\n  ```\n  "
            :value [hsv 0.66666666666666663 0.98 1]}
@@ -205,7 +205,7 @@
            :value [hsv 0.5 0.98 1]}
     cylinder @{:doc "(cylinder axis radius height [:r round])\n\nReturns a 3D shape, a cylinder oriented along the given `axis`.\n\n```example\n(cylinder y 50 100)\n```\n\nThe second argument is twice the length of the cylinder. Like many shapes,\nyou can round it with `:r`.\n\n```example\n(cylinder z 100 50 :r (osc t 3 0 20))\n```"}
     dark-gray @{:doc "  ```example\n  (set background-color dark-gray)\n  (ball 100 | shade dark-gray)\n  ```\n  "
-                :value [0.25 0.25 0.25]}
+                :value [0.1 0.1 0.1]}
     default-2d-color @{:doc "A variable that determines the default color to use when rendering a 2D shape with no color field.\n\nDefault is `isolines`."
                        :ref @[[isolines]]}
     default-3d-color @{:doc "A variable that determines the default color to use when rendering a 3D shape with no color field.\n\nDefault is `(mix normal+ [1 1 1] (fresnel 5))`."

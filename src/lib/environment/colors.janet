@@ -39,8 +39,8 @@
 (defcolor white      [1    1    1])
 (defcolor light-gray [0.75 0.75 0.75])
 (defcolor gray       [0.5  0.5  0.5])
-(defcolor dark-gray  [0.25 0.25 0.25])
-(defcolor black      [0.03 0.03 0.03])
+(defcolor dark-gray  [0.1  0.1  0.1])
+(defcolor black      [0.0  0.0  0.0])
 (def transparent ````
 
 This is a `vec4`, not a `vec3`, so you
