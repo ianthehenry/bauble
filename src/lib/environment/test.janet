@@ -402,19 +402,19 @@
     quad-circle @{:doc "(quad-circle radius)\n\nReturns a 2D shape, an approximation of a circle made out of quadratic bezier curves.\n\n```example\n(quad-circle 100)\n```\n\nIt's like a circle, but quaddier."}
     quantize @{:doc "(quantize value count)\n\nRounds a value to the nearest multiple of `count`."}
     r2 @{:doc "A 2D shape with zero distance everywhere."
-         :value {:fields {:distance [<2>
+         :value {:fields {:distance [<1>
                                      literal
-                                     [<3> primitive [<4> float]]
+                                     [<2> primitive [<3> float]]
                                      0]}
-                 :tag <1>
-                 :type [<3> vec [<4> float] 2]}}
+                 :tag <4>
+                 :type [<2> vec [<3> float] 2]}}
     r3 @{:doc "A 2D shape with zero distance everywhere."
-         :value {:fields {:distance [<2>
+         :value {:fields {:distance [<1>
                                      literal
-                                     [<3> primitive [<4> float]]
+                                     [<2> primitive [<3> float]]
                                      0]}
-                 :tag <1>
-                 :type [<3> vec [<4> float] 3]}}
+                 :tag <4>
+                 :type [<2> vec [<3> float] 3]}}
     radial @{:doc "(radial shape [axis] count [offset] [:oversample oversample] [:sample-from sample-from] [:sample-to sample-to])\n\nRepeat an angular slice of space `count` times around the given axis.\n\n```example\n(torus x 100 1 | radial y 24)\n```\n\nWith an offset argument, you can translate the shape away from the origin first:\n\n```example\n(torus x 100 1 | radial y 24 (osc t 5 0 120))\n```\n\nIf you're repeating a shape that is not symmetric, you can use `:oversample true` to evaluate\nmultiple instances at each pass, essentially considering the distance not only to this\nslice, but also to neighboring slices. Compare these two distance fields:\n\n```example\n(triangle [50 100] | radial 12 100)\n```\n```example\n(triangle [50 100] | radial 12 100 :oversample true)\n```\n\nThe default oversampling is `:sample-from 0` `:sample-to 1`, which means looking at one adjacent\nslice, asymmetrically based on the location of the point (so when evaluating a point near\nthe right edge of a slice, it will look at the slice to the right, but not the slice\nto the left). By passing `:sample-from -1`, you can also look at the \"far\" slice.\nBy passing `:sample-from 0 :sample-to 2`, you can look at two slices in the direction of\nthe nearest slice.\n\nThis can be useful when raymarching a 3D space where each slice produces a different shape, or\nwhere the shape you're marching doesn't fit into a single slice. For example:\n\n```example\n(cone y 25 100 :r 1\n| radial z 12 100 :oversample true :sample-from -1)\n```"}
     radial* @{:doc "(radial* [axis] count [offset] get-shape [:oversample oversample] [:sample-from sample-from] [:sample-to sample-to])\n\nLike `radial`, but the shape is a result of invoking `get-shape` with one argument,\na GLSL variable referring to the current slice of space.\n\n```example\n(radial* z 12 100 (fn [$i]\n  (ball 50\n  | color (hsv (hash $i) 0.5 1))))\n```\n\nYou can use this to generate different shapes or colors at every sampled slice of space.\nThe index will be a `float` with integral components that represents the current slice\nbeing considered.\n\nSee also `radial:`, which is a more convenient macro version of this function."}
     radial: @{:doc "(radial: shape $i & args)\n\nLike `radial*`, but its first argument should be a form that will\nbecome the body of the function. Basically, it's a way to create\na repeated shape where each instance of the shape varies, and it's\nwritten in a way that makes it conveniently fit into a pipeline:\n\n```example\n(ball 50\n| color (hsv (hash $i) 0.5 1)\n| radial: $i z 12 100)\n```"

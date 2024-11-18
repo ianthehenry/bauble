@@ -305,7 +305,7 @@
     (def <4> @[])
     (@array/push <1> (def t (@new "t" (@type/primitive (quote (<5> float))))))
     (as-macro @jlsl/defn :void main [] (return 10))
-    (@validate-program {:globals (quote @[(<6> lexical <7> "gl_FragDepth" (<8> primitive (<5> float))) (<6> lexical <9> "gl_PointCoord" (<8> vec (<5> float) 2)) (<6> lexical <10> "gl_FragCoord" (<8> vec (<5> float) 4)) (<6> lexical <11> "gl_FrontFacing" (<8> primitive (<5> bool)))]) :inputs <2> :main (@resolve-function main []) :outputs <3> :precisions <4> :uniforms <1>})))
+    (@validate-program {:globals (quote @[(<6> lexical <7> "gl_PointCoord" (<8> vec (<5> float) 2)) (<6> lexical <9> "gl_FrontFacing" (<8> primitive (<5> bool))) (<6> lexical <10> "gl_FragCoord" (<8> vec (<5> float) 4)) (<6> lexical <11> "gl_FragDepth" (<8> primitive (<5> float)))]) :inputs <2> :main (@resolve-function main []) :outputs <3> :precisions <4> :uniforms <1>})))
 
 (deftest "various sorts of illegal programs"
   (test-error (program/new

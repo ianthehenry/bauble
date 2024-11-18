@@ -103,18 +103,18 @@
     (defmacro result/match
       [value & branches]
       (@match-macro value branches))
-    (defn result/error
-      [value etc]
-      [(quote <1>) (quote error) value etc])
-    (defmacro @result/error
-      [value etc]
-      [(quote quote) (@tuple/brackets (quote (quote <1>)) (quote (quote error)) value etc)])
     (defn result/ok
       [value]
       [(quote <1>) (quote ok) value])
     (defmacro @result/ok
       [value]
-      [(quote quote) (@tuple/brackets (quote (quote <1>)) (quote (quote ok)) value)])))
+      [(quote quote) (@tuple/brackets (quote (quote <1>)) (quote (quote ok)) value)])
+    (defn result/error
+      [value etc]
+      [(quote <1>) (quote error) value etc])
+    (defmacro @result/error
+      [value etc]
+      [(quote quote) (@tuple/brackets (quote (quote <1>)) (quote (quote error)) value etc)])))
 
 (defadt- result
   (ok value)
