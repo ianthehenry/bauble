@@ -83,6 +83,7 @@
   (set-uniform "t" :float t)
   (set-uniform "viewport" :vec4 [0 0 ;resolution])
   (set-uniform "render_type" :int 0)
+  (set-uniform "crosshairs_3d" :vec4 [0 0 0 0])
 
   (def slice-size (map |(math/floor (/ $0 $1)) resolution slices))
   (def residution (map - resolution (map |(* $0 $1) slice-size slices)))

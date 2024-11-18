@@ -22,6 +22,7 @@ export type T = {
   quadView: boolean,
   quadSplitPoint: vec2,
   resolution: {width: number, height: number},
+  crosshairs: vec3 | null,
 };
 
 export type Accessors = {
@@ -36,6 +37,7 @@ export type Accessors = {
   quadView: Signal.Accessor<boolean>,
   quadSplitPoint: Signal.Accessor<vec2>,
   resolution: Signal.Accessor<{width: number, height: number}>,
+  crosshairs: Signal.Accessor<vec3 | null>,
 };
 
 export type Signals = {
@@ -50,6 +52,7 @@ export type Signals = {
   quadView: Signal.T<boolean>,
   quadSplitPoint: Signal.T<vec2>,
   resolution: Signal.T<{width: number, height: number}>,
+  crosshairs: Signal.T<vec3 | null>,
 };
 
 export function defaultSignals() {
@@ -65,6 +68,7 @@ export function defaultSignals() {
     quadView: Signal.create(false),
     quadSplitPoint: Signal.create(vec2.fromValues(0.5, 0.5)),
     resolution: Signal.create({width: 0, height: 0}),
+    crosshairs: Signal.create(null as vec3 | null),
   };
 }
 
@@ -82,6 +86,7 @@ export function accessAll(accessors: Accessors): Signal.Accessor<T> {
       quadView: accessors.quadView(),
       quadSplitPoint: accessors.quadSplitPoint(),
       resolution: accessors.resolution(),
+      crosshairs: accessors.crosshairs(),
     };
   });
 };
@@ -99,6 +104,7 @@ export function getAll(signals: Signals): Accessors {
     quadView: Signal.getter(signals.quadView),
     quadSplitPoint: Signal.getter(signals.quadSplitPoint),
     resolution: Signal.getter(signals.resolution),
+    crosshairs: Signal.getter(signals.crosshairs),
   };
 };
 
@@ -115,5 +121,6 @@ export function setAll(signals: Signals, value: T) {
     Signal.set(signals.quadView, value.quadView);
     Signal.set(signals.quadSplitPoint, value.quadSplitPoint);
     Signal.set(signals.resolution, value.resolution);
+    Signal.set(signals.crosshairs, value.crosshairs);
   });
 }

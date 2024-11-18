@@ -343,7 +343,7 @@ const Bauble = (props: BaubleProps) => {
   let canvasContainer: HTMLDivElement;
   let editorContainer: HTMLDivElement;
   let canvas: HTMLCanvasElement;
-  let editor: EditorView;
+  let editorView: EditorView;
   let outputContainer: HTMLElement;
 
   let isGesturing = false;
@@ -406,7 +406,7 @@ const Bauble = (props: BaubleProps) => {
   const recompile = () => {
     compileQueue.schedule(async () => {
       Signal.set(evaluationState, EvaluationState.Unknown);
-      const request = {tag: 'compile', script: editor.state.doc.toString()};
+      const request = {tag: 'compile', script: editorView.state.doc.toString()};
       const result: any = await wasmBox.send(request);
       if (result.isError) {
         Signal.set(evaluationState, EvaluationState.EvaluationError);
@@ -441,8 +441,7 @@ const Bauble = (props: BaubleProps) => {
 
   onMount(() => {
     intersectionObserver.observe(canvas);
-
-    editor = installCodeMirror({
+    const {view, focusVec} = installCodeMirror({
       initialScript: props.initialScript,
       parent: editorContainer,
       canSave: props.canSave,
@@ -450,6 +449,10 @@ const Bauble = (props: BaubleProps) => {
       onChange: recompile,
       definitions: definitions,
     });
+    createEffect(() => {
+      console.log('focus', focusVec());
+    }, focusVec);
+    editorView = view;
     renderer = new AsyncRenderer(renderBox, canvas, {
       time: Signal.getter(timer.t),
       isVisible: Signal.getter(isVisible),
@@ -462,6 +465,7 @@ const Bauble = (props: BaubleProps) => {
       quadView: Signal.getter(quadView),
       quadSplitPoint: Signal.getter(quadSplitPoint),
       resolution: canvasResolution,
+      crosshairs: focusVec,
     });
 
     timeAdvancer = new RenderLoop((elapsed) => batch(() => {

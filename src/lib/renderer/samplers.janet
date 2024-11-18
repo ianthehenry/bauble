@@ -10,6 +10,7 @@
 (jlsl/jlsl/defdyn free-camera-target :vec3 "")
 (jlsl/jlsl/defdyn free-camera-orbit :vec2 "")
 (jlsl/jlsl/defdyn free-camera-zoom :float "")
+(jlsl/jlsl/defdyn crosshairs-3d :vec4 "")
 
 (jlsl/jlsl/defdyn origin-2d :vec2 "")
 
@@ -77,6 +78,24 @@
           (return 0))))
     (return ray-depth)))
 
+# returns [point-on-axis distance-to-axis]
+(sugar (jlsl/jlsl/defn :vec4 intersect-axis [:vec3 origin :vec3 axis Ray ray]
+  (var A (mat2x3 ray.direction (- axis)))
+  (var b (origin - ray.origin))
+  (var At (transpose A))
+  (var ts (At * A | inverse * At * b))
+  (if (< ts.x 0) (return [0 0 0 10000]))
+  (var p1 (ray.direction * ts.x + ray.origin))
+  (var p2 (axis * ts.y + origin))
+  (return [p2 (distance p1 p2)])
+  ))
+
+(defn- has-fov? [expr]
+  (case (jlsl/expr/type expr)
+    (jlsl/type/coerce PerspectiveCamera) true
+    (jlsl/type/coerce OrthographicCamera) false
+    (error "that's no camera")))
+
 # TODO: okay, so, theoretically we have nearest-distance in the current environment already
 (defn make-sample-3d [nearest-distance <camera> <background-color> <default-color> <color-field>]
   (def march (make-march nearest-distance))
@@ -84,10 +103,18 @@
 
   (jlsl/fn :vec4 sample []
     (var ray* (Ray [0 0 0] [0 0 1]))
-    (var ortho [ortho-distance (* frag-coord ortho-base-zoom-distance free-camera-zoom)])
+    (var ortho-quad [ortho-distance (* frag-coord ortho-base-zoom-distance free-camera-zoom)])
+    (var ortho-scale (* ortho-base-zoom-distance free-camera-zoom))
+    (var fov 0)
     (case camera-type
       0:s ,(if <camera>
-        (jlsl/statement (set ray* (camera/ray <camera>)) (break))
+        (jlsl/statement
+          (var camera <camera>)
+          (set ray* (camera/ray camera))
+          ,(if (has-fov? <camera>)
+            (jlsl/statement (set fov camera.fov))
+            (jlsl/statement (set ortho-scale camera.scale)))
+          (break))
         (jlsl/statement
           # just fall through
           ))
@@ -98,15 +125,16 @@
         (set ray* (Ray
           (camera-rotation-matrix * [0 0 (base-zoom-distance * free-camera-zoom)] + free-camera-target)
           (camera-rotation-matrix * (perspective-vector free-camera-fov * [1 1 -1]))))
+        (set fov free-camera-fov)
         (break))
       2:s (do # XZ
-        (set ray* (Ray (ortho.yxz + free-camera-target) [0 -1 0]))
+        (set ray* (Ray (ortho-quad.yxz + free-camera-target) [0 -1 0]))
         (break))
       3:s (do # XY
-        (set ray* (Ray (ortho.yzx + free-camera-target) [0 0 -1]))
+        (set ray* (Ray (ortho-quad.yzx + free-camera-target) [0 0 -1]))
         (break))
       4:s (do # ZY
-        (set ray* (Ray (ortho.xzy + free-camera-target) [-1 0 0]))
+        (set ray* (Ray (ortho-quad.xzy + free-camera-target) [-1 0 0]))
         (break)))
 
     (var steps 0:u)
@@ -117,21 +145,49 @@
            p P
            dist (nearest-distance)
            normal (calculate-normal (nearest-distance))]
+      (var color (vec4 0))
       (case render-type
-        0:s (if (>= dist MAXIMUM_HIT_DISTANCE)
-            (return <background-color>)
-            (return [,(@or <color-field> <default-color>) 1]))
+        0:s (do
+          (if (>= dist MAXIMUM_HIT_DISTANCE)
+            (set color <background-color>)
+            (set color [,(@or <color-field> <default-color>) 1]))
+          (break))
         # ignore color field
-        1:s (if (>= dist MAXIMUM_HIT_DISTANCE)
-            (return <background-color>)
-            (return [<default-color> 1]))
+        1:s (do
+          (if (>= dist MAXIMUM_HIT_DISTANCE)
+            (set color <background-color>)
+            (set color [<default-color> 1]))
+          (break))
         # convergence debug view
-        2:s
-          (return (if (= steps MAX_STEPS)
+        2:s (do
+          (set color (if (= steps MAX_STEPS)
             [1 0 1 1]
             [(float steps / float MAX_STEPS | vec3) 1]))
+          (break))
         # overshoot debug view
         3:s (do
           (var overshoot (max (- dist) 0 / MINIMUM_HIT_DISTANCE))
           (var undershoot (max dist 0 / MINIMUM_HIT_DISTANCE))
-          (return [overshoot (- 1 undershoot overshoot) (1 - (step 1 undershoot)) 1]))))))
+          (set color [overshoot (- 1 undershoot overshoot) (1 - (step 1 undershoot)) 1])
+          (break)))
+
+      (if (> crosshairs-3d.w 0) (do
+        (var x (intersect-axis crosshairs-3d.xyz [1 0 0] ray))
+        (var y (intersect-axis crosshairs-3d.xyz [0 1 0] ray))
+        (var z (intersect-axis crosshairs-3d.xyz [0 0 1] ray))
+
+        (var xd (distance x.xyz ray.origin))
+        (var yd (distance y.xyz ray.origin))
+        (var zd (distance z.xyz ray.origin))
+        (var thickness [1 1 1])
+        (if (> fov 0)
+          (do
+            (var angular-resolution (2 * (tan (radians (0.5 * fov)))))
+            (*= thickness [xd yd zd * angular-resolution / base-zoom-distance]))
+          (*= thickness (ortho-scale / ortho-base-zoom-distance)))
+        (if (< x.w thickness.x) (set color (mix color [1 0.1 0.1 1] (if (or (>= xd MAXIMUM_TRACE_DISTANCE) (< xd depth)) 1 0.5))))
+        (if (< y.w thickness.y) (set color (mix color [0 1 0.25 1]  (if (or (>= yd MAXIMUM_TRACE_DISTANCE) (< yd depth)) 1 0.5))))
+        (if (< z.w thickness.z) (set color (mix color [0 0.5 1 1]   (if (or (>= zd MAXIMUM_TRACE_DISTANCE) (< zd depth)) 1 0.5))))
+        ))
+
+      (return color))))

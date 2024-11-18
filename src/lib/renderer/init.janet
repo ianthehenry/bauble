@@ -53,6 +53,7 @@
     (uniform ,render-type)
     (uniform ,t)
     (uniform ,viewport)
+    (uniform ,crosshairs-3d)
     (out :vec4 frag-color)
     (implement :float nearest-distance [] (return ,(@or (@and subject (shape/distance subject)) 0)))
 

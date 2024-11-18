@@ -7,7 +7,9 @@ import {janet} from 'codemirror-lang-janet';
 import {EditorSelection, Transaction} from '@codemirror/state';
 import type {Definition} from 'bauble-runtime';
 import Big from 'big.js';
+import * as Signal from './signals';
 import * as Storage from './storage';
+import {vec3} from 'gl-matrix';
 import janetAutocomplete from "./autocomplete";
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -70,6 +72,8 @@ function isNumberNode(node: SyntaxNode) {
 
 interface StateCommandInput {state: EditorState, dispatch: (_: Transaction) => void}
 
+const nodeText = (node: SyntaxNode, state: EditorState): string => state.sliceDoc(node.from, node.to)
+
 function alterNumber({state, dispatch}: StateCommandInput, amount: Big) {
   const range = state.selection.ranges[state.selection.mainIndex];
   const tree = syntaxTree(state);
@@ -82,7 +86,7 @@ function alterNumber({state, dispatch}: StateCommandInput, amount: Big) {
     return false;
   }
 
-  const numberText = state.sliceDoc(node.from, node.to);
+  const numberText = nodeText(node, state);
   let number;
   try {
     number = Big(numberText);
@@ -118,6 +122,11 @@ interface EditorOptions {
   canSearch: boolean,
   onChange: (() => void),
   definitions: Array<Definition>,
+}
+
+interface Editor {
+  view: EditorView,
+  focusVec: Signal.Accessor<vec3 | null>,
 }
 
 const highlightStyle = HighlightStyle.define([
@@ -229,13 +238,60 @@ const theme = EditorView.theme({
   // TODO: style the "find/replace" box
 });
 
-export default function installCodeMirror({definitions, initialScript, parent, canSave, canSearch, onChange}: EditorOptions): EditorView {
+const closestParent = (node: SyntaxNode, typeName: string): SyntaxNode | null => {
+  let node_: SyntaxNode | null = node;
+  while (node_ && node_.type.name !== typeName) {
+    node_ = node_.parent;
+  }
+  return node_;
+}
+
+const tupleChildren = (node: SyntaxNode): SyntaxNode[] => {
+  const children = [];
+  // skip the first and last child, as those will be brackets
+  let child = node.firstChild;
+  while (child) {
+    child = child.nextSibling;
+    if (child && child.nextSibling) {
+      children.push(child);
+    }
+  }
+  return children;
+}
+
+const findFocusVec = (state: EditorState): vec3 | null => {
+  const range = state.selection.ranges[state.selection.mainIndex];
+  const tree = syntaxTree(state);
+  let tuple = closestParent(tree.resolveInner(range.head, -1), 'Tuple');
+  if (tuple) {
+    const children = tupleChildren(tuple);
+    if (children.length === 3 && children.every(isNumberNode)) {
+      const parsed = children.map(node => parseFloat(nodeText(node, state)));
+      if (parsed.length === 3 && parsed.every(x => typeof x === 'number')) {
+        return vec3.fromValues(parsed[0], parsed[1], parsed[2]);
+      }
+    }
+  }
+  return null;
+}
+
+export default function installCodeMirror(options: EditorOptions): Editor {
+  const {
+    definitions,
+    initialScript,
+    parent,
+    canSave,
+    canSearch,
+    onChange
+  } = options;
   const keyBindings = [indentWithTab];
   if (canSave) {
     keyBindings.push({ key: "Mod-s", run: save });
   }
 
-  const editor = new EditorView({
+  const focusVec = Signal.create<vec3 | null>(null);
+
+  const editorView = new EditorView({
     extensions: [
       basicSetup(canSearch),
       janet(),
@@ -243,6 +299,12 @@ export default function installCodeMirror({definitions, initialScript, parent, c
       EditorView.updateListener.of(function(viewUpdate: ViewUpdate) {
         if (viewUpdate.docChanged) {
           onChange();
+        }
+      }),
+      EditorView.updateListener.of(function(viewUpdate: ViewUpdate) {
+        if (viewUpdate.selectionSet) {
+          const {state} = viewUpdate;
+          Signal.set(focusVec, findFocusVec(state));
         }
       }),
       janetAutocomplete(definitions),
@@ -284,7 +346,7 @@ export default function installCodeMirror({definitions, initialScript, parent, c
   });
   parent.addEventListener('pointermove', (e) => {
     if (parent.hasPointerCapture(e.pointerId)) {
-      alterNumber(editor, Big(e.movementX).times('1'));
+      alterNumber(editorView, Big(e.movementX).times('1'));
     }
   });
 
@@ -298,34 +360,37 @@ export default function installCodeMirror({definitions, initialScript, parent, c
   // So on Firefox you have to use an actual right-click.
   // It's very annoying. This is an *okay* workaround.
   document.addEventListener('pointermove', (e) => {
-    if (!editor.hasFocus) {
+    if (!editorView.hasFocus) {
       return;
     }
     if (e.shiftKey && e.metaKey) {
-      alterNumber(editor, Big(e.movementX).times('1'));
+      alterNumber(editorView, Big(e.movementX).times('1'));
     }
   });
 
   if (canSave) {
     setInterval(function() {
-      save(editor);
+      save(editorView);
     }, 30 * 1000);
     document.addEventListener('pagehide', () => {
-      save(editor);
+      save(editorView);
     });
     let savedBefore = false;
     // iOS Safari doesn't support beforeunload,
     // but it does support unload.
     window.addEventListener('beforeunload', () => {
       savedBefore = true;
-      save(editor);
+      save(editorView);
     });
     window.addEventListener('unload', () => {
       if (!savedBefore) {
-        save(editor);
+        save(editorView);
       }
     });
   }
 
-  return editor;
+  return {
+    view: editorView,
+    focusVec: Signal.getter(focusVec),
+  };
 }

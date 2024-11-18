@@ -3,6 +3,7 @@ import type {Accessor} from 'solid-js';
 import {clamp, TAU} from './util';
 import type {Seconds} from './types';
 import type * as RenderState from './render-state';
+import {vec3, vec4} from 'gl-matrix';
 
 enum CameraType {
   Custom = 0,
@@ -100,12 +101,19 @@ export default class Renderer {
     const uCameraTarget = gl.getUniformLocation(program, "free_camera_target");
     const uCameraOrbit = gl.getUniformLocation(program, "free_camera_orbit");
     const uCameraZoom = gl.getUniformLocation(program, "free_camera_zoom");
+    const uCrosshairs = gl.getUniformLocation(program, "crosshairs_3d");
 
     gl.uniform1f(uT, this.state.time());
     gl.uniform1i(uRenderType, this.state.renderType());
     gl.uniform3fv(uCameraTarget, this.state.origin());
     gl.uniform2fv(uCameraOrbit, this.state.rotation());
     gl.uniform1f(uCameraZoom, this.state.zoom());
+    const crosshairs = this.state.crosshairs();
+    if (crosshairs) {
+      gl.uniform4fv(uCrosshairs, vec4.fromValues(crosshairs[0], crosshairs[1], crosshairs[2], 1));
+    } else {
+      gl.uniform4fv(uCrosshairs, vec4.fromValues(0, 0, 0, 0));
+    }
   }
 
   private drawSingleView() {
