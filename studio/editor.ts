@@ -74,6 +74,11 @@ interface StateCommandInput {state: EditorState, dispatch: (_: Transaction) => v
 
 const nodeText = (node: SyntaxNode, state: EditorState): string => state.sliceDoc(node.from, node.to)
 
+const getDigitsAfterDecimalPoint = (str: string) => {
+  const decimalPointIndex = str.indexOf('.');
+  return decimalPointIndex < 0 ? 0 : str.length - decimalPointIndex - 1;
+}
+
 function alterNumber({state, dispatch}: StateCommandInput, amount: Big) {
   const range = state.selection.ranges[state.selection.mainIndex];
   const tree = syntaxTree(state);
@@ -94,8 +99,7 @@ function alterNumber({state, dispatch}: StateCommandInput, amount: Big) {
     console.error('unable to parse number: ', numberText);
     return false;
   }
-  const decimalPointIndex = numberText.indexOf('.');
-  const digitsAfterDecimalPoint = decimalPointIndex < 0 ? 0 : numberText.length - decimalPointIndex - 1;
+  const digitsAfterDecimalPoint = getDigitsAfterDecimalPoint(numberText);
   const increment = Big('10').pow(-digitsAfterDecimalPoint);
 
   const newNumber = number.add(amount.times(increment));
@@ -115,6 +119,40 @@ function alterNumber({state, dispatch}: StateCommandInput, amount: Big) {
   return true;
 }
 
+function alterVec({state, dispatch}: StateCommandInput, nodes: SyntaxNode[], values: number[]) {
+  if (nodes.length != values.length) {
+    return false;
+  }
+  let lengthDifference = 0;
+  const changes = [];
+  for (let i = 0; i < nodes.length; i++) {
+    let node = nodes[i];
+    let oldText = nodeText(node, state);
+    let oldNumber;
+    try {
+      oldNumber = Big(oldText);
+    } catch (e) {
+      console.error('unable to parse number: ', oldText);
+      return false;
+    }
+    const newNumber = Big(values[i]);
+    const newText = newNumber.toFixed(getDigitsAfterDecimalPoint(oldText));
+    lengthDifference += newText.length - oldText.length;
+    changes.push({
+      from: node.from,
+      to: node.to,
+      insert: newText,
+    });
+  }
+
+  dispatch(state.update({
+    changes,
+    selection: EditorSelection.single(nodes[0].from, nodes[nodes.length - 1].to + lengthDifference),
+    scrollIntoView: true,
+  }));
+  return true;
+}
+
 interface EditorOptions {
   initialScript: string,
   parent: HTMLElement,
@@ -127,6 +165,7 @@ interface EditorOptions {
 interface Editor {
   view: EditorView,
   focusVec: Signal.Accessor<vec3 | null>,
+  setFocusVec: ((vec: vec3) => void),
 }
 
 const highlightStyle = HighlightStyle.define([
@@ -252,6 +291,9 @@ const tupleChildren = (node: SyntaxNode): SyntaxNode[] => {
   let child = node.firstChild;
   while (child) {
     child = child.nextSibling;
+    if (child && child.type.name === 'Pipe') {
+      return children;
+    }
     if (child && child.nextSibling) {
       children.push(child);
     }
@@ -259,7 +301,7 @@ const tupleChildren = (node: SyntaxNode): SyntaxNode[] => {
   return children;
 }
 
-const findFocusVec = (state: EditorState): vec3 | null => {
+const findFocusVec = (state: EditorState): {nodes: SyntaxNode[], vec: vec3} | null => {
   const range = state.selection.ranges[state.selection.mainIndex];
   const tree = syntaxTree(state);
   let tuple = closestParent(tree.resolveInner(range.head, -1), 'Tuple');
@@ -268,7 +310,10 @@ const findFocusVec = (state: EditorState): vec3 | null => {
     if (children.length === 3 && children.every(isNumberNode)) {
       const parsed = children.map(node => parseFloat(nodeText(node, state)));
       if (parsed.length === 3 && parsed.every(x => typeof x === 'number')) {
-        return vec3.fromValues(parsed[0], parsed[1], parsed[2]);
+        return {
+          nodes: children,
+          vec: vec3.fromValues(parsed[0], parsed[1], parsed[2])
+        };
       }
     }
   }
@@ -290,6 +335,7 @@ export default function installCodeMirror(options: EditorOptions): Editor {
   }
 
   const focusVec = Signal.create<vec3 | null>(null);
+  let focusNodes: SyntaxNode[] | null = null;
 
   const editorView = new EditorView({
     extensions: [
@@ -303,8 +349,15 @@ export default function installCodeMirror(options: EditorOptions): Editor {
       }),
       EditorView.updateListener.of(function(viewUpdate: ViewUpdate) {
         if (viewUpdate.selectionSet) {
-          const {state} = viewUpdate;
-          Signal.set(focusVec, findFocusVec(state));
+          const focus = findFocusVec(viewUpdate.state)
+          if (focus != null) {
+            let {nodes, vec} = focus;
+            Signal.set(focusVec, vec);
+            focusNodes = nodes;
+          } else {
+            Signal.set(focusVec, null);
+            focusNodes = null;
+          }
         }
       }),
       janetAutocomplete(definitions),
@@ -392,5 +445,10 @@ export default function installCodeMirror(options: EditorOptions): Editor {
   return {
     view: editorView,
     focusVec: Signal.getter(focusVec),
+    setFocusVec: (vec: vec3) => {
+      if (focusNodes != null) {
+        alterVec(editorView, focusNodes, (vec as number[]));
+      }
+    },
   };
 }

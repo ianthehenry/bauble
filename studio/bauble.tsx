@@ -307,6 +307,9 @@ enum Interaction {
   PanXY,
   PanZY,
   PanXZ,
+  TranslateXY,
+  TranslateZY,
+  TranslateXZ,
   ResizeSplit,
   Pan2D,
 }
@@ -349,6 +352,8 @@ const Bauble = (props: BaubleProps) => {
   let isGesturing = false;
   let gestureEndedAt = 0;
 
+  let crosshairs3D: Signal.Accessor<vec3 | null>;
+
   const canvasSize = Signal.create(props.size);
   const pixelRatio = Signal.create(window.devicePixelRatio);
   const imageRendering: Signal.T<Property.ImageRendering> = Signal.create('auto' as Property.ImageRendering);
@@ -371,6 +376,8 @@ const Bauble = (props: BaubleProps) => {
   const isAnimated = Signal.create(false);
   const isVisible = Signal.create(false);
   const usingFreeCamera = createMemo(() => Signal.get(prefersFreeCamera) || !Signal.get(hasCustomCamera));
+  const translateOffset = Signal.create(vec3.fromValues(0, 0, 0));
+  const translateOrigin = Signal.create(null as vec3 | null);
 
   const timer = new Timer();
 
@@ -441,7 +448,7 @@ const Bauble = (props: BaubleProps) => {
 
   onMount(() => {
     intersectionObserver.observe(canvas);
-    const {view, focusVec} = installCodeMirror({
+    const {view, focusVec, setFocusVec} = installCodeMirror({
       initialScript: props.initialScript,
       parent: editorContainer,
       canSave: props.canSave,
@@ -449,9 +456,12 @@ const Bauble = (props: BaubleProps) => {
       onChange: recompile,
       definitions: definitions,
     });
+    crosshairs3D = focusVec;
     createEffect(() => {
-      console.log('focus', focusVec());
-    }, focusVec);
+      const result = vec3.create();
+      vec3.add(result, Signal.get(translateOrigin) ?? vec3.fromValues(0, 0, 0), Signal.get(translateOffset));
+      setFocusVec(result);
+    });
     editorView = view;
     renderer = new AsyncRenderer(renderBox, canvas, {
       time: Signal.getter(timer.t),
@@ -540,6 +550,8 @@ const Bauble = (props: BaubleProps) => {
     }
   }
 
+  const controlled = <T,>(e: MouseEvent, a: T, b: T): T => (e.ctrlKey || e.metaKey) ? a : b;
+
   const getInteraction = (e: MouseEvent) => {
     if (Signal.get(quadView)) {
       if (isOnSplitPoint(e)) {
@@ -551,13 +563,13 @@ const Bauble = (props: BaubleProps) => {
           if (relativePoint[0] < splitPoint[0]) {
             return getMainViewInteraction();
           } else {
-            return Interaction.PanXZ;
+            return controlled(e, Interaction.TranslateXZ, Interaction.PanXZ);
           }
         } else {
           if (relativePoint[0] < splitPoint[0]) {
-            return Interaction.PanXY;
+            return controlled(e, Interaction.TranslateXY, Interaction.PanXY);
           } else {
-            return Interaction.PanZY;
+            return controlled(e, Interaction.TranslateZY, Interaction.PanZY);
           }
         }
       }
@@ -578,6 +590,10 @@ const Bauble = (props: BaubleProps) => {
     canvas.setPointerCapture(e.pointerId);
     interactionPointer = e.pointerId;
     interaction = getInteraction(e);
+    batch(() => {
+      Signal.set(translateOffset, vec3.fromValues(0, 0, 0));
+      Signal.set(translateOrigin, crosshairs3D());
+    });
     setCursorStyle(e);
   };
 
@@ -608,6 +624,9 @@ const Bauble = (props: BaubleProps) => {
     case Interaction.PanXZ: Signal.update(origin, (old) => vec3.fromValues(defaultCamera.origin[0], old[1], defaultCamera.origin[2])); break;
     case Interaction.Pan2D: Signal.set(origin2D, vec2.fromValues(0, 0)); break;
     case Interaction.ResizeSplit: Signal.set(quadSplitPoint, vec2.fromValues(0.5, 0.5)); break;
+    case Interaction.TranslateXY: break;
+    case Interaction.TranslateZY: break;
+    case Interaction.TranslateXZ: break;
     case null: Signal.set(prefersFreeCamera, true); break;
     }
   };
@@ -664,6 +683,21 @@ const Bauble = (props: BaubleProps) => {
     case Interaction.PanXZ: {
       Signal.update(origin, (old) =>
         vec3.fromValues(old[0] - deltaX * panRate, old[1], old[2] + deltaY * panRate));
+      break;
+    }
+    case Interaction.TranslateXY: {
+      Signal.update(translateOffset, (old) =>
+        vec3.fromValues(old[0] + deltaX * panRate, old[1] - deltaY * panRate, old[2]));
+      break;
+    }
+    case Interaction.TranslateZY: {
+      Signal.update(translateOffset, (old) =>
+        vec3.fromValues(old[0], old[1] - deltaY * panRate, old[2] + deltaX * panRate));
+      break;
+    }
+    case Interaction.TranslateXZ: {
+      Signal.update(translateOffset, (old) =>
+        vec3.fromValues(old[0] + deltaX * panRate, old[1], old[2] - deltaY * panRate));
       break;
     }
     case Interaction.ResizeSplit: {
