@@ -8,3 +8,5 @@ build/janet/janet.h
 .redo
 tests/summary.html
 src/build
+studio/styles/main.css
+studio/styles/embeditor.css

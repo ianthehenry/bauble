@@ -1,0 +1,10 @@
+.bauble-placeholder, pre.example {
+  height: 256px;
+  border-radius: 2px;
+  overflow: hidden;
+  border: solid 2px var(--window);
+  box-sizing: content-box; /* This is important because the canvas is exactly 256px tall */
+  @media all and (max-width: 512px) {
+    height: 512px;
+  }
+}

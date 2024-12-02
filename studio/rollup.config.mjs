@@ -51,5 +51,13 @@ export default [{
     file: "../build/rollup-artifacts/compiler.esm.js",
     format: "es",
   }],
+    plugins: plugins(),
+}, {
+  strictDeprecations: true,
+  input: "embeditor.tsx",
+  output: {
+    file: "../build/rollup-artifacts/embeditor.js",
+    format: "iife",
+  },
   plugins: plugins(),
 }];
