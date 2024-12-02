@@ -25,12 +25,10 @@ import {defaultKeymap, history, historyKeymap} from "@codemirror/commands"
 import {searchKeymap, highlightSelectionMatches} from "@codemirror/search"
 import {autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap} from "@codemirror/autocomplete"
 import {lintKeymap} from "@codemirror/lint"
-const basicSetup = (enableSearch: boolean) => [
-  lineNumbers(),
-  highlightActiveLineGutter(),
+const basicSetup = (enableSearch: boolean, showLineGutter: boolean) => [
+  ...(showLineGutter ? [lineNumbers(), highlightActiveLineGutter(), foldGutter()] : []),
   highlightSpecialChars(),
   history(),
-  foldGutter(),
   drawSelection(),
   dropCursor(),
   EditorState.allowMultipleSelections.of(true),
@@ -158,6 +156,7 @@ interface EditorOptions {
   parent: HTMLElement,
   canSave: boolean,
   canSearch: boolean,
+  showLineGutter: boolean,
   onChange: (() => void),
   definitions: Array<Definition>,
 }
@@ -327,6 +326,7 @@ export default function installCodeMirror(options: EditorOptions): Editor {
     parent,
     canSave,
     canSearch,
+    showLineGutter,
     onChange
   } = options;
   const keyBindings = [indentWithTab];
@@ -339,7 +339,7 @@ export default function installCodeMirror(options: EditorOptions): Editor {
 
   const editorView = new EditorView({
     extensions: [
-      basicSetup(canSearch),
+      basicSetup(canSearch, showLineGutter),
       janet(),
       keymap.of(keyBindings),
       EditorView.updateListener.of(function(viewUpdate: ViewUpdate) {

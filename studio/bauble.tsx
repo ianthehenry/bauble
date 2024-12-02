@@ -320,6 +320,7 @@ interface BaubleProps {
   canSave: boolean,
   canSearch: boolean,
   canExport: boolean,
+  showLineGutter: boolean,
   definitions: Array<Definition>,
   wasmBox: Mailbox,
   renderBox: Mailbox,
@@ -453,6 +454,7 @@ const Bauble = (props: BaubleProps) => {
       parent: editorContainer,
       canSave: props.canSave,
       canSearch: props.canSearch,
+      showLineGutter: props.showLineGutter,
       onChange: recompile,
       definitions: definitions,
     });
