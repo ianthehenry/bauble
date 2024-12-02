@@ -1,0 +1,129 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+*:focus {
+  outline: none;
+}
+
+code {
+  white-space: pre;
+  font-family: var(--monospace-family);
+}
+
+h1,h2,h3,h4,h5,h6 {
+  font-weight: normal;
+  & > code {
+    white-space: pre-wrap;
+  }
+}
+
+body {
+  width: 100%;
+  height: 100%;
+  font-family: system-ui;
+  line-height: 1.5;
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+a { color: var(--blue); }
+a:visited { color: var(--purple); }
+a:active { color: var(--red); }
+
+html {
+  height: 100%;
+}
+
+main {
+  padding: 0.5em;
+  display: block;
+  margin: 0 auto;
+  max-width: 768px;
+}
+
+ul {
+  list-style-position: inside;
+  ul {
+    padding-left: 2em;
+  }
+}
+
+main > *+h1,
+main > *+h2,
+main > *+h3,
+main > *+h4,
+main > *+h5,
+main > *+h6,
+main > *+p,
+main > *+ul,
+main > *+div,
+main > *+pre {
+  margin-top: 1rem;
+}
+
+main .help-entry {
+  position: relative;
+  &::before {
+    content: "# ";
+    color: var(--comment);
+    position: absolute;
+    left: -2rem;
+  }
+ .source-link {
+    font-size: initial;
+  }
+}
+
+header {
+  --header-height: 40px;
+  --header-padding: 0.5em;
+  --text-color: #1d1f21;
+  color: var(--text-color);
+  background-image: linear-gradient(to right, #bae5ff, #feb2fd);
+  height: var(--header-height);
+  line-height: var(--header-height);
+  display: flex;
+  .title, .spacer {
+    flex: 1;
+  }
+
+  a {
+    text-decoration: none;
+    &.text-link {
+      padding: 0 var(--header-padding);
+    }
+    &, &:visited, &:active {
+      color: var(--text-color);
+    }
+  }
+
+  svg {
+    fill: var(--text-color);
+    width: 24px;
+    height: 24px;
+  }
+
+  > :first-child {
+    padding-left: var(--header-padding);
+  }
+  > :last-child {
+    padding-right: var(--header-padding);
+  }
+  .image-link {
+    display: flex;
+    width: var(--header-height);
+    height: var(--header-height);
+    justify-content: center;
+    align-items: center;
+  }
+}
+
+body.main-page {
+  display: flex;
+  flex-direction: column;
+  .bauble {
+    flex: 1;
+  }
+}
