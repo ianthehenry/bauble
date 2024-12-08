@@ -18,21 +18,24 @@ https://twitter.com/ianthehenry
 
 # Dependencies
 
-- [`janet`](https://janet-lang.org/)
-- [`emscripten`](https://emscripten.org/)
-- [`redo`](https://github.com/apenwarr/redo)
-- [`yarn`](https://yarnpkg.com/)
-- [`pngcrush`](https://pmt.sourceforge.io/pngcrush/) (tests only)
+- For the CLI
+    - [`janet`](https://janet-lang.org/)
+- For the web UI
+    - [`emscripten`](https://emscripten.org/)
+    - [`redo`](https://github.com/apenwarr/redo)
+    - [`yarn`](https://yarnpkg.com/)
+- For tests
+    - [`pngcrush`](https://pmt.sourceforge.io/pngcrush/) (tests only)
 
 Bauble requires at least Janet 1.36.0 (the first release with integer literal syntax). It may work with newer versions of Janet, assuming that the image format is compatible, but it's better to [update the version of Janet that Bauble includes](build/janet/janet-version) to match your local version if you want to upgrade.
 
-Install the Janet dependencies:
+To build the CLI, install Janet dependencies like this:
 
 ```
 $ (cd src && jpm -l deps)
 ```
 
-Afterwards, install JavaScript dependencies with:
+To build the web UI, install JavaScript dependencies as well:
 
 ```
 $ yarn
@@ -43,7 +46,19 @@ Bauble depends on [`codemirror-lang-janet`](https://github.com/ianthehenry/codem
 
 # Development
 
-To build Bauble after installing dependencies:
+To build the CLI:
+
+```
+$ (cd src && jpm -l build)
+```
+
+To run the CLI:
+
+```
+$ src/build/bauble help
+```
+
+To build the web UI:
 
 ```
 $ redo
@@ -58,7 +73,7 @@ $ BUILD_MODE=prod redo
 Lint the JS with:
 
 ```
-(cd studio/; yarn eslint .)
+(cd studio && yarn eslint .)
 ```
 
 And you can serve a local Bauble like this:
@@ -72,20 +87,20 @@ $ node_modules/.bin/alive-server public
 There are two types of tests. Regular [Judge](https://github.com/ianthehenry/judge) unit tests:
 
 ```
-$ (cd src; judge)
+$ (cd src && judge)
 ```
 
 And snapshot tests, which require installing separate dependencies:
 
 ```
 # you only have to do this once
-$ (cd src && jpm -l deps)
+$ (cd tests && jpm -l deps)
 ```
 
 After installing dependencies, run tests like this:
 
 ```
-$ (cd tests; jpm -l janet suite.janet)
+$ (cd tests && jpm -l janet suite.janet)
 ```
 
 Snapshot tests will write a file called `tests/summary.html`. It's not a very good file.
@@ -93,7 +108,7 @@ Snapshot tests will write a file called `tests/summary.html`. It's not a very go
 Before you commit snapshot changes, run:
 
 ```
-$ (cd tests; jpm -l janet gc.janet)
+$ (cd tests && jpm -l janet gc.janet)
 ```
 
 Which will delete old snapshots and compress new ones. This depends on `pngcrush`.
