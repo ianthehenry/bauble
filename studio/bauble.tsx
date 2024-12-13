@@ -57,7 +57,7 @@ declare module 'solid-js' {
 }
 
 const Icon: Component<{name: string}> = (props) => {
-  return <svg><use href={`/icons.svg#${props.name}`} /></svg>;
+  return <svg><use href={`/bauble-icons.svg#${props.name}`} /></svg>;
 };
 
 interface ChoiceDescription<T> {
@@ -466,6 +466,7 @@ const Bauble = (props: BaubleProps) => {
   const isAnimated = Signal.create(false);
   const isVisible = Signal.create(false);
   const showExportEmbed = Signal.create(false);
+  const isVeryVisible = Signal.create(true);
   const usingFreeCamera = createMemo(() => Signal.get(prefersFreeCamera) || !Signal.get(hasCustomCamera));
   const translateOffset = Signal.create(vec3.fromValues(0, 0, 0));
   const translateOrigin = Signal.create(null as vec3 | null);
@@ -475,8 +476,10 @@ const Bauble = (props: BaubleProps) => {
   const intersectionObserver = new IntersectionObserver((entries) => {
     for (const entry of entries) {
       Signal.set(isVisible, entry.isIntersecting);
+      // i don't actually like this
+      Signal.set(isVeryVisible, entry.intersectionRatio >= 0);
     }
-  });
+  }, {threshold: [0, 0.9]});
 
   // TODO: the whole timeAdvancer thing is pretty weird. This is
   // fallout from the switch to asynchronous rendering. It made more
@@ -591,7 +594,8 @@ const Bauble = (props: BaubleProps) => {
 
     timeAdvancer = new RenderLoop((elapsed) => batch(() => {
      const isAnimated_ = Signal.get(isAnimated);
-     const isTimeAdvancing = isAnimated_ && Signal.get(timer.state) !== TimerState.Paused && !modalVisible();
+     const isVeryVisible_ = Signal.get(isVeryVisible);
+     const isTimeAdvancing = isAnimated_ && isVeryVisible_ && Signal.get(timer.state) !== TimerState.Paused && !modalVisible();
      if (isTimeAdvancing) {
        // If you hit the stop button, we want to redraw at zero,
        // but we don't want to advance time forward by 16ms.
@@ -611,6 +615,7 @@ const Bauble = (props: BaubleProps) => {
       timer.t,
       modalVisible,
       isAnimated,
+      isVeryVisible,
     ], () => {
       timeAdvancer.schedule();
     });
@@ -687,6 +692,7 @@ const Bauble = (props: BaubleProps) => {
     }
   };
 
+  let canvasPointerStart = [0, 0];
   const onPointerDown = (e: PointerEvent) => {
     if (interactionPointer != null) {
       return;
@@ -696,6 +702,7 @@ const Bauble = (props: BaubleProps) => {
       canvas.focus();
     }
     canvasPointerAt = [e.offsetX, e.offsetY];
+    canvasPointerStart = canvasPointerAt;
     canvas.setPointerCapture(e.pointerId);
     interactionPointer = e.pointerId;
     interaction = getInteraction(e);
@@ -712,6 +719,12 @@ const Bauble = (props: BaubleProps) => {
       interactionPointer = null;
       interaction = null;
     }
+
+    const [dx, dy] = [(e.offsetX - canvasPointerStart[0]),  (e.offsetY - canvasPointerStart[1])];
+    if (dx * dx + dy * dy < 1) {
+      timer.playPause();
+    }
+
     setCursorStyle(e);
   };
 

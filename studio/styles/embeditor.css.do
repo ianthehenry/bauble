@@ -17,6 +17,9 @@ cat <<EOF
   & pre {
     all: unset;
   }
+  *:focus {
+    outline: none;
+  }
 }
 EOF
 
