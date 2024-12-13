@@ -275,7 +275,7 @@
   ```
   ````
   (case (@length args)
-    1 (let [size (jlsl/coerce-expr (in args 0))]
+    1 (let [size (jlsl/coerce-expr (@in args 0))]
         (case (jlsl/expr/type size)
           jlsl/type/float (equilateral-triangle size)
           jlsl/type/vec2 (isosceles-triangle size)
