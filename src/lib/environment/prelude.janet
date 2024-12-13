@@ -92,11 +92,13 @@
 (overload :float atan2+ [:vec2 p]
   (return (atan2+ p.y p.x)))
 
-(defhelper :float quantize [:float value :float count]
+(sugar (defn quantize
   ```
   Rounds a value to the nearest multiple of `count`.
   ```
-  (return (value * count | round / count)))
+  [value count]
+  (gl/let [$count count]
+    (value * $count | round / $count))))
 
 (defn map-distance
   ```
