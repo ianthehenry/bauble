@@ -290,7 +290,7 @@ set it in a way that fits nicely into a pipeline.
 (thunk ~(as-macro ,defnamed occlusion [:?steps:step-count :?dist :?dir :?hoist]
   ```
   Approximate ambient occlusion by sampling the distance field at `:steps` positions
-  (default 8) linearly spaced from 0 to `:dist` (default `10`). The result will range
+  (default 8) linearly spaced from 0 to `:dist` (default `20`). The result will range
   from 1 (completely unoccluded) to 0 (fully occluded).
 
   By default the occlusion samples will be taken along the surface normal of the point
@@ -306,7 +306,7 @@ set it in a way that fits nicely into a pipeline.
   ```
   (default step-count 8)
   (default dir normal)
-  (default dist 10)
+  (default dist 20)
   (default hoist true)
   (def step-count (if (number? step-count) (int/u64 step-count) step-count))
   (def <expr> (calculate-occlusion step-count dist dir))
@@ -314,9 +314,8 @@ set it in a way that fits nicely into a pipeline.
 
 (sugar (thunk ~(setdyn ,*lights*
   (let [default-occlusion (mix 0.1 1 (occlusion))]
-    @[(light/directional (vec3 1.2) [-2 -2 -1 | normalize] 2048 :shadow 0.25)
-      (light/ambient (vec3 0.1) :brightness default-occlusion)
-      (light/ambient (vec3 0.1) (normal * 0.1) :brightness default-occlusion)]))))
+    @[(light/directional (vec3 1.15) [-2 -2 -1 | normalize] 2048 :shadow 0.25)
+      (light/ambient (vec3 0.15) (normal * 0.1) :brightness default-occlusion)]))))
 
 (defhelper- :vec3 blinn-phong [Light light :vec3 color :float shininess :float glossiness]
   (if (= light.direction (vec3 0))
