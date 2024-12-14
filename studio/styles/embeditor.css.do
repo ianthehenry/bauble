@@ -17,6 +17,9 @@ cat <<EOF
   & pre {
     all: unset;
   }
+  * {
+    box-sizing: content-box;
+  }
   *:focus {
     outline: none;
   }
