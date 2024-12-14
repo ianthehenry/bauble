@@ -56,7 +56,7 @@ declare module 'solid-js' {
 }
 
 const Icon: Component<{name: string}> = (props) => {
-  return <svg><use href={`/bauble-icons.svg#${props.name}`} /></svg>;
+  return <svg><use href={`icons.svg#${props.name}`} /></svg>;
 };
 
 interface ChoiceDescription<T> {
