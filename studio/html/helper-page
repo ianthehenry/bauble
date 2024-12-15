@@ -5,6 +5,9 @@ root=$(dirname "$0")
 invocation=$1
 shift
 
+css=$1; shift
+js=$1; shift
+
 printf '<!doctype html>
 <html>
 %s
@@ -15,4 +18,4 @@ printf '<!doctype html>
   </main>
 </body>
 </html>
-' "$($root/head "$@")" "$($root/header)" "$($invocation)"
+' "$($root/head "$css" "$js")" "$($root/header)" "$($invocation "$@")"
