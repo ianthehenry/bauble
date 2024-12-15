@@ -1,7 +1,6 @@
 import * as Signal from './signals';
 import type {Accessor} from 'solid-js';
-import {clamp, TAU} from './util';
-import type {Seconds} from './types';
+import {clamp} from './util';
 import type * as RenderState from './render-state';
 import {vec3, vec4} from 'gl-matrix';
 
