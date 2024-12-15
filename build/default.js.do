@@ -1,22 +1,14 @@
 #!/usr/bin/env bash
 
-redo-ifchange mode wasm.js
+redo-ifchange mode rollup
 mode=$(cat mode)
 
 actual_outpath_jfc=$PWD/$3
 
+# the fake "rollup" target created this
+ln -f rollup-artifacts/$1 $3
+
 cd ../studio
-
-redo-ifchange *.ts *.tsx tsconfig.json rollup.config.mjs yarn.lock types/*/*.ts
-
-declare rollup_args
-if [[ $mode == "prod" ]]; then
-  rollup_args="--no-indent"
-else
-  rollup_args="--no-treeshake --no-indent"
-fi
-
-./node_modules/.bin/rollup -c $rollup_args -o "$actual_outpath_jfc"
 
 # So SolidJS performs a top-level effect at load time that reads from
 # the window. In a worker, this throws. So we don't perform the effect

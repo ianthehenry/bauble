@@ -163,6 +163,40 @@ If you're ever confused by what Bauble's notation is doing, you can see what you
 (pp '(p.x | 1 + 2 * _))
 ```
 
+# Embedding {#embauble}
+
+You can embed Bauble on your web page by downloading the Bauble player:
+
+- As an immediately-invoked-function-expresison: <a href="PLACEHOLDER_EMBAUBLE_IIFE" download="embauble.iife.js">embauble.iife.js</a>
+- As a CommonJS module: <a href="PLACEHOLDER_EMBAUBLE_CJS" download="embauble.cjs.js">embauble.cjs.js</a>
+- As an ES6 module: <a href="PLACEHOLDER_EMBAUBLE_ESM" download="embauble.esm.js">embauble.esm.js</a>
+
+If you don't know which one you want, download the first one. That's the one that you can just throw into a `<script>` tag and run with.
+
+You can use it like this:
+
+```javascript
+document.addEventListener('DOMContentLoaded' () => {
+    // find the canvas element that you want to render it to
+    const canvas = document.querySelector('canvas');
+
+    const player = new Bauble(canvas, {
+        shader: "<paste your shader here>",
+        animated: true,
+    });
+});
+```
+
+At least... one day you can...
+
+## A note on versioning
+
+Although Bauble itself changes frequently -- it gets new primitives or new render modes -- the actual format of the GLSL it outputs basically never changes at all, so you don't need to update the Bauble player even if you export a shader from a much newer version of Bauble. So the Bauble player is not released in named versioned; this page always links to the latest version.
+
+# Exporting / 3D printing {#exporting}
+
+Unfortunately the only way to export a triangle mesh from Bauble is using the CLI. Eventually this function wil be in the web UI as well, but, you know, these things take time.
+
 # Bauble CLI {#cli}
 
 Okay so there is, technically, a command-line version of Bauble. You can run it locally using native OpenGL instead of WebGL, and it has exciting features like exporing an OBJ file and rendering non-square images.
