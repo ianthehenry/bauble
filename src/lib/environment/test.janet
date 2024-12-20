@@ -463,6 +463,8 @@
     shape? @{:doc "(shape? value)\n\nReturns `true` if `value` is a shape."}
     shell @{:doc "(shell shape &opt thickness)\n\nReturns a hollow version of the provided shape (the absolute value of the distance field).\n\n```example\n(circle 100 | shell 5)\n```\n\nIn 3D, it's hard to see the effect without cutting into the result:\n\n```example\n(ball 100 | shell 5 | intersect (plane x (osc t 3 0 100)))\n```"}
     sign @{}
+    simplex @{:doc "(simplex point &opt period)\n\nReturns simplex noise ranging from `-1` to `1`. The input `point` can be a vector of any dimension.\n\nUse `simplex+` to return noise in the range `0` to `1`."}
+    simplex+ @{:doc "(simplex+ point &opt period)\n\nsimplex noise in the range `0` to `1`.\n\n```example\n(ball 100 | color (simplex+ (p.xy / 10) | vec3))\n```\n```example\n(ball 100 | color (simplex+ (p / 10) | vec3))\n```\n```example\n(ball 100 | color (simplex+ [(p / 10) t] | vec3))\n```"}
     sin @{}
     sin+ @{:doc "(sin+ x)\n\nLike `sin`, but returns a number in the range `0` to `1`."}
     sinh @{}

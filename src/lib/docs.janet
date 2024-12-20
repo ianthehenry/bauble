@@ -221,7 +221,7 @@
     Repetition
       6 values
     Noise
-      9 values
+      11 values
     Camera
       14 values
     Colors

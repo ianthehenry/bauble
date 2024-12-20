@@ -111,12 +111,16 @@
   [& args]
   (if (> (@length args) 1) (hash4- (+ ;args)) (hash4- ;args)))
 
-(defhelper- :vec2 mod289 [:vec2 x] (return (x - (floor (x * (/ 289)) * 289))))
-(overload   :vec3 mod289 [:vec3 x] (return (x - (floor (x * (/ 289)) * 289))))
-(overload   :vec4 mod289 [:vec4 x] (return (x - (floor (x * (/ 289)) * 289))))
-(defhelper- :vec3 permute [:vec3 x] (return (x * 34 + 10 * x | mod289)))
-(overload   :vec4 permute [:vec4 x] (return (x * 34 + 10 * x | mod289)))
-(defhelper- :vec4 taylor-inv-sqrt [:vec4 r] (return (1.79284291400159 - (0.85373472095314 * r))))
+(defhelper- :float mod289 [:float x] (return (x - (floor (x * (/ 289)) * 289))))
+(overload   :vec2  mod289 [:vec2  x] (return (x - (floor (x * (/ 289)) * 289))))
+(overload   :vec3  mod289 [:vec3  x] (return (x - (floor (x * (/ 289)) * 289))))
+(overload   :vec4  mod289 [:vec4  x] (return (x - (floor (x * (/ 289)) * 289))))
+(defhelper- :float permute [:float x] (return (x * 34 + 10 * x | mod289)))
+(overload   :vec3  permute [:vec3  x] (return (x * 34 + 10 * x | mod289)))
+(overload   :vec4  permute [:vec4  x] (return (x * 34 + 10 * x | mod289)))
+(defhelper- :float taylor-inv-sqrt [:float r] (return (1.79284291400159 - (0.85373472095314 * r))))
+(overload   :vec3 taylor-inv-sqrt  [:vec3  r] (return (1.79284291400159 - (0.85373472095314 * r))))
+(overload   :vec4 taylor-inv-sqrt  [:vec4  r] (return (1.79284291400159 - (0.85373472095314 * r))))
 (defhelper- :vec2 fade [:vec2 t] (return (* t t t (t * (t * 6 - 15) + 10))))
 (overload   :vec3 fade [:vec3 t] (return (* t t t (t * (t * 6 - 15) + 10))))
 (overload   :vec4 fade [:vec4 t] (return (* t t t (t * (t * 6 - 15) + 10))))
@@ -133,7 +137,7 @@
 
   (var i (permute (permute ix + iy)))
 
-  (var gx ((fract (i * (/ 41))) * 2 - 1))
+  (var gx (i / 41 | fract | remap-))
   (var gy (abs gx - 0.5))
   (var tx (floor (gx + 0.5)))
   (set gx (gx - tx))
@@ -625,6 +629,182 @@
   (if period
     (worley2- (/ point period))
     (worley2- point)))
+
+(defhelper- :float simplex [:vec2 point]
+  (def Cx (3 - sqrt 3 / 6))
+  (def C [Cx (sqrt 3 - 1 * 0.5) (2 * Cx - 1) (1 / 41)])
+  (var i (point + dot point C.yy | floor))
+  (var x0 (point - i + (dot i C.xx)))
+  (var i1 (if (> x0.x x0.y) [1 0] [0 1]))
+  (var x12 (x0.xyxy + C.xxzz))
+  (-= x12.xy i1)
+  (set i (mod289 i))
+  (var p (i.y + [0 i1.y 1] | permute + i.x + [0 i1.x 1] | permute))
+  (var m (0.5 - [(dot x0) (dot x12.xy) (dot x12.zw)] | max 0))
+  (*= m m)
+  (*= m m)
+  (var x (p * C.www | fract | remap-))
+  (var h (abs x - 0.5))
+  (var ox (x + 0.5 | floor))
+  (var a0 (x - ox))
+  (*= m (taylor-inv-sqrt (a0 * a0 + (h * h))))
+  (var g [(dot [a0.x h.x] x0) (a0.yz * x12.xz + (h.yz * x12.yw))])
+  (return (130 * (dot m g))))
+
+(overload :float simplex [:vec3 point]
+  (def C [(1 / 6) (1 / 3)])
+  (def D [0 0.5 1 2])
+
+  (var i (point + dot point C.yyy | floor))
+  (var x0 (point - i + dot i C.xxx))
+
+  (var g (step x0.yzx x0.xyz))
+  (var l (1 - g))
+  (var i1 (min g.xyz l.zxy))
+  (var i2 (max g.xyz l.zxy))
+
+  (var x1 (x0 - i1 + C.xxx))
+  (var x2 (x0 - i2 + C.yyy))
+  (var x3 (x0 - D.yyy))
+
+  (set i (mod289 i))
+  (var p (i.z + [0 i1.z i2.z 1] | permute
+        + i.y + [0 i1.y i2.y 1] | permute
+        + i.x + [0 i1.x i2.x 1] | permute))
+
+  (def n_ (1 / 7))
+  (var ns (n_ * D.wyz - D.xzx))
+
+  (var j (p - (p * ns.z * ns.z | floor * 49)))
+
+  (var x_ (j * ns.z | floor))
+  (var y_ (j - (7 * x_) | floor))
+
+  (var x (x_ * ns.x + ns.yyyy))
+  (var y (y_ * ns.x + ns.yyyy))
+  (var h (1 - abs x - abs y))
+
+  (var b0 [x.xy y.xy])
+  (var b1 [x.zw y.zw])
+
+  (var s0 (floor b0 * 2 + 1))
+  (var s1 (floor b1 * 2 + 1))
+  (var sh (step h (vec4 0) -))
+
+  (var a0 (s0.xzyw * sh.xxyy + b0.xzyw))
+  (var a1 (s1.xzyw * sh.zzww + b1.xzyw))
+
+  (var p0 [a0.xy h.x])
+  (var p1 [a0.zw h.y])
+  (var p2 [a1.xy h.z])
+  (var p3 [a1.zw h.w])
+
+  (var norm [(dot p0) (dot p1) (dot p2) (dot p3) | taylor-inv-sqrt])
+  (*= p0 norm.x)
+  (*= p1 norm.y)
+  (*= p2 norm.z)
+  (*= p3 norm.w)
+
+  (var m (0.5 - [(dot x0) (dot x1) (dot x2) (dot x3)] | max 0))
+  (*= m m)
+  (*= m m)
+  (return [(dot p0 x0) (dot p1 x1) (dot p2 x2) (dot p3 x3) | dot m * 105]))
+
+(defhelper- :vec4 grad4 [:float j :vec4 ip]
+  (def ones [1 1 1 -1])
+  (var pxyz (j * ip.xyz | fract * 7 | floor * ip.z - 1))
+  (var p [pxyz (1.5 - (dot (abs pxyz) ones.xyz))])
+  (var s (< p (vec4 0) | vec4))
+  (+= p.xyz (remap- s.xyz * s.www))
+  (return p))
+
+(overload :float simplex [:vec4 point]
+  (def F4 (sqrt 5 - 1 / 4))
+  (def G4 (5 - sqrt 5 / 20))
+  (def C [G4 (2 * G4) (3 * G4) (4 * G4 - 1)])
+  (var i (point + (dot point (vec4 F4)) | floor))
+  (var x0 (point - i + dot i (vec4 G4)))
+
+  (var isX (step x0.yzw x0.xxx))
+  (var isYZ (step x0.zww x0.yyz))
+  (var i0 [(isX.x + isX.y + isX.z) (1 - isX)])
+  (+= i0.y (isYZ.x + isYZ.y))
+  (+= i0.zw (1 - isYZ.xy))
+  (+= i0.z isYZ.z)
+  (+= i0.w (1 - isYZ.z))
+
+  (var i3 (clamp i0 0 1))
+  (var i2 (clamp (i0 - 1) 0 1))
+  (var i1 (clamp (i0 - 2) 0 1))
+
+  (var x1 (x0 - i1 + C.xxxx))
+  (var x2 (x0 - i2 + C.yyyy))
+  (var x3 (x0 - i3 + C.zzzz))
+  (var x4 (x0 + C.wwww))
+
+  (set i (mod289 i))
+  (var j0
+    ( i.w | permute
+    + i.z | permute
+    + i.y | permute
+    + i.x | permute ))
+  (var j1
+   ( i.w + [i1.w i2.w i3.w 1] | permute
+   + i.z + [i1.z i2.z i3.z 1] | permute
+   + i.y + [i1.y i2.y i3.y 1] | permute
+   + i.x + [i1.x i2.x i3.x 1] | permute ))
+
+  (def ip [(/ 294.0) (/ 49) (/ 7) 0])
+  (var p0 (grad4 j0   ip))
+  (var p1 (grad4 j1.x ip))
+  (var p2 (grad4 j1.y ip))
+  (var p3 (grad4 j1.z ip))
+  (var p4 (grad4 j1.w ip))
+
+  (var norm [(dot p0) (dot p1) (dot p2) (dot p3) | taylor-inv-sqrt])
+
+  (*= p0 norm.x)
+  (*= p1 norm.y)
+  (*= p2 norm.z)
+  (*= p3 norm.w)
+  (*= p4 (taylor-inv-sqrt (dot p4)))
+
+  (var m0 (0.6 - [(dot x0) (dot x1) (dot x2)] | max 0))
+  (var m1 (0.6 - [(dot x3) (dot x4)] | max 0))
+  (*= m0 m0)
+  (*= m0 m0)
+  (*= m1 m1)
+  (*= m1 m1)
+  (return [(dot p0 x0) (dot p1 x1) (dot p2 x2) | dot m0 + [(dot p3 x3) (dot p4 x4) | dot m1] * 49]))
+
+(def- simplex- simplex)
+(defn simplex
+  ````
+  Returns simplex noise ranging from `-1` to `1`. The input `point` can be a vector of any dimension.
+
+  Use `simplex+` to return noise in the range `0` to `1`.
+  ````
+  [point &opt period]
+  (if period
+    (simplex- (/ point period))
+    (simplex- point)))
+
+(defn simplex+
+  ````
+  simplex noise in the range `0` to `1`.
+
+  ```example
+  (ball 100 | color (simplex+ (p.xy / 10) | vec3))
+  ```
+  ```example
+  (ball 100 | color (simplex+ (p / 10) | vec3))
+  ```
+  ```example
+  (ball 100 | color (simplex+ [(p / 10) t] | vec3))
+  ```
+  ````
+  [point &opt period]
+  (remap+ (simplex point period)))
 
 (sugar (defnamed fbm [octaves noise point ?period :?f :?gain]
   ````
