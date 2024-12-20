@@ -195,7 +195,6 @@
     cone @{:doc "(cone axis radius height [:r round])\n\nReturns a 3D shape. The `height` is the extent in only a single direction.\n\n```example\n(cone y 50 (sin t * 150) :r (osc t 2 10))\n```\n\nIf you supply a rounding factor, the cone will be offset such that\nit always rests exactly on the zero plane normal to your axis. Is\nthat what you'd expect? I went back on forth on this. I think it's more\nintuitive but if you have thoughts I'd like to hear them."}
     cos @{}
     cos+ @{:doc "(cos+ x)\n\nLike `cos`, but returns a number in the range `0` to `1`."}
-    cos- @{:doc "(cos- x)\n\nLike `cos`, but returns a number in the range `0` to `-1`."}
     cosh @{}
     cross @{}
     cross-matrix @{:doc "(cross-matrix vec)\n\nReturns the matrix such that `(* (cross-matrix vec1) vec2)` = `(cross vec1 vec2)`."}
@@ -466,7 +465,6 @@
     sign @{}
     sin @{}
     sin+ @{:doc "(sin+ x)\n\nLike `sin`, but returns a number in the range `0` to `1`."}
-    sin- @{:doc "(sin- x)\n\nLike `sin`, but returns a number in the range `0` to `-1`."}
     sinh @{}
     sky @{:doc "  ```example\n  (set background-color sky)\n  (ball 100 | shade sky)\n  ```\n  "
           :value [hsv 0.58333333333333337 0.98 1]}

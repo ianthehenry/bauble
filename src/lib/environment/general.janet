@@ -71,9 +71,7 @@
   (smoothstep 0 1 x))
 
 (defn sin+ "Like `sin`, but returns a number in the range `0` to `1`." [x] (remap+ (sin x)))
-(defn sin- "Like `sin`, but returns a number in the range `0` to `-1`." [x] (remap- (sin x)))
 (defn cos+ "Like `cos`, but returns a number in the range `0` to `1`." [x] (remap+ (cos x)))
-(defn cos- "Like `cos`, but returns a number in the range `0` to `-1`." [x] (remap- (cos x)))
 
 (sugar (defn- oscillate [trig x period from to]
   (def sig (trig (tau * x / period)))
