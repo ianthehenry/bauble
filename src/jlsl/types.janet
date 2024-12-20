@@ -275,7 +275,7 @@
       |tuple? (let [args (map try-coerce-expr value)]
         (if (some nil? args)
           nil
-          (expr/call (builtins-prelude/resolve-vec-constructor nil "[]" (tmap expr/type args)) args)))
+          (expr/call (builtins-prelude/resolve-vec-constructor nil nil "[]" (tmap expr/type args)) args)))
       |boolean? (expr/literal type/bool value)
       |int64? (expr/literal type/int value)
       |uint64? (expr/literal type/uint value)

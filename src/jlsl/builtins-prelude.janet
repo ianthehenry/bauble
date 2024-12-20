@@ -81,9 +81,9 @@
   (const type/bool)
   2))
 
-(defn resolve-vec-constructor [expected-components name arg-types]
+(defn resolve-vec-constructor [coerce-base-type expected-components name arg-types]
   (check-arity name -1 arg-types)
-  (def base-type (get-unique type/base-type arg-types (on-same-type-error name arg-types)))
+  (def base-type (or coerce-base-type (get-unique type/base-type arg-types (on-same-type-error name arg-types))))
   (def components (sum (map type/components arg-types)))
   (if (nil? expected-components) (do
     (assert (>= components 2) "vector constructor needs at least two components")
