@@ -9,7 +9,7 @@
 | color
   (shade r3 (hsv (quantize (p.y / 100 - (t / 5)) 8) 1 1) :g 5
   | move y (sin (t * 1.5) | ss * 100 / 8 * parity)
-  | rotate z (parity * 2 - 1 * pi/4)
+  | rotate z (parity | remap- * pi/4)
   | gl/let [parity (mod $i 2)] _)
 | radial: $i y 18
 | shell 1

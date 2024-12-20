@@ -209,7 +209,7 @@
                        :ref @[[isolines]]}
     default-3d-color @{:doc "A variable that determines the default color to use when rendering a 3D shape with no color field.\n\nDefault is `(mix normal+ [1 1 1] (fresnel 5))`."
                        :ref @[[mix
-                               [+ 0.5 [* 0.5 normal]]
+                               [* [+ normal 1] 0.5]
                                [vec3 1 1 1]
                                [fresnel 5]]]}
     degrees @{}
@@ -428,7 +428,7 @@
     reflect @{}
     refract @{}
     remap+ @{:doc "(remap+ x)\n\nLinearly transform a number in the range `[-1 1]` to `[0 1]`."}
-    remap- @{:doc "(remap- x)\n\nLinearly transform a number in the range `[-1 1]` to `[0 -1]`."}
+    remap- @{:doc "(remap- x)\n\nLinearly transform a number in the range `[0 1]` to `[-1 1]`. The inverse of `remap+`."}
     resolution @{:doc "The size, in physical pixels, of the canvas being rendered. In quad view, this\nwill be smaller than the physical size of the canvas."
                  :value [:var "resolution" :vec2]}
     revolve @{:doc "(revolve shape axis &opt offset)\n\nRevolve a 2D shape around the given `axis` to return a 3D shape.\n\n```example\n(revolve (triangle 100) y)\n```\n\nThis lets you create shapes that look like they were turned on a lathe:\n\n```example\n(union :r 10\n  (circle 40 | move y 80)\n  (rect [(ss q.y -90 -52 60 10) 100])\n  (rect [(ss q.y -70 57 58 20 * ss q.y -80 -5) 80] | move y -38)\n  (rect :r 5 [20 5] | move y 40 | rotate -0.48)\n  #| view\n  | revolve y)\n```\n\nYou can optionally supply an `offset` to move the shape away from the\norigin first (the default is `0`).\n\n```example\n(revolve (triangle 50) y 50)\n```\n\nYou can use this to create different types of toroidal shapes:\n\n```example\n(revolve (star 30 50 | rotate t) y 100)\n```"}

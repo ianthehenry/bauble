@@ -55,12 +55,12 @@
 (defn remap+
   "Linearly transform a number in the range `[-1 1]` to `[0 1]`."
   [x]
-  (+ 0.5 (* 0.5 x)))
+  (sugar (x + 1 * 0.5)))
 
 (defn remap-
-  "Linearly transform a number in the range `[-1 1]` to `[0 -1]`."
+  "Linearly transform a number in the range `[0 1]` to `[-1 1]`. The inverse of `remap+`."
   [x]
-  (- (remap+ x)))
+  (sugar (x * 2 - 1)))
 
 (defhelper :float atan2 [:float y :float x]
   ```
