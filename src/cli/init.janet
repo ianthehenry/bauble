@@ -6,6 +6,8 @@
 (use ./helpers)
 (import ../lib :as bauble)
 
+(def default-render-type 0)
+
 (def vec2 (cmd/peg "WxH" ~(+
   (/ (* (number :d+) -1) ,|[$ $])
   (/ (* (number :d+) "x" (number :d+) -1) ,|[$0 $1]))))
@@ -23,7 +25,8 @@
    --slices (optional vec2 [1 1]) "draw the image in multiple passes, e.g. 4x2 = 8 total draw calls"]
   (def source (read-input input))
   (def env (bauble/evaluator/evaluate source))
-  (def [shader-source dimension animated? has-custom-camera?] (bauble/shade/compile-shape nil env "330"))
+  (def [shader-source dimension animated? has-custom-camera?]
+    (bauble/compile-to-glsl default-render-type env "330"))
   (init-jaylib)
   (defn vec2 [[x y]] (string/format "%dx%d" x y))
   (def image (render-image shader-source
@@ -45,7 +48,8 @@
    [outfile -o --out] (optional :file)]
   (def source (read-input input))
   (def env (bauble/evaluator/evaluate source))
-  (def [shader-source dimension animated? has-custom-camera?] (bauble/shade/compile-shape nil env "330"))
+  (def [shader-source dimension animated? has-custom-camera?]
+    (bauble/compile-to-glsl default-render-type env "330"))
   (if outfile
     (spit outfile shader-source)
     (print shader-source)))

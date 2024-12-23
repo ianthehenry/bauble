@@ -9,7 +9,7 @@
 using std::string;
 
 static JanetFunction *janetfn_bauble_evaluate = NULL;
-static JanetFunction *janetfn_compile_shape = NULL;
+static JanetFunction *janetfn_compile_to_glsl = NULL;
 static JanetFunction *janetfn_get_definitions = NULL;
 
 struct CompilationResult {
@@ -36,25 +36,28 @@ CompilationResult compilation_error(string message) {
   };
 }
 
-CompilationResult evaluate_script(string source) {
-  if (janetfn_compile_shape == NULL) {
+CompilationResult evaluate_script(string source, int render_type) {
+  if (janetfn_compile_to_glsl == NULL) {
     fprintf(stderr, "unable to initialize compilation function\n");
     return compilation_error("function uninitialized");
   }
 
   double start_time = emscripten_get_now();
-  Janet evaluation_result;
+  Janet compiled_env;
   const Janet args[1] = { janet_cstringv(source.c_str()) };
-  if (!call_fn(janetfn_bauble_evaluate, 1, args, &evaluation_result)) {
+  if (!call_fn(janetfn_bauble_evaluate, 1, args, &compiled_env)) {
     return compilation_error("evaluation error");
   }
 
   double done_evaluating = emscripten_get_now();
 
-  const Janet *tuple = janet_unwrap_tuple(evaluation_result);
-  const Janet compile_shape_args[3] = { tuple[0], tuple[1], janet_cstringv("300 es") };
+  const Janet compile_to_glsl_args[3] = {
+    janet_wrap_integer(render_type),
+    compiled_env,
+    janet_cstringv("300 es")
+  };
   Janet compilation_result;
-  bool compilation_success = call_fn(janetfn_compile_shape, 3, compile_shape_args, &compilation_result);
+  bool compilation_success = call_fn(janetfn_compile_to_glsl, 3, compile_to_glsl_args, &compilation_result);
 
   double done_compiling_glsl = emscripten_get_now();
   const uint8_t *shader_source;
@@ -106,14 +109,14 @@ int main() {
   }
   JanetTable *bauble = janet_unwrap_table(env);
 
-  janetfn_bauble_evaluate = env_lookup_function(bauble, "bauble-evaluator/evaluate");
+  janetfn_bauble_evaluate = env_lookup_function(bauble, "evaluator/evaluate");
   janet_gcroot(janet_wrap_function(janetfn_bauble_evaluate));
 
   janetfn_get_definitions = env_lookup_function(bauble, "completer/get-definitions");
   janet_gcroot(janet_wrap_function(janetfn_get_definitions));
 
-  janetfn_compile_shape = env_lookup_function(bauble, "shade/compile-shape");
-  janet_gcroot(janet_wrap_function(janetfn_compile_shape));
+  janetfn_compile_to_glsl = env_lookup_function(bauble, "compile-to-glsl");
+  janet_gcroot(janet_wrap_function(janetfn_compile_to_glsl));
 }
 
 std::vector<Definition> get_definitions_aux() {

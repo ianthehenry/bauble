@@ -782,15 +782,16 @@ img {
 (defn ms [start end]
   (string/format "%.1fms" (* (- end start) 1000)))
 
-(defn render [name program eval-function compile-function]
+(def default-render-type 0)
+(defn render [name program]
   (gccollect)
   (var success true)
   (try (do
     (def before-eval (os/clock :monotonic))
-    (def eval-result (eval-function program))
+    (def env (bauble/evaluator/evaluate program))
     (def after-eval-before-compile (os/clock :monotonic))
     (def [shader-source dimension animated? has-custom-camera?]
-      (compile-function ;(if (indexed? eval-result) eval-result [nil eval-result]) "330"))
+      (bauble/compile-to-glsl default-render-type env "330"))
     (def after-compile-before-render (os/clock :monotonic))
     (def image (render-image shader-source
       :resolution physical-resolution
@@ -860,9 +861,7 @@ img {
   (printf `<h1>%s</h1>` (html-escape name))
   (printf `<pre>%s</pre>` (html-escape program))
   (def success
-    (render name (string program "\n(set aa-grid-size 3)")
-      bauble/evaluator/evaluate
-      bauble/shade/compile-shape))
+    (render name (string program "\n(set aa-grid-size 3)")))
   (unless success (++ failing-tests))
   (print `</div>`)
   )

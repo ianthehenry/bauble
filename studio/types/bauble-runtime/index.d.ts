@@ -26,7 +26,7 @@ declare module 'bauble-runtime' {
   }
 
   export interface BaubleModule extends EmscriptenModule {
-    evaluateScript: (_: string) => EvaluationResult;
+    evaluateScript: (script: string, renderType: number) => EvaluationResult;
     getDefinitions: () => DefinitionVector;
     // TODO, obviosly
     FS: WhyDoesTypescriptAllowGarbageHere;

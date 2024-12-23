@@ -6,7 +6,7 @@ import {EditorView} from '@codemirror/view';
 import * as Signal from './signals';
 import {mod, clamp} from './util';
 import {vec2, vec3} from 'gl-matrix';
-import type {Seconds} from './types';
+import {Seconds, RenderType} from './types';
 import type {Definition} from 'bauble-runtime';
 import RenderLoop from './render-loop';
 import * as RenderState from './render-state';
@@ -161,7 +161,7 @@ const resetFreeCamera = (
 };
 
 interface RenderToolbarProps {
-  renderType: Signal.T<RenderState.RenderType>,
+  renderType: Signal.T<RenderType>,
   usingFreeCamera: Signal.Accessor<boolean>,
   prefersFreeCamera: Signal.T<boolean>,
   quadView: Signal.T<boolean>,
@@ -195,10 +195,10 @@ const RenderToolbar: Component<RenderToolbarProps> = (props) => {
     </button>
     <div class="spacer"></div>
     {choices(props.renderType, [
-      { value: RenderState.RenderType.Normal, icon: "camera", title: "Render normally" },
-      { value: RenderState.RenderType.Surfaceless, icon: "circle", title: "Use default surface" },
-      { value: RenderState.RenderType.Convergence, icon: "magnet", title: "Debug number of raymarching steps" },
-      { value: RenderState.RenderType.Distance, icon: "arrows-collapse", title: "Debug surface distance" },
+      { value: RenderType.Normal, icon: "camera", title: "Render normally" },
+      { value: RenderType.Surfaceless, icon: "circle", title: "Use default surface" },
+      { value: RenderType.Convergence, icon: "magnet", title: "Debug number of raymarching steps" },
+      { value: RenderType.Distance, icon: "arrows-collapse", title: "Debug surface distance" },
     ])}
   </div>;
 };
@@ -363,7 +363,7 @@ const Bauble = (props: BaubleProps) => {
     const size = Signal.get(canvasSize);
     return {width: dpr * size.width, height: dpr * size.height};
   });
-  const renderType = Signal.create(RenderState.RenderType.Normal);
+  const renderType = Signal.create(RenderType.Normal);
   const dimension = Signal.create(0);
   const prefersFreeCamera = Signal.create(false);
   const quadView = Signal.create(false);
@@ -411,10 +411,10 @@ const Bauble = (props: BaubleProps) => {
     }
   };
 
-  const recompile = () => {
+  const recompile = (script: string, renderType: RenderType) => {
     compileQueue.schedule(async () => {
       Signal.set(evaluationState, EvaluationState.Unknown);
-      const request = {tag: 'compile', script: editorView.state.doc.toString()};
+      const request = {tag: 'compile', script, renderType};
       const result: any = await wasmBox.send(request);
       if (result.isError) {
         Signal.set(evaluationState, EvaluationState.EvaluationError);
@@ -449,13 +449,23 @@ const Bauble = (props: BaubleProps) => {
 
   onMount(() => {
     intersectionObserver.observe(canvas);
+
+    const script = Signal.create<string | null>(null);
+    const compilationArgs = createEffect(() => {
+      const script_ = Signal.get(script);
+      const renderType_ = Signal.get(renderType);
+      if (script_ != null) {
+        recompile(script_, renderType_);
+      }
+    })
+
     const {view, focusVec, setFocusVec} = installCodeMirror({
       initialScript: props.initialScript,
       parent: editorContainer,
       canSave: props.canSave,
       canSearch: props.canSearch,
       showLineGutter: props.showLineGutter,
-      onChange: recompile,
+      onChange: () => { Signal.set(script, editorView.state.doc.toString()) },
       definitions: definitions,
     });
     crosshairs3D = focusVec;
@@ -468,7 +478,6 @@ const Bauble = (props: BaubleProps) => {
     renderer = new AsyncRenderer(renderBox, canvas, {
       time: Signal.getter(timer.t),
       isVisible: Signal.getter(isVisible),
-      renderType: Signal.getter(renderType),
       rotation: Signal.getter(rotation),
       origin: Signal.getter(origin),
       origin2D: Signal.getter(origin2D),
@@ -505,10 +514,7 @@ const Bauble = (props: BaubleProps) => {
       timeAdvancer.schedule();
     });
     requestAnimationFrame(() => {
-      // onMount is called before the children have been mounted,
-      // apparently, which means that all of our refs are not
-      // actually set up yet, so we can't invoke this synchronously
-      recompile();
+      Signal.set(script, editorView.state.doc.toString());
     });
   });
 
