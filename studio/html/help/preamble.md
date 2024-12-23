@@ -1,7 +1,5 @@
 # Help
 
-underconstruction.gif
-
 - [Reference](#reference)
 - [Language](#language)
 - [Bauble notation](#notation)
