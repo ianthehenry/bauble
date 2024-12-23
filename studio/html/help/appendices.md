@@ -173,25 +173,15 @@ You can embed Bauble on your web page by downloading the Bauble player:
 
 If you don't know which one you want, download the first one. That's the one that you can just throw into a `<script>` tag and run with.
 
-You can use it like this:
+[There is a working demo here.](/embed)
 
-```javascript
-document.addEventListener('DOMContentLoaded' () => {
-    // find the canvas element that you want to render it to
-    const canvas = document.querySelector('canvas');
+You can "view source" on that page to see how the embedded players are configured.
 
-    const player = new Bauble(canvas, {
-        shader: "<paste your shader here>",
-        animated: true,
-    });
-});
-```
-
-At least... one day you can...
+TODO: explain the API here
 
 ## A note on versioning
 
-Although Bauble itself changes frequently -- it gets new primitives or new render modes -- the actual format of the GLSL it outputs basically never changes at all, so you don't need to update the Bauble player even if you export a shader from a much newer version of Bauble. So the Bauble player is not released in named versioned; this page always links to the latest version.
+Although Bauble API itself changes frequently -- it gains new helpers and primitives and abilities -- the actual format of the GLSL that it outputs is pretty stable. This means that you don't need to update the Bauble player even if you export a shader from a much newer version of Bauble, and it also means that the Bauble player does not have named, versioned releases. This page always links to the latest Bauble player.
 
 # Exporting / 3D printing {#exporting}
 
