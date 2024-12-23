@@ -97,14 +97,12 @@ export default class Renderer {
   private setSimpleUniforms() {
     const {gl, program} = this;
     const uT = gl.getUniformLocation(program, "t");
-    const uRenderType = gl.getUniformLocation(program, "render_type");
     const uCameraTarget = gl.getUniformLocation(program, "free_camera_target");
     const uCameraOrbit = gl.getUniformLocation(program, "free_camera_orbit");
     const uCameraZoom = gl.getUniformLocation(program, "free_camera_zoom");
     const uCrosshairs = gl.getUniformLocation(program, "crosshairs_3d");
 
     gl.uniform1f(uT, this.state.time());
-    gl.uniform1i(uRenderType, this.state.renderType());
     gl.uniform3fv(uCameraTarget, this.state.origin());
     gl.uniform2fv(uCameraOrbit, this.state.rotation());
     gl.uniform1f(uCameraZoom, this.state.zoom());

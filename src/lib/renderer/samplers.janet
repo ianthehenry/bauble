@@ -1,10 +1,8 @@
+(def @= =)
 (use ../environment)
 (import ../../jlsl)
 (use ./util)
 (use judge)
-
-# TODO: this should not be a uniform
-(jlsl/jlsl/defdyn render-type :int "")
 
 (jlsl/jlsl/defdyn camera-type :int "")
 (jlsl/jlsl/defdyn free-camera-target :vec3 "")
@@ -41,22 +39,23 @@
   ~(as-macro ,sugar
     (as-macro ,jlsl/jlsl/fn ,t ,(string name) ,;rest)))
 
-(defn make-sample-2d [nearest-distance <background-color> <default-color> <color-field>]
+(defn make-sample-2d [options nearest-distance <background-color> <default-color> <color-field>]
+  (def {:render-type render-type :crosshairs crosshairs} options)
   (jlsl/fn :vec4 sample []
     (with [Q (frag-coord * ortho-base-zoom-distance * free-camera-zoom + origin-2d)
            q Q
            dist (nearest-distance)
            gradient (calculate-gradient (nearest-distance))]
 
-      (case render-type
-        0:s ,(if <color-field>
-          (jlsl/statement
-            (if (<= dist 0)
-              (return [<color-field> 1])
-              (return <background-color>)))
-          (jlsl/statement
-            (return [<default-color> 1])))
-        (return [<default-color> 1])))))
+      ,(if (@and (@= render-type 0) <color-field>)
+        (jlsl/statement
+          (if (<= dist 0)
+            (return [<color-field> 1])
+            (return <background-color>)))
+        (jlsl/statement
+          (return [<default-color> 1])))
+
+      )))
 
 (defn- make-march [nearest-distance]
   (jlsl/fn :float march [[out :uint] steps]
@@ -97,7 +96,8 @@
     (error "that's no camera")))
 
 # TODO: okay, so, theoretically we have nearest-distance in the current environment already
-(defn make-sample-3d [nearest-distance <camera> <background-color> <default-color> <color-field>]
+(defn make-sample-3d [options nearest-distance <camera> <background-color> <default-color> <color-field>]
+  (def {:render-type render-type :crosshairs crosshairs} options)
   (def march (make-march nearest-distance))
   (def ortho-distance 1024)
 
@@ -146,30 +146,27 @@
            dist (nearest-distance)
            normal (calculate-normal (nearest-distance))]
       (var color (vec4 0))
-      (case render-type
-        0:s (do
-          (if (>= dist MAXIMUM_HIT_DISTANCE)
-            (set color <background-color>)
-            (set color [,(@or <color-field> <default-color>) 1]))
-          (break))
+      ,(case render-type
+        0 (jlsl/statement
+          (set color (if (>= dist MAXIMUM_HIT_DISTANCE)
+            <background-color>
+            [,(@or <color-field> <default-color>) 1])))
         # ignore color field
-        1:s (do
-          (if (>= dist MAXIMUM_HIT_DISTANCE)
-            (set color <background-color>)
-            (set color [<default-color> 1]))
-          (break))
+        1 (jlsl/statement
+          (set color (if (>= dist MAXIMUM_HIT_DISTANCE)
+            <background-color>
+            [<default-color> 1])))
         # convergence debug view
-        2:s (do
+        2 (jlsl/statement
           (set color (if (= steps MAX_STEPS)
             [1 0 1 1]
-            [(float steps / float MAX_STEPS | vec3) 1]))
-          (break))
+            [(float steps / float MAX_STEPS | vec3) 1])))
         # overshoot debug view
-        3:s (do
+        3 (jlsl/statement
           (var overshoot (max (- dist) 0 / MINIMUM_HIT_DISTANCE))
           (var undershoot (max dist 0 / MINIMUM_HIT_DISTANCE))
-          (set color [overshoot (- 1 undershoot overshoot) (1 - (step 1 undershoot)) 1])
-          (break)))
+          (set color [overshoot (- 1 undershoot overshoot) (1 - (step 1 undershoot)) 1]))
+        (errorf "unknown render type %d" render-type))
 
       (if (> crosshairs-3d.w 0) (do
         (var x (intersect-axis crosshairs-3d.xyz [1 0 0] ray))

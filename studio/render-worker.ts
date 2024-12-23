@@ -18,7 +18,6 @@ export function init() {
   Signal.onEffect([
     state.time,
     state.isVisible,
-    state.renderType,
     state.rotation,
     state.origin,
     state.zoom,

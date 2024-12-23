@@ -15,7 +15,7 @@
 
 (use ../environment)
 
-(defn render [env glsl-version]
+(defn render [render-type env glsl-version]
   (def stdenv (table/getproto env))
   (def subject (get-var stdenv 'subject))
   (def nearest-distance (get-env stdenv 'nearest-distance))
@@ -43,6 +43,11 @@
 
   (def aa-grid-size (jlsl/coerce-expr (int/u64 (or (get-var stdenv 'aa-grid-size) 1))))
 
+  (def options {
+    :render-type render-type
+    :crosshairs true
+  })
+
   (def program (sugar (program/new
     (precision highp float)
     (uniform ,camera-type)
@@ -50,7 +55,6 @@
     (uniform ,free-camera-orbit)
     (uniform ,free-camera-zoom)
     (uniform ,origin-2d)
-    (uniform ,render-type)
     (uniform ,t)
     (uniform ,viewport)
     (uniform ,crosshairs-3d)
@@ -60,8 +64,8 @@
     ,(def sample
       (if subject
         (case (shape/type subject)
-          jlsl/type/vec2 (make-sample-2d nearest-distance background-color default-2d-color (shape/color subject))
-          jlsl/type/vec3 (make-sample-3d nearest-distance camera background-color default-3d-color (shape/color subject))
+          jlsl/type/vec2 (make-sample-2d options nearest-distance background-color default-2d-color (shape/color subject))
+          jlsl/type/vec3 (make-sample-3d options nearest-distance camera background-color default-3d-color (shape/color subject))
           (error "BUG"))
         (jlsl/fn :vec4 sample [] (return background-color))))
 
