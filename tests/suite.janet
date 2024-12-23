@@ -646,7 +646,7 @@
   `
   "more alpha test" `
   (ball 100)
-  (set background-color [1 1 0 (ss frag-coord.x -0.5 0.5)])
+  (set background-color [1 1 0 (ss frag-coord.x -1 1)])
   `
   "bump" `
   (ball 100 | color default-3d-color | bump (worley (p / 30) | pow 4))

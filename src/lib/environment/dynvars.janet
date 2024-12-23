@@ -29,11 +29,11 @@ like `[0.3333 0.3333]`.
 ```)
 (jlsl/defdyn frag-coord :vec2 ```
 The logical position of the current fragment being rendered, in the approximate
-range `-0.5` to `0.5`, with `[0 0]` as the center of the screen. Note though that
-we always shade pixel centers, so we never actual render `-0.5` or `0.5`, just
+range `-1` to `1`, with `[0 0]` as the center of the screen. Note though that
+we always shade pixel centers, so we never actual render `-1` or `1`, just
 nearby subpixel approximations depending on the antialiasing level.
 
-This is equal to `(Frag-Coord - (resolution * 0.5) / max resolution)`.
+This is equal to `(Frag-Coord - (resolution * 0.5) / max resolution * 2)`.
 ```)
 
 (jlsl/defdyn t :float "The current time in seconds.")

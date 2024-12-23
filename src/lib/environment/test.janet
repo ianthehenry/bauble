@@ -234,7 +234,7 @@
     floor @{}
     fma @{}
     fract @{}
-    frag-coord @{:doc "The logical position of the current fragment being rendered, in the approximate\nrange `-0.5` to `0.5`, with `[0 0]` as the center of the screen. Note though that\nwe always shade pixel centers, so we never actual render `-0.5` or `0.5`, just\nnearby subpixel approximations depending on the antialiasing level.\n\nThis is equal to `(Frag-Coord - (resolution * 0.5) / max resolution)`."
+    frag-coord @{:doc "The logical position of the current fragment being rendered, in the approximate\nrange `-1` to `1`, with `[0 0]` as the center of the screen. Note though that\nwe always shade pixel centers, so we never actual render `-1` or `1`, just\nnearby subpixel approximations depending on the antialiasing level.\n\nThis is equal to `(Frag-Coord - (resolution * 0.5) / max resolution * 2)`."
                  :value [:var "frag-coord" :vec2]}
     fresnel @{:doc "(fresnel [exponent])\n\nReturns an approximate fresnel intensity. `exponent` defaults to `5`.\n\n```example\n(ball 100\n| shade [1 0.5 0.5]\n| tint [1 1 1] (fresnel (osc t 5 0.5 5)))\n```"}
     gl-frag-coord @{:value [:var "gl_FragCoord" :vec4]}

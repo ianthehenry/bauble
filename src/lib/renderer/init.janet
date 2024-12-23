@@ -86,7 +86,7 @@
           (set sample-offset (sample-offset + pixel-origin | fract - pixel-origin))
           (with [Frag-Coord (local-frag-coord + sample-offset)
                  resolution viewport.zw
-                 frag-coord (Frag-Coord - (0.5 * resolution) / max resolution)]
+                 frag-coord (Frag-Coord - (0.5 * resolution) / max resolution * 2)]
             (var this-sample (clamp (sample) 0 1))
             (+= color (this-sample.rgb * this-sample.a))
             (+= alpha this-sample.a))

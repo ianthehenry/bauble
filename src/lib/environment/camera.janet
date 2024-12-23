@@ -8,8 +8,7 @@
   given camera field-of-view (in degrees).
   ```
   (var cot-half-fov (tan (radians (90 - (fov * 0.5)))))
-  (var z (* 0.5 cot-half-fov))
-  (return [frag-coord z | normalize]))
+  (return [frag-coord cot-half-fov | normalize]))
 
 (sugar (defnamed camera/perspective [position :?target :?dir :?roll :?fov]
   ````
