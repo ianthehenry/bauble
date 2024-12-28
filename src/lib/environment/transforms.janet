@@ -293,7 +293,7 @@
   ```
   ````
   (fn pivot [transformation point]
-    (assertf (and (ptuple? transformation) (>= (@length transformation) 2)) "%q does not look like something I can transform")
+    (assertf (@and (ptuple? transformation) (>= (@length transformation) 2)) "%q does not look like something I can transform")
     (def [op subject & args] transformation)
     (with-syms [$pivot]
       ~(as-macro ,gl/let [,$pivot ,point]
@@ -350,7 +350,7 @@
   ```
   ````
   [shape &opt thickness]
-  (def thickness (typecheck (or thickness 0) jlsl/type/float))
+  (def thickness (typecheck (@or thickness 0) jlsl/type/float))
   (shape/map-distance shape (fn [expr] (- (abs expr) (* thickness 0.5)))))
 
 (defn expand
