@@ -90,6 +90,91 @@ function choices<T extends number | string>(
 type EditorToolbarProps = {
   state: EvaluationState,
   canExport: boolean,
+  onExportEmbed: () => void,
+};
+
+enum CopyStatus {
+  Default,
+  Done,
+  Error,
+}
+
+const ExportEmbedDialog = (props: {
+  onClose: () => void,
+  onBackgroundClick: () => void,
+  isVisible: boolean,
+  getScript: () => string,
+  wasmBox: Mailbox,
+}) => {
+  let dialog: HTMLDialogElement;
+  let outputContainer: HTMLTextAreaElement;
+  const onClick = (e: MouseEvent) => {
+    // clicking on the background of the page vs. clicking
+    // on the div that fills up the whole dialog element
+    if (e.target === dialog) {
+      props.onBackgroundClick();
+    }
+  };
+
+  const set = (text: string) => {
+    outputContainer.value = text;
+  };
+
+  const regenOutput = async () => {
+    const script = props.getScript();
+    const request = {tag: 'compile', script, renderType: RenderType.Normal};
+    // TODO: do something with result.outputs?
+    const result: any = await props.wasmBox.send(request);
+    if (result.isError) {
+      set("error");
+    } else {
+      const options = [
+        result.dimension !== 3 ? ['dimension', result.dimension.toString()] : null,
+        result.isAnimated ? ['animate', 'true'] : null,
+        result.hasCustomCamera ? ['freeCamera', (!result.hasCustomCamera).toString()] : null,
+        ['source', '`' + result.shaderSource.trim() + '`']
+      ].filter((opt) => opt != null)
+      .map((kv) => '  ' + kv.join(': '))
+      .join(',\n');
+      set(`new Bauble(canvas, {\n${options}\n})`);
+    }
+  }
+
+  const copyStatus = Signal.create(CopyStatus.Default);
+  createEffect(() => {
+    if (props.isVisible) {
+      Signal.set(copyStatus, CopyStatus.Default);
+      set("compiling...");
+      dialog.showModal();
+      regenOutput();
+    } else {
+      dialog.close();
+    }
+  })
+  const copyIcon = createMemo(() => {
+    switch (Signal.get(copyStatus)) {
+    case CopyStatus.Default: return 'clipboard';
+    case CopyStatus.Done: return 'clipboard-check';
+    case CopyStatus.Error: return 'clipboard-x';
+    }
+  });
+  const copy = async () => {
+    Signal.set(copyStatus, CopyStatus.Default);
+    try {
+      await navigator.clipboard.writeText(outputContainer.value);
+      Signal.set(copyStatus, CopyStatus.Done);
+    } catch (err) {
+      Signal.set(copyStatus, CopyStatus.Error);
+      console.error("copy failed:", err);
+    }
+  };
+  return <dialog class="export-embed" ref={dialog!} onClick={onClick} onClose={props.onClose}>
+    <div>
+      <p>Put this JavaScript in your thing:<button onClick={copy}><Icon name={copyIcon()} />Copy</button></p>
+      <textarea rows="10" ref={outputContainer!}></textarea>
+      <p><a href="/help#embauble" target="_blank">You'll want a copy of the Bauble player as well.</a></p>
+    </div>
+  </dialog>;
 };
 
 const EditorToolbar: Component<EditorToolbarProps> = (props) => {
@@ -114,7 +199,7 @@ const EditorToolbar: Component<EditorToolbarProps> = (props) => {
       <li>Export Video [todo]</li>
       <li>Export 3D model [CLI only]</li>
       <li>Export to Shadertoy [todo]</li>
-      <li>Export to HTML Embed [todo]</li>
+      <li><button onClick={() => { props.onExportEmbed(); }}>Export to HTML Embed</button></li>
       </ul>
       <p>Sign up for a Bauble Pro account to unlock these features!</p>
       <p>No I'm kidding look, this is theoretically the export menu, but I haven't
@@ -376,6 +461,7 @@ const Bauble = (props: BaubleProps) => {
   const hasCustomCamera = Signal.create(false);
   const isAnimated = Signal.create(false);
   const isVisible = Signal.create(false);
+  const showExportEmbed = Signal.create(false);
   const usingFreeCamera = createMemo(() => Signal.get(prefersFreeCamera) || !Signal.get(hasCustomCamera));
   const translateOffset = Signal.create(vec3.fromValues(0, 0, 0));
   const translateOrigin = Signal.create(null as vec3 | null);
@@ -447,10 +533,10 @@ const Bauble = (props: BaubleProps) => {
     });
   };
 
+  const script = Signal.create<string | null>(null);
   onMount(() => {
     intersectionObserver.observe(canvas);
 
-    const script = Signal.create<string | null>(null);
     const compilationArgs = createEffect(() => {
       const script_ = Signal.get(script);
       const renderType_ = Signal.get(renderType);
@@ -493,9 +579,11 @@ const Bauble = (props: BaubleProps) => {
       crosshairs: crosshairs,
     });
 
+    const modalVisible = createMemo(() => Signal.get(showExportEmbed));
+
     timeAdvancer = new RenderLoop((elapsed) => batch(() => {
      const isAnimated_ = Signal.get(isAnimated);
-     const isTimeAdvancing = isAnimated_ && Signal.get(timer.state) !== TimerState.Paused;
+     const isTimeAdvancing = isAnimated_ && Signal.get(timer.state) !== TimerState.Paused && !modalVisible();
      if (isTimeAdvancing) {
        // If you hit the stop button, we want to redraw at zero,
        // but we don't want to advance time forward by 16ms.
@@ -513,6 +601,7 @@ const Bauble = (props: BaubleProps) => {
     Signal.onEffect([
       timer.state,
       timer.t,
+      modalVisible,
       isAnimated,
     ], () => {
       timeAdvancer.schedule();
@@ -846,10 +935,21 @@ const Bauble = (props: BaubleProps) => {
       onDblClick={onHandleDblClick}
     />
     <div class="code-container" ref={codeContainer!}>
-      <EditorToolbar state={Signal.get(evaluationState)} canExport={props.canExport} />
+      <EditorToolbar
+        state={Signal.get(evaluationState)}
+        canExport={props.canExport}
+        onExportEmbed={() => Signal.set(showExportEmbed, true)}
+      />
       <div class="editor-container" ref={editorContainer!} />
       <ResizableArea ref={outputContainer!} />
     </div>
+    <ExportEmbedDialog
+      isVisible={Signal.get(showExportEmbed)}
+      onClose={() => {Signal.set(showExportEmbed, false); editorView.focus()}}
+      onBackgroundClick={() => Signal.set(showExportEmbed, false)}
+      getScript={() => Signal.get(script) || ""}
+      wasmBox={wasmBox}
+      />
   </div>;
 };
 export default Bauble;

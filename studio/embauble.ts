@@ -18,6 +18,14 @@ void main() {
 }
 `;
 
+const checkNumber = (x: any): number => {
+  if (typeof x === 'number') {
+    return x;
+  } else {
+    throw new Error("not a number", {cause: x});
+  }
+}
+
 function compileShader(gl: WebGLRenderingContext, type: number, source: string) {
   const shader = gl.createShader(type)!;
   gl.shaderSource(shader, source);
@@ -135,13 +143,27 @@ class Renderer {
     }
     gl.useProgram(program);
   }
+
+  setUniform(name: string, value: any) {
+    if (name === 't') {
+      this.state.time = checkNumber(value);
+    } else {
+      throw new Error("unknown uniform");
+    }
+  }
 }
 
 export default function Bauble(canvas: HTMLCanvasElement, opts: {
   source: string,
-  isAnimated: boolean,
+  animate?: boolean,
+  dimensions?: number,
 }) {
-  const {source, isAnimated} = opts;
+  const source = opts.source;
+  if (source == null) {
+    throw new Error("missing source", {cause: opts});
+  }
+  const animate = opts.animate ?? false;
+  const dimensions = opts.dimensions ?? 3;
   const renderer = new Renderer(canvas, {
     time: 0,
     rotation: [0.1, -0.1],
@@ -152,6 +174,48 @@ export default function Bauble(canvas: HTMLCanvasElement, opts: {
 
   renderer.recompileShader(source);
 
-  return renderer;
+  let time = 0;
+  let isTimeAdvancing = animate;
+  let then: number | null = null;
+
+  const setTime = (t: number) => {
+    if (time === t) {
+      return;
+    }
+    time = t;
+    renderer.setUniform('t', time)
+    draw();
+  };
+
+  let drawEnqueued = false;
+  function draw() {
+    if (drawEnqueued) {
+      return;
+    }
+    drawEnqueued = true;
+    requestAnimationFrame((now) => {
+      drawEnqueued = false;
+      renderer.draw();
+
+      if (then != null) {
+        const elapsed = (now - then) / 1000;
+        if (isTimeAdvancing) {
+          setTime(time + elapsed);
+        }
+      }
+      then = now;
+      if (isTimeAdvancing) {
+        draw();
+      }
+    });
+  }
+
+  draw();
+
+  return {
+    draw: draw,
+    play: () => {isTimeAdvancing = true; draw();},
+    pause: () => {isTimeAdvancing = false;},
+    setTime: setTime,
+  };
 };
-console.log("hi");
