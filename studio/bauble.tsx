@@ -475,6 +475,10 @@ const Bauble = (props: BaubleProps) => {
       setFocusVec(result);
     });
     editorView = view;
+    const crosshairs = createMemo(() => {
+      const focusVec_ = focusVec();
+      return Signal.get(quadView) ? focusVec_ : null;
+    });
     renderer = new AsyncRenderer(renderBox, canvas, {
       time: Signal.getter(timer.t),
       isVisible: Signal.getter(isVisible),
@@ -486,7 +490,7 @@ const Bauble = (props: BaubleProps) => {
       quadView: Signal.getter(quadView),
       quadSplitPoint: Signal.getter(quadSplitPoint),
       resolution: canvasResolution,
-      crosshairs: focusVec,
+      crosshairs: crosshairs,
     });
 
     timeAdvancer = new RenderLoop((elapsed) => batch(() => {
