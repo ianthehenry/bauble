@@ -791,7 +791,7 @@ img {
     (def env (bauble/evaluator/evaluate program))
     (def after-eval-before-compile (os/clock :monotonic))
     (def [shader-source dimension animated? has-custom-camera?]
-      (bauble/compile-to-glsl default-render-type env "330"))
+      (bauble/compile-to-glsl default-render-type false env "330"))
     (def after-compile-before-render (os/clock :monotonic))
     (def image (render-image shader-source
       :resolution physical-resolution

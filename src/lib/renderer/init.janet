@@ -15,7 +15,7 @@
 
 (use ../environment)
 
-(defn render [render-type env glsl-version]
+(defn render [env glsl-version &keys options]
   (def stdenv (table/getproto env))
   (def subject (get-var stdenv 'subject))
   (def nearest-distance (get-env stdenv 'nearest-distance))
@@ -42,11 +42,6 @@
     0))
 
   (def aa-grid-size (jlsl/coerce-expr (int/u64 (or (get-var stdenv 'aa-grid-size) 1))))
-
-  (def options {
-    :render-type render-type
-    :crosshairs true
-  })
 
   (def program (sugar (program/new
     (precision highp float)

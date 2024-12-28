@@ -36,7 +36,7 @@ CompilationResult compilation_error(string message) {
   };
 }
 
-CompilationResult evaluate_script(string source, int render_type) {
+CompilationResult evaluate_script(string source, int render_type, bool crosshairs) {
   if (janetfn_compile_to_glsl == NULL) {
     fprintf(stderr, "unable to initialize compilation function\n");
     return compilation_error("function uninitialized");
@@ -51,13 +51,15 @@ CompilationResult evaluate_script(string source, int render_type) {
 
   double done_evaluating = emscripten_get_now();
 
-  const Janet compile_to_glsl_args[3] = {
+  const size_t arg_count = 4;
+  const Janet compile_to_glsl_args[arg_count] = {
     janet_wrap_integer(render_type),
+    janet_wrap_boolean(crosshairs),
     compiled_env,
     janet_cstringv("300 es")
   };
   Janet compilation_result;
-  bool compilation_success = call_fn(janetfn_compile_to_glsl, 3, compile_to_glsl_args, &compilation_result);
+  bool compilation_success = call_fn(janetfn_compile_to_glsl, arg_count, compile_to_glsl_args, &compilation_result);
 
   double done_compiling_glsl = emscripten_get_now();
   const uint8_t *shader_source;

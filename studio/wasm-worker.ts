@@ -12,7 +12,7 @@ export function init() {
       switch (request.tag) {
       case 'compile': {
         outputs = [];
-        const result = runtime.evaluateScript(request.script, request.renderType) as any;
+        const result = runtime.evaluateScript(request.script, request.renderType, request.crosshairs) as any;
         result.outputs = outputs;
         return result;
       }
