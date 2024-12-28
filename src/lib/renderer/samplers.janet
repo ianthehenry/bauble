@@ -168,23 +168,25 @@
           (set color [overshoot (- 1 undershoot overshoot) (1 - (step 1 undershoot)) 1]))
         (errorf "unknown render type %d" render-type))
 
-      (if (> crosshairs-3d.w 0) (do
-        (var x (intersect-axis crosshairs-3d.xyz [1 0 0] ray))
-        (var y (intersect-axis crosshairs-3d.xyz [0 1 0] ray))
-        (var z (intersect-axis crosshairs-3d.xyz [0 0 1] ray))
+      ,(if crosshairs (jlsl/statement
+        (if (> crosshairs-3d.w 0) (do
+          (var x (intersect-axis crosshairs-3d.xyz [1 0 0] ray))
+          (var y (intersect-axis crosshairs-3d.xyz [0 1 0] ray))
+          (var z (intersect-axis crosshairs-3d.xyz [0 0 1] ray))
 
-        (var xd (distance x.xyz ray.origin))
-        (var yd (distance y.xyz ray.origin))
-        (var zd (distance z.xyz ray.origin))
-        (var thickness [1 1 1])
-        (if (> fov 0)
-          (do
-            (var angular-resolution (2 * (tan (radians (0.5 * fov)))))
-            (*= thickness [xd yd zd * angular-resolution / base-zoom-distance]))
-          (*= thickness (ortho-scale / ortho-base-zoom-distance)))
-        (if (< x.w thickness.x) (set color (mix color [1 0.1 0.1 1] (if (or (>= xd MAXIMUM_TRACE_DISTANCE) (< xd depth)) 1 0.5))))
-        (if (< y.w thickness.y) (set color (mix color [0 1 0.25 1]  (if (or (>= yd MAXIMUM_TRACE_DISTANCE) (< yd depth)) 1 0.5))))
-        (if (< z.w thickness.z) (set color (mix color [0 0.5 1 1]   (if (or (>= zd MAXIMUM_TRACE_DISTANCE) (< zd depth)) 1 0.5))))
-        ))
+          (var xd (distance x.xyz ray.origin))
+          (var yd (distance y.xyz ray.origin))
+          (var zd (distance z.xyz ray.origin))
+          (var thickness [1 1 1])
+          (if (> fov 0)
+            (do
+              (var angular-resolution (2 * (tan (radians (0.5 * fov)))))
+              (*= thickness [xd yd zd * angular-resolution / base-zoom-distance]))
+            (*= thickness (ortho-scale / ortho-base-zoom-distance)))
+          (if (< x.w thickness.x) (set color (mix color [1 0.1 0.1 1] (if (or (>= xd MAXIMUM_TRACE_DISTANCE) (< xd depth)) 1 0.5))))
+          (if (< y.w thickness.y) (set color (mix color [0 1 0.25 1]  (if (or (>= yd MAXIMUM_TRACE_DISTANCE) (< yd depth)) 1 0.5))))
+          (if (< z.w thickness.z) (set color (mix color [0 0.5 1 1]   (if (or (>= zd MAXIMUM_TRACE_DISTANCE) (< zd depth)) 1 0.5))))
+          )))
+      (jlsl/statement))
 
       (return color))))

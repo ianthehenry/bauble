@@ -122,7 +122,7 @@ const ExportEmbedDialog = (props: {
 
   const regenOutput = async () => {
     const script = props.getScript();
-    const request = {tag: 'compile', script, renderType: RenderType.Normal};
+    const request = {tag: 'compile', script, renderType: RenderType.Normal, crosshairs: false};
     // TODO: do something with result.outputs?
     const result: any = await props.wasmBox.send(request);
     if (result.isError) {
@@ -500,7 +500,7 @@ const Bauble = (props: BaubleProps) => {
   const recompile = (script: string, renderType: RenderType) => {
     compileQueue.schedule(async () => {
       Signal.set(evaluationState, EvaluationState.Unknown);
-      const request = {tag: 'compile', script, renderType};
+      const request = {tag: 'compile', script, renderType, crosshairs: true};
       const result: any = await wasmBox.send(request);
       if (result.isError) {
         Signal.set(evaluationState, EvaluationState.EvaluationError);

@@ -26,7 +26,7 @@
   (def source (read-input input))
   (def env (bauble/evaluator/evaluate source))
   (def [shader-source dimension animated? has-custom-camera?]
-    (bauble/compile-to-glsl default-render-type env "330"))
+    (bauble/compile-to-glsl default-render-type false env "330"))
   (init-jaylib)
   (defn vec2 [[x y]] (string/format "%dx%d" x y))
   (def image (render-image shader-source
@@ -49,7 +49,7 @@
   (def source (read-input input))
   (def env (bauble/evaluator/evaluate source))
   (def [shader-source dimension animated? has-custom-camera?]
-    (bauble/compile-to-glsl default-render-type env "330"))
+    (bauble/compile-to-glsl default-render-type false env "330"))
   (if outfile
     (spit outfile shader-source)
     (print shader-source)))
