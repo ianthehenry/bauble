@@ -183,14 +183,14 @@ const RenderToolbar: Component<RenderToolbarProps> = (props) => {
     <button title="Toggle free camera" onClick={toggleFreeCamera}>
       <Icon name={props.usingFreeCamera() ? "camera-reels" : "camera-reels-fill"} />
     </button>
-    <button title="Reset camera" onClick={() => batch(() => {
+    <button title="Reset camera [alt-r]" onClick={() => batch(() => {
       Signal.set(props.prefersFreeCamera, true);
       resetFreeCamera(props.rotation, props.origin, props.zoom);
       Signal.set(props.origin2D, vec2.fromValues(0, 0));
       })}>
       <Icon name="box" />
     </button>
-    <button title="Toggle quad view" onClick={toggleQuadView}>
+    <button title="Toggle quad view [alt-q]" onClick={toggleQuadView}>
       <Icon name={Signal.get(props.quadView) ? "grid-fill" : "grid"} />
     </button>
     <div class="spacer"></div>
@@ -779,10 +779,38 @@ const Bauble = (props: BaubleProps) => {
     canvasContainer.style.flexBasis = `${oldSize - delta}px`;
   };
 
+  // keyboard shortuct notes:
+  // - e.key tells you the key that will be typed, so e.g. alt-r gives ®, which is useless
+  // - e.code tells you the physical key that was pressed, so in the face of software key
+  //   re-mapping it does not work. There is an experimental keyboard layout API that is not
+  //   widely supported which you can use to map e.code to the actual key pressed, but no.
+  // - e.which and e.keyCode seem to be the same; they're both deprecated but are the only
+  //   way to handle keyboard shortucts correctly as far as I can figure out
+  const KeyQ = 81;
+  const KeyR = 82;
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (e.altKey) {
+      let handled = true;
+      switch (e.which) {
+      case KeyQ: Signal.update(quadView, (quadView) => !quadView); break;
+      case KeyR:
+        batch(() => {
+            Signal.set(prefersFreeCamera, true);
+            resetFreeCamera(rotation, origin, zoom);
+            Signal.set(origin2D, vec2.fromValues(0, 0));
+        }); break;
+      default: handled = false;
+      }
+      if (handled) {
+        e.preventDefault();
+      }
+    }
+  };
+
   return <div class="bauble" style={{
     '--canvas-width': `${Signal.get(canvasSize).width}px`,
     '--canvas-height': `${Signal.get(canvasSize).height}px`,
-  }}>
+  }} onKeyDown={onKeyDown}>
     <div class="canvas-container" ref={canvasContainer!}>
       <RenderToolbar
       renderType={renderType}
