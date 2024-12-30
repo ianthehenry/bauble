@@ -192,7 +192,7 @@
     (errorf "main must return void" return-type))
 
   (each param implicit-params
-    (var variable (param/var param))
+    (def variable (param/var param))
     # TODO: distinguish between global in and global out variables
     (match (param/access param)
       :in (unless (or (has-value? inputs variable) (has-value? uniforms variable) (has-value? globals variable))
@@ -206,11 +206,26 @@
 (def all-globals (seq [entry :in (require "./globals") :when (table? entry) :let [{:value value} entry] :when (variable? value)] value))
 
 (defmodule program
+  (defn new* [&named
+    uniforms
+    inputs
+    outputs
+    pragmas
+    main]
+    (def program
+      {:uniforms (or uniforms [])
+       :inputs (or inputs [])
+       :outputs (or outputs [])
+       :globals all-globals
+       :pragmas (or pragmas [])
+       :main main})
+    (validate-program program))
+
   (defmacro new [& body]
     (def $uniforms (gensym))
     (def $inputs (gensym))
     (def $outputs (gensym))
-    (def $precisions (gensym))
+    (def $pragmas (gensym))
 
     (def <statements>
       (seq [form :in body]
@@ -224,20 +239,21 @@
           ['implement & args] ~(as-macro ,jlsl/implement ,;args)
           ['struct & args] ~(as-macro ,jlsl/defstruct ,;args)
           ['unquote args] args
-          ['precision &] ~(,array/push ,$precisions ',form))))
+          ['precision &] ~(,array/push ,$pragmas ',form))))
     ~(do
       (def ,$uniforms @[])
       (def ,$inputs @[])
       (def ,$outputs @[])
-      (def ,$precisions @[])
+      (def ,$pragmas @[])
       ,;<statements>
-      (,validate-program
-        {:uniforms ,$uniforms
-         :inputs ,$inputs
-         :outputs ,$outputs
-         :globals ',all-globals
-         :precisions ,$precisions
-         :main (,multifunction/resolve-function main [])}))))
+      (,new*
+        :uniforms ,$uniforms
+        :inputs ,$inputs
+        :outputs ,$outputs
+        :globals ',all-globals
+        :pragmas ,$pragmas
+        :main (,multifunction/resolve-function main [])
+        ))))
 
 (defmacro- declare [thing]
   # TODO: allocate a decent name for this uniform??
@@ -275,7 +291,7 @@
   (walk visit main)
   (ordered/set/values structs))
 
-(defn render/program [{:precisions precisions :uniforms uniforms :inputs inputs :outputs outputs :globals globals :main main}]
+(defn render/program [{:pragmas pragmas :uniforms uniforms :inputs inputs :outputs outputs :globals globals :main main}]
   (def root-variables (array/concat @[] uniforms inputs outputs globals))
 
   (def structs (find-structs root-variables main))
@@ -284,7 +300,7 @@
               *glsl-function-name-map* (bimap/new)]
     (each global globals
       (allocate-glsl-identifier global))
-    [;precisions
+    [;pragmas
      ;(map declare-struct structs)
      ;(map (declare in) inputs)
      ;(map (declare out) outputs)
@@ -305,7 +321,7 @@
     (def <4> @[])
     (@array/push <1> (def t (@new "t" (@type/primitive (quote (<5> float))))))
     (as-macro @jlsl/defn :void main [] (return 10))
-    (@validate-program {:globals (quote @[(<6> lexical <7> "gl_PointCoord" (<8> vec (<5> float) 2)) (<6> lexical <9> "gl_FrontFacing" (<8> primitive (<5> bool))) (<6> lexical <10> "gl_FragCoord" (<8> vec (<5> float) 4)) (<6> lexical <11> "gl_FragDepth" (<8> primitive (<5> float)))]) :inputs <2> :main (@resolve-function main []) :outputs <3> :precisions <4> :uniforms <1>})))
+    (@new* :uniforms <1> :inputs <2> :outputs <3> :globals (quote @[(<6> lexical <7> "gl_PointCoord" (<8> vec (<5> float) 2)) (<6> lexical <9> "gl_FrontFacing" (<8> primitive (<5> bool))) (<6> lexical <10> "gl_FragCoord" (<8> vec (<5> float) 4)) (<6> lexical <11> "gl_FragDepth" (<8> primitive (<5> float)))]) :pragmas <4> :main (@resolve-function main []))))
 
 (deftest "various sorts of illegal programs"
   (test-error (program/new

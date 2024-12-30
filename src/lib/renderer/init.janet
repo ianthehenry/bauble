@@ -43,28 +43,30 @@
 
   (def aa-grid-size (jlsl/coerce-expr (int/u64 (or (get-var stdenv 'aa-grid-size) 1))))
 
-  (def program (sugar (program/new
-    (precision highp float)
-    (uniform ,camera-type)
-    (uniform ,free-camera-target)
-    (uniform ,free-camera-orbit)
-    (uniform ,free-camera-zoom)
-    (uniform ,origin-2d)
-    (uniform ,t)
-    (uniform ,viewport)
-    (uniform ,crosshairs-3d)
-    (out :vec4 frag-color)
-    (implement :float nearest-distance [] (return ,(@or (@and subject (shape/distance subject)) 0)))
+  (jlsl/jlsl/implement :float nearest-distance [] (return ,(@or (@and subject (shape/distance subject)) 0)))
+  (def sample
+    (if subject
+      (case (shape/type subject)
+        jlsl/type/vec2 (make-sample-2d options nearest-distance background-color default-2d-color (shape/color subject))
+        jlsl/type/vec3 (make-sample-3d options nearest-distance camera background-color default-3d-color (shape/color subject))
+        (error "BUG"))
+      (jlsl/fn :vec4 sample [] (return background-color))))
+  (def frag-color (jlsl/variable/new "frag-color" jlsl/type/vec4))
+  (def program (jlsl/program/new*
+    :pragmas ['(precision highp float)]
+    :uniforms
+      (filter truthy? [
+        camera-type
+        free-camera-target
+        free-camera-orbit
+        free-camera-zoom
+        origin-2d
+        t
+        viewport
+        (if (in options :crosshairs) crosshairs-3d)])
+    :outputs [frag-color]
 
-    ,(def sample
-      (if subject
-        (case (shape/type subject)
-          jlsl/type/vec2 (make-sample-2d options nearest-distance background-color default-2d-color (shape/color subject))
-          jlsl/type/vec3 (make-sample-3d options nearest-distance camera background-color default-3d-color (shape/color subject))
-          (error "BUG"))
-        (jlsl/fn :vec4 sample [] (return background-color))))
-
-    (defn :void main []
+    :main (sugar (jlsl/fn :void main []
       (def gamma 2.2)
       (var color [0 0 0])
       (var alpha 0)
