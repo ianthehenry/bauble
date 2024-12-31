@@ -109,7 +109,6 @@ class Renderer {
     const uOrigin2D = gl.getUniformLocation(program, "origin_2d");
     const uCameraOrbit = gl.getUniformLocation(program, "free_camera_orbit");
     const uCameraZoom = gl.getUniformLocation(program, "free_camera_zoom");
-    const uCrosshairs = gl.getUniformLocation(program, "crosshairs_3d");
 
     gl.uniform1f(uT, this.state.time);
     gl.uniform3fv(uCameraTarget, this.state.origin);
@@ -206,6 +205,8 @@ export default function Bauble(canvas: HTMLCanvasElement, opts: {
       then = now;
       if (isTimeAdvancing) {
         draw();
+      } else {
+        then = null;
       }
     });
   }
@@ -214,8 +215,16 @@ export default function Bauble(canvas: HTMLCanvasElement, opts: {
 
   return {
     draw: draw,
-    play: () => {isTimeAdvancing = true; draw();},
-    pause: () => {isTimeAdvancing = false;},
+    playPause: function(value: boolean) {
+      if (arguments.length === 0) {
+        isTimeAdvancing = !isTimeAdvancing;
+      } else {
+        isTimeAdvancing = !!value;
+      }
+      if (isTimeAdvancing) {
+        draw();
+      }
+    },
     setTime: setTime,
   };
 };
