@@ -204,7 +204,7 @@ void main() {
 }`
 });
   canvas.addEventListener('click', () => {
-    player.setTime(0);
+    player.playPause();
   });
 });
 </script>
