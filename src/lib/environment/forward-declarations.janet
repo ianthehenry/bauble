@@ -11,4 +11,4 @@
   a custom ambient occlusion value.
   ```))
 
-(thunk ~(setdyn ,expression-hoister/*hoisted-vars* (table/weak-keys 8)))
+(thunk ~(setdyn ,expression-hoister/*hoisted-vars* @{}))
