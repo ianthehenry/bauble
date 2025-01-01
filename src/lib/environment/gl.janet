@@ -1,7 +1,7 @@
 (import ../../jlsl)
 (use ./util)
 (import ../shape)
-(import ../expression-hoister)
+(import ./expression-hoister)
 (use ../../jlsl/prelude)
 
 (defn- make-let-macro [new-vars? bindings body]

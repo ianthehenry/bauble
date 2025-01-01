@@ -1,4 +1,5 @@
 (use ./import)
+(import ./expression-hoister)
 
 (thunk ~(as-macro ,jlsl/jlsl/declare :float nearest-distance []
   ```(nearest-distance)
@@ -9,3 +10,5 @@
   current distance field at the current value of `p` or `q`, for example to create
   a custom ambient occlusion value.
   ```))
+
+(thunk ~(setdyn ,expression-hoister/*hoisted-vars* (table/weak-keys 8)))

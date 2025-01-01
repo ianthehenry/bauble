@@ -1,4 +1,4 @@
-(import ../jlsl)
+(import ../../jlsl)
 
 # The idea is that we want to define some expensive expressions -- basically,
 # our lighting calculations -- that might be used by multiple different shapes.

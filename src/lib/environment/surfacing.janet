@@ -1,5 +1,5 @@
 (use ./import)
-(import ../expression-hoister)
+(import ./expression-hoister)
 
 (def- VERY_LARGE_DISTANCE 1e6)
 
@@ -64,8 +64,6 @@ You can manipulate this using `setdyn` or `with-dyns` like any other
 dynamic variable, but there is a dedicated `with-lights` function to
 set it in a way that fits nicely into a pipeline.
 ```)
-
-(thunk ~(setdyn ,expression-hoister/*hoisted-vars* (table/weak-keys 8)))
 
 # we need to make sure that the distance-function thunk has been
 # registered before the thunks we register here

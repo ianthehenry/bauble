@@ -6,7 +6,7 @@
 (import ./shape)
 (import ./environment/derive :prefix "environment/derive/")
 (import ../jlsl)
-(import ./expression-hoister)
+(import ./environment/expression-hoister)
 
 (defn- chunk-string [str]
   (var unread true)
