@@ -459,6 +459,7 @@ const Bauble = (props: BaubleProps) => {
   const origin2D = Signal.create(vec2.fromValues(0, 0));
   const evaluationState = Signal.create(EvaluationState.Unknown);
   const hasCustomCamera = Signal.create(false);
+  const customUniforms = Signal.create<Array<{name: string, type: string, value: any}>>([]);
   const isAnimated = Signal.create(false);
   const isVisible = Signal.create(false);
   const showExportEmbed = Signal.create(false);
@@ -502,17 +503,20 @@ const Bauble = (props: BaubleProps) => {
       Signal.set(evaluationState, EvaluationState.Unknown);
       const request = {tag: 'compile', script, renderType, crosshairs: true};
       const result: any = await wasmBox.send(request);
+
       if (result.isError) {
         Signal.set(evaluationState, EvaluationState.EvaluationError);
         flush(result.outputs);
       } else {
         try {
           //console.log(result.shaderSource);
+          console.log(result.uniforms);
           const shaderRecompilationTimeMs = await renderer.recompileShader(result.shaderSource) as number | undefined;
           Signal.set(dimension, result.dimension);
           Signal.set(isAnimated, result.isAnimated);
           Signal.set(hasCustomCamera, result.hasCustomCamera);
           Signal.set(evaluationState, EvaluationState.Success);
+          Signal.set(customUniforms, result.uniforms);
 
           flush(result.outputs);
           // TODO: this isn't really the best way to surface this information
@@ -577,6 +581,7 @@ const Bauble = (props: BaubleProps) => {
       quadSplitPoint: Signal.getter(quadSplitPoint),
       resolution: canvasResolution,
       crosshairs: crosshairs,
+      customUniforms: Signal.getter(customUniforms),
     });
 
     const modalVisible = createMemo(() => Signal.get(showExportEmbed));

@@ -6,6 +6,7 @@
 (import ../shape)
 
 (import ../environment/dynvars)
+(import ../environment/uniforms-private)
 # TODO: jlsl should probably just have a helper for this;
 # I don't like that this knows the representation of a
 # program
@@ -22,6 +23,8 @@
   (def default-2d-color (typecheck (get-var stdenv 'default-2d-color) jlsl/type/vec3))
   (def default-3d-color (typecheck (get-var stdenv 'default-3d-color) jlsl/type/vec3))
   (def background-color (jlsl/coerce-expr (get-var stdenv 'background-color)))
+
+  (def custom-uniforms (keys (in stdenv uniforms-private/*uniforms*)))
 
   (def background-color (case (jlsl/expr/type background-color)
     jlsl/type/vec3 (vec4 background-color 1)
@@ -56,6 +59,7 @@
     :pragmas ['(precision highp float)]
     :uniforms
       (filter truthy? [
+        ;custom-uniforms
         camera-type
         free-camera-target
         free-camera-orbit

@@ -1,5 +1,6 @@
 (use ./import)
 (import ./expression-hoister)
+(import ./uniforms-private)
 
 (thunk ~(as-macro ,jlsl/jlsl/declare :float nearest-distance []
   ```(nearest-distance)
@@ -12,3 +13,4 @@
   ```))
 
 (thunk ~(setdyn ,expression-hoister/*hoisted-vars* @{}))
+(thunk ~(setdyn ,uniforms-private/*uniforms* @{}))

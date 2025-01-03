@@ -17,3 +17,4 @@
 (import ./variables :prefix "" :export true)
 (import ../../jlsl/prelude :prefix "" :export true)
 (import ./operator-overloads :prefix "" :export true)
+(import ./uniforms :prefix "" :export true)

@@ -15,6 +15,7 @@ export type T = {
   quadSplitPoint: vec2,
   resolution: {width: number, height: number},
   crosshairs: vec3 | null,
+  customUniforms: Array<{name: string, type: string, value: any}>,
 };
 
 export type Accessors = {
@@ -29,6 +30,7 @@ export type Accessors = {
   quadSplitPoint: Signal.Accessor<vec2>,
   resolution: Signal.Accessor<{width: number, height: number}>,
   crosshairs: Signal.Accessor<vec3 | null>,
+  customUniforms: Signal.Accessor<Array<{name: string, type: string, value: any}>>,
 };
 
 export type Signals = {
@@ -43,6 +45,7 @@ export type Signals = {
   quadSplitPoint: Signal.T<vec2>,
   resolution: Signal.T<{width: number, height: number}>,
   crosshairs: Signal.T<vec3 | null>,
+  customUniforms: Signal.T<Array<{name: string, type: string, value: any}>>,
 };
 
 export function defaultSignals() {
@@ -57,7 +60,8 @@ export function defaultSignals() {
     quadView: Signal.create(false),
     quadSplitPoint: Signal.create(vec2.fromValues(0.5, 0.5)),
     resolution: Signal.create({width: 0, height: 0}),
-    crosshairs: Signal.create(null as vec3 | null),
+    crosshairs: Signal.create<vec3 | null>(null),
+    customUniforms: Signal.create<Array<{name: string, type: string, value: any}>>([]),
   };
 }
 
@@ -75,6 +79,7 @@ export function accessAll(accessors: Accessors): Signal.Accessor<T> {
       quadSplitPoint: accessors.quadSplitPoint(),
       resolution: accessors.resolution(),
       crosshairs: accessors.crosshairs(),
+      customUniforms: accessors.customUniforms(),
     };
   });
 };
@@ -92,6 +97,7 @@ export function getAll(signals: Signals): Accessors {
     quadSplitPoint: Signal.getter(signals.quadSplitPoint),
     resolution: Signal.getter(signals.resolution),
     crosshairs: Signal.getter(signals.crosshairs),
+    customUniforms: Signal.getter(signals.customUniforms),
   };
 };
 
@@ -108,5 +114,6 @@ export function setAll(signals: Signals, value: T) {
     Signal.set(signals.quadSplitPoint, value.quadSplitPoint);
     Signal.set(signals.resolution, value.resolution);
     Signal.set(signals.crosshairs, value.crosshairs);
+    Signal.set(signals.customUniforms, value.customUniforms);
   });
 }
