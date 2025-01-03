@@ -105,6 +105,19 @@ export default class Renderer {
     gl.uniform3fv(uCameraTarget, this.state.origin());
     gl.uniform2fv(uCameraOrbit, this.state.rotation());
     gl.uniform1f(uCameraZoom, this.state.zoom());
+
+    for (let uniform of this.state.customUniforms()) {
+      const {name, type, value} = uniform;
+      const location = gl.getUniformLocation(program, name);
+      switch (type) {
+      case 'float': gl.uniform1f(location, value.float); break;
+      case 'vec2': gl.uniform2fv(location, value.vec2); break;
+      case 'vec3': gl.uniform3fv(location, value.vec3); break;
+      case 'vec4': gl.uniform4fv(location, value.vec4); break;
+      default: throw new Error("unknown uniform type", {cause: uniform})
+      }
+    }
+
     const crosshairs = this.state.crosshairs();
     if (crosshairs) {
       gl.uniform4fv(uCrosshairs, vec4.fromValues(crosshairs[0], crosshairs[1], crosshairs[2], 1));

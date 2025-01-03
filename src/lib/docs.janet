@@ -51,6 +51,7 @@
     :camera "Camera"
     :combinators "Shape combinators"
     :gl "GLSL helpers"
+    :uniforms "Dynamic shaders"
     :repetition "Repetition"
     :noise "Noise"
     :transforms "Transformations"
@@ -226,6 +227,8 @@
       14 values
     Colors
       24 values
+    Dynamic shaders
+      2 values
     Rotation
       6 values
     GLSL helpers

@@ -191,6 +191,14 @@
     (void) nil
     (errorf "main must return void" return-type))
 
+  # this should actually probably check the compiled glsl name,
+  # so that `foo-bar` and `foo_bar` don't collide, but in practice
+  # this check only exists to catch someone making duplicate uniforms
+  # in a loop, so whatever
+  (loop [[name values] :pairs (group-by variable/name uniforms)]
+    (when (> (length values) 1)
+      (errorf "multiple uniforms named %s" name)))
+
   (each param implicit-params
     (def variable (param/var param))
     # TODO: distinguish between global in and global out variables
@@ -517,26 +525,16 @@
     }
   `))
 
-(deftest "uniforms with the same name get unique lexical identifiers"
-  (test-program [
+(deftest "uniforms with the same name error"
+  (test-error (program/new
     (uniform :float t)
     (defn :float foo [:float x]
       (return (+ x t)))
     (uniform :float t)
     (defn :void main []
       (return (+ t (foo 10))))
-    ] `
-    uniform float t;
-    uniform float t1;
-    
-    float foo(float x, float t) {
-      return x + t;
-    }
-    
-    void main() {
-      return t1 + foo(10.0, t);
-    }
-  `))
+    )
+    "multiple uniforms named t"))
 
 (deftest "only referenced functions are included"
   (test-function (do
@@ -733,7 +731,7 @@
     (jlsl/defn :float foo [:float x]
       (return (+ (+ free1 free2) (+ free3 free4)))) `
     float foo(float x, float free, float free1, float x1, float y) {
-      return (free + free1) + (x1 + y);
+      return (free1 + free) + (x1 + y);
     }
   `))
 

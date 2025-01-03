@@ -13,6 +13,17 @@ export function init() {
       case 'compile': {
         outputs = [];
         const result = runtime.evaluateScript(request.script, request.renderType, request.crosshairs) as any;
+        const uniforms = [];
+        const uniformCount = result.uniforms.size();
+        for (let i = 0; i < uniformCount; i++) {
+          const uniform = result.uniforms.get(i);
+          const value: {[key: string]: any} = {};
+          value[uniform.type] = uniform.value[uniform.type];
+          uniform.value = value;
+          uniforms.push(uniform);
+        }
+        result.uniforms.delete();
+        result.uniforms = uniforms;
         result.outputs = outputs;
         return result;
       }

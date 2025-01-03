@@ -1,6 +1,7 @@
 #include <emscripten.h>
 #include <emscripten/bind.h>
 #include <string>
+#include <array>
 #include <stdio.h>
 #include "janet.h"
 #include "autocomplete.h"
@@ -11,6 +12,20 @@ using std::string;
 static JanetFunction *janetfn_bauble_evaluate = NULL;
 static JanetFunction *janetfn_compile_to_glsl = NULL;
 static JanetFunction *janetfn_get_definitions = NULL;
+static JanetFunction *janetfn_get_uniforms = NULL;
+
+union Value {
+  double float_;
+  double vec2[2];
+  double vec3[3];
+  double vec4[4];
+};
+
+struct Uniform {
+  string name;
+  string type;
+  Value value;
+};
 
 struct CompilationResult {
   bool is_error;
@@ -18,6 +33,7 @@ struct CompilationResult {
   int dimension;
   bool is_animated;
   bool has_custom_camera;
+  std::vector<Uniform> uniforms;
   string error;
   double eval_time_ms;
   double compile_time_ms;
@@ -30,6 +46,7 @@ CompilationResult compilation_error(string message) {
     .dimension = -1,
     .is_animated = false,
     .has_custom_camera = false,
+    .uniforms = std::vector<Uniform>(),
     .error = message,
     .eval_time_ms = 0.0,
     .compile_time_ms = 0.0,
@@ -37,16 +54,57 @@ CompilationResult compilation_error(string message) {
 }
 
 CompilationResult evaluate_script(string source, int render_type, bool crosshairs) {
-  if (janetfn_compile_to_glsl == NULL) {
+  if (janetfn_compile_to_glsl == NULL || janetfn_get_uniforms == NULL) {
     fprintf(stderr, "unable to initialize compilation function\n");
     return compilation_error("function uninitialized");
   }
 
   double start_time = emscripten_get_now();
   Janet compiled_env;
-  const Janet args[1] = { janet_cstringv(source.c_str()) };
-  if (!call_fn(janetfn_bauble_evaluate, 1, args, &compiled_env)) {
+  const Janet evaluate_args[1] = { janet_cstringv(source.c_str()) };
+  if (!call_fn(janetfn_bauble_evaluate, 1, evaluate_args, &compiled_env)) {
     return compilation_error("evaluation error");
+  }
+  janet_gcroot(compiled_env);
+
+  Janet uniforms_value;
+  const Janet get_uniforms_args[1] = { compiled_env };
+  if (!call_fn(janetfn_get_uniforms, 1, get_uniforms_args, &uniforms_value)) {
+    janet_gcunroot(compiled_env);
+    return compilation_error("evaluation error");
+  }
+
+  JanetArray *uniforms_array = janet_unwrap_array(uniforms_value);
+  int32_t uniform_count = uniforms_array->count;
+  auto uniforms_vec = std::vector<Uniform>();
+  for (int32_t i = 0; i < uniform_count; i++) {
+    const Janet *uniform = janet_unwrap_tuple(uniforms_array->data[i]);
+    const JanetString name = janet_unwrap_string(uniform[0]);
+    const JanetString type = janet_unwrap_string(uniform[1]);
+    const Janet janet_value = uniform[2];
+    Value value;
+
+    if (janet_string_equal(type, janet_cstring("float"))) {
+      value = (Value){.float_ = janet_unwrap_number(janet_value)};
+    } else if (janet_string_equal(type, janet_cstring("vec2"))) {
+      const Janet *vec2 = janet_unwrap_tuple(janet_value);
+      value = (Value){.vec2 = {janet_unwrap_number(vec2[0]), janet_unwrap_number(vec2[1])}};
+    } else if (janet_string_equal(type, janet_cstring("vec3"))) {
+      const Janet *vec3 = janet_unwrap_tuple(janet_value);
+      value = (Value){.vec3 = {janet_unwrap_number(vec3[0]), janet_unwrap_number(vec3[1]), janet_unwrap_number(vec3[2])}};
+    } else if (janet_string_equal(type, janet_cstring("vec4"))) {
+      const Janet *vec4 = janet_unwrap_tuple(janet_value);
+      value = (Value){.vec4 = {janet_unwrap_number(vec4[0]), janet_unwrap_number(vec4[1]), janet_unwrap_number(vec4[2]), janet_unwrap_number(vec4[3])}};
+    } else {
+      janet_gcunroot(compiled_env);
+      return compilation_error("BUG: unknown type");
+    }
+
+    uniforms_vec.push_back((Uniform) {
+      .name = string((const char *)name),
+      .type = string((const char *)type),
+      .value = value,
+    });
   }
 
   double done_evaluating = emscripten_get_now();
@@ -60,6 +118,7 @@ CompilationResult evaluate_script(string source, int render_type, bool crosshair
   };
   Janet compilation_result;
   bool compilation_success = call_fn(janetfn_compile_to_glsl, arg_count, compile_to_glsl_args, &compilation_result);
+  janet_gcunroot(compiled_env);
 
   double done_compiling_glsl = emscripten_get_now();
   const uint8_t *shader_source;
@@ -89,9 +148,10 @@ CompilationResult evaluate_script(string source, int render_type, bool crosshair
    .dimension = dimension,
    .is_animated = is_animated,
    .has_custom_camera = has_custom_camera,
+   .uniforms = uniforms_vec,
    .error = "",
    .eval_time_ms = (done_evaluating - start_time),
-   .compile_time_ms = (done_compiling_glsl - done_evaluating)
+   .compile_time_ms = (done_compiling_glsl - done_evaluating),
   };
 }
 
@@ -119,6 +179,9 @@ int main() {
 
   janetfn_compile_to_glsl = env_lookup_function(bauble, "compile-to-glsl");
   janet_gcroot(janet_wrap_function(janetfn_compile_to_glsl));
+
+  janetfn_get_uniforms = env_lookup_function(bauble, "get-uniforms");
+  janet_gcroot(janet_wrap_function(janetfn_get_uniforms));
 }
 
 std::vector<Definition> get_definitions_aux() {
@@ -127,12 +190,43 @@ std::vector<Definition> get_definitions_aux() {
 
 EMSCRIPTEN_BINDINGS(module) {
   using namespace emscripten;
+
+  value_array<std::array<double, 2>>("vec2")
+    .element(emscripten::index<0>())
+    .element(emscripten::index<1>())
+    ;
+  value_array<std::array<double, 3>>("vec3")
+    .element(emscripten::index<0>())
+    .element(emscripten::index<1>())
+    .element(emscripten::index<2>())
+    ;
+  value_array<std::array<double, 4>>("vec4")
+    .element(emscripten::index<0>())
+    .element(emscripten::index<1>())
+    .element(emscripten::index<2>())
+    .element(emscripten::index<3>())
+    ;
+
+  value_object<Value>("Value")
+    .field("float", &Value::float_)
+    .field("vec2", &Value::vec2)
+    .field("vec3", &Value::vec3)
+    .field("vec4", &Value::vec4)
+    ;
+  value_object<Uniform>("Uniform")
+    .field("name", &Uniform::name)
+    .field("type", &Uniform::type)
+    .field("value", &Uniform::value)
+    ;
+
+  register_vector<Uniform>("UniformVector");
   value_object<CompilationResult>("CompilationResult")
     .field("isError", &CompilationResult::is_error)
     .field("shaderSource", &CompilationResult::shader_source)
     .field("dimension", &CompilationResult::dimension)
     .field("isAnimated", &CompilationResult::is_animated)
     .field("hasCustomCamera", &CompilationResult::has_custom_camera)
+    .field("uniforms", &CompilationResult::uniforms)
     .field("error", &CompilationResult::error)
     .field("evalTimeMs", &CompilationResult::eval_time_ms)
     .field("compileTimeMs", &CompilationResult::compile_time_ms)
