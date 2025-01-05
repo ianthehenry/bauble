@@ -42,21 +42,23 @@ function compileShader(gl: WebGLRenderingContext, type: number, source: string) 
 
 class Renderer {
   private gl: WebGLRenderingContext;
-  private canvas: HTMLCanvasElement;
   private program: WebGLProgram;
   private currentFragmentShader: WebGLShader | null = null;
-  private _positionLocation: number | null = null;
+  private positionLocation: number;
   private vertexBuffer: WebGLBuffer;
   private vertexData: Float32Array;
+  private uniformSetters: {[name: string]: (value: any) => void} = {};
 
-  constructor(canvas: HTMLCanvasElement, private state: {
+  constructor(private canvas: HTMLCanvasElement, opts: {
     time: number,
     rotation: [number, number],
     origin: [number, number, number],
     origin2D: [number, number],
     zoom: number,
+    source: string,
+    uniforms: {[name: string]: string},
   }) {
-    this.canvas = canvas;
+    const {source, uniforms} = opts;
     const gl = canvas.getContext('webgl2', { antialias: false, premultipliedAlpha: false });
     if (!gl) {
       throw new Error("failed to create webgl2 context");
@@ -64,6 +66,48 @@ class Renderer {
 
     const program = gl.createProgram()!;
     gl.attachShader(program, compileShader(gl, gl.VERTEX_SHADER, vertexSource));
+    gl.attachShader(program, compileShader(gl, gl.FRAGMENT_SHADER, source));
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      const info = gl.getProgramInfoLog(program);
+      throw new Error("failed to link shader", {cause: info});
+    }
+    gl.useProgram(program);
+
+    const uniformSetter = (name: string, type: string) => {
+      const location = gl.getUniformLocation(program, name);
+      switch (type) {
+      case 'float': return (value: number) => gl.uniform1f(location, value);
+      case 'vec2': return (value: [number, number]) => gl.uniform2fv(location, value);
+      case 'vec3': return (value: [number, number, number]) => gl.uniform3fv(location, value);
+      case 'vec4': return (value: [number, number, number, number]) => gl.uniform4fv(location, value);
+      case 'bool': return (value: boolean) => gl.uniform1f(location, value ? 1 : 0);
+      case 'int': return (value: number) => gl.uniform1i(location, value);
+      case 'ivec2': return (value: [number, number]) => gl.uniform2iv(location, value);
+      case 'ivec3': return (value: [number, number, number]) => gl.uniform3iv(location, value);
+      case 'ivec4': return (value: [number, number, number, number]) => gl.uniform4iv(location, value);
+      case 'uint': return (value: number) => gl.uniform1ui(location, value);
+      case 'uvec2': return (value: [number, number]) => gl.uniform2uiv(location, value);
+      case 'uvec3': return (value: [number, number, number]) => gl.uniform3uiv(location, value);
+      case 'uvec4': return (value: [number, number, number, number]) => gl.uniform4uiv(location, value);
+      default: throw new Error("unknown uniform type", {cause: type});
+      }
+    };
+
+    const addUniform = (name: string, type: string) => {
+      this.uniformSetters[name] = uniformSetter(name, type);
+    };
+
+    addUniform('t', 'float');
+    addUniform('free_camera_target', 'vec3');
+    addUniform('origin_2d', 'vec2');
+    addUniform('free_camera_orbit', 'vec2');
+    addUniform('free_camera_zoom', 'float');
+    addUniform('viewport', 'vec4');
+    addUniform('camera_type', 'int');
+    for (let name in opts.uniforms) {
+      addUniform(name, opts.uniforms[name]);
+    }
 
     // TODO: change if canvas resizes
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
@@ -86,69 +130,33 @@ class Renderer {
     this.program = program;
     this.vertexBuffer = vertexBuffer;
     this.vertexData = vertexData;
-  }
+    this.positionLocation = gl.getAttribLocation(program, 'position');
 
-  private get positionLocation(): number {
-    if (this._positionLocation == null) {
-      const {gl, program} = this;
-      this._positionLocation = gl.getAttribLocation(program, "position");
-    }
-    return this._positionLocation;
-  }
-
-  private setViewport() {
-    const {gl, program} = this;
-    const uViewport = gl.getUniformLocation(program, "viewport");
-    gl.uniform4fv(uViewport, [0, 0, this.canvas.width, this.canvas.height]);
-  }
-
-  private setSimpleUniforms() {
-    const {gl, program} = this;
-    const uT = gl.getUniformLocation(program, "t");
-    const uCameraTarget = gl.getUniformLocation(program, "free_camera_target");
-    const uOrigin2D = gl.getUniformLocation(program, "origin_2d");
-    const uCameraOrbit = gl.getUniformLocation(program, "free_camera_orbit");
-    const uCameraZoom = gl.getUniformLocation(program, "free_camera_zoom");
-
-    gl.uniform1f(uT, this.state.time);
-    gl.uniform3fv(uCameraTarget, this.state.origin);
-    gl.uniform2fv(uOrigin2D, this.state.origin2D);
-    gl.uniform2fv(uCameraOrbit, this.state.rotation);
-    gl.uniform1f(uCameraZoom, this.state.zoom);
+    this.uniformSetters.viewport([0, 0, this.canvas.width, this.canvas.height]);
+    this.uniformSetters.t(opts.time);
+    this.uniformSetters.free_camera_target(opts.origin);
+    this.uniformSetters.origin_2d(opts.origin2D);
+    this.uniformSetters.free_camera_orbit(opts.rotation);
+    this.uniformSetters.free_camera_zoom(opts.zoom);
+    this.uniformSetters.camera_type(CameraType.Custom);
   }
 
   draw() {
-    this.setSimpleUniforms();
     const {gl, program, vertexBuffer, vertexData, positionLocation} = this;
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, vertexData, gl.STATIC_DRAW);
     gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(positionLocation);
-    const uCameraType = gl.getUniformLocation(program, "camera_type");
-    gl.uniform1i(uCameraType, CameraType.Custom);
-    this.setViewport();
     gl.drawArrays(gl.TRIANGLES, 0, 6);
     gl.finish();
   }
 
-  recompileShader(source: string) {
-    const {gl, program} = this;
-    const fragmentShader = compileShader(gl, gl.FRAGMENT_SHADER, source);
-    gl.attachShader(program, fragmentShader);
-    gl.linkProgram(program);
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      const info = gl.getProgramInfoLog(program);
-      throw new Error("failed to link shader program", {cause: info});
-    }
-    gl.useProgram(program);
-  }
-
   setUniform(name: string, value: any) {
-    if (name === 't') {
-      this.state.time = checkNumber(value);
-    } else {
-      throw new Error("unknown uniform");
+    let setter = this.uniformSetters[name];
+    if (setter == null) {
+      throw new Error("unknown uniform", {cause: name});
     }
+    setter(value);
   }
 }
 
@@ -156,6 +164,7 @@ export default function Bauble(canvas: HTMLCanvasElement, opts: {
   source: string,
   animate?: boolean,
   dimensions?: number,
+  uniforms?: any,
 }) {
   const source = opts.source;
   if (source == null) {
@@ -163,15 +172,16 @@ export default function Bauble(canvas: HTMLCanvasElement, opts: {
   }
   const animate = opts.animate ?? false;
   const dimensions = opts.dimensions ?? 3;
+  const uniforms = opts.uniforms ?? {};
   const renderer = new Renderer(canvas, {
     time: 0,
     rotation: [0.1, -0.1],
     origin: [0, 0, 0],
     origin2D: [0, 0],
     zoom: 1,
+    source,
+    uniforms,
   });
-
-  renderer.recompileShader(source);
 
   let time = 0;
   let isTimeAdvancing = animate;
@@ -215,7 +225,7 @@ export default function Bauble(canvas: HTMLCanvasElement, opts: {
 
   return {
     draw: draw,
-    playPause: function(value: boolean) {
+    togglePlay: function(value: boolean) {
       if (arguments.length === 0) {
         isTimeAdvancing = !isTimeAdvancing;
       } else {
@@ -225,6 +235,18 @@ export default function Bauble(canvas: HTMLCanvasElement, opts: {
         draw();
       }
     },
-    setTime: setTime,
+    set: function() {
+      if (arguments.length === 2) {
+        renderer.setUniform(arguments[0], arguments[1]);
+      } else if (arguments.length === 1 && typeof arguments[0] === 'object') {
+        const uniforms = arguments[0];
+        for (let name in uniforms) {
+          renderer.setUniform(name, uniforms[name])
+        }
+      } else {
+        throw new Error("illegal call", {cause: arguments});
+      }
+      draw();
+    },
   };
 };

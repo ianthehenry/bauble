@@ -128,15 +128,25 @@ const ExportEmbedDialog = (props: {
     if (result.isError) {
       set("error");
     } else {
-      const options = [
-        result.dimension !== 3 ? ['dimension', result.dimension.toString()] : null,
-        result.isAnimated ? ['animate', 'true'] : null,
-        result.hasCustomCamera ? ['freeCamera', (!result.hasCustomCamera).toString()] : null,
-        ['source', '`' + result.shaderSource.trim() + '`']
-      ].filter((opt) => opt != null)
-      .map((kv) => '  ' + kv.join(': '))
-      .join(',\n');
-      set(`new Bauble(canvas, {\n${options}\n})`);
+      const options: any = {source: result.shaderSource};
+      if (result.dimension !== 3) {
+        options.dimension = result.dimension;
+      }
+      if (result.isAnimated) {
+        options.animate = true;
+      }
+      if (!result.hasCustomCamera) {
+        options.freeCamera = true;
+      }
+      if (result.uniforms.length > 0) {
+        const uniforms: any = {};
+        for (let {name, type} of result.uniforms) {
+          uniforms[name] = type;
+        }
+        options.uniforms = uniforms;
+      }
+
+      set(`const bauble = new Bauble(canvas, ${JSON.stringify(options, null, 2)});`);
     }
   }
 
@@ -510,7 +520,6 @@ const Bauble = (props: BaubleProps) => {
       } else {
         try {
           //console.log(result.shaderSource);
-          console.log(result.uniforms);
           const shaderRecompilationTimeMs = await renderer.recompileShader(result.shaderSource) as number | undefined;
           Signal.set(dimension, result.dimension);
           Signal.set(isAnimated, result.isAnimated);
