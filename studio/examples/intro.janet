@@ -26,9 +26,8 @@
 # around with your mouse, and scroll to
 # move the camera in and out. If you
 # get disoriented, you can reset the
-# camera by pressing the box icon in
-# the top-left corner of the preview
-# window.
+# camera by double-clicking or pressing
+# alt-r.
 
 # This text field is a Janet program
 # (https://janet-lang.org/) that runs
@@ -56,15 +55,15 @@
 # Whoa. Okay enough with the demos for a
 # minute.
 
-# Bauble is actually a tool for
-# composing "signed distance functions."
-# Signed distance functions (or SDFs)
-# are a different way to represent 3D
-# shapes than you might be used to.
-# Instead of triangles and vertices,
-# SDFs represent shapes as pure
-# functions of space, in a form that
-# lets us "raymarch" those shapes in
+# Bauble is a tool for composing "signed
+# distance functions." Signed distance
+# functions (or SDFs) are a different
+# way to represent 3D shapes than you
+# might be used to. Instead of
+# triangles and vertices, SDFs
+# represent shapes as pure functions of
+# space, in a form that lets
+# us "raymarch" those shapes in
 # realtime.
 
 # There are already a lot of great
@@ -91,8 +90,8 @@
 
 # None of this is very complicated! Once
 # you understand how SDFs work, you can
-# write a basic raymarcher in like ten
-# minutes. But there are a lot of
+# write a basic raymarcher in thirty
+# lines of code. But there are a lot of
 # different SDFs and SDF combinators
 # and procedural noise functions and
 # other things that you might want to
@@ -216,14 +215,6 @@
 # Sorry. Bauble is pretty new and I
 # have a baby to keep alive.
 
-# In the meantime, join the Bauble
-# Discord:
+# This video has a few tidbits, though:
 #
-# https://discord.gg/NzR375gJH6
-#
-# Or reach out to me on Twitter:
-#
-# https://twitter.com/ianthehenry
-#
-# To apply some social pressure to help
-# me to finish it.
+# https://www.youtube.com/watch?v=XHNBRAgD4f4
