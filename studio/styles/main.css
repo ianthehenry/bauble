@@ -355,6 +355,7 @@ body.main-page {
     &.export-embed textarea {
       margin: 1rem 0;
       resize: vertical;
+      white-space: pre;
     }
 
     > div {

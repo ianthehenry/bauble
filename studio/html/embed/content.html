@@ -1,37 +1,198 @@
-<p>Okay this is the embed part.</p>
-
 <style type="text/css">
-  div.example { display: flex; flex-direction: column; align-items: center; }
+  div.example {
+    accent-color: var(--blue);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    canvas {
+      border-radius: 4px;
+      width: 50%;
+      aspect-ratio: 1/1;
+      &:focus {
+        outline: solid 2px var(--blue);
+      }
+    }
+    canvas, input {
+      align-self: center;
+    }
+    pre {
+      max-width: 100%;
+      overflow: auto;
+      background-color:rgba(0, 0, 0, 0.1);
+      border-radius: 4px;
+      padding: 0.5rem;
+      box-sizing: border-box;
+    }
+  }
 </style>
 
-<div class="example" id="example-one">
-  <canvas style="image-rendering: pixelated; width: 512px; height: 256px;" width="128" height="64"></canvas>
-  <input type="range" autocomplete="off" value="0" min="0" max="1" step="0.001" />
+<div class="example">
+  <h1>Basic Bauble</h1>
+  <p>An animation with the default camera controls:</p>
+  <pre>/*
+(morph (osc t 4 | ss 0.1 0.9)
+  (octahedron (sqrt 2 * 100) | rotate y pi/4)
+  (box 100))
+*/
+const canvas = root.querySelector('canvas');
+canvas.width = canvas.clientWidth * window.devicePixelRatio;
+canvas.height = canvas.clientHeight * window.devicePixelRatio;
+const bauble = new Bauble(canvas, {
+  source: "#version 300 es\nprecision highp float;\n\nstruct Ray {\n  vec3 origin;\n  vec3 direction;\n};\n\nout vec4 frag_color;\n\nuniform int camera_type;\nuniform vec3 free_camera_target;\nuniform vec2 free_camera_orbit;\nuniform float free_camera_zoom;\nuniform vec2 origin_2d;\nuniform float t;\nuniform vec4 viewport;\n\nmat2 rotation_2d(float angle) {\n  float s = sin(angle);\n  float c = cos(angle);\n  return mat2(c, s, -s, c);\n}\n\nfloat max_(vec2 v) {\n  return max(v.x, v.y);\n}\n\nmat3 rotation_y(float angle) {\n  float s = sin(angle);\n  float c = cos(angle);\n  return mat3(c, 0.0, -s, 0.0, 1.0, 0.0, s, 0.0, c);\n}\n\nmat3 rotation_x(float angle) {\n  float s = sin(angle);\n  float c = cos(angle);\n  return mat3(1.0, 0.0, 0.0, 0.0, c, s, 0.0, -s, c);\n}\n\nvec3 perspective_vector(float fov, vec2 frag_coord) {\n  float cot_half_fov = tan(radians(90.0 - (fov * 0.5)));\n  return normalize(vec3(frag_coord, cot_half_fov));\n}\n\nfloat sdf_octahedron(float radius, vec3 p) {\n  vec3 p1 = abs(p);\n  float m = ((p1.x + p1.y) + p1.z) - radius;\n  vec3 q = vec3(0.0, 0.0, 0.0);\n  if ((3.0 * p1.x) < m) q = p1.xyz;\n  else if ((3.0 * p1.y) < m) q = p1.yzx;\n  else if ((3.0 * p1.z) < m) q = p1.zxy;\n  else return m * (sqrt(3.0) / 3.0);\n  float k = clamp(((q.z - q.y) + radius) * 0.5, 0.0, radius);\n  return length(vec3(q.x, (q.y - radius) + k, q.z - k));\n}\n\nfloat rotate_outer(vec3 p) {\n  {\n    vec3 p1 = p * rotation_y(0.785398163397448);\n    return sdf_octahedron(141.42135623731, p1);\n  }\n}\n\nfloat max_1(vec3 v) {\n  return max(v.x, max(v.y, v.z));\n}\n\nfloat sdf_cube(float size, vec3 p) {\n  vec3 d = abs(p) - size;\n  return length(max(d, 0.0)) + min(max_1(d), 0.0);\n}\n\nfloat nearest_distance(vec3 p, float t) {\n  return mix(rotate_outer(p), sdf_cube(100.0, p), smoothstep(0.1, 0.9, (1.0 * (1.0 - ((cos((6.28318530717959 * t) / 4.0) + 1.0) * 0.5))) + 0.0));\n}\n\nfloat march(out uint steps, Ray ray, float t) {\n  float ray_depth = 0.0;\n  for (steps = 0u; steps < 256u; ++steps) {\n    {\n      float depth = ray_depth;\n      vec3 P = ray.origin + (ray_depth * ray.direction);\n      vec3 p = P;\n      float dist = nearest_distance(p, t);\n      if (((dist >= 0.0) && (dist < 0.1)) || (ray_depth > 65536.0)) return ray_depth;\n      float rate = (dist > 0.0) ? 0.95 : 1.05;\n      ray_depth += dist * rate;\n      if (ray_depth < 0.0) return 0.0;\n    }\n  }\n  return ray_depth;\n}\n\nfloat with_outer(vec3 p, float t) {\n  {\n    vec3 p1 = (vec2(1.0, -1.0).xyy * 0.005) + p;\n    return nearest_distance(p1, t);\n  }\n}\n\nfloat with_outer1(vec3 p, float t) {\n  {\n    vec3 p1 = (vec2(1.0, -1.0).yyx * 0.005) + p;\n    return nearest_distance(p1, t);\n  }\n}\n\nfloat with_outer2(vec3 p, float t) {\n  {\n    vec3 p1 = (vec2(1.0, -1.0).yxy * 0.005) + p;\n    return nearest_distance(p1, t);\n  }\n}\n\nfloat with_outer3(vec3 p, float t) {\n  {\n    vec3 p1 = (vec2(1.0, -1.0).xxx * 0.005) + p;\n    return nearest_distance(p1, t);\n  }\n}\n\nvec3 do_(vec2 Frag_Coord, vec2 resolution) {\n  const vec3 light = pow(vec3(69.0, 72.0, 79.0) / 255.0, vec3(2.2));\n  const vec3 dark = pow(vec3(40.0, 42.0, 46.0) / 255.0, vec3(2.2));\n  return vec3(mix(dark, light, (Frag_Coord.x + Frag_Coord.y) / (resolution.x + resolution.y)));\n}\n\nfloat fresnel(float exponent, vec3 normal, Ray ray) {\n  return pow(1.0 + dot(normal, ray.direction), exponent);\n}\n\nvec4 sample_(vec2 Frag_Coord, int camera_type, vec2 frag_coord, vec2 free_camera_orbit, vec3 free_camera_target, float free_camera_zoom, vec2 resolution, float t) {\n  Ray ray_star = Ray(vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0));\n  vec3 ortho_quad = vec3(1024.0, (frag_coord * 212.077343935025) * free_camera_zoom);\n  float ortho_scale = 212.077343935025 * free_camera_zoom;\n  float fov = 0.0;\n  switch (camera_type) {\n  case 0: case 1: {\n    mat3 camera_rotation_matrix = rotation_y(6.28318530717959 * free_camera_orbit.x) * rotation_x(6.28318530717959 * free_camera_orbit.y);\n    ray_star = Ray((camera_rotation_matrix * vec3(0.0, 0.0, 512.0 * free_camera_zoom)) + free_camera_target, camera_rotation_matrix * (perspective_vector(45.0, frag_coord) * vec3(1.0, 1.0, -1.0)));\n    fov = 45.0;\n    break;\n  }\n  case 2: {\n    ray_star = Ray(ortho_quad.yxz + free_camera_target, vec3(0.0, -1.0, 0.0));\n    break;\n  }\n  case 3: {\n    ray_star = Ray(ortho_quad.yzx + free_camera_target, vec3(0.0, 0.0, -1.0));\n    break;\n  }\n  case 4: {\n    ray_star = Ray(ortho_quad.xzy + free_camera_target, vec3(-1.0, 0.0, 0.0));\n    break;\n  }\n  }\n  uint steps = 0u;\n  {\n    Ray ray = ray_star;\n    float depth = march(steps, ray, t);\n    vec3 P = ray.origin + (ray.direction * depth);\n    vec3 p = P;\n    float dist = nearest_distance(p, t);\n    vec3 normal = normalize((vec2(1.0, -1.0).xyy * with_outer(p, t)) + (vec2(1.0, -1.0).yyx * with_outer1(p, t)) + (vec2(1.0, -1.0).yxy * with_outer2(p, t)) + (vec2(1.0, -1.0).xxx * with_outer3(p, t)));\n    vec4 color = vec4(0.0);\n    color = (dist >= 10.0) ? vec4(do_(Frag_Coord, resolution), 1.0) : vec4(mix((normal + 1.0) * 0.5, vec3(1.0, 1.0, 1.0), fresnel(5.0, normal, ray)), 1.0);\n    return color;\n  }\n}\n\nvec3 pow_(vec3 v, float e) {\n  return pow(v, vec3(e));\n}\n\nvoid main() {\n  const float gamma = 2.2;\n  vec3 color = vec3(0.0, 0.0, 0.0);\n  float alpha = 0.0;\n  const uint aa_grid_size = 1u;\n  const float aa_sample_width = 1.0 / float(1u + aa_grid_size);\n  const vec2 pixel_origin = vec2(0.5, 0.5);\n  vec2 local_frag_coord = gl_FragCoord.xy - viewport.xy;\n  mat2 rotation = rotation_2d(0.2);\n  for (uint y = 1u; y <= aa_grid_size; ++y) {\n    for (uint x = 1u; x <= aa_grid_size; ++x) {\n      vec2 sample_offset = (aa_sample_width * vec2(float(x), float(y))) - pixel_origin;\n      sample_offset = rotation * sample_offset;\n      sample_offset = fract(sample_offset + pixel_origin) - pixel_origin;\n      {\n        vec2 Frag_Coord = local_frag_coord + sample_offset;\n        vec2 resolution = viewport.zw;\n        vec2 frag_coord = ((Frag_Coord - (0.5 * resolution)) / max_(resolution)) * 2.0;\n        vec4 this_sample = clamp(sample_(Frag_Coord, camera_type, frag_coord, free_camera_orbit, free_camera_target, free_camera_zoom, resolution, t), 0.0, 1.0);\n        color += this_sample.rgb * this_sample.a;\n        alpha += this_sample.a;\n      }\n    }\n  }\n  if (alpha > 0.0) {\n    color = color / alpha;\n    alpha /= float(aa_grid_size * aa_grid_size);\n  }\n  frag_color = vec4(pow_(color, 1.0 / gamma), alpha);\n}\n",
+  animate: true,
+  freeCamera: true
+});</pre>
+  <canvas></canvas>
+  <p>Notice that although we size the canvas using CSS, we set the <code>width</code> and
+    <code>height</code> properties using JavaScript, in order to account for different screen
+    pixel densities.
+  </p>
+  <p>
+    By including <code>freeCamera: true</code>, the Bauble player will add event listeners to
+    the canvas element to rotate the camera. Bauble doesn't add events for zooming or panning,
+    but you can add events to control the camera manually if you want.
+  </p>
+  </p>
+</div>
+
+<div class="example">
+  <h1>Controlling the free camera</h1>
+  <p>
+    If the default camera controls aren't working for you, you can use <code>.setCamera()</code>
+    to manually set <code>rotation</code>, <code>zoom</code>, or <code>target</code> properies,
+    and you can use <code>interaction: false</code> to disable the built-in rotation handlers.
+  </p>
+  <pre>/*
+(morph (osc t 4 | ss 0.1 0.9)
+  (octahedron (sqrt 2 * 100) | rotate y pi/4)
+  (box 100))
+*/
+const canvas = root.querySelector('canvas');
+const [sliderX, sliderY] = root.querySelectorAll('input');
+canvas.width = canvas.clientWidth * window.devicePixelRatio;
+canvas.height = canvas.clientHeight * window.devicePixelRatio;
+const bauble = new Bauble(canvas, {
+  source: "#version 300 es\nprecision highp float;\n\nstruct Ray {\n  vec3 origin;\n  vec3 direction;\n};\n\nout vec4 frag_color;\n\nuniform int camera_type;\nuniform vec3 free_camera_target;\nuniform vec2 free_camera_orbit;\nuniform float free_camera_zoom;\nuniform vec2 origin_2d;\nuniform float t;\nuniform vec4 viewport;\n\nmat2 rotation_2d(float angle) {\n  float s = sin(angle);\n  float c = cos(angle);\n  return mat2(c, s, -s, c);\n}\n\nfloat max_(vec2 v) {\n  return max(v.x, v.y);\n}\n\nmat3 rotation_y(float angle) {\n  float s = sin(angle);\n  float c = cos(angle);\n  return mat3(c, 0.0, -s, 0.0, 1.0, 0.0, s, 0.0, c);\n}\n\nmat3 rotation_x(float angle) {\n  float s = sin(angle);\n  float c = cos(angle);\n  return mat3(1.0, 0.0, 0.0, 0.0, c, s, 0.0, -s, c);\n}\n\nvec3 perspective_vector(float fov, vec2 frag_coord) {\n  float cot_half_fov = tan(radians(90.0 - (fov * 0.5)));\n  return normalize(vec3(frag_coord, cot_half_fov));\n}\n\nfloat sdf_octahedron(float radius, vec3 p) {\n  vec3 p1 = abs(p);\n  float m = ((p1.x + p1.y) + p1.z) - radius;\n  vec3 q = vec3(0.0, 0.0, 0.0);\n  if ((3.0 * p1.x) < m) q = p1.xyz;\n  else if ((3.0 * p1.y) < m) q = p1.yzx;\n  else if ((3.0 * p1.z) < m) q = p1.zxy;\n  else return m * (sqrt(3.0) / 3.0);\n  float k = clamp(((q.z - q.y) + radius) * 0.5, 0.0, radius);\n  return length(vec3(q.x, (q.y - radius) + k, q.z - k));\n}\n\nfloat rotate_outer(vec3 p) {\n  {\n    vec3 p1 = p * rotation_y(0.785398163397448);\n    return sdf_octahedron(141.42135623731, p1);\n  }\n}\n\nfloat max_1(vec3 v) {\n  return max(v.x, max(v.y, v.z));\n}\n\nfloat sdf_cube(float size, vec3 p) {\n  vec3 d = abs(p) - size;\n  return length(max(d, 0.0)) + min(max_1(d), 0.0);\n}\n\nfloat nearest_distance(vec3 p, float t) {\n  return mix(rotate_outer(p), sdf_cube(100.0, p), smoothstep(0.1, 0.9, (1.0 * (1.0 - ((cos((6.28318530717959 * t) / 4.0) + 1.0) * 0.5))) + 0.0));\n}\n\nfloat march(out uint steps, Ray ray, float t) {\n  float ray_depth = 0.0;\n  for (steps = 0u; steps < 256u; ++steps) {\n    {\n      float depth = ray_depth;\n      vec3 P = ray.origin + (ray_depth * ray.direction);\n      vec3 p = P;\n      float dist = nearest_distance(p, t);\n      if (((dist >= 0.0) && (dist < 0.1)) || (ray_depth > 65536.0)) return ray_depth;\n      float rate = (dist > 0.0) ? 0.95 : 1.05;\n      ray_depth += dist * rate;\n      if (ray_depth < 0.0) return 0.0;\n    }\n  }\n  return ray_depth;\n}\n\nfloat with_outer(vec3 p, float t) {\n  {\n    vec3 p1 = (vec2(1.0, -1.0).xyy * 0.005) + p;\n    return nearest_distance(p1, t);\n  }\n}\n\nfloat with_outer1(vec3 p, float t) {\n  {\n    vec3 p1 = (vec2(1.0, -1.0).yyx * 0.005) + p;\n    return nearest_distance(p1, t);\n  }\n}\n\nfloat with_outer2(vec3 p, float t) {\n  {\n    vec3 p1 = (vec2(1.0, -1.0).yxy * 0.005) + p;\n    return nearest_distance(p1, t);\n  }\n}\n\nfloat with_outer3(vec3 p, float t) {\n  {\n    vec3 p1 = (vec2(1.0, -1.0).xxx * 0.005) + p;\n    return nearest_distance(p1, t);\n  }\n}\n\nvec3 do_(vec2 Frag_Coord, vec2 resolution) {\n  const vec3 light = pow(vec3(69.0, 72.0, 79.0) / 255.0, vec3(2.2));\n  const vec3 dark = pow(vec3(40.0, 42.0, 46.0) / 255.0, vec3(2.2));\n  return vec3(mix(dark, light, (Frag_Coord.x + Frag_Coord.y) / (resolution.x + resolution.y)));\n}\n\nfloat fresnel(float exponent, vec3 normal, Ray ray) {\n  return pow(1.0 + dot(normal, ray.direction), exponent);\n}\n\nvec4 sample_(vec2 Frag_Coord, int camera_type, vec2 frag_coord, vec2 free_camera_orbit, vec3 free_camera_target, float free_camera_zoom, vec2 resolution, float t) {\n  Ray ray_star = Ray(vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0));\n  vec3 ortho_quad = vec3(1024.0, (frag_coord * 212.077343935025) * free_camera_zoom);\n  float ortho_scale = 212.077343935025 * free_camera_zoom;\n  float fov = 0.0;\n  switch (camera_type) {\n  case 0: case 1: {\n    mat3 camera_rotation_matrix = rotation_y(6.28318530717959 * free_camera_orbit.x) * rotation_x(6.28318530717959 * free_camera_orbit.y);\n    ray_star = Ray((camera_rotation_matrix * vec3(0.0, 0.0, 512.0 * free_camera_zoom)) + free_camera_target, camera_rotation_matrix * (perspective_vector(45.0, frag_coord) * vec3(1.0, 1.0, -1.0)));\n    fov = 45.0;\n    break;\n  }\n  case 2: {\n    ray_star = Ray(ortho_quad.yxz + free_camera_target, vec3(0.0, -1.0, 0.0));\n    break;\n  }\n  case 3: {\n    ray_star = Ray(ortho_quad.yzx + free_camera_target, vec3(0.0, 0.0, -1.0));\n    break;\n  }\n  case 4: {\n    ray_star = Ray(ortho_quad.xzy + free_camera_target, vec3(-1.0, 0.0, 0.0));\n    break;\n  }\n  }\n  uint steps = 0u;\n  {\n    Ray ray = ray_star;\n    float depth = march(steps, ray, t);\n    vec3 P = ray.origin + (ray.direction * depth);\n    vec3 p = P;\n    float dist = nearest_distance(p, t);\n    vec3 normal = normalize((vec2(1.0, -1.0).xyy * with_outer(p, t)) + (vec2(1.0, -1.0).yyx * with_outer1(p, t)) + (vec2(1.0, -1.0).yxy * with_outer2(p, t)) + (vec2(1.0, -1.0).xxx * with_outer3(p, t)));\n    vec4 color = vec4(0.0);\n    color = (dist >= 10.0) ? vec4(do_(Frag_Coord, resolution), 1.0) : vec4(mix((normal + 1.0) * 0.5, vec3(1.0, 1.0, 1.0), fresnel(5.0, normal, ray)), 1.0);\n    return color;\n  }\n}\n\nvec3 pow_(vec3 v, float e) {\n  return pow(v, vec3(e));\n}\n\nvoid main() {\n  const float gamma = 2.2;\n  vec3 color = vec3(0.0, 0.0, 0.0);\n  float alpha = 0.0;\n  const uint aa_grid_size = 1u;\n  const float aa_sample_width = 1.0 / float(1u + aa_grid_size);\n  const vec2 pixel_origin = vec2(0.5, 0.5);\n  vec2 local_frag_coord = gl_FragCoord.xy - viewport.xy;\n  mat2 rotation = rotation_2d(0.2);\n  for (uint y = 1u; y <= aa_grid_size; ++y) {\n    for (uint x = 1u; x <= aa_grid_size; ++x) {\n      vec2 sample_offset = (aa_sample_width * vec2(float(x), float(y))) - pixel_origin;\n      sample_offset = rotation * sample_offset;\n      sample_offset = fract(sample_offset + pixel_origin) - pixel_origin;\n      {\n        vec2 Frag_Coord = local_frag_coord + sample_offset;\n        vec2 resolution = viewport.zw;\n        vec2 frag_coord = ((Frag_Coord - (0.5 * resolution)) / max_(resolution)) * 2.0;\n        vec4 this_sample = clamp(sample_(Frag_Coord, camera_type, frag_coord, free_camera_orbit, free_camera_target, free_camera_zoom, resolution, t), 0.0, 1.0);\n        color += this_sample.rgb * this_sample.a;\n        alpha += this_sample.a;\n      }\n    }\n  }\n  if (alpha > 0.0) {\n    color = color / alpha;\n    alpha /= float(aa_grid_size * aa_grid_size);\n  }\n  frag_color = vec4(pow_(color, 1.0 / gamma), alpha);\n}\n",
+  animate: true,
+  freeCamera: true,
+  interaction: false,
+});
+let zoom = 1;
+canvas.addEventListener('wheel', (e) => {
+  if (document.activeElement !== canvas) {
+    return;
+  }
+  e.preventDefault();
+  zoom = zoom + 0.005 * e.deltaY;
+  zoom = Math.max(zoom, 0.5);
+  zoom = Math.min(zoom, 2);
+  bauble.setCamera({zoom});
+});
+const rotation = [sliderX.valueAsNumber, sliderY.valueAsNumber];
+sliderX.addEventListener('input', (e) => {
+  rotation[0] = e.currentTarget.valueAsNumber;
+  bauble.setCamera({rotation});
+});
+sliderY.addEventListener('input', (e) => {
+  rotation[1] = e.currentTarget.valueAsNumber;
+  bauble.setCamera({rotation});
+});
+</pre>
+  <canvas tabindex="-1"></canvas>
+  <input type="range" autocomplete="off" value="0.125" min="-0.125" max="0.125" step="0.01" />
+  <input type="range" autocomplete="off" value="-0.125" min="-0.125" max="0.125" step="0.01" />
+  <p>
+    In this example, zooming only works once you click the canvas to focus it. And since canvas elements
+    aren't focusable by default, it includes a <code>tabindex="-1"</code> in order to make that possible.
+    This prevents hijacking scroll events, which is nice on a page like this with multiple Baubles and
+    normal scroll behavior. But it's unnecessary for a fullscreen example.
+  </p>
+</div>
+
+<div class="example">
+  <h1>Custom camera</h1>
+  <p>
+  </p>
+  <pre>/*
+*/
+</pre>
+  <canvas></canvas>
+</div>
+
+<div class="example">
+  <h1>Custom uniforms</h1>
+  <p>
+  </p>
+  <pre>/*
+*/
+</pre>
+  <canvas></canvas>
+</div>
+
+<div class="example">
+  <h1>Rendering when scrolled off screen</h1>
+  <p>
+    If you have an animated Bauble, it will render every frame,
+    even if the canvas is no longer visible. If you're making a page
+    with lots of embedded Baubles -- like this one -- this is pretty
+    inefficient. You only really need to render the canvases that are
+    currently visible on screen.
+  </p>
+  <p>
+    You can avoid rendering offscreen canvases by adding an intersection
+    observer that toggles pausing as soon as it goes off screen.
+  </p>
+  <pre>/*
+*/
+</pre>
+  <canvas></canvas>
+</div>
+
+<div class="example">
+  <h1>Fat pixels</h1>
+  <p>
+    You don't have to render canvases at the native resolution. If you use
+    <code>image-rendering: pixelated</code> you can scale a canvas up. Combine it
+    with a filter to lower the color depth, and you can make a retro effect:
+  </p>
+  <pre>/*
+(def gamma 2.2)
+(def size 30)
+(union :r (uniform 0 "radius")
+  (torus x (size * 2) size | move y size)
+  (torus z (size * 2) size | move y (- size))
+| shade sky :g 2 | tint white (fresnel 3 * 0.25)
+| map-color (fn [c]
+  (gl/if (floor Frag-Coord | sum | mod 2 | = 0)
+    (c | pow (/ gamma) | quantize 8 | pow gamma)
+    c))
+| rotate y (t * 0.5))
+*/
+const canvas = root.querySelector('canvas');
+const slider = root.querySelector('input');
+const bauble = new Bauble(canvas, {
+  source: "#version 300 es\nprecision highp float;\n\nstruct Ray {\n  vec3 origin;\n  vec3 direction;\n};\nstruct Light {\n  vec3 color;\n  vec3 direction;\n  float brightness;\n};\n\nout vec4 frag_color;\n\nuniform float radius;\nuniform int camera_type;\nuniform vec3 free_camera_target;\nuniform vec2 free_camera_orbit;\nuniform float free_camera_zoom;\nuniform vec2 origin_2d;\nuniform float t;\nuniform vec4 viewport;\n\nmat2 rotation_2d(float angle) {\n  float s = sin(angle);\n  float c = cos(angle);\n  return mat2(c, s, -s, c);\n}\n\nfloat max_(vec2 v) {\n  return max(v.x, v.y);\n}\n\nmat3 rotation_y(float angle) {\n  float s = sin(angle);\n  float c = cos(angle);\n  return mat3(c, 0.0, -s, 0.0, 1.0, 0.0, s, 0.0, c);\n}\n\nmat3 rotation_x(float angle) {\n  float s = sin(angle);\n  float c = cos(angle);\n  return mat3(1.0, 0.0, 0.0, 0.0, c, s, 0.0, -s, c);\n}\n\nvec3 perspective_vector(float fov, vec2 frag_coord) {\n  float cot_half_fov = tan(radians(90.0 - (fov * 0.5)));\n  return normalize(vec3(frag_coord, cot_half_fov));\n}\n\nfloat sdf_torus_x(float radius, float thickness, vec3 p) {\n  vec2 other_axes = p.zy;\n  float this_axis = p.x;\n  return length(vec2(length(other_axes) - radius, this_axis)) - thickness;\n}\n\nfloat move_outer(vec3 p) {\n  {\n    vec3 p1 = p - (vec3(0.0, 1.0, 0.0) * 30.0);\n    return sdf_torus_x(60.0, 30.0, p1);\n  }\n}\n\nfloat sdf_torus_z(float radius, float thickness, vec3 p) {\n  vec2 other_axes = p.xy;\n  float this_axis = p.z;\n  return length(vec2(length(other_axes) - radius, this_axis)) - thickness;\n}\n\nfloat move_outer1(vec3 p) {\n  {\n    vec3 p1 = p - (vec3(0.0, 1.0, 0.0) * -30.0);\n    return sdf_torus_z(60.0, 30.0, p1);\n  }\n}\n\nfloat smooth_min_distance(vec3 p, float radius) {\n  float r = radius;\n  float nearest = move_outer(p);\n  float dist = move_outer1(p);\n  float h = (clamp((nearest - dist) / r, -1.0, 1.0) + 1.0) * 0.5;\n  nearest = mix(nearest, dist, h) - (r * h * (1.0 - h));\n  return nearest;\n}\n\nfloat rotate_outer(vec3 p, float radius, float t) {\n  {\n    vec3 p1 = p * rotation_y(t * 0.5);\n    return smooth_min_distance(p1, radius);\n  }\n}\n\nfloat nearest_distance(vec3 p, float radius, float t) {\n  return rotate_outer(p, radius, t);\n}\n\nfloat march(out uint steps, float radius, Ray ray, float t) {\n  float ray_depth = 0.0;\n  for (steps = 0u; steps < 256u; ++steps) {\n    {\n      float depth = ray_depth;\n      vec3 P = ray.origin + (ray_depth * ray.direction);\n      vec3 p = P;\n      float dist = nearest_distance(p, radius, t);\n      if (((dist >= 0.0) && (dist < 0.1)) || (ray_depth > 65536.0)) return ray_depth;\n      float rate = (dist > 0.0) ? 0.95 : 1.05;\n      ray_depth += dist * rate;\n      if (ray_depth < 0.0) return 0.0;\n    }\n  }\n  return ray_depth;\n}\n\nfloat with_outer(vec3 p, float radius, float t) {\n  {\n    vec3 p1 = (vec2(1.0, -1.0).xyy * 0.005) + p;\n    return nearest_distance(p1, radius, t);\n  }\n}\n\nfloat with_outer1(vec3 p, float radius, float t) {\n  {\n    vec3 p1 = (vec2(1.0, -1.0).yyx * 0.005) + p;\n    return nearest_distance(p1, radius, t);\n  }\n}\n\nfloat with_outer2(vec3 p, float radius, float t) {\n  {\n    vec3 p1 = (vec2(1.0, -1.0).yxy * 0.005) + p;\n    return nearest_distance(p1, radius, t);\n  }\n}\n\nfloat with_outer3(vec3 p, float radius, float t) {\n  {\n    vec3 p1 = (vec2(1.0, -1.0).xxx * 0.005) + p;\n    return nearest_distance(p1, radius, t);\n  }\n}\n\nvec3 do_(vec2 Frag_Coord, vec2 resolution) {\n  const vec3 light = pow(vec3(69.0, 72.0, 79.0) / 255.0, vec3(2.2));\n  const vec3 dark = pow(vec3(40.0, 42.0, 46.0) / 255.0, vec3(2.2));\n  return vec3(mix(dark, light, (Frag_Coord.x + Frag_Coord.y) / (resolution.x + resolution.y)));\n}\n\nfloat with_outer4(float depth, vec3 light_position, float radius, vec3 ray_dir, float t) {\n  {\n    vec3 P = light_position + (ray_dir * depth);\n    vec3 p = P;\n    return nearest_distance(p, radius, t);\n  }\n}\n\nLight cast_light_hard_shadow(vec3 light_color, vec3 light_position, vec3 P, vec3 normal, float radius, float t) {\n  if (light_position == P) return Light(light_color, vec3(0.0), 1.0);\n  vec3 to_light = normalize(light_position - P);\n  if (light_color == vec3(0.0)) return Light(light_color, to_light, 0.0);\n  if (dot(to_light, normal) < 0.0) return Light(light_color, to_light, 0.0);\n  vec3 target = (0.01 * normal) + P;\n  float light_distance = length(target - light_position);\n  vec3 ray_dir = (target - light_position) / light_distance;\n  float depth = 0.0;\n  for (uint i = 0u; i < 256u; ++i) {\n    float nearest = with_outer4(depth, light_position, radius, ray_dir, t);\n    if (nearest < 0.01) break;\n    depth += nearest;\n  }\n  if (depth >= light_distance) return Light(light_color, to_light, 1.0);\n  else return Light(light_color, to_light, 0.0);\n}\n\nfloat with_outer5(float depth, vec3 light_position, float radius, vec3 ray_dir, float t) {\n  {\n    vec3 P = light_position + (ray_dir * depth);\n    vec3 p = P;\n    return nearest_distance(p, radius, t);\n  }\n}\n\nLight cast_light_soft_shadow(vec3 light_color, vec3 light_position, float softness, vec3 P, vec3 normal, float radius, float t) {\n  if (softness == 0.0) return cast_light_hard_shadow(light_color, light_position, P, normal, radius, t);\n  if (light_position == P) return Light(light_color, vec3(0.0), 1.0);\n  vec3 to_light = normalize(light_position - P);\n  if (light_color == vec3(0.0)) return Light(light_color, to_light, 0.0);\n  if (dot(to_light, normal) < 0.0) return Light(light_color, to_light, 0.0);\n  vec3 target = (0.01 * normal) + P;\n  float light_distance = length(target - light_position);\n  vec3 ray_dir = (target - light_position) / light_distance;\n  float brightness = 1.0;\n  float sharpness = 1.0 / (softness * softness);\n  float last_nearest = 1000000.0;\n  float depth = 0.0;\n  for (uint i = 0u; i < 256u; ++i) {\n    float nearest = with_outer5(depth, light_position, radius, ray_dir, t);\n    if (nearest < 0.01) break;\n    float intersect_offset = (nearest * nearest) / (2.0 * last_nearest);\n    float intersect_distance = sqrt((nearest * nearest) - (intersect_offset * intersect_offset));\n    brightness = min(brightness, (sharpness * intersect_distance) / max(0.0, (light_distance - depth) - intersect_offset));\n    depth += nearest;\n    last_nearest = nearest;\n  }\n  if (depth >= light_distance) return Light(light_color, to_light, brightness);\n  else return Light(light_color, to_light, 0.0);\n}\n\nfloat with_outer6(vec3 P, uint i, float radius, vec3 step, float t) {\n  {\n    vec3 P1 = (float(i) * step) + P;\n    vec3 p = P1;\n    return max(nearest_distance(p, radius, t), 0.0);\n  }\n}\n\nfloat calculate_occlusion(uint step_count, float max_distance, vec3 dir, vec3 P, vec3 p, float radius, float t) {\n  float step_size = max_distance / float(step_count);\n  float baseline = nearest_distance(p, radius, t);\n  float occlusion = 0.0;\n  vec3 step = dir * step_size;\n  for (uint i = 1u; i <= step_count; ++i) {\n    float expected_distance = (float(i) * step_size) + baseline;\n    float actual_distance = with_outer6(P, i, radius, step, t);\n    occlusion += actual_distance / expected_distance;\n  }\n  return clamp(occlusion / float(step_count), 0.0, 1.0);\n}\n\nvec3 normalize_safe(vec3 v) {\n  return (v == vec3(0.0)) ? v : normalize(v);\n}\n\nLight cast_light_no_shadow(vec3 light_color, vec3 light_position, vec3 P) {\n  return Light(light_color, normalize_safe(light_position - P), 1.0);\n}\n\nLight do_1(vec3 P, vec3 normal, float occlusion) {\n  Light light = cast_light_no_shadow(vec3(0.15), P + (normal * 0.1), P);\n  light.brightness = light.brightness * mix(0.1, 1.0, occlusion);\n  return light;\n}\n\nvec3 hsv(float hue, float saturation, float value) {\n  vec3 c = abs(mod((hue * 6.0) + vec3(0.0, 4.0, 2.0), 6.0) - 3.0);\n  return value * mix(vec3(1.0), clamp(c - 1.0, 0.0, 1.0), saturation);\n}\n\nvec3 blinn_phong(Light light, vec3 color, float shininess, float glossiness, vec3 normal, Ray ray) {\n  if (light.direction == vec3(0.0)) return color * light.color * light.brightness;\n  vec3 halfway_dir = normalize(light.direction - ray.direction);\n  float specular_strength = shininess * pow(max(dot(normal, halfway_dir), 0.0), glossiness * glossiness);\n  float diffuse = max(0.0, dot(normal, light.direction));\n  return ((light.color * light.brightness) * specular_strength) + (color * diffuse * light.color * light.brightness);\n}\n\nvec3 shade(Light light, Light light1, vec3 normal, Ray ray, vec3 temp) {\n  vec3 result = vec3(0.0);\n  result += blinn_phong(light1, temp, 0.25, 2.0, normal, ray);\n  result += blinn_phong(light, temp, 0.25, 2.0, normal, ray);\n  return result;\n}\n\nvec3 shade_outer(Light light, Light light1, vec3 normal, Ray ray) {\n  {\n    vec3 temp = hsv(0.583333333333333, 0.98, 1.0);\n    return shade(light, light1, normal, ray, temp);\n  }\n}\n\nfloat fresnel(float exponent, vec3 normal, Ray ray) {\n  return pow(1.0 + dot(normal, ray.direction), exponent);\n}\n\nvec3 map_color(Light light, Light light1, vec3 normal, Ray ray) {\n  vec3 color = shade_outer(light, light1, normal, ray);\n  return color + (vec3(1.0, 1.0, 1.0) * (fresnel(3.0, normal, ray) * 0.25));\n}\n\nfloat sum(vec2 v) {\n  return v.x + v.y;\n}\n\nvec3 pow_(vec3 v, float e) {\n  return pow(v, vec3(e));\n}\n\nvec3 let_outer(vec3 color) {\n  {\n    float dollar_count = 8.0;\n    return round(pow_(color, 0.454545454545455) * dollar_count) / dollar_count;\n  }\n}\n\nvec3 map_color1(vec2 Frag_Coord, Light light, Light light1, vec3 normal, Ray ray) {\n  vec3 color = map_color(light, light1, normal, ray);\n  return (mod(sum(floor(Frag_Coord)), 2.0) == 0.0) ? pow_(let_outer(color), 2.2) : color;\n}\n\nvec3 rotate_outer1(vec2 Frag_Coord, Light light, Light light1, vec3 normal, vec3 p, Ray ray, float t) {\n  {\n    vec3 p1 = p * rotation_y(t * 0.5);\n    return map_color1(Frag_Coord, light, light1, normal, ray);\n  }\n}\n\nvec3 hoist_outer(vec2 Frag_Coord, vec3 P, vec3 normal, vec3 p, float radius, Ray ray, float t) {\n  {\n    Light light = cast_light_soft_shadow(vec3(1.15), P - (normalize(vec3(-2.0, -2.0, -1.0)) * 2048.0), 0.25, P, normal, radius, t);\n    float occlusion = calculate_occlusion(8u, 20.0, normal, P, p, radius, t);\n    Light light1 = do_1(P, normal, occlusion);\n    return rotate_outer1(Frag_Coord, light1, light, normal, p, ray, t);\n  }\n}\n\nvec4 sample_(vec2 Frag_Coord, int camera_type, vec2 frag_coord, vec2 free_camera_orbit, vec3 free_camera_target, float free_camera_zoom, float radius, vec2 resolution, float t) {\n  Ray ray_star = Ray(vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0));\n  vec3 ortho_quad = vec3(1024.0, (frag_coord * 212.077343935025) * free_camera_zoom);\n  float ortho_scale = 212.077343935025 * free_camera_zoom;\n  float fov = 0.0;\n  switch (camera_type) {\n  case 0: case 1: {\n    mat3 camera_rotation_matrix = rotation_y(6.28318530717959 * free_camera_orbit.x) * rotation_x(6.28318530717959 * free_camera_orbit.y);\n    ray_star = Ray((camera_rotation_matrix * vec3(0.0, 0.0, 512.0 * free_camera_zoom)) + free_camera_target, camera_rotation_matrix * (perspective_vector(45.0, frag_coord) * vec3(1.0, 1.0, -1.0)));\n    fov = 45.0;\n    break;\n  }\n  case 2: {\n    ray_star = Ray(ortho_quad.yxz + free_camera_target, vec3(0.0, -1.0, 0.0));\n    break;\n  }\n  case 3: {\n    ray_star = Ray(ortho_quad.yzx + free_camera_target, vec3(0.0, 0.0, -1.0));\n    break;\n  }\n  case 4: {\n    ray_star = Ray(ortho_quad.xzy + free_camera_target, vec3(-1.0, 0.0, 0.0));\n    break;\n  }\n  }\n  uint steps = 0u;\n  {\n    Ray ray = ray_star;\n    float depth = march(steps, radius, ray, t);\n    vec3 P = ray.origin + (ray.direction * depth);\n    vec3 p = P;\n    float dist = nearest_distance(p, radius, t);\n    vec3 normal = normalize((vec2(1.0, -1.0).xyy * with_outer(p, radius, t)) + (vec2(1.0, -1.0).yyx * with_outer1(p, radius, t)) + (vec2(1.0, -1.0).yxy * with_outer2(p, radius, t)) + (vec2(1.0, -1.0).xxx * with_outer3(p, radius, t)));\n    vec4 color = vec4(0.0);\n    color = (dist >= 10.0) ? vec4(do_(Frag_Coord, resolution), 1.0) : vec4(hoist_outer(Frag_Coord, P, normal, p, radius, ray, t), 1.0);\n    return color;\n  }\n}\n\nvoid main() {\n  const float gamma = 2.2;\n  vec3 color = vec3(0.0, 0.0, 0.0);\n  float alpha = 0.0;\n  const uint aa_grid_size = 1u;\n  const float aa_sample_width = 1.0 / float(1u + aa_grid_size);\n  const vec2 pixel_origin = vec2(0.5, 0.5);\n  vec2 local_frag_coord = gl_FragCoord.xy - viewport.xy;\n  mat2 rotation = rotation_2d(0.2);\n  for (uint y = 1u; y <= aa_grid_size; ++y) {\n    for (uint x = 1u; x <= aa_grid_size; ++x) {\n      vec2 sample_offset = (aa_sample_width * vec2(float(x), float(y))) - pixel_origin;\n      sample_offset = rotation * sample_offset;\n      sample_offset = fract(sample_offset + pixel_origin) - pixel_origin;\n      {\n        vec2 Frag_Coord = local_frag_coord + sample_offset;\n        vec2 resolution = viewport.zw;\n        vec2 frag_coord = ((Frag_Coord - (0.5 * resolution)) / max_(resolution)) * 2.0;\n        vec4 this_sample = clamp(sample_(Frag_Coord, camera_type, frag_coord, free_camera_orbit, free_camera_target, free_camera_zoom, radius, resolution, t), 0.0, 1.0);\n        color += this_sample.rgb * this_sample.a;\n        alpha += this_sample.a;\n      }\n    }\n  }\n  if (alpha > 0.0) {\n    color = color / alpha;\n    alpha /= float(aa_grid_size * aa_grid_size);\n  }\n  frag_color = vec4(pow_(color, 1.0 / gamma), alpha);\n}\n",
+  animate: true,
+  freeCamera: true,
+  uniforms: {
+    radius: "float"
+  }
+});
+canvas.addEventListener('click', () => {
+  bauble.togglePlay();
+});
+slider.addEventListener('input', (e) => {
+  bauble.set('radius', e.currentTarget.valueAsNumber);
+});</pre>
+  <canvas style="image-rendering: pixelated; width: 512px; height: 384px;" width="128" height="96"></canvas>
+  <input type="range" autocomplete="off" value="0" min="0" max="80" step="0.01" />
 </div>
 
 <script type="text/javascript">
 document.addEventListener('DOMContentLoaded', () => {
-  exampleOne(document.getElementById('example-one'));
+  document.querySelectorAll('div.example').forEach((root) => {
+    const pre = root.querySelector('pre');
+    eval(pre.innerText);
+  });
 });
-
-function exampleOne(root) {
-  const canvas = root.querySelector('canvas');
-  const rotation = root.querySelector('input');
-
-  const bauble = new Bauble(canvas, {
-    "source": "#version 300 es\nprecision highp float;\n\nstruct Ray {\n  vec3 origin;\n  vec3 direction;\n};\n\nout vec4 frag_color;\n\nuniform float rotation;\nuniform int camera_type;\nuniform vec3 free_camera_target;\nuniform vec2 free_camera_orbit;\nuniform float free_camera_zoom;\nuniform vec2 origin_2d;\nuniform float t;\nuniform vec4 viewport;\n\nmat2 rotation_2d(float angle) {\n  float s = sin(angle);\n  float c = cos(angle);\n  return mat2(c, s, -s, c);\n}\n\nfloat max_(vec2 v) {\n  return max(v.x, v.y);\n}\n\nmat3 rotation_y(float angle) {\n  float s = sin(angle);\n  float c = cos(angle);\n  return mat3(c, 0.0, -s, 0.0, 1.0, 0.0, s, 0.0, c);\n}\n\nmat3 rotation_x(float angle) {\n  float s = sin(angle);\n  float c = cos(angle);\n  return mat3(1.0, 0.0, 0.0, 0.0, c, s, 0.0, -s, c);\n}\n\nvec3 perspective_vector(float fov, vec2 frag_coord) {\n  float cot_half_fov = tan(radians(90.0 - (fov * 0.5)));\n  return normalize(vec3(frag_coord, cot_half_fov));\n}\n\nfloat sdf_torus_x(float radius, float thickness, vec3 p) {\n  vec2 other_axes = p.zy;\n  float this_axis = p.x;\n  return length(vec2(length(other_axes) - radius, this_axis)) - thickness;\n}\n\nfloat move_outer(vec3 p) {\n  {\n    vec3 p1 = p - (vec3(0.0, 1.0, 0.0) * 25.0);\n    return sdf_torus_x(50.0, 25.0, p1);\n  }\n}\n\nfloat sdf_torus_z(float radius, float thickness, vec3 p) {\n  vec2 other_axes = p.xy;\n  float this_axis = p.z;\n  return length(vec2(length(other_axes) - radius, this_axis)) - thickness;\n}\n\nfloat move_outer1(vec3 p) {\n  {\n    vec3 p1 = p - (vec3(0.0, 1.0, 0.0) * -25.0);\n    return sdf_torus_z(50.0, 25.0, p1);\n  }\n}\n\nfloat smooth_min_distance(vec3 p) {\n  float r = 25.0;\n  float nearest = move_outer(p);\n  float dist = move_outer1(p);\n  float h = (clamp((nearest - dist) / r, -1.0, 1.0) + 1.0) * 0.5;\n  nearest = mix(nearest, dist, h) - (r * h * (1.0 - h));\n  return nearest;\n}\n\nfloat rotate_outer(vec3 p, float rotation, float t) {\n  {\n    vec3 p1 = p * rotation_y(rotation + (t / 10.0));\n    return smooth_min_distance(p1);\n  }\n}\n\nfloat nearest_distance(vec3 p, float rotation, float t) {\n  return rotate_outer(p, rotation, t);\n}\n\nfloat march(out uint steps, Ray ray, float rotation, float t) {\n  float ray_depth = 0.0;\n  for (steps = 0u; steps < 256u; ++steps) {\n    {\n      float depth = ray_depth;\n      vec3 P = ray.origin + (ray_depth * ray.direction);\n      vec3 p = P;\n      float dist = nearest_distance(p, rotation, t);\n      if (((dist >= 0.0) && (dist < 0.1)) || (ray_depth > 65536.0)) return ray_depth;\n      float rate = (dist > 0.0) ? 0.95 : 1.05;\n      ray_depth += dist * rate;\n      if (ray_depth < 0.0) return 0.0;\n    }\n  }\n  return ray_depth;\n}\n\nfloat with_outer(vec3 p, float rotation, float t) {\n  {\n    vec3 p1 = (vec2(1.0, -1.0).xyy * 0.005) + p;\n    return nearest_distance(p1, rotation, t);\n  }\n}\n\nfloat with_outer1(vec3 p, float rotation, float t) {\n  {\n    vec3 p1 = (vec2(1.0, -1.0).yyx * 0.005) + p;\n    return nearest_distance(p1, rotation, t);\n  }\n}\n\nfloat with_outer2(vec3 p, float rotation, float t) {\n  {\n    vec3 p1 = (vec2(1.0, -1.0).yxy * 0.005) + p;\n    return nearest_distance(p1, rotation, t);\n  }\n}\n\nfloat with_outer3(vec3 p, float rotation, float t) {\n  {\n    vec3 p1 = (vec2(1.0, -1.0).xxx * 0.005) + p;\n    return nearest_distance(p1, rotation, t);\n  }\n}\n\nvec3 do_(vec2 Frag_Coord, vec2 resolution) {\n  const vec3 light = pow(vec3(69.0, 72.0, 79.0) / 255.0, vec3(2.2));\n  const vec3 dark = pow(vec3(40.0, 42.0, 46.0) / 255.0, vec3(2.2));\n  return vec3(mix(dark, light, (Frag_Coord.x + Frag_Coord.y) / (resolution.x + resolution.y)));\n}\n\nfloat fresnel(float exponent, vec3 normal, Ray ray) {\n  return pow(1.0 + dot(normal, ray.direction), exponent);\n}\n\nvec4 sample_(vec2 Frag_Coord, int camera_type, vec2 frag_coord, vec2 free_camera_orbit, vec3 free_camera_target, float free_camera_zoom, vec2 resolution, float rotation, float t) {\n  Ray ray_star = Ray(vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0));\n  vec3 ortho_quad = vec3(1024.0, (frag_coord * 212.077343935025) * free_camera_zoom);\n  float ortho_scale = 212.077343935025 * free_camera_zoom;\n  float fov = 0.0;\n  switch (camera_type) {\n  case 0: case 1: {\n    mat3 camera_rotation_matrix = rotation_y(6.28318530717959 * free_camera_orbit.x) * rotation_x(6.28318530717959 * free_camera_orbit.y);\n    ray_star = Ray((camera_rotation_matrix * vec3(0.0, 0.0, 512.0 * free_camera_zoom)) + free_camera_target, camera_rotation_matrix * (perspective_vector(45.0, frag_coord) * vec3(1.0, 1.0, -1.0)));\n    fov = 45.0;\n    break;\n  }\n  case 2: {\n    ray_star = Ray(ortho_quad.yxz + free_camera_target, vec3(0.0, -1.0, 0.0));\n    break;\n  }\n  case 3: {\n    ray_star = Ray(ortho_quad.yzx + free_camera_target, vec3(0.0, 0.0, -1.0));\n    break;\n  }\n  case 4: {\n    ray_star = Ray(ortho_quad.xzy + free_camera_target, vec3(-1.0, 0.0, 0.0));\n    break;\n  }\n  }\n  uint steps = 0u;\n  {\n    Ray ray = ray_star;\n    float depth = march(steps, ray, rotation, t);\n    vec3 P = ray.origin + (ray.direction * depth);\n    vec3 p = P;\n    float dist = nearest_distance(p, rotation, t);\n    vec3 normal = normalize((vec2(1.0, -1.0).xyy * with_outer(p, rotation, t)) + (vec2(1.0, -1.0).yyx * with_outer1(p, rotation, t)) + (vec2(1.0, -1.0).yxy * with_outer2(p, rotation, t)) + (vec2(1.0, -1.0).xxx * with_outer3(p, rotation, t)));\n    vec4 color = vec4(0.0);\n    color = (dist >= 10.0) ? vec4(do_(Frag_Coord, resolution), 1.0) : vec4(mix((normal + 1.0) * 0.5, vec3(1.0, 1.0, 1.0), fresnel(5.0, normal, ray)), 1.0);\n    return color;\n  }\n}\n\nvec3 pow_(vec3 v, float e) {\n  return pow(v, vec3(e));\n}\n\nvoid main() {\n  const float gamma = 2.2;\n  vec3 color = vec3(0.0, 0.0, 0.0);\n  float alpha = 0.0;\n  const uint aa_grid_size = 2u;\n  const float aa_sample_width = 1.0 / float(1u + aa_grid_size);\n  const vec2 pixel_origin = vec2(0.5, 0.5);\n  vec2 local_frag_coord = gl_FragCoord.xy - viewport.xy;\n  mat2 rotation1 = rotation_2d(0.2);\n  for (uint y = 1u; y <= aa_grid_size; ++y) {\n    for (uint x = 1u; x <= aa_grid_size; ++x) {\n      vec2 sample_offset = (aa_sample_width * vec2(float(x), float(y))) - pixel_origin;\n      sample_offset = rotation1 * sample_offset;\n      sample_offset = fract(sample_offset + pixel_origin) - pixel_origin;\n      {\n        vec2 Frag_Coord = local_frag_coord + sample_offset;\n        vec2 resolution = viewport.zw;\n        vec2 frag_coord = ((Frag_Coord - (0.5 * resolution)) / max_(resolution)) * 2.0;\n        vec4 this_sample = clamp(sample_(Frag_Coord, camera_type, frag_coord, free_camera_orbit, free_camera_target, free_camera_zoom, resolution, rotation, t), 0.0, 1.0);\n        color += this_sample.rgb * this_sample.a;\n        alpha += this_sample.a;\n      }\n    }\n  }\n  if (alpha > 0.0) {\n    color = color / alpha;\n    alpha /= float(aa_grid_size * aa_grid_size);\n  }\n  frag_color = vec4(pow_(color, 1.0 / gamma), alpha);\n}\n",
-    "animate": true,
-    "freeCamera": true,
-    "uniforms": {
-      "rotation": "float"
-    }
-  });
-  canvas.addEventListener('click', () => {
-    bauble.togglePlay();
-  });
-
-  rotation.addEventListener('input', (e) => {
-    bauble.set('rotation', e.currentTarget.valueAsNumber * Math.PI * 2);
-  });
-};
 </script>

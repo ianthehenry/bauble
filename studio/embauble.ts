@@ -51,10 +51,7 @@ class Renderer {
 
   constructor(private canvas: HTMLCanvasElement, opts: {
     time: number,
-    rotation: [number, number],
-    origin: [number, number, number],
-    origin2D: [number, number],
-    zoom: number,
+    freeCamera: 2 | 3 | null,
     source: string,
     uniforms: {[name: string]: string},
   }) {
@@ -98,11 +95,20 @@ class Renderer {
       this.uniformSetters[name] = uniformSetter(name, type);
     };
 
+    switch (opts.freeCamera) {
+    case 2:
+      addUniform('origin_2d', 'vec2');
+      addUniform('free_camera_zoom', 'float');
+      break;
+    case 3:
+      addUniform('free_camera_target', 'vec3');
+      addUniform('free_camera_orbit', 'vec2');
+      addUniform('free_camera_zoom', 'float');
+      break;
+    case null: break;
+    }
+
     addUniform('t', 'float');
-    addUniform('free_camera_target', 'vec3');
-    addUniform('origin_2d', 'vec2');
-    addUniform('free_camera_orbit', 'vec2');
-    addUniform('free_camera_zoom', 'float');
     addUniform('viewport', 'vec4');
     addUniform('camera_type', 'int');
     for (let name in opts.uniforms) {
@@ -134,10 +140,6 @@ class Renderer {
 
     this.uniformSetters.viewport([0, 0, this.canvas.width, this.canvas.height]);
     this.uniformSetters.t(opts.time);
-    this.uniformSetters.free_camera_target(opts.origin);
-    this.uniformSetters.origin_2d(opts.origin2D);
-    this.uniformSetters.free_camera_orbit(opts.rotation);
-    this.uniformSetters.free_camera_zoom(opts.zoom);
     this.uniformSetters.camera_type(CameraType.Custom);
   }
 
@@ -160,10 +162,14 @@ class Renderer {
   }
 }
 
+const fract = (x: number) => ((x % 1) + 1) % 1;
+
 export default function Bauble(canvas: HTMLCanvasElement, opts: {
   source: string,
   animate?: boolean,
-  dimensions?: number,
+  freeCamera?: boolean,
+  interaction?: boolean,
+  dimensions?: 2 | 3,
   uniforms?: any,
 }) {
   const source = opts.source;
@@ -173,14 +179,13 @@ export default function Bauble(canvas: HTMLCanvasElement, opts: {
   const animate = opts.animate ?? false;
   const dimensions = opts.dimensions ?? 3;
   const uniforms = opts.uniforms ?? {};
+  const freeCamera = opts.freeCamera ?? true;
+  const interaction = opts.interaction ?? true;
   const renderer = new Renderer(canvas, {
     time: 0,
-    rotation: [0.1, -0.1],
-    origin: [0, 0, 0],
-    origin2D: [0, 0],
-    zoom: 1,
     source,
     uniforms,
+    freeCamera: freeCamera ? dimensions : null
   });
 
   let time = 0;
@@ -221,8 +226,73 @@ export default function Bauble(canvas: HTMLCanvasElement, opts: {
     });
   }
 
-  draw();
+  const camera: any = {zoom: 1};
 
+  switch (dimensions) {
+  case 2: {
+    camera.target = [0, 0];
+    renderer.setUniform('origin_2d', camera.target)
+    renderer.setUniform('free_camera_zoom', camera.zoom)
+    break;
+  }
+  case 3: {
+    camera.rotation = [0.125, -0.125];
+    camera.target = [0, 0, 0];
+    renderer.setUniform('free_camera_orbit', camera.rotation)
+    renderer.setUniform('free_camera_target', camera.target)
+    renderer.setUniform('free_camera_zoom', camera.zoom)
+
+    if (!interaction) {
+      break;
+    }
+
+    let canvasPointerAt = [0, 0];
+    let interactionPointer: number | null = null;
+    canvas.addEventListener('pointerdown', (e: PointerEvent) => {
+      if (interactionPointer != null) {
+        return;
+      }
+      e.preventDefault();
+      // TODO: does this do anything if no tabindex?
+      canvas.focus();
+      canvasPointerAt = [e.offsetX, e.offsetY];
+      canvas.setPointerCapture(e.pointerId);
+      interactionPointer = e.pointerId;
+    });
+
+    canvas.addEventListener('pointerup', (e: PointerEvent) => {
+      e.preventDefault();
+      if (e.pointerId === interactionPointer) {
+        interactionPointer = null;
+      }
+    });
+
+    canvas.addEventListener('pointermove', (e: PointerEvent) => {
+      if (e.pointerId !== interactionPointer) {
+        return;
+      }
+      e.preventDefault();
+      const pointerWasAt = canvasPointerAt;
+      canvasPointerAt = [e.offsetX, e.offsetY];
+
+      console.log(canvas.offsetWidth, canvas.clientWidth, canvas.offsetWidth / canvas.clientWidth);
+      const deltaX = (canvasPointerAt[0] - pointerWasAt[0]) * (canvas.offsetWidth / canvas.clientWidth);
+      const deltaY = (canvasPointerAt[1] - pointerWasAt[1]) * (canvas.offsetHeight / canvas.clientHeight);
+
+      const cameraRotateSpeed = 1 / 512;
+      camera.rotation = [
+        fract(camera.rotation[0] - deltaX * cameraRotateSpeed),
+        fract(camera.rotation[1] - deltaY * cameraRotateSpeed),
+      ];
+      renderer.setUniform('free_camera_orbit', camera.rotation);
+      draw();
+    });
+    break;
+  }
+  default: throw new Error('unknown dimension', {cause: dimensions});
+  }
+
+  draw();
   return {
     draw: draw,
     togglePlay: function(value: boolean) {
@@ -235,6 +305,7 @@ export default function Bauble(canvas: HTMLCanvasElement, opts: {
         draw();
       }
     },
+    setTime: setTime,
     set: function() {
       if (arguments.length === 2) {
         renderer.setUniform(arguments[0], arguments[1]);
@@ -248,5 +319,36 @@ export default function Bauble(canvas: HTMLCanvasElement, opts: {
       }
       draw();
     },
+    setCamera: function(opts: any) {
+      switch (dimensions) {
+      case 2: {
+        if ('zoom' in opts) {
+          camera.zoom = opts.zoom;
+          renderer.setUniform('free_camera_zoom', camera.zoom);
+        }
+        if ('target' in opts) {
+          camera.target = opts.target;
+          renderer.setUniform('origin_2d', camera.target);
+        }
+        break;
+      }
+      case 3: {
+        if ('rotation' in opts) {
+          camera.rotation = opts.rotation;
+          renderer.setUniform('free_camera_orbit', camera.rotation);
+        }
+        if ('zoom' in opts) {
+          camera.zoom = opts.zoom;
+          renderer.setUniform('free_camera_zoom', camera.zoom);
+        }
+        if ('target' in opts) {
+          camera.target = opts.target;
+          renderer.setUniform('free_camera_target', camera.target);
+        }
+        break;
+      }
+      }
+      draw();
+    }
   };
 };

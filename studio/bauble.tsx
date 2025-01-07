@@ -146,7 +146,10 @@ const ExportEmbedDialog = (props: {
         options.uniforms = uniforms;
       }
 
-      set(`const bauble = new Bauble(canvas, ${JSON.stringify(options, null, 2)});`);
+      const toJSNotation = (obj: any) =>
+        JSON.stringify(obj, null, 2).replaceAll(/"([^"]+)":/g, (_, key) => key + ':');
+
+      set(`const bauble = new Bauble(canvas, ${toJSNotation(options)});`);
     }
   }
 
