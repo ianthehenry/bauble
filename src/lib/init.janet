@@ -1,4 +1,5 @@
 (import ../jlsl)
+(import ../glsl)
 (import ./evaluator :export true)
 (import ./renderer :export true)
 (import ./completer :export true)
@@ -35,6 +36,6 @@
 # type-string will be float, vec2, vec3, etc
 (defn get-uniforms [env]
   (seq [[variable value] :pairs (in env uniforms-private/*uniforms*)]
-    [(jlsl/variable/name variable)
+    [(glsl/identifier (jlsl/variable/name variable))
      (type-to-string (jlsl/variable/type variable))
      value]))
