@@ -146,10 +146,20 @@ const ExportEmbedDialog = (props: {
         options.uniforms = uniforms;
       }
 
-      const toJSNotation = (obj: any) =>
-        JSON.stringify(obj, null, 2).replaceAll(/"([^"]+)":/g, (_, key) => key + ':');
+      const toJSNotation = (obj: any, indent: number) =>
+        JSON.stringify(obj, null, indent)
+        .replaceAll(/"([^"]+)":/g, (_, key) => key + ':')
+        .replaceAll(/: \[([^\]]+)\]/gm, (_, innards) => ': [' + innards.trim().replaceAll(/\s+/gm, ' ') + ']');
 
-      set(`const bauble = new Bauble(canvas, ${toJSNotation(options)});`);
+      let str = `const bauble = new Bauble(canvas, ${toJSNotation(options, 2)});`;
+      if (result.uniforms.length > 0) {
+        const uniforms: any = {};
+        for (let {name, type, value} of result.uniforms) {
+          uniforms[name] = value[type];
+        }
+        str += `\nbauble.set(${toJSNotation(uniforms, 2)});`
+      }
+      set(str);
     }
   }
 
