@@ -25,7 +25,7 @@ if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScop
     let separation = 0;
     let velocity = 0;
     let editing = false;
-    let bounce = true;
+    let bounce = false;
     bauble.set({separation});
 
     const dampen = () => {
