@@ -79,6 +79,10 @@ EOF
     border-radius: 0;
     padding: 0;
   }
+  pre.example {
+    padding-left: 6px;
+    line-height: 1.4;
+  }
 
 EOF
 ) | sed -E \
