@@ -130,7 +130,7 @@ const ExportEmbedDialog = (props: {
     } else {
       const options: any = {source: result.shaderSource};
       if (result.dimension !== 3) {
-        options.dimension = result.dimension;
+        options.dimensions = result.dimension;
       }
       if (result.isAnimated) {
         options.animate = true;
