@@ -4,6 +4,7 @@ import {batch, createMemo} from 'solid-js';
 import {vec2, vec3} from 'gl-matrix';
 
 export type T = {
+  dimensions: number,
   time: Seconds,
   isVisible: boolean,
   rotation: vec2,
@@ -19,6 +20,7 @@ export type T = {
 };
 
 export type Accessors = {
+  dimensions: Signal.Accessor<number>,
   time: Signal.Accessor<Seconds>,
   isVisible: Signal.Accessor<boolean>,
   rotation: Signal.Accessor<vec2>,
@@ -34,6 +36,7 @@ export type Accessors = {
 };
 
 export type Signals = {
+  dimensions: Signal.T<number>,
   time: Signal.T<Seconds>,
   isVisible: Signal.T<boolean>,
   rotation: Signal.T<vec2>,
@@ -50,6 +53,7 @@ export type Signals = {
 
 export function defaultSignals() {
   return {
+    dimensions: Signal.create(3),
     time: Signal.create(0 as Seconds),
     isVisible: Signal.create(false),
     rotation: Signal.create(vec2.fromValues(0, 0)),
@@ -68,6 +72,7 @@ export function defaultSignals() {
 export function accessAll(accessors: Accessors): Signal.Accessor<T> {
   return createMemo(() => {
     return {
+      dimensions: accessors.dimensions(),
       time: accessors.time(),
       isVisible: accessors.isVisible(),
       rotation: accessors.rotation(),
@@ -86,6 +91,7 @@ export function accessAll(accessors: Accessors): Signal.Accessor<T> {
 
 export function getAll(signals: Signals): Accessors {
   return {
+    dimensions: Signal.getter(signals.dimensions),
     time: Signal.getter(signals.time),
     isVisible: Signal.getter(signals.isVisible),
     rotation: Signal.getter(signals.rotation),
@@ -103,6 +109,7 @@ export function getAll(signals: Signals): Accessors {
 
 export function setAll(signals: Signals, value: T) {
   batch(() => {
+    Signal.set(signals.dimensions, value.dimensions);
     Signal.set(signals.time, value.time);
     Signal.set(signals.isVisible, value.isVisible);
     Signal.set(signals.rotation, value.rotation);

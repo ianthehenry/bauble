@@ -5,12 +5,11 @@
 (use judge)
 
 (jlsl/jlsl/defdyn camera-type :int "")
-(jlsl/jlsl/defdyn free-camera-target :vec3 "")
+(def free-camera-target-3d (jlsl/variable/new "free_camera_target" jlsl/type/vec3))
+(def free-camera-target-2d (jlsl/variable/new "free_camera_target" jlsl/type/vec2))
 (jlsl/jlsl/defdyn free-camera-orbit :vec2 "")
 (jlsl/jlsl/defdyn free-camera-zoom :float "")
 (jlsl/jlsl/defdyn crosshairs-3d :vec4 "")
-
-(jlsl/jlsl/defdyn origin-2d :vec2 "")
 
 # TODO: these should probably be somewhere else
 (def- MAX_STEPS 256:u)
@@ -42,7 +41,7 @@
 (defn make-sample-2d [options nearest-distance <background-color> <default-color> <color-field>]
   (def {:render-type render-type :crosshairs crosshairs} options)
   (jlsl/fn :vec4 sample []
-    (with [Q (frag-coord * ortho-base-zoom-distance * free-camera-zoom + origin-2d)
+    (with [Q (frag-coord * ortho-base-zoom-distance * free-camera-zoom + free-camera-target-2d)
            q Q
            dist (nearest-distance)
            gradient (calculate-gradient (nearest-distance))]
@@ -97,45 +96,58 @@
 
 # TODO: okay, so, theoretically we have nearest-distance in the current environment already
 (defn make-sample-3d [options nearest-distance <camera> <background-color> <default-color> <color-field>]
-  (def {:render-type render-type :crosshairs crosshairs} options)
+  (def {:render-type render-type :crosshairs crosshairs :dynamic-camera? dynamic-camera?} options)
   (def march (make-march nearest-distance))
   (def ortho-distance 1024)
 
   (jlsl/fn :vec4 sample []
     (var ray* (Ray [0 0 0] [0 0 1]))
-    (var ortho-quad [ortho-distance (* frag-coord ortho-base-zoom-distance free-camera-zoom)])
-    (var ortho-scale (* ortho-base-zoom-distance free-camera-zoom))
+    (var ortho-quad [0 0 0])
+    (var ortho-scale 0)
     (var fov 0)
-    (case camera-type
-      0:s ,(if <camera>
+    ,(if dynamic-camera?
+      (jlsl/statement
+        (set ortho-quad [ortho-distance (* frag-coord ortho-base-zoom-distance free-camera-zoom)])
+        (set ortho-scale (* ortho-base-zoom-distance free-camera-zoom))
+        (case camera-type
+          0:s ,(if <camera>
+            (jlsl/statement
+              (var camera <camera>)
+              (set ray* (camera/ray camera))
+              ,(if (has-fov? <camera>)
+                (jlsl/statement (set fov camera.fov))
+                (jlsl/statement (set ortho-scale camera.scale)))
+              (break))
+            (jlsl/statement
+              # just fall through
+              ))
+          1:s (do
+            (var camera-rotation-matrix
+              (* (rotation-y (* tau free-camera-orbit.x))
+                 (rotation-x (* tau free-camera-orbit.y))))
+            (set ray* (Ray
+              (camera-rotation-matrix * [0 0 (base-zoom-distance * free-camera-zoom)] + free-camera-target-3d)
+              (camera-rotation-matrix * (perspective-vector free-camera-fov * [1 1 -1]))))
+            (set fov free-camera-fov)
+            (break))
+          2:s (do # XZ
+            (set ray* (Ray (ortho-quad.yxz + free-camera-target-3d) [0 -1 0]))
+            (break))
+          3:s (do # XY
+            (set ray* (Ray (ortho-quad.yzx + free-camera-target-3d) [0 0 -1]))
+            (break))
+          4:s (do # ZY
+            (set ray* (Ray (ortho-quad.xzy + free-camera-target-3d) [-1 0 0]))
+            (break))))
+      (if <camera>
+        (jlsl/statement (set ray* (camera/ray <camera>)))
         (jlsl/statement
-          (var camera <camera>)
-          (set ray* (camera/ray camera))
-          ,(if (has-fov? <camera>)
-            (jlsl/statement (set fov camera.fov))
-            (jlsl/statement (set ortho-scale camera.scale)))
-          (break))
-        (jlsl/statement
-          # just fall through
-          ))
-      1:s (do
-        (var camera-rotation-matrix
-          (* (rotation-y (* tau free-camera-orbit.x))
-             (rotation-x (* tau free-camera-orbit.y))))
-        (set ray* (Ray
-          (camera-rotation-matrix * [0 0 (base-zoom-distance * free-camera-zoom)] + free-camera-target)
-          (camera-rotation-matrix * (perspective-vector free-camera-fov * [1 1 -1]))))
-        (set fov free-camera-fov)
-        (break))
-      2:s (do # XZ
-        (set ray* (Ray (ortho-quad.yxz + free-camera-target) [0 -1 0]))
-        (break))
-      3:s (do # XY
-        (set ray* (Ray (ortho-quad.yzx + free-camera-target) [0 0 -1]))
-        (break))
-      4:s (do # ZY
-        (set ray* (Ray (ortho-quad.xzy + free-camera-target) [-1 0 0]))
-        (break)))
+          (var camera-rotation-matrix
+            (* (rotation-y (* tau free-camera-orbit.x))
+               (rotation-x (* tau free-camera-orbit.y))))
+          (set ray* (Ray
+            (camera-rotation-matrix * [0 0 (base-zoom-distance * free-camera-zoom)] + free-camera-target-3d)
+            (camera-rotation-matrix * (perspective-vector free-camera-fov * [1 1 -1])))))))
 
     (var steps 0:u)
 

@@ -173,11 +173,7 @@ You can embed Bauble on your web page by downloading the Bauble player:
 
 If you don't know which one you want, download the first one. That's the one that you can just throw into a `<script>` tag and run with.
 
-[There is a working demo here.](/embed)
-
-You can "view source" on that page to see how the embedded players are configured.
-
-TODO: explain the API here
+[There are lots of examples of embedded Bauble here.](/embed)
 
 ## A note on versioning
 

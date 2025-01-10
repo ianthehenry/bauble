@@ -414,7 +414,6 @@
     (union :s 10 green-sphere red-box | move [-50 50 0])
     (union :s 10 red-box green-sphere | move [50 50 0])
   | slice z 0)
-  (set camera (camera/perspective [0 0 384] :fov 45))
   `
 
   "boolean intersect interior color fields" `
@@ -426,7 +425,6 @@
     (intersect :s 10 green-sphere red-box | move [-50 50 0])
     (intersect :s 10 red-box green-sphere | move [50 50 0])
   | slice z 0)
-  (set camera (camera/perspective [0 0 384] :fov 45))
   `
 
   "shadow banding artifacts" `
@@ -790,10 +788,13 @@ img {
     (def before-eval (os/clock :monotonic))
     (def env (bauble/evaluator/evaluate program))
     (def after-eval-before-compile (os/clock :monotonic))
-    (def [shader-source dimension animated? has-custom-camera?]
-      (bauble/compile-to-glsl default-render-type false env "330"))
+    (def [shader-source dimensions animated? has-custom-camera?]
+      (bauble/compile-to-glsl default-render-type false false env "330"))
     (def after-compile-before-render (os/clock :monotonic))
     (def image (render-image shader-source
+      :dimensions dimensions
+      :animated? animated?
+      :free-camera? (not has-custom-camera?)
       :resolution physical-resolution
       :orbit [0.125 -0.125]
       :zoom 0.75))

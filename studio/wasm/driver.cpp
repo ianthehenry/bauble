@@ -30,7 +30,7 @@ struct Uniform {
 struct CompilationResult {
   bool is_error;
   string shader_source;
-  int dimension;
+  int dimensions;
   bool is_animated;
   bool has_custom_camera;
   std::vector<Uniform> uniforms;
@@ -43,7 +43,7 @@ CompilationResult compilation_error(string message) {
   return (CompilationResult) {
     .is_error = true,
     .shader_source = "",
-    .dimension = -1,
+    .dimensions = -1,
     .is_animated = false,
     .has_custom_camera = false,
     .uniforms = std::vector<Uniform>(),
@@ -53,7 +53,7 @@ CompilationResult compilation_error(string message) {
   };
 }
 
-CompilationResult evaluate_script(string source, int render_type, bool crosshairs) {
+CompilationResult evaluate_script(string source, int render_type, bool crosshairs, bool dynamic_camera) {
   if (janetfn_compile_to_glsl == NULL || janetfn_get_uniforms == NULL) {
     fprintf(stderr, "unable to initialize compilation function\n");
     return compilation_error("function uninitialized");
@@ -109,10 +109,11 @@ CompilationResult evaluate_script(string source, int render_type, bool crosshair
 
   double done_evaluating = emscripten_get_now();
 
-  const size_t arg_count = 4;
+  const size_t arg_count = 5;
   const Janet compile_to_glsl_args[arg_count] = {
     janet_wrap_integer(render_type),
     janet_wrap_boolean(crosshairs),
+    janet_wrap_boolean(dynamic_camera),
     compiled_env,
     janet_cstringv("300 es")
   };
@@ -122,14 +123,14 @@ CompilationResult evaluate_script(string source, int render_type, bool crosshair
 
   double done_compiling_glsl = emscripten_get_now();
   const uint8_t *shader_source;
-  int dimension;
+  int dimensions;
   bool is_animated;
   bool has_custom_camera;
   if (compilation_success) {
     if (janet_checktype(compilation_result, JANET_TUPLE)) {
       const Janet *tuple = janet_unwrap_tuple(compilation_result);
       shader_source = janet_unwrap_string(tuple[0]);
-      dimension = janet_unwrap_integer(tuple[1]);
+      dimensions = janet_unwrap_integer(tuple[1]);
       is_animated = janet_unwrap_boolean(tuple[2]);
       has_custom_camera = janet_unwrap_boolean(tuple[3]);
     } else if (janet_checktype(compilation_result, JANET_KEYWORD)) {
@@ -145,7 +146,7 @@ CompilationResult evaluate_script(string source, int render_type, bool crosshair
   return (CompilationResult) {
    .is_error = false,
    .shader_source = string((const char *)shader_source),
-   .dimension = dimension,
+   .dimensions = dimensions,
    .is_animated = is_animated,
    .has_custom_camera = has_custom_camera,
    .uniforms = uniforms_vec,
@@ -223,7 +224,7 @@ EMSCRIPTEN_BINDINGS(module) {
   value_object<CompilationResult>("CompilationResult")
     .field("isError", &CompilationResult::is_error)
     .field("shaderSource", &CompilationResult::shader_source)
-    .field("dimension", &CompilationResult::dimension)
+    .field("dimensions", &CompilationResult::dimensions)
     .field("isAnimated", &CompilationResult::is_animated)
     .field("hasCustomCamera", &CompilationResult::has_custom_camera)
     .field("uniforms", &CompilationResult::uniforms)

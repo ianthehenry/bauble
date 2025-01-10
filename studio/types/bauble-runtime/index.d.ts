@@ -21,7 +21,7 @@ declare module 'bauble-runtime' {
   export interface EvaluationResult {
     isError: boolean,
     shaderSource: string,
-    dimension: number,
+    dimensions: number,
     isAnimated: boolean,
     hasCustomCamera: boolean,
     uniforms: UniformVector,
@@ -44,7 +44,7 @@ declare module 'bauble-runtime' {
   }
 
   export interface BaubleModule extends EmscriptenModule {
-    evaluateScript: (script: string, renderType: number, crosshairs: boolean) => EvaluationResult;
+    evaluateScript: (script: string, renderType: number, crosshairs: boolean, dynamicCamera: boolean) => EvaluationResult;
     getDefinitions: () => DefinitionVector;
     // TODO, obviosly
     FS: WhyDoesTypescriptAllowGarbageHere;

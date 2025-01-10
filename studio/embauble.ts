@@ -1,30 +1,4 @@
-import * as Signal from './signals';
-import type {Accessor} from 'solid-js';
-import type * as RenderState from './render-state';
-import {vec3, vec4} from 'gl-matrix';
-
-enum CameraType {
-  Custom = 0,
-  Free = 1,
-  Top = 2,
-  Front = 3,
-  Right = 4,
-}
-
-const vertexSource = `#version 300 es
-in vec4 position;
-void main() {
-  gl_Position = position;
-}
-`;
-
-const checkNumber = (x: any): number => {
-  if (typeof x === 'number') {
-    return x;
-  } else {
-    throw new Error("not a number", {cause: x});
-  }
-}
+const vertexSource = "#version 300 es\nin vec4 position;void main(){gl_Position=position;}";
 
 function compileShader(gl: WebGLRenderingContext, type: number, source: string) {
   const shader = gl.createShader(type)!;
@@ -54,6 +28,7 @@ class Renderer {
     freeCamera: 2 | 3 | null,
     source: string,
     uniforms: {[name: string]: string},
+    animation: boolean,
   }) {
     const {source, uniforms} = opts;
     const gl = canvas.getContext('webgl2', { antialias: false, premultipliedAlpha: false });
@@ -97,7 +72,7 @@ class Renderer {
 
     switch (opts.freeCamera) {
     case 2:
-      addUniform('origin_2d', 'vec2');
+      addUniform('free_camera_target', 'vec2');
       addUniform('free_camera_zoom', 'float');
       break;
     case 3:
@@ -110,7 +85,6 @@ class Renderer {
 
     addUniform('t', 'float');
     addUniform('viewport', 'vec4');
-    addUniform('camera_type', 'int');
     for (let name in opts.uniforms) {
       addUniform(name, opts.uniforms[name]);
     }
@@ -140,7 +114,6 @@ class Renderer {
 
     this.uniformSetters.viewport([0, 0, this.canvas.width, this.canvas.height]);
     this.uniformSetters.t(opts.time);
-    this.uniformSetters.camera_type(CameraType.Custom);
   }
 
   draw() {
@@ -166,7 +139,7 @@ const fract = (x: number) => ((x % 1) + 1) % 1;
 
 export default function Bauble(canvas: HTMLCanvasElement, opts: {
   source: string,
-  animate?: boolean,
+  animation?: boolean,
   freeCamera?: boolean,
   interaction?: boolean,
   dimensions?: 2 | 3,
@@ -176,7 +149,7 @@ export default function Bauble(canvas: HTMLCanvasElement, opts: {
   if (source == null) {
     throw new Error("missing source", {cause: opts});
   }
-  const animate = opts.animate ?? false;
+  const animation = opts.animation ?? false;
   const dimensions = opts.dimensions ?? 3;
   const uniforms = opts.uniforms ?? {};
   const freeCamera = opts.freeCamera ?? true;
@@ -185,11 +158,12 @@ export default function Bauble(canvas: HTMLCanvasElement, opts: {
     time: 0,
     source,
     uniforms,
-    freeCamera: freeCamera ? dimensions : null
+    freeCamera: freeCamera ? dimensions : null,
+    animation: animation,
   });
 
   let time = 0;
-  let isTimeAdvancing = animate;
+  let isTimeAdvancing = animation;
   let then: number | null = null;
 
   const setTime = (t: number) => {
@@ -231,7 +205,7 @@ export default function Bauble(canvas: HTMLCanvasElement, opts: {
   switch (dimensions) {
   case 2: {
     camera.target = [0, 0];
-    renderer.setUniform('origin_2d', camera.target)
+    renderer.setUniform('free_camera_target', camera.target)
     renderer.setUniform('free_camera_zoom', camera.zoom)
     break;
   }

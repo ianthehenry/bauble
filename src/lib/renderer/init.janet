@@ -14,6 +14,8 @@
   (truthy? (some |(= dynvars/t (jlsl/param/var $))
     (jlsl/function/implicit-params (in program :main)))))
 
+(def @not not)
+
 (use ../environment)
 
 (defn render [env glsl-version &keys options]
@@ -35,7 +37,7 @@
     (assertf (camera? camera) "%q is not a camera")
     camera))
 
-  (assertf (or (nil? subject) (shape? subject)) "%q is not a shape" subject)
+  (assertf (@or (nil? subject) (shape? subject)) "%q is not a shape" subject)
 
   (def dimension (if subject
     (case (shape/type subject)
@@ -44,7 +46,10 @@
       (error "BUG"))
     0))
 
-  (def aa-grid-size (jlsl/coerce-expr (int/u64 (or (get-var stdenv 'aa-grid-size) 1))))
+  (if (@and camera (= dimension 2))
+    (error "custom cameras not supported in 2D yet"))
+
+  (def aa-grid-size (jlsl/coerce-expr (int/u64 (@or (get-var stdenv 'aa-grid-size) 1))))
 
   (jlsl/jlsl/implement :float nearest-distance [] (return ,(@or (@and subject (shape/distance subject)) 0)))
   (def sample
@@ -55,16 +60,18 @@
         (error "BUG"))
       (jlsl/fn :vec4 sample [] (return background-color))))
   (def frag-color (jlsl/variable/new "frag-color" jlsl/type/vec4))
+  (def free-camera? (@or (options :dynamic-camera?) (@not camera)))
   (def program (jlsl/program/new*
     :pragmas ['(precision highp float)]
     :uniforms
       (filter truthy? [
         ;custom-uniforms
-        camera-type
-        free-camera-target
-        free-camera-orbit
-        free-camera-zoom
-        origin-2d
+        (if (options :dynamic-camera?) camera-type)
+        ;(if free-camera?
+          (if (= dimension 2)
+            [free-camera-zoom free-camera-target-2d]
+            [free-camera-zoom free-camera-target-3d free-camera-orbit])
+          [])
         t
         viewport
         (if (in options :crosshairs) crosshairs-3d)])

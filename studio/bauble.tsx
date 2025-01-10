@@ -122,7 +122,7 @@ const ExportEmbedDialog = (props: {
 
   const regenOutput = async () => {
     const script = props.getScript();
-    const request = {tag: 'compile', script, renderType: RenderType.Normal, crosshairs: false};
+    const request = {tag: 'compile', script, renderType: RenderType.Normal, crosshairs: false, dynamicCamera: false};
     // TODO: do something with result.outputs?
     const result: any = await props.wasmBox.send(request);
     if (result.isError) {
@@ -133,7 +133,7 @@ const ExportEmbedDialog = (props: {
         options.dimensions = result.dimension;
       }
       if (result.isAnimated) {
-        options.animate = true;
+        options.animation = true;
       }
       if (!result.hasCustomCamera) {
         options.freeCamera = true;
@@ -472,7 +472,7 @@ const Bauble = (props: BaubleProps) => {
     return {width: dpr * size.width, height: dpr * size.height};
   });
   const renderType = Signal.create(RenderType.Normal);
-  const dimension = Signal.create(0);
+  const dimensions = Signal.create(0);
   const prefersFreeCamera = Signal.create(false);
   const quadView = Signal.create(false);
   const quadSplitPoint = Signal.create(vec2.fromValues(0.5, 0.5));
@@ -524,7 +524,7 @@ const Bauble = (props: BaubleProps) => {
   const recompile = (script: string, renderType: RenderType) => {
     compileQueue.schedule(async () => {
       Signal.set(evaluationState, EvaluationState.Unknown);
-      const request = {tag: 'compile', script, renderType, crosshairs: true};
+      const request = {tag: 'compile', script, renderType, crosshairs: true, dynamicCamera: true};
       const result: any = await wasmBox.send(request);
 
       if (result.isError) {
@@ -534,7 +534,7 @@ const Bauble = (props: BaubleProps) => {
         try {
           //console.log(result.shaderSource);
           const shaderRecompilationTimeMs = await renderer.recompileShader(result.shaderSource) as number | undefined;
-          Signal.set(dimension, result.dimension);
+          Signal.set(dimensions, result.dimensions);
           Signal.set(isAnimated, result.isAnimated);
           Signal.set(hasCustomCamera, result.hasCustomCamera);
           Signal.set(evaluationState, EvaluationState.Success);
@@ -592,6 +592,7 @@ const Bauble = (props: BaubleProps) => {
       return Signal.get(quadView) ? focusVec_ : null;
     });
     renderer = new AsyncRenderer(renderBox, canvas, {
+      dimensions: Signal.getter(dimensions),
       time: Signal.getter(timer.t),
       isVisible: Signal.getter(isVisible),
       rotation: Signal.getter(rotation),
@@ -668,7 +669,7 @@ const Bauble = (props: BaubleProps) => {
   };
 
   const getMainViewInteraction = () => {
-    if (Signal.get(dimension) === 2) {
+    if (Signal.get(dimensions) === 2) {
       return Interaction.Pan2D;
     }
     if (usingFreeCamera()) {

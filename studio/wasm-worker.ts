@@ -12,7 +12,7 @@ export function init() {
       switch (request.tag) {
       case 'compile': {
         outputs = [];
-        const result = runtime.evaluateScript(request.script, request.renderType, request.crosshairs) as any;
+        const result = runtime.evaluateScript(request.script, request.renderType, request.crosshairs, request.dynamicCamera) as any;
         const uniforms = [];
         const uniformCount = result.uniforms.size();
         for (let i = 0; i < uniformCount; i++) {

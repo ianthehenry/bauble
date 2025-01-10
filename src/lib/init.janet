@@ -5,10 +5,11 @@
 (import ./completer :export true)
 (import ./environment/uniforms-private)
 
-(defn compile-to-glsl [render-type crosshairs env glsl-version]
+(defn compile-to-glsl [render-type crosshairs dynamic-camera? env glsl-version]
   (renderer/render env glsl-version
     :render-type render-type
-    :crosshairs crosshairs))
+    :crosshairs crosshairs
+    :dynamic-camera? dynamic-camera?))
 
 (defn- type-to-string [type]
   (jlsl/type/match type

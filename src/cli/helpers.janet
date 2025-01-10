@@ -59,14 +59,23 @@
 (defn- calry [f & args]
   (if f (f ;args)))
 
-(defn render-image [shader-source &named resolution origin orbit zoom t slices
+(defn render-image [shader-source &named
+  dimensions
+  animated?
+  free-camera?
+  resolution
+  origin
+  orbit
+  zoom
+  t
+  slices
   on-render-start
   on-slice-start
   on-slice-end
   on-render-end]
   (default slices [1 1])
   (default zoom 1)
-  (default origin [0 0 0])
+  (default origin (if (= dimensions 2) [0 0] [0 0 0]))
   (default orbit [0 0])
   (default t 0)
   (def frame-buffer (ray/make-fbo resolution :point))
@@ -75,14 +84,18 @@
   (defn set-uniform [name type value]
     (jaylib/set-shader-value shader (jaylib/get-shader-location shader name) value type))
 
-  (set-uniform "free_camera_origin" :vec3 origin)
-  (set-uniform "free_camera_orbit" :vec2 orbit)
-  (set-uniform "free_camera_zoom" :float zoom)
-  (set-uniform "origin_2d" :vec2 [0 0])
-  (set-uniform "camera_type" :int 0)
-  (set-uniform "t" :float t)
+  (when free-camera?
+    (set-uniform "free_camera_zoom" :float zoom)
+    (case dimensions
+      2 (do
+        (set-uniform "free_camera_origin" :vec2 origin))
+      3 (do
+        (set-uniform "free_camera_origin" :vec3 origin)
+        (set-uniform "free_camera_orbit" :vec2 orbit))
+      0 (do)
+      (error "invalid dimension")))
+  (when animated? (set-uniform "t" :float t))
   (set-uniform "viewport" :vec4 [0 0 ;resolution])
-  (set-uniform "crosshairs_3d" :vec4 [0 0 0 0])
 
   (def slice-size (map |(math/floor (/ $0 $1)) resolution slices))
   (def residution (map - resolution (map |(* $0 $1) slice-size slices)))

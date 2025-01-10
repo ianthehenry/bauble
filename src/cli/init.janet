@@ -25,11 +25,14 @@
    --slices (optional vec2 [1 1]) "draw the image in multiple passes, e.g. 4x2 = 8 total draw calls"]
   (def source (read-input input))
   (def env (bauble/evaluator/evaluate source))
-  (def [shader-source dimension animated? has-custom-camera?]
-    (bauble/compile-to-glsl default-render-type false env "330"))
+  (def [shader-source dimensions animated? has-custom-camera?]
+    (bauble/compile-to-glsl default-render-type false false env "330"))
   (init-jaylib)
   (defn vec2 [[x y]] (string/format "%dx%d" x y))
   (def image (render-image shader-source
+    :dimensions dimensions
+    :free-camera? (not has-custom-camera?)
+    :animated? animated?
     :resolution resolution
     :orbit [0.125 -0.125]
     :t t
@@ -49,7 +52,7 @@
   (def source (read-input input))
   (def env (bauble/evaluator/evaluate source))
   (def [shader-source dimension animated? has-custom-camera?]
-    (bauble/compile-to-glsl default-render-type false env "330"))
+    (bauble/compile-to-glsl default-render-type false false env "330"))
   (if outfile
     (spit outfile shader-source)
     (print shader-source)))

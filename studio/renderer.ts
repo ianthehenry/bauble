@@ -97,14 +97,24 @@ export default class Renderer {
     const {gl, program} = this;
     const uT = gl.getUniformLocation(program, "t");
     const uCameraTarget = gl.getUniformLocation(program, "free_camera_target");
-    const uCameraOrbit = gl.getUniformLocation(program, "free_camera_orbit");
     const uCameraZoom = gl.getUniformLocation(program, "free_camera_zoom");
     const uCrosshairs = gl.getUniformLocation(program, "crosshairs_3d");
 
     gl.uniform1f(uT, this.state.time());
-    gl.uniform3fv(uCameraTarget, this.state.origin());
-    gl.uniform2fv(uCameraOrbit, this.state.rotation());
-    gl.uniform1f(uCameraZoom, this.state.zoom());
+    switch (this.state.dimensions()) {
+    case 3: {
+      const uCameraOrbit = gl.getUniformLocation(program, "free_camera_orbit");
+      gl.uniform3fv(uCameraTarget, this.state.origin());
+      gl.uniform2fv(uCameraOrbit, this.state.rotation());
+      gl.uniform1f(uCameraZoom, this.state.zoom());
+      break;
+    }
+    case 2: {
+      gl.uniform2fv(uCameraTarget, this.state.origin2D());
+      gl.uniform1f(uCameraZoom, this.state.zoom());
+      break;
+    }
+    }
 
     for (let uniform of this.state.customUniforms()) {
       const {name, type, value} = uniform;
@@ -129,9 +139,7 @@ export default class Renderer {
   private drawSingleView() {
     const {gl, program} = this;
     const uCameraType = gl.getUniformLocation(program, "camera_type");
-    const uOrigin2D = gl.getUniformLocation(program, "origin_2d");
     gl.uniform1i(uCameraType, this.state.prefersFreeCamera() ? CameraType.Free : CameraType.Custom);
-    gl.uniform2fv(uOrigin2D, this.state.origin2D());
     const resolution = this.state.resolution();
     this.setViewport(0, 0, resolution.width, resolution.height);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -140,7 +148,7 @@ export default class Renderer {
   private drawQuadView() {
     const {gl, program} = this;
     const uCameraType = gl.getUniformLocation(program, "camera_type");
-    const uOrigin2D = gl.getUniformLocation(program, "origin_2d");
+    const uOrigin2D = this.state.dimensions() === 2 ? gl.getUniformLocation(program, "free_camera_target") : null;
 
     const origin = this.state.origin();
     const splitPoint = this.state.quadSplitPoint();
@@ -158,25 +166,33 @@ export default class Renderer {
 
     // bottom left: XY
     gl.uniform1i(uCameraType, CameraType.Front);
-    gl.uniform2fv(uOrigin2D, [origin[0], origin[1]]);
+    if (uOrigin2D) {
+      gl.uniform2fv(uOrigin2D, [origin[0], origin[1]]);
+    }
     this.setViewport(0, 0, leftPaneWidth, bottomPaneHeight);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
     // bottom right: ZY
     gl.uniform1i(uCameraType, CameraType.Right);
-    gl.uniform2fv(uOrigin2D, [origin[2], origin[1]]);
+    if (uOrigin2D) {
+      gl.uniform2fv(uOrigin2D, [origin[2], origin[1]]);
+    }
     this.setViewport(leftPaneWidth, 0, rightPaneWidth, bottomPaneHeight);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
     // top left: free camera
     gl.uniform1i(uCameraType, this.state.prefersFreeCamera() ? CameraType.Free : CameraType.Custom);
-    gl.uniform2fv(uOrigin2D, this.state.origin2D());
+    if (uOrigin2D) {
+      gl.uniform2fv(uOrigin2D, this.state.origin2D());
+    }
     this.setViewport(0, bottomPaneHeight, leftPaneWidth, topPaneHeight);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
     // top right: top-down
     gl.uniform1i(uCameraType, CameraType.Top);
-    gl.uniform2fv(uOrigin2D, [origin[0], origin[2]]);
+    if (uOrigin2D) {
+      gl.uniform2fv(uOrigin2D, [origin[0], origin[2]]);
+    }
     this.setViewport(leftPaneWidth, bottomPaneHeight, rightPaneWidth, topPaneHeight);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
