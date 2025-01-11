@@ -4,10 +4,10 @@ Hello and thank you for coming to my website.
 
 My name is [Ian Henry](https://ianthehenry.com), and Bauble is a little toy that I've been working on. I've been having a lot of fun playing with it, and I thought that someone else might want to play with it too.
 
-If you're having fun playing with it, please get in touch, and let me know what you're using it for. It will inspire me to work more on it, and will help me to prioritize what comes next.
-
 - [Discord](https://discord.gg/NzR375gJH6)
 - <a href="mailto:ianthehenry@gmail.com?subject=Let's talk about Bauble">Email</a>
+- [Bluesky](https://bsky.app/profile/ianthehenry.bsky.social)
+- [Mastodon](https://mastodon.social/@ianthehenry)
 - [Twitter](https://twitter.com/ianthehenry)
 - [GitHub](https://github.com/ianthehenry/bauble/discussions)
 
@@ -26,13 +26,10 @@ And of course Bauble would be a lot less fun without [Janet](https://janet-lang.
 There's a lot that I'd like to add to Bauble when I find the time. But time is scarce. In no particular order:
 
 - Export
-    - Triangle mesh for 3D printing
     - Images
     - Videos
+    - 3D meshes directly from the browser
     - Export to [Shadertoy](https://www.shadertoy.com)
-- Embeddable Bauble. Embauble. Embeddabauble
-- Better mouse editing, including editing vectors using the quad view
-- Custom uniforms
 - Integrate a built-in [Graphtoy](https://graphtoy.com/)
 - Record some video tutorials
 - Custom resolution and aspect ratio
