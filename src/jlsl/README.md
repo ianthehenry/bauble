@@ -6,7 +6,7 @@ If you're writing raw `glsl` code, you might have code like this:
 
 ```janet
 (defn :float square [:float x]
-  (return (pow x x)))
+  (return (pow x 2)))
 
 (defn :void main []
   (set frag-color (vec3 (square 0.5))))
