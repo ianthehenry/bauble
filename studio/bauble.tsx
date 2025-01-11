@@ -204,7 +204,6 @@ const EditorToolbar: Component<EditorToolbarProps> = (props) => {
   let exportPopover: HTMLDivElement;
   let exportButton: HTMLButtonElement;
   return <div class="toolbar">
-    <div class="spacer"></div>
     <Show when={props.canExport}>
       <button title="Export" ref={exportButton!} onClick={(e) => {
         const buttonPosition = exportButton.getBoundingClientRect();
@@ -231,6 +230,7 @@ const EditorToolbar: Component<EditorToolbarProps> = (props) => {
       you want to share your creations.</p>
       </div>
     </Show>
+    <div class="spacer"></div>
     <Switch>
       <Match when={props.state === EvaluationState.Unknown}>
         <div title="Compilation unknown" class="indicator compilation-unknown">
@@ -288,9 +288,6 @@ const RenderToolbar: Component<RenderToolbarProps> = (props) => {
   };
 
   return <div class="toolbar">
-    <button title="Toggle free camera" onClick={toggleFreeCamera}>
-      <Icon name={props.usingFreeCamera() ? "camera-reels" : "camera-reels-fill"} />
-    </button>
     <button title="Reset camera [alt-r]" onClick={() => batch(() => {
       Signal.set(props.prefersFreeCamera, true);
       resetFreeCamera(props.rotation, props.origin, props.zoom);
@@ -300,6 +297,9 @@ const RenderToolbar: Component<RenderToolbarProps> = (props) => {
     </button>
     <button title="Toggle quad view [alt-q]" onClick={toggleQuadView}>
       <Icon name={Signal.get(props.quadView) ? "grid-fill" : "grid"} />
+    </button>
+    <button title="Toggle free camera [alt-c]" onClick={toggleFreeCamera}>
+      <Icon name={props.usingFreeCamera() ? "camera-reels" : "camera-reels-fill"} />
     </button>
     <div class="spacer"></div>
     {choices(props.renderType, [
@@ -903,12 +903,14 @@ const Bauble = (props: BaubleProps) => {
   //   widely supported which you can use to map e.code to the actual key pressed, but no.
   // - e.which and e.keyCode seem to be the same; they're both deprecated but are the only
   //   way to handle keyboard shortucts correctly as far as I can figure out
+  const KeyC = 67;
   const KeyQ = 81;
   const KeyR = 82;
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.altKey) {
       let handled = true;
       switch (e.which) {
+      case KeyC: Signal.update(prefersFreeCamera, (prefersFreeCamera) => !prefersFreeCamera); break;
       case KeyQ: Signal.update(quadView, (quadView) => !quadView); break;
       case KeyR:
         batch(() => {
