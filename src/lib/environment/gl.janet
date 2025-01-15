@@ -1,7 +1,7 @@
 (import ../../jlsl)
 (use ./util)
 (import ../shape)
-(import ./expression-hoister)
+(use ./hoist)
 (use ../../jlsl/prelude)
 
 (defn- make-let-macro [new-vars? bindings body]
@@ -229,15 +229,7 @@
   a computation.
   ````
   [name expression]
-  ~(def ,name (,expression-hoister/hoist ,(string name) ,expression)))
-
-(defmacro gl/hoist
-  ````
-  Return a hoisted version of the expression See the documentation for `gl/def`
-  for an explanation of this.
-  ````
-  [expression &opt name]
-  ~(,expression-hoister/hoist ,(string (or name "hoist")) ,expression))
+  ~(def ,name (,hoist ,expression ,(string name))))
 
 (defn gl/if
   ````

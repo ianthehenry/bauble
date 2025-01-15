@@ -1,5 +1,5 @@
 (use ./util)
-(use ./uniforms-private)
+(use ./private)
 (import ../../jlsl)
 
 (defn uniform

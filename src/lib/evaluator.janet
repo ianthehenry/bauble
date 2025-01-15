@@ -6,7 +6,7 @@
 (import ./shape)
 (import ./environment/derive :prefix "environment/derive/")
 (import ../jlsl)
-(import ./environment/expression-hoister)
+(import ./environment/private)
 
 (defn- chunk-string [str]
   (var unread true)
@@ -28,7 +28,7 @@
   [(string/slice buf 0 -2) macro-fiber])
 
 (defn unhoist [env expr]
-  (def hoisted-vars (in env expression-hoister/*hoisted-vars*))
+  (def hoisted-vars (in env private/*hoisted-vars*))
   (def references (ordered/table/new))
   (def seen @{})
   (defn visit [node]

@@ -96,6 +96,7 @@
             "general" [:misc]
             "shapes-2d" [:shapes :2d]
             "shapes-3d" [:shapes :3d]
+            "hoist" [:gl]
             [(keyword basename)]))
       [:misc])))
 

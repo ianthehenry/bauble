@@ -6,7 +6,7 @@
 (import ../shape)
 
 (import ../environment/dynvars)
-(import ../environment/uniforms-private)
+(import ../environment/private)
 # TODO: jlsl should probably just have a helper for this;
 # I don't like that this knows the representation of a
 # program
@@ -26,7 +26,7 @@
   (def default-3d-color (typecheck (get-var stdenv 'default-3d-color) jlsl/type/vec3))
   (def background-color (jlsl/coerce-expr (get-var stdenv 'background-color)))
 
-  (def custom-uniforms (keys (in stdenv uniforms-private/*uniforms*)))
+  (def custom-uniforms (keys (in stdenv private/*uniforms*)))
 
   (def background-color (case (jlsl/expr/type background-color)
     jlsl/type/vec3 (vec4 background-color 1)

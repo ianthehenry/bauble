@@ -249,8 +249,6 @@
               :macro true}
     gl/do @{:doc "(gl/do & body)\n\nExecute a series of GLSL statements and return the final expression.\n\n```example\n(ball 100 | color \n  (gl/do \"optional-label\"\n    (var c [1 0 1])\n    (for (var i 0:u) (< i 10:u) (++ i)\n      (+= c.g 0.01))\n    c))\n```\n\nThe body of this macro is not regular Janet code, but a special DSL\nthat is not really documented anywhere, making it pretty hard to use."
             :macro true}
-    gl/hoist @{:doc "(gl/hoist expression &opt name)\n\nReturn a hoisted version of the expression See the documentation for `gl/def`\nfor an explanation of this."
-               :macro true}
     gl/if @{:doc "(gl/if condition then else)\n\nA GLSL ternary conditional expression.\n\n```example\n(ball 100 | color \n  (gl/if (< normal.y 0) \n    [1 0 0] \n    [1 1 0]))\n```"}
     gl/iife @{:doc "(gl/iife & body)\n\nLike `gl/do`, except that you can explicitly return early.\n\n```example\n(ball 100 | color\n  (gl/iife \"optional-label\"\n    (var c [1 0 1])\n    (if (< normal.y 0)\n      (return c))\n    (for (var i 0:u) (< i 10:u) (++ i)\n      (+= c.g (p.x / 100 / 10)))\n    c))\n```"
               :macro true}
@@ -273,6 +271,7 @@
     hash4 @{:doc "(hash4 & args)\n\nReturn a pseudorandom `vec4`. The input can be a float or vector. With multiple arguments,\nthis will return the hash of the sum.\n\nThis should return consistent results across GPUs, unlike high-frequency sine functions."}
     hexagon @{:doc "(hexagon radius [:r round])\n\n```example\n(hexagon 100 :r (osc t 3 20))\n```"}
     hexagram @{:doc "(hexagram radius [:r round])\n\n```example\n(hexagram 100 :r (osc t 3 20))\n```"}
+    hoist @{:doc "(hoist expr &opt name)\n\nReturn a hoisted version of the expression. See the documentation for `gl/def`\nfor an explanation of hoisting."}
     hot-pink @{:doc "  ```example\n  (set background-color hot-pink)\n  (ball 100 | shade hot-pink)\n  ```\n  "
                :value [hsv 0.91666666666666663 0.98 1]}
     hsl @{:doc "(hsl hue saturation lightness)\n\nReturns a color."}

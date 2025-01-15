@@ -1,4 +1,5 @@
 (import ../../jlsl)
+(use ./private)
 
 # The idea is that we want to define some expensive expressions -- basically,
 # our lighting calculations -- that might be used by multiple different shapes.
@@ -33,9 +34,13 @@
 # and it's a reasonable avenue to explore in the future, especially if we want to do
 # something like adding lights as explicit elements in a scene graph.
 
-(defdyn *hoisted-vars* "A dynamic variable that keeps track of all hoisted variables.")
-
-(defn hoist [name expr]
+(defn hoist
+  ````
+  Return a hoisted version of the expression. See the documentation for `gl/def`
+  for an explanation of hoisting.
+  ````
+  [expr &opt name]
+  (default name "hoist")
   (def expr (jlsl/coerce-expr expr))
   (def variable (jlsl/variable/new name (jlsl/expr/type expr)))
   (put (dyn *hoisted-vars*) variable expr)

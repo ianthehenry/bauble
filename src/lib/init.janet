@@ -3,7 +3,7 @@
 (import ./evaluator :export true)
 (import ./renderer :export true)
 (import ./completer :export true)
-(import ./environment/uniforms-private)
+(import ./environment/private)
 
 (defn compile-to-glsl [render-type crosshairs dynamic-camera? env glsl-version]
   (renderer/render env glsl-version
@@ -36,7 +36,7 @@
 # returns an array of [name type-string initial-value]
 # type-string will be float, vec2, vec3, etc
 (defn get-uniforms [env]
-  (seq [[variable value] :pairs (in env uniforms-private/*uniforms*)]
+  (seq [[variable value] :pairs (in env private/*uniforms*)]
     [(glsl/identifier (jlsl/variable/name variable))
      (type-to-string (jlsl/variable/type variable))
      value]))

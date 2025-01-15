@@ -1,5 +1,5 @@
 (use ./import)
-(import ./expression-hoister)
+(use ./hoist)
 
 (def- VERY_LARGE_DISTANCE 1e6)
 
@@ -239,7 +239,7 @@ set it in a way that fits nicely into a pipeline.
   (def <expr> (if brightness
     (light/map-brightness <expr> (fn [b] (* b (,typecheck brightness ',jlsl/type/float))))
     <expr>))
-  (if hoist (,expression-hoister/hoist "light" <expr>) <expr>)))
+  (if hoist (,hoist <expr> "light") <expr>)))
 
 (thunk ~(as-macro ,defnamed light/ambient [color ?offset :?brightness :?hoist]
   ```
@@ -308,7 +308,7 @@ set it in a way that fits nicely into a pipeline.
   (default hoist true)
   (def step-count (if (number? step-count) (int/u64 step-count) step-count))
   (def <expr> (calculate-occlusion step-count dist dir))
-  (if hoist (,expression-hoister/hoist "occlusion" <expr>) <expr>)))
+  (if hoist (,hoist <expr> "occlusion") <expr>)))
 
 (sugar (thunk ~(setdyn ,*lights*
   (let [default-occlusion (mix 0.1 1 (occlusion))]

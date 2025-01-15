@@ -1,6 +1,5 @@
 (use ./import)
-(import ./expression-hoister)
-(import ./uniforms-private)
+(import ./private)
 
 (thunk ~(as-macro ,jlsl/jlsl/declare :float nearest-distance []
   ```(nearest-distance)
@@ -12,5 +11,5 @@
   a custom ambient occlusion value.
   ```))
 
-(thunk ~(setdyn ,expression-hoister/*hoisted-vars* @{}))
-(thunk ~(setdyn ,uniforms-private/*uniforms* @{}))
+(thunk ~(setdyn ,private/*hoisted-vars* @{}))
+(thunk ~(setdyn ,private/*uniforms* @{}))
