@@ -163,17 +163,27 @@ If you're ever confused by what Bauble's notation is doing, you can see what you
 (pp '(p.x | 1 + 2 * _))
 ```
 
-# Embedding {#embauble}
+# Embedding {#embedding}
 
 You can embed Bauble on your web page by downloading the Bauble player:
 
-- As an immediately-invoked-function-expresison: <a href="PLACEHOLDER_EMBAUBLE_IIFE" download="embauble.iife.js">embauble.iife.js</a>
-- As a CommonJS module: <a href="PLACEHOLDER_EMBAUBLE_CJS" download="embauble.cjs.js">embauble.cjs.js</a>
-- As an ES6 module: <a href="PLACEHOLDER_EMBAUBLE_ESM" download="embauble.esm.js">embauble.esm.js</a>
+- As an immediately-invoked-function-expresison: <a href="PLACEHOLDER_PLAYER_IIFE" download="bauble-player.iife.js">bauble-player.iife.js</a>
+- As a CommonJS module: <a href="PLACEHOLDER_PLAYER_CJS" download="bauble-player.cjs.js">bauble-player.cjs.js</a>
+- As an ES6 module: <a href="PLACEHOLDER_PLAYER_ESM" download="bauble-player.esm.js">bauble-player.esm.js</a>
 
 If you don't know which one you want, download the first one. That's the one that you can just throw into a `<script>` tag and run with.
 
-[There are lots of examples of embedded Bauble here.](/embed)
+To use the embedded Bauble player, you need to export your shader from the web UI first (click the export button above the script pane and then select "Export to HTML Embed").
+
+If you'd like to dynamically compile a shader, instead of exporting it ahead of time, you will need to download the Bauble compiler as well:
+
+- As an immediately-invoked-function-expresison: <a href="PLACEHOLDER_COMPILER_IIFE" download="bauble-compiler.iife.js">bauble-compiler.iife.js</a>
+- As a CommonJS module: <a href="PLACEHOLDER_COMPILER_CJS" download="bauble-compiler.cjs.js">bauble-compiler.cjs.js</a>
+- As an ES6 module: <a href="PLACEHOLDER_COMPILER_ESM" download="bauble-compiler.esm.js">bauble-compiler.esm.js</a>
+
+It's distributed separately because it's a *much* larger file, and it's only necessary to include if you're doing something fancy.
+
+[For examples of how to use the Bauble player and compiler, see here.](/embed)
 
 ## A note on versioning
 

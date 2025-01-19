@@ -24,16 +24,31 @@ export default [{
   plugins: plugins(),
 }, {
   strictDeprecations: true,
-  input: "embauble.ts",
+  input: "player.ts",
   output: [{
-    file: "../build/rollup-artifacts/embauble.iife.js",
+    file: "../build/rollup-artifacts/player.iife.js",
     format: "iife",
     name: "Bauble",
   }, {
-    file: "../build/rollup-artifacts/embauble.cjs.js",
+    file: "../build/rollup-artifacts/player.cjs.js",
     format: "cjs",
   }, {
-    file: "../build/rollup-artifacts/embauble.esm.js",
+    file: "../build/rollup-artifacts/player.esm.js",
+    format: "es",
+  }],
+  plugins: plugins(),
+}, {
+  strictDeprecations: true,
+  input: "compiler.ts",
+  output: [{
+    file: "../build/rollup-artifacts/compiler.iife.js",
+    format: "iife",
+    name: "BaubleCompiler",
+  }, {
+    file: "../build/rollup-artifacts/compiler.cjs.js",
+    format: "cjs",
+  }, {
+    file: "../build/rollup-artifacts/compiler.esm.js",
     format: "es",
   }],
   plugins: plugins(),

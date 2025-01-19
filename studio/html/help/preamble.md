@@ -6,7 +6,7 @@
     - [Dot notation](#dot-notation)
     - [Pipe notation](#pipe-notation)
     - [Infix notation](#infix-notation)
-- [Embedding](#embauble)
+- [Embedding](#embedding)
 - [Exporting / 3D printing](#exporting)
 - [Bauble CLI](#cli)
 

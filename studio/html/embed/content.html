@@ -306,6 +306,44 @@ const bauble = new Bauble(canvas, {
   <canvas></canvas>
 </div>
 
+<div class="example">
+  <h1>Dynamic compilation</h1>
+  <p>
+    If you want to do something fancy, you can embed the Bauble compiler and dynamically compile shaders.
+  </p>
+  <p>
+    It's a fairly large file to distribute, and compilation is a little bit slow. I would recommend using
+    it inside a web worker (as the main Bauble UI does) to prevent compilation blocking the main thread.
+    This will also prevent evaluation of infinite loops from freezing the browser tab (it'll still freeze the
+    web worker, but that's a lot less annoying to users).
+  </p>
+  <p>
+    The compiler must be initialized asynchronously using <code>BaubleCompiler.init()</code>, which
+    returns a promise that will resolve to a <code>compile</code> function.
+  </p>
+  <p>
+    <code>compile</code> returns an object that can be passed to the <code>Bauble</code> constructor,
+    along with an additional key called <code>uniformValues</code>. The <code>Bauble</code>
+    constructor ignores that key, but you can call <code>bauble.set(result.uniformValues)</code>
+    if you care about the initial uniform values set in your script.
+  </p>
+  <p>
+    The options it returns are the "default" options that match what you would see in the Bauble UI if
+    you exported the same script. You can mutate it before passing it to the Bauble constructor to e.g.
+    set <code>result.interaction = false</code> or something.
+  </p>
+  <pre>
+const canvas = root.querySelector('canvas');
+canvas.width = canvas.clientWidth * window.devicePixelRatio;
+canvas.height = canvas.clientHeight * window.devicePixelRatio;
+
+BaubleCompiler.init().then((compile) => {
+  const bauble = new Bauble(canvas, compile("(box 100)"));
+});
+</pre>
+  <canvas></canvas>
+</div>
+
 <script type="text/javascript">
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('div.example').forEach((root) => {

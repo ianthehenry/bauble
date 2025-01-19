@@ -2,6 +2,7 @@ import type {Component, JSX} from 'solid-js';
 import {batch, createEffect, createMemo, createSelector, onMount, For, Switch, Match, Show} from 'solid-js';
 import {Timer, LoopMode, TimerState} from './timer';
 import installCodeMirror from './editor';
+import convertCompilerOutput from './embed-helpers';
 import {EditorView} from '@codemirror/view';
 import * as Signal from './signals';
 import {mod, clamp} from './util';
@@ -128,35 +129,14 @@ const ExportEmbedDialog = (props: {
     if (result.isError) {
       set("error");
     } else {
-      const options: any = {source: result.shaderSource};
-      if (result.dimension !== 3) {
-        options.dimensions = result.dimension;
-      }
-      if (result.isAnimated) {
-        options.animation = true;
-      }
-      if (!result.hasCustomCamera) {
-        options.freeCamera = true;
-      }
-      if (result.uniforms.length > 0) {
-        const uniforms: any = {};
-        for (let {name, type} of result.uniforms) {
-          uniforms[name] = type;
-        }
-        options.uniforms = uniforms;
-      }
-
+      const [options, uniforms] = convertCompilerOutput(result);
       const toJSNotation = (obj: any, indent: number) =>
         JSON.stringify(obj, null, indent)
         .replaceAll(/"([^"]+)":/g, (_, key) => key + ':')
         .replaceAll(/: \[([^\]]+)\]/gm, (_, innards) => ': [' + innards.trim().replaceAll(/\s+/gm, ' ') + ']');
 
       let str = `const bauble = new Bauble(canvas, ${toJSNotation(options, 2)});`;
-      if (result.uniforms.length > 0) {
-        const uniforms: any = {};
-        for (let {name, type, value} of result.uniforms) {
-          uniforms[name] = value[type];
-        }
+      if (Object.keys(uniforms).length > 0) {
         str += `\nbauble.set(${toJSNotation(uniforms, 2)});`
       }
       set(str);
@@ -195,7 +175,7 @@ const ExportEmbedDialog = (props: {
     <div>
       <p>Put this JavaScript in your thing:<button onClick={copy}><Icon name={copyIcon()} />Copy</button></p>
       <textarea rows="10" ref={outputContainer!}></textarea>
-      <p><a href="/help#embauble" target="_blank">You'll want a copy of the Bauble player as well.</a></p>
+      <p><a href="/help#embedding" target="_blank">You'll want a copy of the Bauble player as well.</a></p>
     </div>
   </dialog>;
 };

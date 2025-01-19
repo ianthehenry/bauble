@@ -2,9 +2,13 @@
 set -euo pipefail
 cd $(dirname "$0")
 
-embabule_iife=$1
-embabule_cjs=$2
-embabule_esm=$3
+player_iife=$1
+player_cjs=$2
+player_esm=$3
+
+compiler_iife=$4
+compiler_cjs=$5
+compiler_esm=$6
 
 (
   cat preamble.md
@@ -12,7 +16,10 @@ embabule_esm=$3
   (cd ../../../build && janet -i docs.jimage $(git rev-parse HEAD))
   echo
   sed appendices.md \
-    -e "s|PLACEHOLDER_EMBAUBLE_IIFE|$embabule_iife|g" \
-    -e "s|PLACEHOLDER_EMBAUBLE_CJS|$embabule_cjs|g" \
-    -e "s|PLACEHOLDER_EMBAUBLE_ESM|$embabule_esm|g"
+    -e "s|PLACEHOLDER_PLAYER_IIFE|$player_iife|g" \
+    -e "s|PLACEHOLDER_PLAYER_CJS|$player_cjs|g" \
+    -e "s|PLACEHOLDER_PLAYER_ESM|$player_esm|g" \
+    -e "s|PLACEHOLDER_COMPILER_IIFE|$compiler_iife|g" \
+    -e "s|PLACEHOLDER_COMPILER_CJS|$compiler_cjs|g" \
+    -e "s|PLACEHOLDER_COMPILER_ESM|$compiler_esm|g"
 ) | pandoc --from markdown-auto_identifiers --to html --wrap=preserve
