@@ -332,6 +332,9 @@ const bauble = new Bauble(canvas, {
     you exported the same script. You can mutate it before passing it to the Bauble constructor to e.g.
     set <code>result.interaction = false</code> or something.
   </p>
+  <p>
+    <code>compile</code> will raise if compilation fails.
+  </p>
   <pre>
 const canvas = root.querySelector('canvas');
 canvas.width = canvas.clientWidth * window.devicePixelRatio;
