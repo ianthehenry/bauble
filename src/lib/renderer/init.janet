@@ -34,7 +34,7 @@
     (error "background-color must be a vec3 or ve4")))
 
   (def camera (when-let [camera (get-var stdenv 'camera)]
-    (assertf (camera? camera) "%q is not a camera")
+    (assertf (camera? camera) "%q is not a camera" camera)
     camera))
 
   (assertf (@or (nil? subject) (shape? subject)) "%q is not a shape" subject)
