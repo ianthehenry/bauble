@@ -112,7 +112,7 @@
           (put functions-called function (table/proto-flatten scope))
           (def args-and-params (try
             (zip args (function/param-sigs function))
-            ([_]
+            ([_ __]
               (errorf "wrong number of arguments to function %s, expected %q, got %q"
                 (/name function)
                 (length (function/param-sigs function))
