@@ -15,11 +15,12 @@ compiler_esm=$6
   echo
   (cd ../../../build && janet -i docs.jimage $(git rev-parse HEAD))
   echo
-  sed appendices.md \
+  sed \
     -e "s|PLACEHOLDER_PLAYER_IIFE|$player_iife|g" \
     -e "s|PLACEHOLDER_PLAYER_CJS|$player_cjs|g" \
     -e "s|PLACEHOLDER_PLAYER_ESM|$player_esm|g" \
     -e "s|PLACEHOLDER_COMPILER_IIFE|$compiler_iife|g" \
     -e "s|PLACEHOLDER_COMPILER_CJS|$compiler_cjs|g" \
-    -e "s|PLACEHOLDER_COMPILER_ESM|$compiler_esm|g"
+    -e "s|PLACEHOLDER_COMPILER_ESM|$compiler_esm|g" \
+    appendices.md
 ) | pandoc --from markdown-auto_identifiers --to html --wrap=preserve

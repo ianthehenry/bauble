@@ -20,5 +20,6 @@ mkShell {
     pandoc
     nodejs
     redo-apenwarr
+    coreutils
   ] ++ frameworks;
 }
