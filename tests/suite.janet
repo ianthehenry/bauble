@@ -819,7 +819,7 @@ img {
 
     (def old-file-name (try
       (slice ($<_ git show HEAD:tests/ ^ ,ref-path >[stderr :null]) 3)
-      ([_ _] nil)))
+      ([_] nil)))
     ($ ln -fs (string "../" new-file-name) ,ref-path)
 
     (def changed? (and old-file-name (not= old-file-name new-file-name)))
