@@ -5,7 +5,7 @@ mode=$(cat mode)
 
 actual_outpath_jfc=$PWD/$3
 
-cat >$3 rollup-artifacts/embeditor.js rollup-artifacts/embauble.iife.js <(cat <<EOF
+cat >$3 rollup-artifacts/embeditor.js rollup-artifacts/player.iife.js <(cat <<EOF
 if (!(typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope)) {
   const balloonExample = () => {
     const canvas = document.getElementById('expandy-balloon');
