@@ -132,3 +132,10 @@ $ jpm -l janet cli/init.janet
 ```
 
 Currently the CLI is the only way to export high-resolution images, render images with non-square aspect ratios, view raw GLSL shader source, and export 3D meshes.
+
+# embeditor
+
+```
+DEST=$HOME/src/ianthehenry.com/content/posts/worley
+BUILD_MODE=dev redo studio/styles/embeditor.css build/embeditor.js && cp studio/styles/embeditor.css $DEST/bauble.css && cp build/embeditor.js $DEST/bauble.js && cp studio/assets/icons.svg $DEST/icons.svg
+```
