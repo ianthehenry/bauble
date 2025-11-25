@@ -125,6 +125,7 @@
 (overload   :vec3 fade [:vec3 t] (return (* t t t (t * (t * 6 - 15) + 10))))
 (overload   :vec4 fade [:vec4 t] (return (* t t t (t * (t * 6 - 15) + 10))))
 (defhelper- :vec3 mod7 [:vec3 x] (return (x - (floor (x * (/ 7)) * 7))))
+(overload   :vec4 mod7 [:vec4 x] (return (x - (floor (x * (/ 7)) * 7))))
 
 (defhelper- :float perlin [:vec2 point]
   (var Pi ((floor point.xyxy) + [0 0 1 1]))
@@ -392,10 +393,9 @@
   (remap+ (perlin point period)))
 
 (defmacro- define-worley2d [return-type name & closing-statements]
-  ~(defhelper- ,return-type ,name [:vec2 point]
+  ~(defhelper- ,return-type ,name [:vec2 point :float jitter]
     (def K (1 / 7))
     (def Ko (3 / 7))
-    (def jitter 1)
     (var Pi (mod289 (floor point)))
     (var Pf (fract point))
     (var oi [-1 0 1])
@@ -437,16 +437,44 @@
   (set d1.y (min d1.y d2.x))
   (return (sqrt d1.xy)))
 
+(defmacro- define-worley2d-fast [return-type name & closing-statements]
+  ~(defhelper- ,return-type ,name [:vec2 point :float jitter]
+    (def K (1 / 7))
+    (def K2 (K / 2))
+
+    (var Pi (mod289 (floor point)))
+    (var Pf (fract point))
+
+    (var Pfx (Pf.x + [0 -1 0 -1 - 0.5]))
+    (var Pfy (Pf.y + [0 0 -1 -1 - 0.5]))
+    (var p (permute (Pi.x + [0 1 0 1])))
+    (set p (permute (p + Pi.y + [0 0 1 1])))
+    (var ox (mod7 p * K + K2))
+    (var oy (mod7 (p * K | floor) * K + K2))
+    (var dx (Pfx + (jitter * ox)))
+    (var dy (Pfy + (jitter * oy)))
+    (var d (+ (dx * dx) (dy * dy)))
+    ,;closing-statements))
+
+(define-worley2d-fast :float worley-fast
+  (return (sqrt (min d))))
+
+(define-worley2d-fast :vec2 worley2-fast
+  (set d.xy (if (< d.x d.y) d.xy d.yx))
+  (set d.xz (if (< d.x d.z) d.xz d.zx))
+  (set d.xw (if (< d.x d.w) d.xw d.wx))
+  (set d.y (min d.yzw))
+  (return (sqrt d.xy)))
+
 # This is a very gross "copy and paste" macro that exists to generate
 # similar but different versions of worley noise.
 (defmacro- overload-worley3d [return-type name & closing-statements]
-  ~(overload ,return-type ,name [:vec3 point]
+  ~(overload ,return-type ,name [:vec3 point :float jitter]
     (def K (1 / 7))
     (def Ko (0.5 * (1 - K)))
     (def K2 (1 / 49))
     (def Kz (1 / 6))
     (def Kzo (0.5 - (1 / 12)))
-    (def jitter 1.0)
 
     (var Pi (mod289 (floor point)))
     (var Pf (fract point - 0.5))
@@ -593,8 +621,65 @@
   (set d11.y (min d11.y d11.z))
   (return (sqrt d11.xy)))
 
-(def- worley- worley)
-(defn worley
+# This is a very gross "copy and paste" macro that exists to generate
+# similar but different versions of worley noise.
+(defmacro- overload-worley3d-fast [return-type name & closing-statements]
+  ~(overload ,return-type ,name [:vec3 point :float jitter]
+    (def K (1 / 7))
+    (def Ko (0.5 * (1 - K)))
+    (def K2 (1 / 49))
+    (def Kz (1 / 6))
+    (def Kzo (0.5 - (1 / 12)))
+
+    (var Pi (mod289 (floor point)))
+    (var Pf (fract point))
+
+    (var Pfx (Pf.x - [0 1 0 1]))
+    (var Pfy (Pf.y - [0 0 1 1]))
+
+    (var p (permute (Pi.x + [0 1 0 1])))
+    (set p (permute (p + Pi.y + [0 0 1 1])))
+    (var p1 (permute (p + Pi.z)))
+    (var p2 (permute (p + Pi.z + 1)))
+
+    (var ox1 (fract (p1 * K) - Ko))
+    (var oy1 (mod7 (floor (p1 * K)) * K - Ko))
+    (var oz1 (floor (p1 * K2) * Kz - Kzo))
+
+    (var ox2 (fract (p2 * K) - Ko))
+    (var oy2 (mod7 (floor (p2 * K)) * K - Ko))
+    (var oz2 (floor (p2 * K2) * Kz - Kzo))
+
+    (var dx1 (Pfx + (jitter * ox1)))
+    (var dy1 (Pfy + (jitter * oy1)))
+    (var dz1 (Pf.z + (jitter * oz1)))
+
+    (var dx2 (Pfx + (jitter * ox2)))
+    (var dy2 (Pfy + (jitter * oy2)))
+    (var dz2 (Pf.z - 1 + (jitter * oz2)))
+
+    (var d1 (+ (dx1 * dx1) (dy1 * dy1) (dz1 * dz1)))
+    (var d2 (+ (dx2 * dx2) (dy2 * dy2) (dz2 * dz2)))
+    ,;closing-statements))
+
+(overload-worley3d-fast :float worley-fast
+  (return (sqrt (min (min d1 d2)))))
+
+(overload-worley3d-fast :vec2 worley2-fast
+  (var d (min d1 d2))
+  (set d2 (max d1 d2))
+  (set d.xy (if (< d.x d.y) d.xy d.yx))
+  (set d.xz (if (< d.x d.z) d.xz d.zx))
+  (set d.xw (if (< d.x d.w) d.xw d.wx))
+  (set d.yzw (min d.yzw d2.yzw))
+  (set d.y (min d.y d.z))
+  (set d.y (min d.y d.w))
+  (set d.y (min d.y d2.x))
+  (return (sqrt d.xy)))
+
+(def- worley-slow worley)
+(defnamed worley
+  [point ?period :?oversample :?jitter]
   ````
   Worley noise, also called cellular noise or voronoi noise.
   The input `point` can be a `vec2` or a `vec3`.
@@ -607,14 +692,22 @@
   ```
 
   Returns the nearest distance to points distributed randomly within the tiles of a square or cubic grid.
-  ````
-  [point &opt period]
-  (if period
-    (worley- (/ point period))
-    (worley- point)))
 
-(def- worley2- worley2)
-(defn worley2
+  By default worley noise only checks the nearest neighbors, as an optimization. You can set
+  `:oversample true` to check for all neighbors.
+
+  The default `jitter` is 1; lower values will be more regular.
+  ````
+  (default oversample false)
+  (default jitter 1)
+  (def input (if period (/ point period) point))
+  (if oversample
+    (worley-slow input jitter)
+    (worley-fast input jitter)))
+
+(def- worley2-slow worley2)
+(defnamed worley2
+  [point ?period :?oversample :?jitter]
   ````
   Like `worley`, but returns the nearest distance in `x` and the second-nearest distance in `y`.
 
@@ -624,11 +717,18 @@
   ```example
   (ball 100 | color [(worley2 (p / 30)) 1])
   ```
+
+  By default worley noise only checks the nearest neighbors, as an optimization. You can set
+  `:oversample true` to check for all neighbors. This will give much better results for `worley2`.
+
+  The default `jitter` is 1; lower values will be more regular.
   ````
-  [point &opt period]
-  (if period
-    (worley2- (/ point period))
-    (worley2- point)))
+  (default oversample false)
+  (default jitter 1)
+  (def input (if period (/ point period) point))
+  (if oversample
+    (worley2-slow input jitter)
+    (worley2-fast input jitter)))
 
 (defhelper- :float simplex [:vec2 point]
   (def Cx (3 - sqrt 3 / 6))
